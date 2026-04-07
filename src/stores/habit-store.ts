@@ -11,6 +11,7 @@ interface HabitState {
 
   // Lifecycle
   initialize: () => Promise<void>;
+  refresh: () => Promise<void>;
 
   // Actions
   toggleHabitToday: (habitId: string) => Promise<void>;
@@ -33,6 +34,20 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
   initialize: async () => {
     if (get().isLoaded) return;
+    set({ isLoading: true, error: null });
+    try {
+      const [habits, logs] = await Promise.all([
+        api.get<Habit[]>("/habits"),
+        api.get<HabitLog[]>("/habits/logs?days=90"),
+      ]);
+      set({ habits, logs, isLoaded: true, isLoading: false });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Error al cargar hábitos";
+      set({ error: msg, isLoading: false });
+    }
+  },
+
+  refresh: async () => {
     set({ isLoading: true, error: null });
     try {
       const [habits, logs] = await Promise.all([

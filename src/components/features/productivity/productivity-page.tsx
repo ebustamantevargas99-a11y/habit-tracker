@@ -574,15 +574,11 @@ function TasksTab() {
 function TimeLogTab() {
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedProject, setSelectedProject] = useState('Proyecto A');
+  const [selectedProject, setSelectedProject] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Desarrollo');
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([
-    { id: '1', project: 'Proyecto A', category: 'Desarrollo', startTime: '09:00', endTime: '09:45', duration: 45 },
-    { id: '2', project: 'Proyecto B', category: 'Diseño', startTime: '10:00', endTime: '11:30', duration: 90 },
-    { id: '3', project: 'Proyecto A', category: 'Reunión', startTime: '11:45', endTime: '12:30', duration: 45 },
-    { id: '4', project: 'Proyecto C', category: 'Admin', startTime: '14:00', endTime: '15:15', duration: 75 },
-    { id: '5', project: 'Proyecto A', category: 'Desarrollo', startTime: '15:30', endTime: '17:00', duration: 90 },
-  ]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [newProjectInput, setNewProjectInput] = useState('');
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
 
   useEffect(() => {
     if (!isTimerRunning) return;
@@ -628,18 +624,48 @@ function TimeLogTab() {
         <div style={{ fontSize: '48px', fontWeight: 'bold', color: C.accent, marginBottom: '20px', fontFamily: 'monospace' }}>
           {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
         </div>
+        {/* Add project */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <input
+            value={newProjectInput}
+            onChange={e => setNewProjectInput(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' && newProjectInput.trim()) {
+                const name = newProjectInput.trim();
+                if (!projects.includes(name)) setProjects(p => [...p, name]);
+                setSelectedProject(name);
+                setNewProjectInput('');
+              }
+            }}
+            placeholder="Nuevo proyecto (Enter para agregar)..."
+            style={{ flex: 1, padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '13px', backgroundColor: C.warmWhite, color: C.dark }}
+          />
+          <button
+            onClick={() => {
+              const name = newProjectInput.trim();
+              if (name && !projects.includes(name)) setProjects(p => [...p, name]);
+              if (name) { setSelectedProject(name); setNewProjectInput(''); }
+            }}
+            style={{ padding: '8px 14px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
+          >
+            + Agregar
+          </button>
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '15px' }}>
           <div>
-            <label style={{ display: 'block', color: C.dark, marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>Proyecto</label>
+            <label style={{ display: 'block', color: C.dark, marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
+              Proyecto {projects.length === 0 && <span style={{ color: C.warning }}>(agrega uno arriba)</span>}
+            </label>
             <select
               value={selectedProject}
               onChange={e => setSelectedProject(e.target.value)}
-              style={{ width: '100%', padding: '8px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
+              style={{ width: '100%', padding: '8px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px', backgroundColor: C.warmWhite }}
             >
-              <option>Proyecto A</option>
-              <option>Proyecto B</option>
-              <option>Proyecto C</option>
-              <option>Proyecto D</option>
+              {projects.length === 0
+                ? <option value="">— sin proyectos —</option>
+                : projects.map(p => <option key={p} value={p}>{p}</option>)
+              }
             </select>
           </div>
           <div>
@@ -658,6 +684,7 @@ function TimeLogTab() {
           <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
             <button
               onClick={() => setIsTimerRunning(!isTimerRunning)}
+              disabled={!selectedProject}
               style={{
                 flex: 1,
                 padding: '10px',
@@ -665,7 +692,8 @@ function TimeLogTab() {
                 color: C.warmWhite,
                 border: 'none',
                 borderRadius: '6px',
-                cursor: 'pointer',
+                cursor: selectedProject ? 'pointer' : 'not-allowed',
+                opacity: selectedProject ? 1 : 0.5,
                 fontWeight: 'bold',
                 display: 'flex',
                 alignItems: 'center',
@@ -728,6 +756,7 @@ function TimeLogTab() {
                 <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Fin</th>
                 <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Duración</th>
                 <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Categoría</th>
+                <th style={{ padding: '12px' }}></th>
               </tr>
             </thead>
             <tbody>
@@ -741,6 +770,14 @@ function TimeLogTab() {
                     <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
                       {entry.category}
                     </span>
+                  </td>
+                  <td style={{ padding: '12px' }}>
+                    <button
+                      onClick={() => setTimeEntries(p => p.filter(e => e.id !== entry.id))}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '2px' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </td>
                 </tr>
               ))}

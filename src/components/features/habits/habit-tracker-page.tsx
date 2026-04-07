@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useHabitStore } from "@/stores/habit-store";
 import { Trash2, Plus, X } from "lucide-react";
 import {
@@ -70,8 +70,11 @@ const EMOJIS = ["⭐","🧘","💪","📚","💧","😴","💻","🏃","🎯","�
 export default function HabitTrackerPage() {
   const {
     habits, logs, isLoaded, isLoading,
-    toggleHabitToday, addHabit, removeHabit,
+    toggleHabitToday, addHabit, removeHabit, refresh,
   } = useHabitStore();
+
+  // Always fetch fresh data (streaks, logs) when opening this tab
+  useEffect(() => { refresh(); }, []);
 
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
