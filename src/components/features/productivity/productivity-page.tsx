@@ -53,19 +53,15 @@ export default function ProductivityPage() {
   const [activeTab, setActiveTab] = useState(0);
 
   return (
-    <div style={{ padding: '20px', backgroundColor: C.warmWhite, minHeight: '100vh' }}>
-      <h1 style={{ color: C.dark, fontFamily: 'Georgia, serif', marginBottom: '30px', fontSize: '32px' }}>
-        📊 Productividad
-      </h1>
-
+    <div style={{ backgroundColor: C.warmWhite }}>
       {/* Tab Navigation */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: `2px solid ${C.tan}`, paddingBottom: '10px' }}>
         {[
-          { label: '🍅 Pomodoro', icon: '🍅' },
-          { label: '📋 Proyectos', icon: '📋' },
-          { label: '✅ Tareas', icon: '✅' },
-          { label: '⏱️ Tiempo', icon: '⏱️' },
-          { label: '🔁 Hábitos', icon: '🔁' },
+          { label: '🍅 Pomodoro' },
+          { label: '📋 Proyectos' },
+          { label: '✅ Tareas' },
+          { label: '⏱️ Tiempo' },
+          { label: '🔁 Hábitos' },
         ].map((tab, idx) => (
           <button
             key={idx}
