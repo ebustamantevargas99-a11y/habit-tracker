@@ -9,8 +9,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // JWT session cookie — NextAuth sets one of these depending on HTTPS
+  // JWT session cookie — NextAuth v5 (Auth.js) uses "authjs.*" prefix
+  // Fallback to legacy "next-auth.*" prefix just in case
   const sessionToken =
+    request.cookies.get("authjs.session-token") ??
+    request.cookies.get("__Secure-authjs.session-token") ??
     request.cookies.get("next-auth.session-token") ??
     request.cookies.get("__Secure-next-auth.session-token");
 
