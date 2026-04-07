@@ -1191,7 +1191,7 @@ const DailyPlannerPage = () => {
   ];
 
   return (
-    <div style={{ backgroundColor: C.paper, minHeight: '100vh', padding: '2rem' }}>
+    <div style={{ backgroundColor: C.paper }}
       {/* Header */}
       <div style={{ marginBottom: '2rem' }}>
         <h1 style={{ fontSize: '2.5rem', fontFamily: 'Georgia, serif', fontWeight: '400', color: C.dark, margin: '0 0 0.5rem 0' }}>

@@ -40,11 +40,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     <div
       style={{
         width: isOpen ? "260px" : "68px",
+        minWidth: isOpen ? "260px" : "68px",
+        flexShrink: 0,
         backgroundColor: "var(--color-dark)",
         color: "var(--color-cream)",
         display: "flex",
         flexDirection: "column",
-        transition: "width 0.3s ease",
+        transition: "width 0.3s ease, min-width 0.3s ease",
         borderRight: "1px solid rgba(212, 190, 160, 0.2)",
         overflowY: "auto",
         overflowX: "hidden",
