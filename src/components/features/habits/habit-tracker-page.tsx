@@ -27,6 +27,31 @@ const TIME_LABELS: Record<string, string> = {
 
 const CATEGORY_COLORS = ["#B8860B","#7A9E3E","#5A8FA8","#D4943A","#C0544F","#6B4226","#A0845C","#8B6542"];
 
+const HABIT_CATEGORIES = [
+  { value: "Bienestar",     label: "🧘 Bienestar" },
+  { value: "Fitness",       label: "💪 Fitness" },
+  { value: "Nutrición",     label: "🥗 Nutrición" },
+  { value: "Productividad", label: "💻 Productividad" },
+  { value: "Aprendizaje",   label: "📚 Aprendizaje" },
+  { value: "Finanzas",      label: "💰 Finanzas" },
+  { value: "Relaciones",    label: "❤️ Relaciones" },
+  { value: "Creatividad",   label: "🎨 Creatividad" },
+  { value: "Mindfulness",   label: "🌿 Mindfulness" },
+  { value: "Sueño",         label: "😴 Sueño" },
+  { value: "Otro",          label: "⭐ Otro" },
+];
+
+// 0=Dom,1=Lun,2=Mar,3=Mié,4=Jue,5=Vie,6=Sáb (JS getDay order)
+const WEEK_DAYS = [
+  { idx: 1, label: "L" },
+  { idx: 2, label: "M" },
+  { idx: 3, label: "M" },
+  { idx: 4, label: "J" },
+  { idx: 5, label: "V" },
+  { idx: 6, label: "S" },
+  { idx: 0, label: "D" },
+];
+
 const STRENGTH_LABEL = (rate: number) => {
   if (rate === 0) return "Nuevo";
   if (rate < 0.3) return "En Progreso";
@@ -52,11 +77,24 @@ export default function HabitTrackerPage() {
   const [form, setForm] = useState({
     name: "",
     icon: "⭐",
-    category: "",
+    category: "Bienestar",
     timeOfDay: "morning" as TimeOfDay,
     frequency: "daily" as "daily" | "weekly" | "custom",
+    customDays: [1, 2, 3, 4, 5] as number[], // default: lunes-viernes
   });
   const [saving, setSaving] = useState(false);
+
+  const toggleCustomDay = (dayIdx: number) => {
+    setForm((f) => {
+      const has = f.customDays.includes(dayIdx);
+      return {
+        ...f,
+        customDays: has
+          ? f.customDays.filter((d) => d !== dayIdx)
+          : [...f.customDays, dayIdx].sort((a, b) => a - b),
+      };
+    });
+  };
 
   const today = new Date().toISOString().split("T")[0];
   const todayLogs = logs.filter((l) => l.date === today && l.completed);
@@ -114,19 +152,25 @@ export default function HabitTrackerPage() {
   }, [activeHabits]);
 
   const handleAdd = async () => {
-    if (!form.name.trim() || !form.category.trim()) return;
+    if (!form.name.trim()) return;
+    const targetDays =
+      form.frequency === "daily"
+        ? [0, 1, 2, 3, 4, 5, 6]
+        : form.customDays.length > 0
+        ? form.customDays
+        : [0, 1, 2, 3, 4, 5, 6];
     setSaving(true);
     try {
       await addHabit({
         name: form.name.trim(),
         icon: form.icon,
-        category: form.category.trim(),
+        category: form.category,
         timeOfDay: form.timeOfDay,
         frequency: form.frequency,
-        targetDays: [0, 1, 2, 3, 4, 5, 6],
+        targetDays,
         isActive: true,
       });
-      setForm({ name: "", icon: "⭐", category: "", timeOfDay: "morning", frequency: "daily" });
+      setForm({ name: "", icon: "⭐", category: "Bienestar", timeOfDay: "morning", frequency: "daily", customDays: [1, 2, 3, 4, 5] });
       setShowForm(false);
     } finally {
       setSaving(false);
@@ -196,37 +240,38 @@ export default function HabitTrackerPage() {
           backgroundColor: C.paper, border: `2px solid ${C.tan}`,
           borderRadius: "12px", padding: "1.5rem", marginBottom: "2rem",
         }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.25rem" }}>
             <h3 style={{ margin: 0, color: C.dark, fontFamily: "Georgia, serif", fontSize: "1.1rem" }}>Nuevo hábito</h3>
             <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: C.warm }}>
               <X size={20} />
             </button>
           </div>
 
-          {/* Emoji picker */}
-          <div style={{ marginBottom: "1rem" }}>
-            <p style={{ fontSize: "0.8rem", color: C.warm, margin: "0 0 0.5rem 0" }}>Icono</p>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-              {EMOJIS.map((e) => (
-                <button key={e} onClick={() => setForm((f) => ({ ...f, icon: e }))} style={{
-                  fontSize: "1.3rem", width: "36px", height: "36px", borderRadius: "8px",
-                  border: `2px solid ${form.icon === e ? C.accent : C.lightTan}`,
-                  backgroundColor: form.icon === e ? C.accentGlow : "transparent",
-                  cursor: "pointer",
-                }}>
-                  {e}
-                </button>
-              ))}
+          {/* Emoji + Nombre en la misma fila */}
+          <div style={{ display: "grid", gridTemplateColumns: "80px 1fr", gap: "1rem", marginBottom: "1rem" }}>
+            <div>
+              <label style={{ fontSize: "0.8rem", color: C.warm, display: "block", marginBottom: "0.4rem" }}>Emoji</label>
+              <input
+                value={form.icon}
+                onChange={(e) => setForm((f) => ({ ...f, icon: e.target.value }))}
+                placeholder="⭐"
+                maxLength={4}
+                style={{
+                  width: "100%", padding: "0.6rem", textAlign: "center",
+                  border: `2px solid ${C.tan}`, borderRadius: "8px",
+                  backgroundColor: C.warmWhite, color: C.dark,
+                  fontSize: "1.6rem", boxSizing: "border-box", cursor: "text",
+                }}
+              />
             </div>
-          </div>
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
             <div>
               <label style={{ fontSize: "0.8rem", color: C.warm, display: "block", marginBottom: "0.4rem" }}>Nombre *</label>
               <input
                 value={form.name}
                 onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                placeholder="ej. Meditación"
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                placeholder="ej. Meditación matutina"
+                autoFocus
                 style={{
                   width: "100%", padding: "0.6rem 0.75rem",
                   border: `1px solid ${C.tan}`, borderRadius: "6px",
@@ -235,19 +280,25 @@ export default function HabitTrackerPage() {
                 }}
               />
             </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
             <div>
               <label style={{ fontSize: "0.8rem", color: C.warm, display: "block", marginBottom: "0.4rem" }}>Categoría *</label>
-              <input
+              <select
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                placeholder="ej. Bienestar"
                 style={{
                   width: "100%", padding: "0.6rem 0.75rem",
                   border: `1px solid ${C.tan}`, borderRadius: "6px",
                   backgroundColor: C.warmWhite, color: C.dark, fontSize: "0.95rem",
                   boxSizing: "border-box",
                 }}
-              />
+              >
+                {HABIT_CATEGORIES.map((c) => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label style={{ fontSize: "0.8rem", color: C.warm, display: "block", marginBottom: "0.4rem" }}>Momento del día</label>
@@ -279,16 +330,52 @@ export default function HabitTrackerPage() {
                   boxSizing: "border-box",
                 }}
               >
-                <option value="daily">Diario</option>
-                <option value="weekly">Semanal</option>
+                <option value="daily">Todos los días</option>
+                <option value="custom">Días específicos</option>
               </select>
             </div>
           </div>
 
+          {/* Day-of-week selector — solo si frecuencia es custom */}
+          {form.frequency === "custom" && (
+            <div style={{ marginBottom: "1rem" }}>
+              <label style={{ fontSize: "0.8rem", color: C.warm, display: "block", marginBottom: "0.5rem" }}>
+                ¿Qué días? {form.customDays.length === 0 && <span style={{ color: C.danger }}>— selecciona al menos 1</span>}
+              </label>
+              <div style={{ display: "flex", gap: "0.4rem" }}>
+                {WEEK_DAYS.map(({ idx, label }) => {
+                  const active = form.customDays.includes(idx);
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => toggleCustomDay(idx)}
+                      style={{
+                        width: "40px", height: "40px", borderRadius: "50%",
+                        border: `2px solid ${active ? C.accent : C.tan}`,
+                        backgroundColor: active ? C.accent : C.paper,
+                        color: active ? C.paper : C.warm,
+                        fontWeight: "700", fontSize: "0.85rem",
+                        cursor: "pointer", transition: "all 0.15s",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: "0.75rem", color: C.warm, margin: "0.5rem 0 0 0" }}>
+                {form.customDays.length > 0
+                  ? `Seleccionados: ${form.customDays.map(d => ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"][d]).join(", ")}`
+                  : "Ningún día seleccionado"}
+              </p>
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: "0.75rem" }}>
             <button
               onClick={handleAdd}
-              disabled={saving || !form.name.trim() || !form.category.trim()}
+              disabled={saving || !form.name.trim() || (form.frequency === "custom" && form.customDays.length === 0)}
               style={{
                 backgroundColor: C.accent, color: C.paper,
                 border: "none", borderRadius: "8px", padding: "0.65rem 1.5rem",
