@@ -618,13 +618,40 @@ function RelacionesTab() {
     Trabajo: colors.success,
   };
 
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [newNombre, setNewNombre] = useState('');
+  const [newCategoria, setNewCategoria] = useState<'Familia' | 'Amigos' | 'Trabajo'>('Amigos');
+  const [newProximo, setNewProximo] = useState('');
+  const [newNotas, setNewNotas] = useState('');
+
+  const addContact = () => {
+    if (!newNombre.trim()) return;
+    const today = new Date().toISOString().split('T')[0];
+    setContacts([...contacts, {
+      id: Date.now().toString(),
+      nombre: newNombre,
+      categoria: newCategoria,
+      ultimoContacto: today,
+      proximoContacto: newProximo || today,
+      notas: newNotas,
+    }]);
+    setNewNombre(''); setNewCategoria('Amigos'); setNewProximo(''); setNewNotas('');
+    setShowAddContact(false);
+  };
+
   const deleteContact = (id: string) => {
     setContacts(contacts.filter((c) => c.id !== id));
+  };
+
+  const inputSt: React.CSSProperties = {
+    padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`,
+    fontSize: '14px', backgroundColor: colors.cream, width: '100%', boxSizing: 'border-box',
   };
 
   return (
     <div>
       <button
+        onClick={() => setShowAddContact(!showAddContact)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -637,7 +664,7 @@ function RelacionesTab() {
           cursor: "pointer",
           fontSize: "14px",
           fontWeight: "600",
-          marginBottom: "24px",
+          marginBottom: "16px",
           transition: "background-color 0.2s ease",
         }}
         onMouseEnter={(e) => {
@@ -650,6 +677,21 @@ function RelacionesTab() {
         <Plus size={18} />
         Agregar contacto
       </button>
+
+      {showAddContact && (
+        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input placeholder="Nombre *" value={newNombre} onChange={e => setNewNombre(e.target.value)} style={inputSt} />
+          <select value={newCategoria} onChange={e => setNewCategoria(e.target.value as 'Familia' | 'Amigos' | 'Trabajo')} style={inputSt}>
+            <option>Familia</option><option>Amigos</option><option>Trabajo</option>
+          </select>
+          <input type="date" placeholder="Próximo contacto" value={newProximo} onChange={e => setNewProximo(e.target.value)} style={inputSt} />
+          <input placeholder="Notas" value={newNotas} onChange={e => setNewNotas(e.target.value)} style={inputSt} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={addContact} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
+            <button onClick={() => setShowAddContact(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       <div
         style={{
@@ -852,6 +894,21 @@ function LecturaTab() {
     },
   ]);
 
+  const [showAddBook, setShowAddBook] = useState(false);
+  const [newTituloL, setNewTituloL] = useState('');
+  const [newAutor, setNewAutor] = useState('');
+  const [newTotal, setNewTotal] = useState('');
+  const [newEstadoL, setNewEstadoL] = useState<'Leyendo' | 'Terminado' | 'Pendiente'>('Pendiente');
+
+  const addBook = () => {
+    if (!newTituloL.trim()) return;
+    setBooks([...books, { id: Date.now().toString(), titulo: newTituloL, autor: newAutor, paginasLeidas: 0, paginasTotal: parseInt(newTotal) || 0, clasificacion: 0, estado: newEstadoL }]);
+    setNewTituloL(''); setNewAutor(''); setNewTotal(''); setNewEstadoL('Pendiente');
+    setShowAddBook(false);
+  };
+
+  const deleteBook = (id: string) => setBooks(books.filter(b => b.id !== id));
+
   const currentBook = books.find((b) => b.estado === "Leyendo");
   const progressPercent = currentBook
     ? Math.round((currentBook.paginasLeidas / currentBook.paginasTotal) * 100)
@@ -876,6 +933,28 @@ function LecturaTab() {
 
   return (
     <div>
+      {/* Add Book Button */}
+      <button
+        onClick={() => setShowAddBook(!showAddBook)}
+        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: colors.accent, color: colors.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}
+      >
+        <Plus size={18} /> Agregar libro
+      </button>
+      {showAddBook && (
+        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input placeholder="Título *" value={newTituloL} onChange={e => setNewTituloL(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <input placeholder="Autor" value={newAutor} onChange={e => setNewAutor(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <input placeholder="Total de páginas" type="number" value={newTotal} onChange={e => setNewTotal(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <select value={newEstadoL} onChange={e => setNewEstadoL(e.target.value as 'Leyendo' | 'Terminado' | 'Pendiente')} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }}>
+            <option>Pendiente</option><option>Leyendo</option><option>Terminado</option>
+          </select>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={addBook} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
+            <button onClick={() => setShowAddBook(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+
       {/* Currently Reading Card */}
       {currentBook && (
         <div
@@ -1071,33 +1150,13 @@ function LecturaTab() {
                 {renderStars(book.clasificacion)}
               </div>
 
-              {/* Edit Button */}
+              {/* Delete Button */}
               <button
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "8px 12px",
-                  backgroundColor: colors.lightTan,
-                  border: "none",
-                  borderRadius: "6px",
-                  color: colors.dark,
-                  cursor: "pointer",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  transition: "background-color 0.2s ease",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    colors.tan;
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor =
-                    colors.lightTan;
-                }}
+                onClick={() => { if (window.confirm(`¿Eliminar "${book.titulo}"?`)) deleteBook(book.id); }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", backgroundColor: colors.dangerLight, border: "none", borderRadius: "6px", color: colors.danger, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
               >
-                <Edit2 size={14} />
-                Actualizar
+                <Trash2 size={14} />
+                Eliminar
               </button>
             </div>
           );
@@ -1160,9 +1219,21 @@ function PeliculasTab() {
     },
   ]);
 
-  const [filterStatus, setFilterStatus] = useState<"Todos" | "Visto" | "Viendo" | "Pendiente">(
-    "Todos"
-  );
+  const [filterStatus, setFilterStatus] = useState<"Todos" | "Visto" | "Viendo" | "Pendiente">("Todos");
+  const [showAddMovie, setShowAddMovie] = useState(false);
+  const [newTitulo, setNewTitulo] = useState('');
+  const [newGenero, setNewGenero] = useState('');
+  const [newEstado, setNewEstado] = useState<'Visto' | 'Viendo' | 'Pendiente'>('Pendiente');
+  const [newNotas, setNewNotas] = useState('');
+
+  const addMovie = () => {
+    if (!newTitulo.trim()) return;
+    setMovies([...movies, { id: Date.now().toString(), titulo: newTitulo, genero: newGenero, clasificacion: 0, estado: newEstado, notas: newNotas }]);
+    setNewTitulo(''); setNewGenero(''); setNewEstado('Pendiente'); setNewNotas('');
+    setShowAddMovie(false);
+  };
+
+  const deleteMovie = (id: string) => setMovies(movies.filter(m => m.id !== id));
 
   const filteredMovies =
     filterStatus === "Todos"
@@ -1250,6 +1321,7 @@ function PeliculasTab() {
 
       {/* Add Button */}
       <button
+        onClick={() => setShowAddMovie(!showAddMovie)}
         style={{
           display: "flex",
           alignItems: "center",
@@ -1262,7 +1334,7 @@ function PeliculasTab() {
           cursor: "pointer",
           fontSize: "14px",
           fontWeight: "600",
-          marginBottom: "24px",
+          marginBottom: "16px",
           transition: "background-color 0.2s ease",
         }}
         onMouseEnter={(e) => {
@@ -1275,6 +1347,21 @@ function PeliculasTab() {
         <Plus size={18} />
         Agregar película/serie
       </button>
+
+      {showAddMovie && (
+        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <input placeholder="Título *" value={newTitulo} onChange={e => setNewTitulo(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <input placeholder="Género" value={newGenero} onChange={e => setNewGenero(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <select value={newEstado} onChange={e => setNewEstado(e.target.value as 'Visto' | 'Viendo' | 'Pendiente')} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }}>
+            <option>Pendiente</option><option>Viendo</option><option>Visto</option>
+          </select>
+          <input placeholder="Notas" value={newNotas} onChange={e => setNewNotas(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={addMovie} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
+            <button onClick={() => setShowAddMovie(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        </div>
+      )}
 
       {/* Movies Grid */}
       <div
@@ -1364,33 +1451,13 @@ function PeliculasTab() {
               </p>
             </div>
 
-            {/* Edit Button */}
+            {/* Delete Button */}
             <button
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "8px 12px",
-                backgroundColor: colors.lightTan,
-                border: "none",
-                borderRadius: "6px",
-                color: colors.dark,
-                cursor: "pointer",
-                fontSize: "12px",
-                fontWeight: "600",
-                transition: "background-color 0.2s ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  colors.tan;
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  colors.lightTan;
-              }}
+              onClick={() => { if (window.confirm(`¿Eliminar "${movie.titulo}"?`)) deleteMovie(movie.id); }}
+              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", backgroundColor: colors.dangerLight, border: "none", borderRadius: "6px", color: colors.danger, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
             >
-              <Edit2 size={14} />
-              Editar
+              <Trash2 size={14} />
+              Eliminar
             </button>
           </div>
         ))}

@@ -387,20 +387,38 @@ function KanbanTab() {
                   </div>
                   {card.dueDate && <p style={{ color: C.tan, fontSize: '12px', margin: '5px 0' }}>Vence: {card.dueDate}</p>}
                   <div style={{ display: 'flex', gap: '5px' }}>
-                    {column !== 'inProgress' && (
+                    {column === 'todo' && (
                       <button
-                        onClick={() => moveCard(card.id, column, column === 'todo' ? 'inProgress' : 'done')}
+                        onClick={() => moveCard(card.id, column, 'inProgress')}
                         style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
                       >
                         <ChevronRight size={14} /> Siguiente
                       </button>
                     )}
-                    {column !== 'todo' && (
+                    {column === 'inProgress' && (
+                      <>
+                        <button
+                          onClick={() => moveCard(card.id, column, 'todo')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        >
+                          <ChevronLeft size={14} /> Atrás
+                        </button>
+                        <button
+                          onClick={() => moveCard(card.id, column, 'done')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        >
+                          <ChevronRight size={14} /> Siguiente
+                        </button>
+                      </>
+                    )}
+                    {column === 'done' && (
                       <button
-                        onClick={() => moveCard(card.id, column, column === 'inProgress' ? 'todo' : 'inProgress')}
-                        style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        onClick={() => {
+                          if (window.confirm(`¿Eliminar "${card.title}"?`)) deleteCard(card.id);
+                        }}
+                        style={{ flex: 1, padding: '6px', backgroundColor: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}`, borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
                       >
-                        <ChevronLeft size={14} /> Atrás
+                        <Trash2 size={14} /> Eliminar
                       </button>
                     )}
                   </div>

@@ -1229,7 +1229,7 @@ const DailyPlannerPage = () => {
 
       {/* Tab Content */}
       <div style={{ backgroundColor: C.paper, borderRadius: '0 0 12px 12px' }}>
-        {tabs[activeTab].component()}
+        {(() => { const ActiveTab = tabs[activeTab].component; return <ActiveTab />; })()}
       </div>
     </div>
   );
