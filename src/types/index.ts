@@ -38,6 +38,7 @@ export interface Habit {
   streakCurrent: number;
   streakBest: number;
   strength: number; // 0-100
+  isActive: boolean;
   createdAt: string;
 }
 

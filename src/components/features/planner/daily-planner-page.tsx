@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { usePlannerStore, hourToTime } from '@/stores/planner-store';
+import { useHabitStore } from '@/stores/habit-store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { ChevronLeft, ChevronRight, Plus, Trash2, CheckCircle, Circle } from 'lucide-react';
 
@@ -69,6 +70,7 @@ const getCategoryColor = (category: string): string => {
 // ============= DAILY PLANNER TAB =============
 const DailyPlannerTab = () => {
   const { savePlan, isSaving } = usePlannerStore();
+  const { habits, logs, toggleHabitToday } = useHabitStore();
 
   const [priorities, setPriorities] = useState<Priority[]>([
     { id: '1', title: 'Completar proyecto de análisis financiero', completed: false },
@@ -124,6 +126,17 @@ const DailyPlannerTab = () => {
   const dailyProgress = Math.round((completedPriorities / priorities.length) * 100);
   const totalHours = blocks.reduce((sum, b) => sum + b.duration, 0);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const todayDow = new Date().getDay(); // 0=Sun..6=Sat
+  const todayHabits = habits.filter(h => {
+    if (!h.isActive) return false;
+    if (h.frequency === 'daily') return true;
+    return Array.isArray(h.targetDays) && h.targetDays.includes(todayDow);
+  });
+  const todayLogs = logs.filter(l => l.date === todayStr);
+  const completedHabitIds = new Set(todayLogs.filter(l => l.completed).map(l => l.habitId));
+  const completedHabitsCount = todayHabits.filter(h => completedHabitIds.has(h.id)).length;
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '2rem' }}>
       <div>
@@ -170,6 +183,82 @@ const DailyPlannerTab = () => {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Hábitos de Hoy */}
+        <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.2rem', fontFamily: 'Georgia, serif', fontWeight: '400', color: C.dark, margin: '0' }}>
+              ✅ Hábitos de Hoy
+            </h3>
+            <span style={{
+              backgroundColor: completedHabitsCount === todayHabits.length && todayHabits.length > 0 ? C.successLight : C.accentGlow,
+              color: completedHabitsCount === todayHabits.length && todayHabits.length > 0 ? C.success : C.accent,
+              borderRadius: '20px', padding: '0.25rem 0.75rem', fontSize: '0.85rem', fontWeight: '700'
+            }}>
+              {completedHabitsCount}/{todayHabits.length}
+            </span>
+          </div>
+          {todayHabits.length === 0 ? (
+            <p style={{ color: C.warm, fontSize: '0.9rem', textAlign: 'center', padding: '1rem 0' }}>
+              No tienes hábitos programados para hoy
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {todayHabits.map(habit => {
+                const done = completedHabitIds.has(habit.id);
+                return (
+                  <button
+                    key={habit.id}
+                    onClick={() => toggleHabitToday(habit.id)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: '0.75rem',
+                      backgroundColor: done ? C.successLight : C.paper,
+                      border: `2px solid ${done ? C.success : C.tan}`,
+                      borderRadius: '10px', padding: '0.75rem 1rem',
+                      cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{habit.icon || '⭐'}</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{
+                        margin: '0', fontSize: '0.95rem', fontWeight: '600',
+                        color: C.dark, textDecoration: done ? 'line-through' : 'none'
+                      }}>
+                        {habit.name}
+                      </p>
+                      <p style={{ margin: '0', fontSize: '0.75rem', color: C.warm }}>
+                        {habit.category} · Racha: {habit.streakCurrent} días
+                      </p>
+                    </div>
+                    <div style={{
+                      width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
+                      backgroundColor: done ? C.success : 'transparent',
+                      border: `2px solid ${done ? C.success : C.tan}`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {done && <span style={{ color: C.paper, fontSize: '0.9rem', fontWeight: '700' }}>✓</span>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+          {todayHabits.length > 0 && (
+            <div style={{ marginTop: '1rem' }}>
+              <div style={{ height: '6px', backgroundColor: C.lightTan, borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: '3px',
+                  width: `${todayHabits.length > 0 ? (completedHabitsCount / todayHabits.length) * 100 : 0}%`,
+                  backgroundColor: completedHabitsCount === todayHabits.length ? C.success : C.accent,
+                  transition: 'width 0.4s ease',
+                }} />
+              </div>
+              <p style={{ fontSize: '0.8rem', color: C.warm, margin: '0.4rem 0 0 0', textAlign: 'right' }}>
+                {todayHabits.length > 0 ? Math.round((completedHabitsCount / todayHabits.length) * 100) : 0}% completado
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Time Blocking Grid */}
@@ -274,6 +363,12 @@ const DailyPlannerTab = () => {
             <div style={{ backgroundColor: C.warningLight, borderRadius: '8px', padding: '0.75rem', textAlign: 'center' }}>
               <p style={{ fontSize: '0.8rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Prioridades</p>
               <p style={{ fontSize: '1.6rem', fontWeight: '700', color: C.warning, margin: '0' }}>{completedPriorities}/3</p>
+            </div>
+            <div style={{ backgroundColor: C.lightTan, borderRadius: '8px', padding: '0.75rem', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.8rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Hábitos Hoy</p>
+              <p style={{ fontSize: '1.6rem', fontWeight: '700', color: C.brown, margin: '0' }}>
+                {completedHabitsCount}/{todayHabits.length}
+              </p>
             </div>
           </div>
         </div>
@@ -449,13 +544,13 @@ const WeeklyPlannerTab = () => {
 
 // ============= MONTHLY PLANNER TAB =============
 const MonthlyPlannerTab = () => {
+  const { habits, logs } = useHabitStore();
   const [monthlyGoals, setMonthlyGoals] = useState<MonthlyGoal[]>([
     { id: '1', title: 'Completar curso de análisis avanzado' },
     { id: '2', title: 'Terminar proyecto principal' },
     { id: '3', title: 'Leer 2 libros de desarrollo personal' },
   ]);
 
-  const [monthProductivity, setMonthProductivity] = useState(82);
   const today = new Date();
   const month = today.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
 
@@ -468,19 +563,47 @@ const MonthlyPlannerTab = () => {
     return dayNum > 0 && dayNum <= daysInMonth ? dayNum : null;
   });
 
-  const kpiCards = [
-    { label: 'Horas Productivas', value: '156', color: C.success },
-    { label: 'Hábitos Completados', value: '24/28', color: C.info },
-    { label: 'Sesiones Ejercicio', value: '18', color: C.warning },
-    { label: 'Libros Leídos', value: '1.5', color: C.accent },
-  ];
-
-  const productivityLevelColor = (day: number | null): string => {
-    if (day === null) return 'transparent';
-    const level = Math.floor(Math.random() * 5);
-    const colors = [C.paper, C.accentGlow, C.successLight, C.infoLight, C.warningLight];
-    return colors[level];
+  // Real habit completion rate per day
+  const getHabitRateForDay = (day: number): number => {
+    const d = new Date(today.getFullYear(), today.getMonth(), day);
+    const dateStr = d.toISOString().split('T')[0];
+    const dow = d.getDay();
+    const scheduled = habits.filter(h => {
+      if (!h.isActive) return false;
+      if (h.frequency === 'daily') return true;
+      return Array.isArray(h.targetDays) && h.targetDays.includes(dow);
+    });
+    if (scheduled.length === 0) return -1; // no habits scheduled
+    const dayLogs = logs.filter(l => l.date === dateStr);
+    const completed = scheduled.filter(h => dayLogs.some(l => l.habitId === h.id && l.completed)).length;
+    return completed / scheduled.length;
   };
+
+  const habitCompletionColor = (day: number | null): string => {
+    if (day === null) return 'transparent';
+    if (day > today.getDate() && today.getMonth() === today.getMonth()) return C.paper;
+    const rate = getHabitRateForDay(day);
+    if (rate < 0) return C.paper;            // no habits scheduled
+    if (rate === 0) return C.dangerLight;    // nothing done
+    if (rate < 0.4) return C.warningLight;  // <40%
+    if (rate < 0.7) return C.infoLight;     // 40-70%
+    if (rate < 1.0) return C.successLight;  // 70-99%
+    return C.accentGlow;                     // 100% ✓
+  };
+
+  // Monthly stats from real data
+  const monthPrefix = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+  const monthLogs = logs.filter(l => l.date.startsWith(monthPrefix) && l.completed);
+  const distinctDaysWithCompletion = new Set(
+    monthLogs.map(l => l.date)
+  ).size;
+
+  const kpiCards = [
+    { label: 'Días con Hábitos', value: String(distinctDaysWithCompletion), color: C.success },
+    { label: 'Hábitos Completados', value: String(monthLogs.length), color: C.info },
+    { label: 'Hábitos Activos', value: String(habits.filter(h => h.isActive).length), color: C.warning },
+    { label: 'Mejor Racha', value: `${Math.max(0, ...habits.map(h => h.streakBest))}d`, color: C.accent },
+  ];
 
   return (
     <div>
@@ -492,10 +615,10 @@ const MonthlyPlannerTab = () => {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
         {kpiCards.map((kpi, idx) => (
           <div key={idx} style={{
-            backgroundColor: kpi.color, opacity: 0.2, borderRadius: '12px',
-            border: `2px solid ${kpi.color}`, padding: '1.5rem', textAlign: 'center'
+            backgroundColor: C.lightCream, borderRadius: '12px',
+            border: `2px solid ${C.tan}`, padding: '1.5rem', textAlign: 'center'
           }}>
-            <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.5rem 0' }}>
+            <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 0.5rem 0' }}>
               {kpi.label}
             </p>
             <p style={{ fontSize: '2rem', fontWeight: '700', color: kpi.color, margin: '0' }}>
@@ -521,19 +644,35 @@ const MonthlyPlannerTab = () => {
                   {day}
                 </div>
               ))}
-              {calendarDays.map((day, idx) => (
-                <div key={idx} style={{
-                  backgroundColor: productivityLevelColor(day),
-                  border: `1px solid ${C.lightTan}`, borderRadius: '8px',
-                  padding: '0.75rem', textAlign: 'center', minHeight: '50px',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: day ? 'pointer' : 'default',
-                  fontWeight: day === today.getDate() ? '700' : '400',
-                  color: day === today.getDate() ? C.accent : C.dark
-                }}>
-                  {day}
-                </div>
-              ))}
+              {calendarDays.map((day, idx) => {
+                const bg = habitCompletionColor(day);
+                const isToday = day === today.getDate();
+                const rate = day ? getHabitRateForDay(day) : -1;
+                return (
+                  <div key={idx} style={{
+                    backgroundColor: bg,
+                    border: `2px solid ${isToday ? C.accent : C.lightTan}`,
+                    borderRadius: '8px', padding: '0.5rem',
+                    textAlign: 'center', minHeight: '52px',
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', justifyContent: 'center', gap: '2px',
+                    cursor: day ? 'pointer' : 'default',
+                  }}>
+                    <span style={{
+                      fontWeight: isToday ? '700' : '400',
+                      fontSize: '0.9rem',
+                      color: isToday ? C.accent : C.dark
+                    }}>
+                      {day}
+                    </span>
+                    {day && rate >= 0 && (
+                      <span style={{ fontSize: '0.65rem', color: C.warm }}>
+                        {Math.round(rate * 100)}%
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
 
@@ -559,43 +698,58 @@ const MonthlyPlannerTab = () => {
 
         {/* Stats Sidebar */}
         <div>
-          <div style={{ backgroundColor: C.lightCream, border: `2px solid ${C.tan}`, borderRadius: '12px', padding: '1.5rem' }}>
+          <div style={{ backgroundColor: C.lightCream, border: `2px solid ${C.tan}`, borderRadius: '12px', padding: '1.5rem', marginBottom: '1rem' }}>
             <h3 style={{ fontSize: '0.95rem', fontFamily: 'Georgia, serif', fontWeight: '400', color: C.dark, margin: '0 0 1.5rem 0', textAlign: 'center' }}>
               Resumen del Mes
             </h3>
-            <div style={{
-              backgroundColor: C.accentGlow, borderRadius: '12px', padding: '1.5rem',
-              textAlign: 'center', marginBottom: '1.5rem'
-            }}>
-              <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.5rem 0' }}>
-                Productividad
-              </p>
-              <p style={{ fontSize: '2.5rem', fontWeight: '700', color: C.accent, margin: '0' }}>
-                {monthProductivity}%
-              </p>
-            </div>
-            <div style={{
-              backgroundColor: C.successLight, borderRadius: '8px', padding: '1rem',
-              textAlign: 'center', marginBottom: '1rem'
-            }}>
-              <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>
-                Días Exitosos
-              </p>
-              <p style={{ fontSize: '1.8rem', fontWeight: '700', color: C.success, margin: '0' }}>
-                24/30
-              </p>
-            </div>
-            <div style={{
-              backgroundColor: C.infoLight, borderRadius: '8px', padding: '1rem',
-              textAlign: 'center'
-            }}>
-              <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>
-                Racha Actual
-              </p>
-              <p style={{ fontSize: '1.8rem', fontWeight: '700', color: C.info, margin: '0' }}>
-                8 días
-              </p>
-            </div>
+            {(() => {
+              const totalActiveHabits = habits.filter(h => h.isActive).length;
+              const daysElapsed = today.getDate();
+              const possibleLogs = totalActiveHabits * daysElapsed;
+              const monthPct = possibleLogs > 0 ? Math.round((monthLogs.length / possibleLogs) * 100) : 0;
+              const bestStreak = Math.max(0, ...habits.map(h => h.streakCurrent));
+              const perfectDays = Array.from({ length: daysElapsed }, (_, i) => i + 1).filter(d => {
+                const rate = getHabitRateForDay(d);
+                return rate >= 1;
+              }).length;
+              return (
+                <>
+                  <div style={{ backgroundColor: C.accentGlow, borderRadius: '12px', padding: '1.5rem', textAlign: 'center', marginBottom: '1rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Tasa de Completación</p>
+                    <p style={{ fontSize: '2.5rem', fontWeight: '700', color: C.accent, margin: '0' }}>{monthPct}%</p>
+                  </div>
+                  <div style={{ backgroundColor: C.successLight, borderRadius: '8px', padding: '1rem', textAlign: 'center', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Días Perfectos</p>
+                    <p style={{ fontSize: '1.8rem', fontWeight: '700', color: C.success, margin: '0' }}>{perfectDays}/{daysElapsed}</p>
+                  </div>
+                  <div style={{ backgroundColor: C.infoLight, borderRadius: '8px', padding: '1rem', textAlign: 'center', marginBottom: '0.75rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Mejor Racha Activa</p>
+                    <p style={{ fontSize: '1.8rem', fontWeight: '700', color: C.info, margin: '0' }}>{bestStreak} días</p>
+                  </div>
+                  <div style={{ backgroundColor: C.warningLight, borderRadius: '8px', padding: '1rem', textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.85rem', color: C.dark, margin: '0 0 0.25rem 0' }}>Completados este mes</p>
+                    <p style={{ fontSize: '1.8rem', fontWeight: '700', color: C.warning, margin: '0' }}>{monthLogs.length}</p>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+          {/* Legend */}
+          <div style={{ backgroundColor: C.warmWhite, border: `1px solid ${C.lightTan}`, borderRadius: '10px', padding: '1rem' }}>
+            <p style={{ fontSize: '0.8rem', fontWeight: '700', color: C.dark, margin: '0 0 0.75rem 0' }}>Leyenda del calendario</p>
+            {[
+              { color: C.accentGlow, label: '100% — Día perfecto' },
+              { color: C.successLight, label: '70–99% — Muy bien' },
+              { color: C.infoLight, label: '40–69% — En progreso' },
+              { color: C.warningLight, label: '1–39% — Poco' },
+              { color: C.dangerLight, label: '0% — Sin completar' },
+              { color: C.paper, label: 'Sin hábitos ese día' },
+            ].map(({ color, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                <div style={{ width: '16px', height: '16px', borderRadius: '4px', backgroundColor: color, border: `1px solid ${C.tan}`, flexShrink: 0 }} />
+                <span style={{ fontSize: '0.75rem', color: C.warm }}>{label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
