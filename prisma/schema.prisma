@@ -1,0 +1,387 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ─── Auth (NextAuth required tables) ──────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  accounts        Account[]
+  sessions        Session[]
+  profile         UserProfile?
+  habits          Habit[]
+  habitLogs       HabitLog[]
+  workouts        Workout[]
+  exercises       Exercise[]
+  personalRecords PersonalRecord[]
+  bodyMetrics     BodyMetric[]
+  transactions    Transaction[]
+  budgets         Budget[]
+  bills           Bill[]
+  subscriptions   Subscription[]
+  wishlistItems   WishlistItem[]
+  moodLogs        MoodLog[]
+  sleepLogs       SleepLog[]
+  dailyPlans      DailyPlan[]
+  badges          UserBadge[]
+  gamification    Gamification?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── User Profile & Settings ──────────────────────────────────────────────────
+
+model UserProfile {
+  id               String @id @default(cuid())
+  userId           String @unique
+  bio              String?
+  avatar           String?
+  timezone         String @default("America/Mexico_City")
+  units            String @default("metric")
+  language         String @default("es")
+  theme            String @default("warm")
+  weekStartsOn     Int    @default(1)
+  stepsGoal        Int    @default(10000)
+  waterGoal        Float  @default(2.0)
+  sleepGoal        Float  @default(8.0)
+  lifeScoreWeights Json   @default("{\"vision\":0.10,\"plan\":0.10,\"productivity\":0.15,\"organization\":0.08,\"finance\":0.15,\"fitness\":0.15,\"nutrition\":0.12,\"wellness\":0.15}")
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Gamification ─────────────────────────────────────────────────────────────
+
+model Gamification {
+  id                       String @id @default(cuid())
+  userId                   String @unique
+  totalXP                  Int    @default(0)
+  currentLevel             Int    @default(1)
+  streakInsuranceDays      Int    @default(1)
+  streakInsuranceUsedThisWeek Int @default(0)
+  user                     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model UserBadge {
+  id         String   @id @default(cuid())
+  userId     String
+  badgeId    String
+  earnedDate DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, badgeId])
+}
+
+// ─── Habits ───────────────────────────────────────────────────────────────────
+
+model Habit {
+  id            String     @id @default(cuid())
+  userId        String
+  name          String
+  icon          String     @default("✅")
+  category      String
+  timeOfDay     String     @default("all")
+  frequency     String     @default("daily")
+  targetDays    Int[]
+  streakCurrent Int        @default(0)
+  streakBest    Int        @default(0)
+  strength      Float      @default(0)
+  isActive      Boolean    @default(true)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs          HabitLog[]
+
+  @@index([userId, isActive])
+}
+
+model HabitLog {
+  id        String   @id @default(cuid())
+  userId    String
+  habitId   String
+  date      String
+  completed Boolean  @default(false)
+  notes     String?
+  createdAt DateTime @default(now())
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([userId, date])
+}
+
+// ─── Fitness ──────────────────────────────────────────────────────────────────
+
+model Exercise {
+  id               String           @id @default(cuid())
+  userId           String?
+  name             String
+  muscleGroup      String
+  category         String
+  equipment        String?
+  isCustom         Boolean          @default(false)
+  user             User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  workoutExercises WorkoutExercise[]
+  personalRecords  PersonalRecord[]
+
+  @@index([muscleGroup])
+}
+
+model Workout {
+  id              String            @id @default(cuid())
+  userId          String
+  date            String
+  name            String
+  durationMinutes Int               @default(0)
+  totalVolume     Float             @default(0)
+  notes           String?
+  completed       Boolean           @default(false)
+  prsHit          Int               @default(0)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercises       WorkoutExercise[]
+
+  @@index([userId, date])
+}
+
+model WorkoutExercise {
+  id         String       @id @default(cuid())
+  workoutId  String
+  exerciseId String
+  notes      String?
+  orderIndex Int          @default(0)
+  workout    Workout      @relation(fields: [workoutId], references: [id], onDelete: Cascade)
+  exercise   Exercise     @relation(fields: [exerciseId], references: [id])
+  sets       WorkoutSet[]
+
+  @@index([workoutId])
+}
+
+model WorkoutSet {
+  id                String          @id @default(cuid())
+  workoutExerciseId String
+  setNumber         Int
+  weight            Float
+  reps              Int
+  rpe               Float?
+  isPR              Boolean         @default(false)
+  workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+}
+
+model PersonalRecord {
+  id           String   @id @default(cuid())
+  userId       String
+  exerciseId   String
+  exerciseName String
+  weight       Float
+  reps         Int
+  estimated1RM Float
+  oneRM        Float?
+  fiveRM       Float?
+  tenRM        Float?
+  date         String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exercise     Exercise @relation(fields: [exerciseId], references: [id])
+
+  @@index([userId, exerciseId])
+}
+
+model BodyMetric {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  type      String
+  value     Float
+  unit      String
+  method    String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, date])
+}
+
+// ─── Finance ──────────────────────────────────────────────────────────────────
+
+model Transaction {
+  id            String   @id @default(cuid())
+  userId        String
+  date          String
+  description   String
+  amount        Float
+  type          String
+  category      String
+  subcategory   String?
+  paymentMethod String?
+  isRecurring   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([userId, type])
+}
+
+model Budget {
+  id       String @id @default(cuid())
+  userId   String
+  month    String
+  category String
+  limit    Float
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, category])
+  @@index([userId, month])
+}
+
+model Bill {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  amount      Float
+  dueDate     String
+  isPaid      Boolean  @default(false)
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Subscription {
+  id           String   @id @default(cuid())
+  userId       String
+  name         String
+  amount       Float
+  billingCycle String
+  renewalDate  String
+  category     String
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model WishlistItem {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  price       Float
+  priority    String
+  savedAmount Float    @default(0)
+  link        String?
+  isPurchased Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─── Wellness ─────────────────────────────────────────────────────────────────
+
+model MoodLog {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String
+  mood      Int
+  emotions  String[]
+  factors   String[]
+  notes     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model SleepLog {
+  id            String   @id @default(cuid())
+  userId        String
+  date          String
+  bedtime       String
+  wakeTime      String
+  quality       Int
+  durationHours Float
+  dreamJournal  String?
+  factors       String[]
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+// ─── Planner ──────────────────────────────────────────────────────────────────
+
+model DailyPlan {
+  id            String      @id @default(cuid())
+  userId        String
+  date          String
+  topPriorities String[]
+  rating        Int?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  timeBlocks    TimeBlock[]
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model TimeBlock {
+  id          String    @id @default(cuid())
+  dailyPlanId String
+  startTime   String
+  endTime     String
+  title       String
+  category    String?
+  completed   Boolean   @default(false)
+  dailyPlan   DailyPlan @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
+
+  @@index([dailyPlanId])
+}
