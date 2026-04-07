@@ -129,9 +129,11 @@ const DailyPlannerTab = () => {
   const todayStr = new Date().toISOString().split('T')[0];
   const todayDow = new Date().getDay(); // 0=Sun..6=Sat
   const todayHabits = habits.filter(h => {
-    if (!h.isActive) return false;
+    if (h.isActive === false) return false;
     if (h.frequency === 'daily') return true;
-    return Array.isArray(h.targetDays) && h.targetDays.includes(todayDow);
+    // Empty targetDays = treat as daily
+    if (!Array.isArray(h.targetDays) || h.targetDays.length === 0) return true;
+    return h.targetDays.includes(todayDow);
   });
   const todayLogs = logs.filter(l => l.date === todayStr);
   const completedHabitIds = new Set(todayLogs.filter(l => l.completed).map(l => l.habitId));

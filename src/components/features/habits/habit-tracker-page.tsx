@@ -100,16 +100,22 @@ export default function HabitTrackerPage() {
   const todayLogs = logs.filter((l) => l.date === today && l.completed);
   const completedIds = new Set(todayLogs.map((l) => l.habitId));
 
-  const activeHabits = habits.filter((h) => h.isActive);
+  const activeHabits = habits.filter((h) => h.isActive !== false);
 
   // Group by time of day
   const grouped = useMemo(() => {
     const order: TimeOfDay[] = ["morning", "afternoon", "evening", "all"];
+    const knownTods = new Set(order);
+    // Habits with unrecognised timeOfDay fall into "all"
+    const normalised = activeHabits.map((h) => ({
+      ...h,
+      timeOfDay: knownTods.has(h.timeOfDay as TimeOfDay) ? h.timeOfDay : ("all" as TimeOfDay),
+    }));
     return order
       .map((tod) => ({
         tod,
         label: TIME_LABELS[tod],
-        items: activeHabits.filter((h) => h.timeOfDay === tod),
+        items: normalised.filter((h) => h.timeOfDay === tod),
       }))
       .filter((g) => g.items.length > 0);
   }, [activeHabits]);

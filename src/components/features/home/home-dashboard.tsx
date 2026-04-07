@@ -162,30 +162,18 @@ const HabitCard: React.FC<{
         marginBottom: '8px',
       }}
     >
-      <div style={{
-        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
-        backgroundColor: completed ? C.success : 'transparent',
-        border: `2px solid ${completed ? C.success : C.lightTan}`,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }}>
-        {completed && <span style={{ color: C.paper, fontSize: '10px', fontWeight: '700' }}>✓</span>}
-      </div>
       <span style={{ fontSize: '20px' }}>{emoji}</span>
-      <span
-        style={{
-          flex: 1,
-          fontSize: '14px',
-          color: completed ? C.dark : C.brown,
-          textDecoration: completed ? 'line-through' : 'none',
-        }}
-      >
+      <span style={{ flex: 1, fontSize: '14px', color: C.brown }}>
         {name}
       </span>
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: C.warning }}>
         <Flame size={14} fill={C.warning} />
         <span>{streak}</span>
       </div>
-      {completed && <Check size={16} color={C.success} />}
+      {completed
+        ? <span style={{ fontSize: '11px', fontWeight: '700', color: C.success, backgroundColor: C.successLight, padding: '2px 8px', borderRadius: '10px' }}>Hecho</span>
+        : <span style={{ fontSize: '11px', color: C.warm, backgroundColor: C.lightCream, padding: '2px 8px', borderRadius: '10px' }}>Pendiente</span>
+      }
     </div>
   );
 };

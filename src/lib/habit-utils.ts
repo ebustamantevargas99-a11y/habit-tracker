@@ -17,6 +17,8 @@ export async function recalculateStreak(
 
   const logMap = new Map(logs.map((l) => [l.date, l.completed]));
   const today = new Date();
+  // Treat empty targetDays as all days (daily habit with missing data)
+  const activeDays = targetDays.length > 0 ? targetDays : [0, 1, 2, 3, 4, 5, 6];
 
   const streaks: number[] = [];
   let tempStreak = 0;
@@ -27,7 +29,7 @@ export async function recalculateStreak(
     const dateStr = d.toISOString().split("T")[0];
     const dayOfWeek = d.getDay();
 
-    if (!targetDays.includes(dayOfWeek)) continue;
+    if (!activeDays.includes(dayOfWeek)) continue;
 
     const completed = logMap.get(dateStr);
 
