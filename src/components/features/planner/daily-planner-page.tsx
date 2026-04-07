@@ -70,7 +70,7 @@ const getCategoryColor = (category: string): string => {
 // ============= DAILY PLANNER TAB =============
 const DailyPlannerTab = () => {
   const { savePlan, isSaving } = usePlannerStore();
-  const { habits, logs, toggleHabitToday } = useHabitStore();
+  const { habits, logs } = useHabitStore();
 
   const [priorities, setPriorities] = useState<Priority[]>([
     { id: '1', title: 'Completar proyecto de análisis financiero', completed: false },
@@ -208,38 +208,33 @@ const DailyPlannerTab = () => {
               {todayHabits.map(habit => {
                 const done = completedHabitIds.has(habit.id);
                 return (
-                  <button
+                  <div
                     key={habit.id}
-                    onClick={() => toggleHabitToday(habit.id)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: '0.75rem',
                       backgroundColor: done ? C.successLight : C.paper,
                       border: `2px solid ${done ? C.success : C.tan}`,
                       borderRadius: '10px', padding: '0.75rem 1rem',
-                      cursor: 'pointer', transition: 'all 0.2s', textAlign: 'left',
                     }}
                   >
                     <span style={{ fontSize: '1.3rem', flexShrink: 0 }}>{habit.icon || '⭐'}</span>
                     <div style={{ flex: 1 }}>
-                      <p style={{
-                        margin: '0', fontSize: '0.95rem', fontWeight: '600',
-                        color: C.dark, textDecoration: done ? 'line-through' : 'none'
-                      }}>
+                      <p style={{ margin: '0', fontSize: '0.95rem', fontWeight: '600', color: C.dark }}>
                         {habit.name}
                       </p>
                       <p style={{ margin: '0', fontSize: '0.75rem', color: C.warm }}>
                         {habit.category} · Racha: {habit.streakCurrent} días
                       </p>
                     </div>
-                    <div style={{
-                      width: '28px', height: '28px', borderRadius: '50%', flexShrink: 0,
-                      backgroundColor: done ? C.success : 'transparent',
-                      border: `2px solid ${done ? C.success : C.tan}`,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    <span style={{
+                      fontSize: '0.75rem', fontWeight: '700', padding: '0.25rem 0.6rem',
+                      borderRadius: '20px',
+                      backgroundColor: done ? C.success : C.lightTan,
+                      color: done ? C.paper : C.warm,
                     }}>
-                      {done && <span style={{ color: C.paper, fontSize: '0.9rem', fontWeight: '700' }}>✓</span>}
-                    </div>
-                  </button>
+                      {done ? '✓ Hecho' : 'Pendiente'}
+                    </span>
+                  </div>
                 );
               })}
             </div>

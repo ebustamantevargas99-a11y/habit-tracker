@@ -146,11 +146,10 @@ const HabitCard: React.FC<{
   name: string;
   streak: number;
   completed: boolean;
-  onToggle: () => void;
-}> = ({ id, emoji, name, streak, completed, onToggle }) => {
+  onToggle?: () => void;
+}> = ({ id, emoji, name, streak, completed }) => {
   return (
     <div
-      onClick={onToggle}
       style={{
         display: 'flex',
         alignItems: 'center',
@@ -159,28 +158,18 @@ const HabitCard: React.FC<{
         background: completed ? C.successLight : C.paper,
         border: `1px solid ${completed ? C.success : C.lightCream}`,
         borderRadius: '8px',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        cursor: 'default',
         marginBottom: '8px',
       }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.background = completed ? C.success : C.lightCream;
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.background = completed ? C.successLight : C.paper;
-      }}
     >
-      <input
-        type="checkbox"
-        checked={completed}
-        onChange={onToggle}
-        style={{
-          width: '18px',
-          height: '18px',
-          cursor: 'pointer',
-          accentColor: C.success,
-        }}
-      />
+      <div style={{
+        width: '18px', height: '18px', borderRadius: '4px', flexShrink: 0,
+        backgroundColor: completed ? C.success : 'transparent',
+        border: `2px solid ${completed ? C.success : C.lightTan}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {completed && <span style={{ color: C.paper, fontSize: '10px', fontWeight: '700' }}>✓</span>}
+      </div>
       <span style={{ fontSize: '20px' }}>{emoji}</span>
       <span
         style={{
@@ -203,12 +192,16 @@ const HabitCard: React.FC<{
 
 // Main Component
 export default function HomeDashboard() {
-  const habits = useHabitStore((state) => state.habits);
-  const toggleHabitToday = useHabitStore((state) => state.toggleHabitToday);
+  const habits = useHabitStore((state) => state.habits.filter(h => h.isActive));
+  const logs = useHabitStore((state) => state.logs);
+
+  const todayStr = new Date().toISOString().split('T')[0];
+  const completedTodayIds = useMemo(
+    () => new Set(logs.filter(l => l.date === todayStr && l.completed).map(l => l.habitId)),
+    [logs, todayStr]
+  );
 
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [completedToday, setCompletedToday] = useState(0);
-  const [habitStates, setHabitStates] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 60000);
@@ -311,14 +304,6 @@ export default function HomeDashboard() {
     return { morning, allDay, night };
   }, [habits]);
 
-  const handleToggleHabit = (habitId: string) => {
-    toggleHabitToday(habitId);
-    setHabitStates((prev) => ({
-      ...prev,
-      [habitId]: !prev[habitId],
-    }));
-  };
-
   const totalHabits = habits.length;
   const weekComparisonData = Array.from({ length: 12 }, (_, i) => ({
     week: `S${i + 1}`,
@@ -396,14 +381,14 @@ export default function HomeDashboard() {
           <div style={{ fontSize: '12px', color: C.warm, marginBottom: '8px' }}>Progreso de Hoy</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
             <span style={{ fontSize: '24px', fontWeight: 'bold', color: C.accent }}>
-              {completedToday}/{totalHabits}
+              {completedTodayIds.size}/{totalHabits}
             </span>
             <Target size={20} color={C.accent} />
           </div>
           <div style={{ width: '100%', height: '4px', background: C.cream, borderRadius: '2px', overflow: 'hidden' }}>
             <div
               style={{
-                width: `${totalHabits > 0 ? (completedToday / totalHabits) * 100 : 0}%`,
+                width: `${totalHabits > 0 ? (completedTodayIds.size / totalHabits) * 100 : 0}%`,
                 height: '100%',
                 background: C.accent,
                 borderRadius: '2px',
@@ -433,8 +418,7 @@ export default function HomeDashboard() {
                   emoji={habit.icon || '✓'}
                   name={habit.name}
                   streak={habit.streakCurrent || 0}
-                  completed={habitStates[habit.id] || false}
-                  onToggle={() => handleToggleHabit(habit.id)}
+                  completed={completedTodayIds.has(habit.id)}
                 />
               ))}
             </div>
@@ -454,8 +438,7 @@ export default function HomeDashboard() {
                   emoji={habit.icon || '✓'}
                   name={habit.name}
                   streak={habit.streakCurrent || 0}
-                  completed={habitStates[habit.id] || false}
-                  onToggle={() => handleToggleHabit(habit.id)}
+                  completed={completedTodayIds.has(habit.id)}
                 />
               ))}
             </div>
@@ -475,8 +458,7 @@ export default function HomeDashboard() {
                   emoji={habit.icon || '✓'}
                   name={habit.name}
                   streak={habit.streakCurrent || 0}
-                  completed={habitStates[habit.id] || false}
-                  onToggle={() => handleToggleHabit(habit.id)}
+                  completed={completedTodayIds.has(habit.id)}
                 />
               ))}
             </div>
