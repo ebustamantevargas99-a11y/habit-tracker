@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, type WellnessTab, type ProductivityTab } from "@/stores/app-store";
+import { useAppStore, type WellnessTab, type ProductivityTab, type PlanTab } from "@/stores/app-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
@@ -23,6 +23,17 @@ const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Work Time Log": "worktimelog",
   "Pomodoro": "pomodoro",
 };
+
+// Map sidebar section label → planTab index
+const PLAN_SECTION_MAP: Record<string, PlanTab> = {
+  "Calendar": 0,
+  "Daily Planner": 1,
+  "Weekly Planner": 2,
+  "Monthly Planner": 3,
+  "Quarterly Planner": 4,
+  "Yearly Planner": 5,
+  "Meeting Minutes": 6,
+};
 import * as LucideIcons from "lucide-react";
 import React from "react";
 import { signOut } from "next-auth/react";
@@ -32,7 +43,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
-  const { activePage, setActivePage, setWellnessSubTab, setProductivitySubTab } = useAppStore();
+  const { activePage, setActivePage, setWellnessSubTab, setProductivitySubTab, setPlanTab } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
   const { user } = useUserStore();
   const displayName = user?.name ?? 'Usuario';
@@ -188,6 +199,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         }
                         if (item.key === "productivity" && PRODUCTIVITY_SECTION_MAP[section]) {
                           setProductivitySubTab(PRODUCTIVITY_SECTION_MAP[section]);
+                        }
+                        if (item.key === "plan" && PLAN_SECTION_MAP[section] !== undefined) {
+                          setPlanTab(PLAN_SECTION_MAP[section]);
                         }
                       }}
                       style={{

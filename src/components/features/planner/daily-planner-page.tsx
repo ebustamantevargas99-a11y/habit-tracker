@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAppStore } from '@/stores/app-store';
 import CalendarTab from './calendar-tab';
 import { usePlannerStore, hourToTime } from '@/stores/planner-store';
 import { useHabitStore } from '@/stores/habit-store';
@@ -1339,16 +1340,18 @@ const MeetingMinutesTab = () => {
 
 // ============= MAIN COMPONENT =============
 const DailyPlannerPage = () => {
-  const [activeTab, setActiveTab] = useState(0);
+  const { planTab, setPlanTab } = useAppStore();
+  const activeTab = planTab;
+  const setActiveTab = (idx: number) => setPlanTab(idx as 0|1|2|3|4|5|6);
 
   const tabs = [
     { label: 'Calendar', component: CalendarTab },
-    { label: 'Planificador Diario', component: DailyPlannerTab },
-    { label: 'Planificador Semanal', component: WeeklyPlannerTab },
-    { label: 'Planificador Mensual', component: MonthlyPlannerTab },
-    { label: 'Planificador Trimestral', component: QuarterlyPlannerTab },
-    { label: 'Planificador Anual', component: YearlyPlannerTab },
-    { label: 'Minutas de Reunión', component: MeetingMinutesTab },
+    { label: 'Daily Planner', component: DailyPlannerTab },
+    { label: 'Weekly Planner', component: WeeklyPlannerTab },
+    { label: 'Monthly Planner', component: MonthlyPlannerTab },
+    { label: 'Quarterly Planner', component: QuarterlyPlannerTab },
+    { label: 'Yearly Planner', component: YearlyPlannerTab },
+    { label: 'Meeting Minutes', component: MeetingMinutesTab },
   ];
 
   return (

@@ -3,6 +3,7 @@ import type { PageKey } from "@/lib/constants";
 
 export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'period' | 'healthlog';
 export type ProductivityTab = 'habits' | 'projects' | 'tasks' | 'worktimelog' | 'pomodoro';
+export type PlanTab = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 interface AppState {
   // Navigation
@@ -18,6 +19,10 @@ interface AppState {
   // Productivity deep-link
   productivitySubTab: ProductivityTab;
   setProductivitySubTab: (tab: ProductivityTab) => void;
+
+  // Plan deep-link
+  planTab: PlanTab;
+  setPlanTab: (tab: PlanTab) => void;
 
   // Modals
   showMonthlySummary: boolean;
@@ -37,6 +42,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   productivitySubTab: 'habits',
   setProductivitySubTab: (tab) => set({ productivitySubTab: tab }),
+
+  planTab: 0,
+  setPlanTab: (tab) => set({ planTab: tab }),
 
   showMonthlySummary: false,
   showWeeklySummary: false,

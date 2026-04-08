@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line
 } from 'recharts';
 import {
-  TrendingUp, Flame, Award, Target, Sun, CloudSun, Moon, Trophy
+  TrendingUp, Flame, Award, Target, Sun, CloudSun, Sunset, Moon, Trophy
 } from 'lucide-react';
 import { useHabitStore } from '@/stores/habit-store';
 import { useUserStore } from '@/stores/user-store';
@@ -109,13 +109,14 @@ export default function HomeDashboard() {
 
   // Group by time of day
   const habitsByTime = useMemo(() => {
-    const morning: typeof habits = [], allDay: typeof habits = [], night: typeof habits = [];
+    const morning: typeof habits = [], afternoon: typeof habits = [], night: typeof habits = [], allDay: typeof habits = [];
     todayHabits.forEach(h => {
       if (h.timeOfDay === 'morning') morning.push(h);
+      else if (h.timeOfDay === 'afternoon') afternoon.push(h);
       else if (h.timeOfDay === 'evening') night.push(h);
       else allDay.push(h);
     });
-    return { morning, allDay, night };
+    return { morning, afternoon, allDay, night };
   }, [todayHabits]);
 
   // Streak total (sum of all streakCurrent)
@@ -330,6 +331,16 @@ export default function HomeDashboard() {
                 <Sun size={16} color={C.warning} /> Mañana
               </div>
               {habitsByTime.morning.map(h => (
+                <HabitCard key={h.id} emoji={h.icon || '⭐'} name={h.name} streak={h.streakCurrent || 0} completed={completedTodayIds.has(h.id)} />
+              ))}
+            </div>
+          )}
+          {habitsByTime.afternoon.length > 0 && (
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: C.brown, fontWeight: 'bold' }}>
+                <Sunset size={16} color={C.warning} /> Tarde
+              </div>
+              {habitsByTime.afternoon.map(h => (
                 <HabitCard key={h.id} emoji={h.icon || '⭐'} name={h.name} streak={h.streakCurrent || 0} completed={completedTodayIds.has(h.id)} />
               ))}
             </div>

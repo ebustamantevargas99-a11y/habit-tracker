@@ -32,6 +32,7 @@ export const NAV_ITEMS = [
       "Monthly Planner",
       "Quarterly Planner",
       "Yearly Planner",
+      "Meeting Minutes",
     ],
   },
   {
