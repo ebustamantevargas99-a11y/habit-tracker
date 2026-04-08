@@ -104,13 +104,8 @@ export default function HomeDashboard() {
     [logs, todayStr]
   );
 
-  // Habits due today (respect targetDays)
-  const todayDow = new Date().getDay();
-  const todayHabits = useMemo(() => habits.filter(h => {
-    if (h.frequency === 'daily') return true;
-    if (!Array.isArray(h.targetDays) || h.targetDays.length === 0) return true;
-    return h.targetDays.includes(todayDow);
-  }), [habits, todayDow]);
+  // All active habits for today's view (show everything, like Productividad)
+  const todayHabits = useMemo(() => habits, [habits]);
 
   // Group by time of day
   const habitsByTime = useMemo(() => {

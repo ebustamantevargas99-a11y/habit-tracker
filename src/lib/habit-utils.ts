@@ -29,16 +29,19 @@ export async function recalculateStreak(
     const dateStr = d.toISOString().split("T")[0];
     const dayOfWeek = d.getDay();
 
-    if (!activeDays.includes(dayOfWeek)) continue;
-
     const completed = logMap.get(dateStr);
 
     if (completed === true) {
+      // Always count a completed log, even on off-schedule days
       tempStreak++;
+    } else if (!activeDays.includes(dayOfWeek)) {
+      // Unscheduled day with no completion — skip, don't break streak
+      continue;
     } else if (i === 0 && completed === undefined) {
-      // Today has no log yet — don't break the ongoing streak
+      // Today is scheduled but not yet logged — don't break streak
       continue;
     } else {
+      // Scheduled day with no/false completion — break streak
       if (tempStreak > 0) {
         streaks.push(tempStreak);
         tempStreak = 0;
