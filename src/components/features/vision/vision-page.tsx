@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useLocalStorage } from "@/lib/use-local-storage";
 import {
   Heart, Target, Lightbulb, Plane, Briefcase, Dumbbell, Users, Wallet,
   BookOpen, Star, Plus, Edit2, Trash2, Sun, Moon, Check, Trophy,
@@ -611,24 +612,25 @@ const ListaDeVidaTab: React.FC<{
 export default function VisionPage() {
   const [activeTab, setActiveTab] = useState<"vision" | "metas" | "afirmaciones" | "vida">("vision");
 
-  const [visions, setVisions] = useState(initialVisions);
-  const updateVision = (id: string, updates: Partial<VisionCategory>) => setVisions(visions.map(v => v.id === id ? { ...v, ...updates } : v));
-  const addVision = (v: VisionCategory) => setVisions([...visions, v]);
-  const deleteVision = (id: string) => setVisions(visions.filter(v => v.id !== id));
+  const [visions, setVisions] = useLocalStorage<VisionCategory[]>("vision_visions", initialVisions);
+  const [metas, setMetas] = useLocalStorage<Meta[]>("vision_metas", initialMetas);
+  const [affirmations, setAffirmations] = useLocalStorage<Affirmation[]>("vision_affirmations", initialAffirmations);
+  const [dreams, setDreams] = useLocalStorage<DreamItem[]>("vision_dreams", initialDreams);
 
-  const [metas, setMetas] = useState(initialMetas);
-  const addMeta = (m: Meta) => setMetas([...metas, m]);
-  const updateMeta = (id: string, u: Partial<Meta>) => setMetas(metas.map(m => m.id === id ? { ...m, ...u } : m));
-  const deleteMeta = (id: string) => setMetas(metas.filter(m => m.id !== id));
+  const updateVision = (id: string, updates: Partial<VisionCategory>) => setVisions(prev => prev.map(v => v.id === id ? { ...v, ...updates } : v));
+  const addVision = (v: VisionCategory) => setVisions(prev => [...prev, v]);
+  const deleteVision = (id: string) => setVisions(prev => prev.filter(v => v.id !== id));
 
-  const [affirmations, setAffirmations] = useState(initialAffirmations);
-  const addAffirmation = (a: Affirmation) => setAffirmations([...affirmations, a]);
-  const deleteAffirmation = (id: string) => setAffirmations(affirmations.filter(a => a.id !== id));
+  const addMeta = (m: Meta) => setMetas(prev => [...prev, m]);
+  const updateMeta = (id: string, u: Partial<Meta>) => setMetas(prev => prev.map(m => m.id === id ? { ...m, ...u } : m));
+  const deleteMeta = (id: string) => setMetas(prev => prev.filter(m => m.id !== id));
 
-  const [dreams, setDreams] = useState(initialDreams);
-  const toggleDream = (id: string) => setDreams(dreams.map(d => d.id === id ? { ...d, completed: !d.completed, completedDate: !d.completed ? new Date().toISOString().split("T")[0] : undefined } : d));
-  const addDream = (item: DreamItem) => setDreams([...dreams, item]);
-  const deleteDream = (id: string) => setDreams(dreams.filter(d => d.id !== id));
+  const addAffirmation = (a: Affirmation) => setAffirmations(prev => [...prev, a]);
+  const deleteAffirmation = (id: string) => setAffirmations(prev => prev.filter(a => a.id !== id));
+
+  const toggleDream = (id: string) => setDreams(prev => prev.map(d => d.id === id ? { ...d, completed: !d.completed, completedDate: !d.completed ? new Date().toISOString().split("T")[0] : undefined } : d));
+  const addDream = (item: DreamItem) => setDreams(prev => [...prev, item]);
+  const deleteDream = (id: string) => setDreams(prev => prev.filter(d => d.id !== id));
 
   return (
     <div style={{ minHeight: "100vh", backgroundColor: C.paper }}>

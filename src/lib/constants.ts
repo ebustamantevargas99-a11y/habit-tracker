@@ -26,6 +26,7 @@ export const NAV_ITEMS = [
     label: "Plan",
     icon: "Calendar",
     sections: [
+      "Calendar",
       "Daily Planner",
       "Weekly Planner",
       "Monthly Planner",

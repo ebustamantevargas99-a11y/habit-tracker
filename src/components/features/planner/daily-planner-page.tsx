@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import CalendarTab from './calendar-tab';
 import { usePlannerStore, hourToTime } from '@/stores/planner-store';
 import { useHabitStore } from '@/stores/habit-store';
 import { useUserStore } from '@/stores/user-store';
@@ -1341,6 +1342,7 @@ const DailyPlannerPage = () => {
   const [activeTab, setActiveTab] = useState(0);
 
   const tabs = [
+    { label: 'Calendar', component: CalendarTab },
     { label: 'Planificador Diario', component: DailyPlannerTab },
     { label: 'Planificador Semanal', component: WeeklyPlannerTab },
     { label: 'Planificador Mensual', component: MonthlyPlannerTab },

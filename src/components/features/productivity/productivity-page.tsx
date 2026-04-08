@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocalStorage } from '@/lib/use-local-storage';
 import { useAppStore, type ProductivityTab } from '@/stores/app-store';
 import HabitTrackerPage from '@/components/features/habits/habit-tracker-page';
 import {
@@ -267,7 +268,7 @@ function PomodoroTab() {
 
 // ========== KANBAN TAB ==========
 function KanbanTab() {
-  const [kanban, setKanban] = useState<{ [key: string]: KanbanCard[] }>({
+  const initialKanban: { [key: string]: KanbanCard[] } = {
     todo: [
       { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño' },
       { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión' },
@@ -282,7 +283,8 @@ function KanbanTab() {
       { id: '7', title: 'Crear repositorio Git', priority: 'Media', category: 'DevOps' },
       { id: '8', title: 'Configurar CI/CD', priority: 'Media', category: 'DevOps' },
     ],
-  });
+  };
+  const [kanban, setKanban] = useLocalStorage<{ [key: string]: KanbanCard[] }>("productivity_kanban", initialKanban);
 
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardPriority, setNewCardPriority] = useState<'Alta' | 'Media' | 'Baja'>('Media');
@@ -443,7 +445,7 @@ function KanbanTab() {
 
 // ========== TASKS TAB (EISENHOWER MATRIX) ==========
 function TasksTab() {
-  const [tasks, setTasks] = useState<{ [key: string]: Task[] }>({
+  const initialTasks = {
     urgent_important: [
       { id: '1', name: 'Entregar proyecto cliente', dueDate: '2026-04-06', tags: ['Trabajo'], completed: false },
       { id: '2', name: 'Resolver bug crítico', dueDate: '2026-04-06', tags: ['Trabajo'], completed: false },
@@ -461,7 +463,8 @@ function TasksTab() {
       { id: '8', name: 'Leer artículo de tecnología', tags: ['Personal'], completed: false },
       { id: '9', name: 'Organizar escritorio', tags: ['Personal'], completed: false },
     ],
-  });
+  };
+  const [tasks, setTasks] = useLocalStorage<{ [key: string]: Task[] }>("productivity_tasks", initialTasks);
 
   const [newTaskName, setNewTaskName] = useState('');
   const [newTaskQuadrant, setNewTaskQuadrant] = useState('urgent_important');
