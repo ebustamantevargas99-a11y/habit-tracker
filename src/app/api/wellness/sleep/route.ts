@@ -65,3 +65,20 @@ export async function POST(req: NextRequest) {
 
   return NextResponse.json(log);
 }
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+  if (!id) return NextResponse.json({ error: "id requerido" }, { status: 400 });
+
+  await prisma.sleepLog.deleteMany({
+    where: { id, userId: session.user.id },
+  });
+
+  return new NextResponse(null, { status: 204 });
+}

@@ -13,14 +13,23 @@ const C = {
   dangerLight: "#F5D0CE", info: "#5A8FA8", infoLight: "#C8E0EC",
 };
 
-// Pastel-blue intensity based on % of goal
+// ── Hydration palette: pastel blue ──────────────────────────────────────────
 function hydrationColor(pct: number): string {
-  if (pct <= 0) return '#F5EDE3';
-  if (pct < 25) return '#E8F4FD';
-  if (pct < 50) return '#BDDFF5';
-  if (pct < 75) return '#7DC3EA';
-  if (pct < 100) return '#4AAAD6';
+  if (pct <= 0)   return '#F5EDE3';
+  if (pct < 25)   return '#E8F4FD';
+  if (pct < 50)   return '#BDDFF5';
+  if (pct < 75)   return '#7DC3EA';
+  if (pct < 100)  return '#4AAAD6';
   return '#2E8BC0';
+}
+
+// ── Medication palette: pastel yellow ───────────────────────────────────────
+function medColor(pct: number): string {
+  if (pct <= 0)   return '#F5EDE3';
+  if (pct < 40)   return '#FDF6DC';
+  if (pct < 70)   return '#FAE89A';
+  if (pct < 100)  return '#F5D547';
+  return '#D4A843';
 }
 
 interface MedicationItem {
@@ -32,42 +41,42 @@ interface MedicationItem {
   taken: boolean;
 }
 
-type HydrationLog = Record<string, number>;
+type HydrationLog  = Record<string, number>;          // date → ml
+type MedicationLog = Record<string, number>;           // date → adherence %
 
-const HYDRATION_LOG_KEY = 'hydration_log';
-const HYDRATION_GOAL_KEY = 'hydration_goal';
-const DEFAULT_GOAL = 2500;
+const HYDRATION_LOG_KEY   = 'hydration_log';
+const HYDRATION_GOAL_KEY  = 'hydration_goal';
+const MEDICATION_LOG_KEY  = 'medication_log';
+const SLEEP_GOAL_KEY      = 'sleep_goal';
+const DEFAULT_HYDRO_GOAL  = 2500;
+const DEFAULT_SLEEP_GOAL  = 8;
 
-function loadHydrationLog(): HydrationLog {
-  if (typeof window === 'undefined') return {};
-  try { return JSON.parse(localStorage.getItem(HYDRATION_LOG_KEY) ?? '{}'); }
-  catch { return {}; }
+function loadLS<T>(key: string, fallback: T): T {
+  if (typeof window === 'undefined') return fallback;
+  try { return JSON.parse(localStorage.getItem(key) ?? 'null') ?? fallback; }
+  catch { return fallback; }
 }
-function saveHydrationLog(log: HydrationLog) {
-  localStorage.setItem(HYDRATION_LOG_KEY, JSON.stringify(log));
-}
-function loadHydrationGoal(): number {
-  if (typeof window === 'undefined') return DEFAULT_GOAL;
-  return parseInt(localStorage.getItem(HYDRATION_GOAL_KEY) ?? String(DEFAULT_GOAL));
-}
-function saveHydrationGoal(goal: number) {
-  localStorage.setItem(HYDRATION_GOAL_KEY, String(goal));
-}
+function saveLS(key: string, val: unknown) { localStorage.setItem(key, JSON.stringify(val)); }
 
 const monthNames = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const monthShort  = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
+const getDaysInMonth     = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
+const getFirstDayOfMonth = (y: number, m: number) => { const d = new Date(y, m, 1).getDay(); return (d + 6) % 7; };
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const MoodTrackerPage = () => {
   const { wellnessSubTab, setWellnessSubTab } = useAppStore();
   const [activeTab, setActiveTab] = useState<WellnessTab>(wellnessSubTab);
-  const { saveSleepToday, savingSleep, sleepLogs, initialize } = useWellnessStore();
+  const { saveSleepToday, savingSleep, sleepLogs, deleteSleepLog, initialize } = useWellnessStore();
 
   useEffect(() => { setActiveTab(wellnessSubTab); }, [wellnessSubTab]);
   useEffect(() => { initialize(); }, [initialize]);
 
   const switchTab = (tab: WellnessTab) => { setActiveTab(tab); setWellnessSubTab(tab); };
 
-  // ── SLEEP STATE ──────────────────────────────────────────────────────────────
+  // ── SLEEP STATE ──────────────────────────────────────────────────────────
   const today = new Date().toISOString().split('T')[0];
   const [sleepDate, setSleepDate]         = useState(today);
   const [sleepBedtime, setSleepBedtime]   = useState('23:30');
@@ -76,6 +85,18 @@ const MoodTrackerPage = () => {
   const [sleepNotes, setSleepNotes]       = useState('');
   const [sleepSuccess, setSleepSuccess]   = useState(false);
   const [sleepError, setSleepError]       = useState('');
+  const [sleepGoal, setSleepGoal]         = useState(DEFAULT_SLEEP_GOAL);
+  const [editingSleepGoal, setEditingSleepGoal] = useState(false);
+  const [sleepGoalInput, setSleepGoalInput]     = useState('');
+  const [deletingId, setDeletingId]       = useState<string | null>(null);
+
+  useEffect(() => { setSleepGoal(loadLS(SLEEP_GOAL_KEY, DEFAULT_SLEEP_GOAL)); }, []);
+
+  const saveSleepGoal = () => {
+    const g = parseFloat(sleepGoalInput);
+    if (!isNaN(g) && g > 0) { setSleepGoal(g); saveLS(SLEEP_GOAL_KEY, g); }
+    setEditingSleepGoal(false);
+  };
 
   const handleSaveSleep = async () => {
     setSleepError('');
@@ -93,70 +114,84 @@ const MoodTrackerPage = () => {
     }
   };
 
+  const handleDeleteSleep = async (id: string) => {
+    setDeletingId(id);
+    try { await deleteSleepLog(id); }
+    catch { /* ignore */ }
+    finally { setDeletingId(null); }
+  };
+
   const avgSleepDur  = sleepLogs.length > 0 ? (sleepLogs.reduce((s, e) => s + e.durationHours, 0) / sleepLogs.length).toFixed(1) : null;
   const avgSleepQual = sleepLogs.length > 0 ? (sleepLogs.reduce((s, e) => s + e.quality, 0) / sleepLogs.length).toFixed(1) : null;
-
   const getQualityEmoji = (q: number) => q <= 1 ? '😫' : q <= 2 ? '😞' : q <= 3 ? '😑' : q <= 4 ? '😊' : '😄';
 
-  // ── HYDRATION STATE ──────────────────────────────────────────────────────────
-  const [hydrationLog, setHydrationLog]   = useState<HydrationLog>({});
-  const [hydrationGoal, setHydrationGoal] = useState(DEFAULT_GOAL);
-  const [editingGoal, setEditingGoal]     = useState(false);
-  const [goalInput, setGoalInput]         = useState('');
-  const [hydrationView, setHydrationView] = useState<'daily' | 'monthly' | 'annual'>('daily');
+  // ── HYDRATION STATE ──────────────────────────────────────────────────────
+  const [hydrationLog, setHydrationLog]     = useState<HydrationLog>({});
+  const [hydrationGoal, setHydrationGoal]   = useState(DEFAULT_HYDRO_GOAL);
+  const [editingGoal, setEditingGoal]       = useState(false);
+  const [goalInput, setGoalInput]           = useState('');
+  const [hydrationView, setHydrationView]   = useState<'daily' | 'monthly' | 'annual'>('daily');
   const [hydrationMonth, setHydrationMonth] = useState(() => new Date());
   const [hydrationYear, setHydrationYear]   = useState(() => new Date().getFullYear());
+  const [hydrationSession, setHydrationSession] = useState(0); // ml added this session (not yet saved)
+  const [savedToday, setSavedToday]         = useState(false);
 
   useEffect(() => {
-    setHydrationLog(loadHydrationLog());
-    setHydrationGoal(loadHydrationGoal());
+    setHydrationLog(loadLS(HYDRATION_LOG_KEY, {}));
+    setHydrationGoal(loadLS(HYDRATION_GOAL_KEY, DEFAULT_HYDRO_GOAL));
   }, []);
 
-  const hydrationToday = hydrationLog[today] ?? 0;
-  const hydrationPct   = Math.min(Math.round((hydrationToday / hydrationGoal) * 100), 100);
+  const hydrationSavedToday = hydrationLog[today] ?? 0;
+  const hydrationCurrent    = hydrationSavedToday + hydrationSession;
+  const hydrationPct        = Math.min(Math.round((hydrationCurrent / hydrationGoal) * 100), 100);
 
-  const addWater = (ml: number) => setHydrationLog(prev => {
-    const updated = { ...prev, [today]: Math.min((prev[today] ?? 0) + ml, 9999) };
-    saveHydrationLog(updated);
-    return updated;
-  });
+  const addWater = (ml: number) => setHydrationSession(prev => prev + ml);
 
-  const resetWater = () => setHydrationLog(prev => {
-    const updated = { ...prev, [today]: 0 };
-    saveHydrationLog(updated);
-    return updated;
-  });
+  const resetSession = () => { setHydrationSession(0); setSavedToday(false); };
 
-  const saveGoal = () => {
+  const saveDayHydration = () => {
+    if (hydrationCurrent <= 0) return;
+    const updated = { ...hydrationLog, [today]: hydrationCurrent };
+    setHydrationLog(updated);
+    saveLS(HYDRATION_LOG_KEY, updated);
+    setHydrationSession(0);
+    setSavedToday(true);
+    setTimeout(() => setSavedToday(false), 3000);
+  };
+
+  const saveHydroGoal = () => {
     const g = parseInt(goalInput);
-    if (!isNaN(g) && g > 0) { setHydrationGoal(g); saveHydrationGoal(g); }
+    if (!isNaN(g) && g > 0) { setHydrationGoal(g); saveLS(HYDRATION_GOAL_KEY, g); }
     setEditingGoal(false);
   };
 
-  const getDaysInMonth    = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
-  const getFirstDayOfMonth = (y: number, m: number) => { const d = new Date(y, m, 1).getDay(); return (d + 6) % 7; }; // Mon=0
-
-  const annualData = Array.from({ length: 12 }, (_, m) => {
+  const annualHydroData = Array.from({ length: 12 }, (_, m) => {
     const days = getDaysInMonth(hydrationYear, m);
     let total = 0, count = 0;
     for (let d = 1; d <= days; d++) {
-      const key = `${hydrationYear}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const key = `${hydrationYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
       if ((hydrationLog[key] ?? 0) > 0) { total += hydrationLog[key]; count++; }
     }
     return { month: m, avg: count > 0 ? Math.round(total / count) : 0, count };
   });
-  const maxAnnualAvg = Math.max(...annualData.map(d => d.avg), hydrationGoal);
+  const maxHydroAvg = Math.max(...annualHydroData.map(d => d.avg), hydrationGoal);
 
-  // ── MEDICATION STATE ─────────────────────────────────────────────────────────
+  // ── MEDICATION STATE ─────────────────────────────────────────────────────
   const [medications, setMedications] = useState<MedicationItem[]>([
-    { id: '1', name: 'Vitamina D',  dosage: '2000 IU',  frequency: 'Diario', time: '08:00', taken: true  },
+    { id: '1', name: 'Vitamina D',  dosage: '2000 IU',   frequency: 'Diario', time: '08:00', taken: true  },
     { id: '2', name: 'Complejo B',  dosage: '1 tableta', frequency: 'Diario', time: '08:30', taken: true  },
-    { id: '3', name: 'Omega-3',     dosage: '1000 mg',  frequency: 'Diario', time: '12:00', taken: false },
-    { id: '4', name: 'Magnesio',    dosage: '400 mg',   frequency: 'Diario', time: '21:00', taken: false },
+    { id: '3', name: 'Omega-3',     dosage: '1000 mg',   frequency: 'Diario', time: '12:00', taken: false },
+    { id: '4', name: 'Magnesio',    dosage: '400 mg',    frequency: 'Diario', time: '21:00', taken: false },
   ]);
   const [newMedName,   setNewMedName]   = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedTime,   setNewMedTime]   = useState('08:00');
+  const [medLog, setMedLog]             = useState<MedicationLog>({});
+  const [medView, setMedView]           = useState<'daily' | 'monthly' | 'annual'>('daily');
+  const [medMonth, setMedMonth]         = useState(() => new Date());
+  const [medYear, setMedYear]           = useState(() => new Date().getFullYear());
+
+  useEffect(() => { setMedLog(loadLS(MEDICATION_LOG_KEY, {})); }, []);
 
   const toggleMedicationTaken = (id: string) =>
     setMedications(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
@@ -172,7 +207,36 @@ const MoodTrackerPage = () => {
   const medTaken     = medications.filter(m => m.taken).length;
   const medAdherence = medications.length > 0 ? Math.round((medTaken / medications.length) * 100) : 0;
 
-  // ── SHARED STYLES ────────────────────────────────────────────────────────────
+  const saveMedDay = () => {
+    if (medications.length === 0) return;
+    const pct = Math.round((medTaken / medications.length) * 100);
+    const updated = { ...medLog, [today]: pct };
+    setMedLog(updated);
+    saveLS(MEDICATION_LOG_KEY, updated);
+  };
+
+  // Auto-save medication adherence on toggle
+  useEffect(() => {
+    if (medications.length === 0) return;
+    const pct = Math.round((medTaken / medications.length) * 100);
+    const updated = { ...medLog, [today]: pct };
+    setMedLog(updated);
+    saveLS(MEDICATION_LOG_KEY, updated);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [medications]);
+
+  const annualMedData = Array.from({ length: 12 }, (_, m) => {
+    const days = getDaysInMonth(medYear, m);
+    let total = 0, count = 0;
+    for (let d = 1; d <= days; d++) {
+      const key = `${medYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      if ((medLog[key] ?? 0) > 0) { total += medLog[key]; count++; }
+    }
+    return { month: m, avg: count > 0 ? Math.round(total / count) : 0, count };
+  });
+  const maxMedAvg = Math.max(...annualMedData.map(d => d.avg), 100);
+
+  // ── SHARED STYLES ────────────────────────────────────────────────────────
   const tabConfig: { id: WellnessTab; label: string }[] = [
     { id: 'sleep',     label: '😴 Sleep Tracker'  },
     { id: 'hydration', label: '💧 Hydration'       },
@@ -189,6 +253,147 @@ const MoodTrackerPage = () => {
     backgroundColor: C.lightCream, border: `2px solid ${C.tan}`, borderRadius: '12px',
     padding: '1.5rem', marginBottom: '1.5rem', ...extra,
   });
+  const subTabBtn = (active: boolean, color: string): React.CSSProperties => ({
+    padding: '0.5rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer',
+    backgroundColor: active ? color : C.lightCream,
+    color: active ? C.paper : C.dark,
+    border: `2px solid ${active ? color : C.tan}`,
+    transition: 'all 0.2s',
+  });
+
+  // Reusable heatmap builder
+  const renderHeatmap = (
+    log: Record<string, number>,
+    month: Date,
+    onPrev: () => void,
+    onNext: () => void,
+    title: string,
+    colorFn: (pct: number) => string,
+    goal: number,
+    unitLabel: (v: number) => string,
+    textDarkThreshold: number,
+    borderColor: string,
+  ) => {
+    const yr = month.getFullYear();
+    const mo = month.getMonth();
+    const daysInMo  = getDaysInMonth(yr, mo);
+    const firstDay  = getFirstDayOfMonth(yr, mo);
+    const cells: (number | null)[] = [...Array(firstDay).fill(null), ...Array.from({ length: daysInMo }, (_, i) => i + 1)];
+    return (
+      <div style={card()}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>
+            {title} — {monthNames[mo]} {yr}
+          </h2>
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={onPrev} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>‹</button>
+            <button onClick={onNext} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>›</button>
+          </div>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
+          {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
+            <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: '600', color: C.warm, paddingBottom: '6px' }}>{d}</div>
+          ))}
+          {cells.map((day, idx) => {
+            if (day === null) return <div key={`e-${idx}`} />;
+            const key = `${yr}-${String(mo+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const val  = log[key] ?? 0;
+            const pct  = goal > 0 ? (val / goal) * 100 : 0;
+            const bg   = colorFn(pct);
+            const isToday = key === today;
+            const dark = pct >= textDarkThreshold;
+            return (
+              <div key={key} title={val > 0 ? `${unitLabel(val)} (${Math.round(pct)}%)` : 'Sin registro'} style={{
+                aspectRatio: '1', display: 'flex', flexDirection: 'column',
+                alignItems: 'center', justifyContent: 'center',
+                backgroundColor: bg, borderRadius: '6px',
+                border: isToday ? `2px solid ${borderColor}` : '2px solid transparent',
+              }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: isToday ? '700' : '500', color: dark ? '#2c2c00' : C.dark, lineHeight: 1.2 }}>{day}</span>
+                {val > 0 && (
+                  <span style={{ fontSize: '0.5rem', color: dark ? '#2c2c00' : C.warm, lineHeight: 1.1 }}>{unitLabel(val)}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Legend */}
+        <div style={{ display: 'flex', gap: '6px', marginTop: '16px', alignItems: 'center' }}>
+          <span style={{ fontSize: '0.75rem', color: C.warm, marginRight: '2px' }}>Menos</span>
+          {[0, 20, 45, 70, 90, 100].map(p => (
+            <div key={p} style={{ width: 18, height: 18, borderRadius: 4, backgroundColor: colorFn(p), border: `1px solid ${borderColor}44` }} title={`${p}%`} />
+          ))}
+          <span style={{ fontSize: '0.75rem', color: C.warm, marginLeft: '2px' }}>Meta</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAnnualChart = (
+    data: { month: number; avg: number; count: number }[],
+    year: number,
+    onPrev: () => void,
+    onNext: () => void,
+    title: string,
+    colorFn: (pct: number) => string,
+    goal: number,
+    maxVal: number,
+    unitSuffix: string,
+  ) => (
+    <div style={card()}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>
+          {title} — {year}
+        </h2>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button onClick={onPrev} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>‹</button>
+          <button onClick={onNext} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>›</button>
+        </div>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '150px', paddingBottom: '4px', borderBottom: `2px solid ${C.lightTan}` }}>
+        {data.map(({ month: m, avg, count }) => {
+          const pct      = maxVal > 0 ? (avg / maxVal) * 100 : 0;
+          const bgColor  = avg === 0 ? C.cream : colorFn((avg / goal) * 100);
+          const isCurMo  = m === new Date().getMonth() && year === new Date().getFullYear();
+          return (
+            <div key={m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: '3px' }}>
+              <div
+                title={avg > 0 ? `${avg}${unitSuffix} prom. (${count} días)` : 'Sin datos'}
+                style={{
+                  width: '100%', height: `${Math.max(avg > 0 ? pct : 2, 2)}%`,
+                  backgroundColor: bgColor,
+                  borderRadius: '4px 4px 0 0',
+                  border: isCurMo ? `2px solid ${C.accent}` : `1px solid ${avg > 0 ? '#ccc' : C.tan}`,
+                  transition: 'height 0.3s', minHeight: '3px',
+                }}
+              />
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
+        {data.map(({ month: m }) => (
+          <div key={m} style={{ flex: 1, textAlign: 'center', fontSize: '0.65rem', color: C.warm }}>{monthShort[m]}</div>
+        ))}
+      </div>
+      {data.some(d => d.count > 0) && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '16px' }}>
+          {data.filter(d => d.count > 0).map(d => (
+            <div key={d.month} style={{ backgroundColor: C.warmWhite, border: `1px solid ${C.lightTan}`, borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
+              <div style={{ fontSize: '0.7rem', color: C.warm }}>{monthNames[d.month]}</div>
+              <div style={{ fontSize: '0.9rem', fontWeight: '700', color: C.accent }}>{d.avg}{unitSuffix}</div>
+              <div style={{ fontSize: '0.65rem', color: C.warm }}>{d.count} días</div>
+            </div>
+          ))}
+        </div>
+      )}
+      {!data.some(d => d.count > 0) && (
+        <p style={{ color: C.warm, textAlign: 'center', padding: '1.5rem 0', margin: 0, fontSize: '0.9rem' }}>
+          Sin datos para {year}.
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div style={{ backgroundColor: C.paper }}>
@@ -211,14 +416,13 @@ const MoodTrackerPage = () => {
             border: `2px solid ${activeTab === tab.id ? C.accent : C.tan}`,
             borderRadius: '8px', padding: '0.75rem 1.25rem',
             fontSize: '0.95rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s',
-          }}>
-            {tab.label}
-          </button>
+          }}>{tab.label}</button>
         ))}
       </div>
 
       <div>
-        {/* ═══════════════════ SLEEP TRACKER ═══════════════════ */}
+
+        {/* ═══════════════════════ SLEEP ═══════════════════════ */}
         {activeTab === 'sleep' && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
             <div>
@@ -227,10 +431,13 @@ const MoodTrackerPage = () => {
                   😴 Registrar Sueño
                 </h2>
 
-                {/* Date picker */}
+                {/* Date */}
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{ display: 'block', fontSize: '0.9rem', fontWeight: '600', color: C.dark, marginBottom: '0.5rem' }}>
-                    📅 Fecha{sleepDate !== today && <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: C.warning, fontWeight: '400' }}>Registrando para fecha pasada</span>}
+                    📅 Fecha
+                    {sleepDate !== today && (
+                      <span style={{ marginLeft: '8px', fontSize: '0.8rem', color: C.warning, fontWeight: '400' }}>Registrando para fecha pasada</span>
+                    )}
                   </label>
                   <input type="date" value={sleepDate} max={today} onChange={e => setSleepDate(e.target.value)} style={inputStyle} />
                 </div>
@@ -251,7 +458,7 @@ const MoodTrackerPage = () => {
                     ⭐ Calidad del Sueño: {sleepQuality}/5 {getQualityEmoji(sleepQuality)}
                   </label>
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {[1, 2, 3, 4, 5].map(q => (
+                    {[1,2,3,4,5].map(q => (
                       <button key={q} onClick={() => setSleepQuality(q)} style={{
                         width: '50px', height: '50px',
                         backgroundColor: sleepQuality >= q ? C.accent : C.cream,
@@ -289,6 +496,7 @@ const MoodTrackerPage = () => {
                 </button>
               </div>
 
+              {/* History */}
               <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>📋 Historial</h2>
                 {sleepLogs.length === 0 ? (
@@ -299,19 +507,29 @@ const MoodTrackerPage = () => {
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr style={{ borderBottom: `2px solid ${C.lightTan}` }}>
-                        {['Fecha', 'Dormida', 'Despertar', 'Duración', 'Calidad'].map(h => (
+                        {['Fecha','Dormida','Despertar','Duración','Calidad',''].map(h => (
                           <th key={h} style={{ padding: '8px', textAlign: 'left', fontSize: '0.8rem', fontWeight: '600', color: C.warm }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
-                      {sleepLogs.map((e, i) => (
-                        <tr key={i} style={{ borderBottom: `1px solid ${C.cream}` }}>
+                      {sleepLogs.map((e) => (
+                        <tr key={e.id} style={{ borderBottom: `1px solid ${C.cream}` }}>
                           <td style={{ padding: '8px', fontSize: '0.85rem', color: C.dark }}>{e.date}</td>
                           <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{e.bedtime}</td>
                           <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{e.wakeTime}</td>
                           <td style={{ padding: '8px', fontSize: '0.85rem', fontWeight: '600', color: C.dark }}>{e.durationHours}h</td>
                           <td style={{ padding: '8px', fontSize: '0.85rem', color: C.accent }}>{'★'.repeat(e.quality)}</td>
+                          <td style={{ padding: '8px' }}>
+                            <button
+                              onClick={() => handleDeleteSleep(e.id)}
+                              disabled={deletingId === e.id}
+                              title="Eliminar registro"
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: deletingId === e.id ? C.tan : C.danger, fontSize: '1rem', padding: '2px 6px', borderRadius: '4px' }}
+                            >
+                              {deletingId === e.id ? '…' : '🗑'}
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -320,40 +538,62 @@ const MoodTrackerPage = () => {
               </div>
             </div>
 
+            {/* Right column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              {[
-                { label: '⏱ Promedio de Sueño',  value: avgSleepDur  ? `${avgSleepDur}h`     : '—', color: C.info,    bg: C.infoLight    },
-                { label: '⭐ Calidad Promedio',   value: avgSleepQual ? `${avgSleepQual}/5`   : '—', color: C.accent,  bg: C.accentGlow   },
-                { label: '📅 Noches Registradas', value: `${sleepLogs.length}`,                      color: C.success, bg: C.successLight },
-                { label: '🎯 Meta de Sueño',      value: '8h',                                       color: C.warning, bg: C.warningLight },
-              ].map((s, i) => (
-                <div key={i} style={{ backgroundColor: s.bg, border: `2px solid ${s.color}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>{s.label}</p>
-                  <p style={{ fontSize: '2rem', fontWeight: '700', color: s.color, margin: '0' }}>{s.value}</p>
-                </div>
-              ))}
+              <div style={{ backgroundColor: C.infoLight, border: `2px solid ${C.info}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>⏱ Promedio de Sueño</p>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: C.info, margin: '0' }}>{avgSleepDur ? `${avgSleepDur}h` : '—'}</p>
+              </div>
+              <div style={{ backgroundColor: C.accentGlow, border: `2px solid ${C.accent}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>⭐ Calidad Promedio</p>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: C.accent, margin: '0' }}>{avgSleepQual ? `${avgSleepQual}/5` : '—'}</p>
+              </div>
+              <div style={{ backgroundColor: C.successLight, border: `2px solid ${C.success}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>📅 Noches Registradas</p>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: C.success, margin: '0' }}>{sleepLogs.length}</p>
+              </div>
+
+              {/* Editable sleep goal */}
+              <div style={{ backgroundColor: C.warningLight, border: `2px solid ${C.warning}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>🎯 Meta de Sueño</p>
+                {editingSleepGoal ? (
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'center' }}>
+                    <input
+                      type="number" value={sleepGoalInput} step="0.5" min="1" max="16"
+                      onChange={e => setSleepGoalInput(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') saveSleepGoal(); if (e.key === 'Escape') setEditingSleepGoal(false); }}
+                      autoFocus
+                      style={{ width: '70px', padding: '6px', border: `1px solid ${C.warning}`, borderRadius: '6px', textAlign: 'center', fontSize: '1rem', fontWeight: '600', color: C.dark, backgroundColor: C.paper }}
+                    />
+                    <span style={{ fontSize: '0.85rem', color: C.dark }}>h</span>
+                    <button onClick={saveSleepGoal} style={{ padding: '6px 10px', backgroundColor: C.warning, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>✓</button>
+                  </div>
+                ) : (
+                  <div>
+                    <p style={{ fontSize: '2rem', fontWeight: '700', color: C.warning, margin: '0 0 0.5rem 0' }}>{sleepGoal}h</p>
+                    <button onClick={() => { setSleepGoalInput(String(sleepGoal)); setEditingSleepGoal(true); }} style={{
+                      padding: '4px 14px', border: `1px solid ${C.warning}`, borderRadius: '6px',
+                      backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.8rem', color: C.warning, fontWeight: '600',
+                    }}>✏️ Editar</button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ═══════════════════ HYDRATION ═══════════════════ */}
+        {/* ═══════════════════════ HYDRATION ═══════════════════════ */}
         {activeTab === 'hydration' && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
             <div>
-              {/* Sub-view tabs */}
+              {/* Sub-tabs */}
               <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
                 {([['daily','📅 Diario'],['monthly','📆 Mensual'],['annual','📊 Anual']] as const).map(([id, label]) => (
-                  <button key={id} onClick={() => setHydrationView(id)} style={{
-                    padding: '0.5rem 1.1rem', borderRadius: '8px', fontSize: '0.9rem', fontWeight: '600', cursor: 'pointer',
-                    backgroundColor: hydrationView === id ? C.info : C.lightCream,
-                    color: hydrationView === id ? C.paper : C.dark,
-                    border: `2px solid ${hydrationView === id ? C.info : C.tan}`,
-                    transition: 'all 0.2s',
-                  }}>{label}</button>
+                  <button key={id} onClick={() => setHydrationView(id)} style={subTabBtn(hydrationView === id, C.info)}>{label}</button>
                 ))}
               </div>
 
-              {/* ── DAILY ── */}
+              {/* Daily */}
               {hydrationView === 'daily' && (
                 <div style={card()}>
                   <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: '0 0 1.5rem 0', fontFamily: 'Georgia, serif' }}>
@@ -371,11 +611,16 @@ const MoodTrackerPage = () => {
                       </div>
                     </div>
                     <div style={{ flex: 1 }}>
-                      <p style={{ fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>{hydrationToday} ml / {hydrationGoal} ml</p>
+                      <p style={{ fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>
+                        {hydrationCurrent} ml / {hydrationGoal} ml
+                        {hydrationSavedToday > 0 && hydrationSession > 0 && (
+                          <span style={{ fontSize: '0.8rem', color: C.warm, marginLeft: '8px' }}>(guardado: {hydrationSavedToday}ml + sesión: {hydrationSession}ml)</span>
+                        )}
+                      </p>
                       <div style={{ width: '100%', height: '12px', backgroundColor: C.cream, borderRadius: '6px', overflow: 'hidden', marginBottom: '1.5rem' }}>
                         <div style={{ width: `${hydrationPct}%`, height: '100%', backgroundColor: C.info, borderRadius: '6px', transition: 'width 0.3s' }} />
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '8px' }}>
                         {[250, 500, 750].map(ml => (
                           <button key={ml} onClick={() => addWater(ml)} style={{
                             padding: '10px', backgroundColor: C.info, color: C.paper,
@@ -383,145 +628,53 @@ const MoodTrackerPage = () => {
                           }}>+{ml}ml</button>
                         ))}
                       </div>
-                      <button onClick={resetWater} style={{
-                        marginTop: '8px', width: '100%', padding: '8px', backgroundColor: C.cream,
+                      {/* Save day button */}
+                      <button
+                        onClick={saveDayHydration}
+                        disabled={hydrationCurrent <= 0}
+                        style={{
+                          width: '100%', padding: '10px', marginBottom: '8px',
+                          backgroundColor: savedToday ? C.success : hydrationCurrent > 0 ? C.accent : C.tan,
+                          color: C.paper, border: 'none', borderRadius: '8px', cursor: hydrationCurrent > 0 ? 'pointer' : 'not-allowed',
+                          fontWeight: '600', fontSize: '0.9rem', transition: 'all 0.2s',
+                        }}
+                      >
+                        {savedToday ? '✅ ¡Día guardado!' : '💾 Guardar día'}
+                      </button>
+                      <button onClick={resetSession} style={{
+                        width: '100%', padding: '8px', backgroundColor: C.cream,
                         border: `1px solid ${C.tan}`, borderRadius: '8px', cursor: 'pointer', fontSize: '0.8rem', color: C.warm,
-                      }}>Reiniciar</button>
+                      }}>Reiniciar sesión</button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* ── MONTHLY HEATMAP ── */}
-              {hydrationView === 'monthly' && (() => {
-                const yr = hydrationMonth.getFullYear();
-                const mo = hydrationMonth.getMonth();
-                const daysInMo = getDaysInMonth(yr, mo);
-                const firstDay = getFirstDayOfMonth(yr, mo);
-                const cells: (number | null)[] = [
-                  ...Array(firstDay).fill(null),
-                  ...Array.from({ length: daysInMo }, (_, i) => i + 1),
-                ];
-                return (
-                  <div style={card()}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                      <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>
-                        💧 Mapa de Calor — {monthNames[mo]} {yr}
-                      </h2>
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <button onClick={() => setHydrationMonth(new Date(yr, mo - 1, 1))} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>‹</button>
-                        <button onClick={() => setHydrationMonth(new Date(yr, mo + 1, 1))} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>›</button>
-                      </div>
-                    </div>
+              {/* Monthly heatmap */}
+              {hydrationView === 'monthly' && renderHeatmap(
+                hydrationLog,
+                hydrationMonth,
+                () => setHydrationMonth(new Date(hydrationMonth.getFullYear(), hydrationMonth.getMonth() - 1, 1)),
+                () => setHydrationMonth(new Date(hydrationMonth.getFullYear(), hydrationMonth.getMonth() + 1, 1)),
+                '💧 Mapa de Calor',
+                hydrationColor,
+                hydrationGoal,
+                v => v >= 1000 ? `${(v/1000).toFixed(1)}L` : `${v}ml`,
+                75,
+                C.info,
+              )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '5px' }}>
-                      {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
-                        <div key={d} style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: '600', color: C.warm, paddingBottom: '6px' }}>{d}</div>
-                      ))}
-                      {cells.map((day, idx) => {
-                        if (day === null) return <div key={`e-${idx}`} />;
-                        const key = `${yr}-${String(mo + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                        const ml  = hydrationLog[key] ?? 0;
-                        const pct = hydrationGoal > 0 ? (ml / hydrationGoal) * 100 : 0;
-                        const bg  = hydrationColor(pct);
-                        const isToday = key === today;
-                        const textDark = pct >= 75;
-                        return (
-                          <div key={key} title={ml > 0 ? `${ml} ml (${Math.round(pct)}%)` : 'Sin registro'} style={{
-                            aspectRatio: '1', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center',
-                            backgroundColor: bg, borderRadius: '6px',
-                            border: isToday ? `2px solid ${C.info}` : '2px solid transparent',
-                          }}>
-                            <span style={{ fontSize: '0.75rem', fontWeight: isToday ? '700' : '500', color: textDark ? '#1a5276' : C.dark, lineHeight: 1.2 }}>{day}</span>
-                            {ml > 0 && (
-                              <span style={{ fontSize: '0.55rem', color: textDark ? '#1a5276' : C.warm, lineHeight: 1.1 }}>
-                                {ml >= 1000 ? `${(ml / 1000).toFixed(1)}L` : `${ml}ml`}
-                              </span>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Legend */}
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '16px', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.75rem', color: C.warm, marginRight: '2px' }}>Menos</span>
-                      {[0, 20, 45, 70, 90, 100].map(p => (
-                        <div key={p} style={{ width: 18, height: 18, borderRadius: 4, backgroundColor: hydrationColor(p), border: '1px solid #bde' }} title={`${p}%`} />
-                      ))}
-                      <span style={{ fontSize: '0.75rem', color: C.warm, marginLeft: '2px' }}>Meta</span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── ANNUAL CHART ── */}
-              {hydrationView === 'annual' && (
-                <div style={card()}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
-                    <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>
-                      📊 Resumen Anual — {hydrationYear}
-                    </h2>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => setHydrationYear(y => y - 1)} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>‹</button>
-                      <button onClick={() => setHydrationYear(y => y + 1)} style={{ padding: '6px 14px', border: `1px solid ${C.tan}`, borderRadius: '6px', backgroundColor: C.cream, cursor: 'pointer', color: C.dark, fontWeight: '700', fontSize: '1rem' }}>›</button>
-                    </div>
-                  </div>
-
-                  {/* Bar chart */}
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '6px', height: '150px', paddingBottom: '4px', borderBottom: `2px solid ${C.lightTan}` }}>
-                    {annualData.map(({ month: m, avg, count }) => {
-                      const pct     = maxAnnualAvg > 0 ? (avg / maxAnnualAvg) * 100 : 0;
-                      const bgColor = avg === 0 ? C.cream : avg >= hydrationGoal ? '#2E8BC0' : hydrationColor((avg / hydrationGoal) * 100);
-                      const isCurMonth = m === new Date().getMonth() && hydrationYear === new Date().getFullYear();
-                      return (
-                        <div key={m} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end', gap: '3px' }}>
-                          <div
-                            title={avg > 0 ? `${avg} ml/día prom. (${count} días)` : 'Sin datos'}
-                            style={{
-                              width: '100%', height: `${Math.max(avg > 0 ? pct : 2, 2)}%`,
-                              backgroundColor: bgColor,
-                              borderRadius: '4px 4px 0 0',
-                              border: isCurMonth ? `2px solid ${C.info}` : `1px solid ${avg > 0 ? '#7DC3EA' : C.tan}`,
-                              transition: 'height 0.3s',
-                              minHeight: '3px',
-                            }}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {/* Month labels */}
-                  <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                    {annualData.map(({ month: m }) => (
-                      <div key={m} style={{ flex: 1, textAlign: 'center', fontSize: '0.65rem', color: C.warm }}>{monthShort[m]}</div>
-                    ))}
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '12px', fontSize: '0.8rem', color: C.warm }}>
-                    <div style={{ width: 20, height: 4, backgroundColor: '#2E8BC0', borderRadius: 2 }} />
-                    <span>Meta diaria: {hydrationGoal} ml</span>
-                  </div>
-
-                  {/* Monthly stats mini-cards */}
-                  {annualData.some(d => d.count > 0) && (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '16px' }}>
-                      {annualData.filter(d => d.count > 0).map(d => (
-                        <div key={d.month} style={{ backgroundColor: C.warmWhite, border: `1px solid ${C.lightTan}`, borderRadius: '8px', padding: '8px', textAlign: 'center' }}>
-                          <div style={{ fontSize: '0.7rem', color: C.warm }}>{monthNames[d.month]}</div>
-                          <div style={{ fontSize: '0.9rem', fontWeight: '700', color: C.info }}>{d.avg}ml</div>
-                          <div style={{ fontSize: '0.65rem', color: C.warm }}>{d.count} días</div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {!annualData.some(d => d.count > 0) && (
-                    <p style={{ color: C.warm, textAlign: 'center', padding: '1.5rem 0', margin: 0, fontSize: '0.9rem' }}>
-                      Sin datos para {hydrationYear}. Empieza a registrar desde la vista Diaria.
-                    </p>
-                  )}
-                </div>
+              {/* Annual chart */}
+              {hydrationView === 'annual' && renderAnnualChart(
+                annualHydroData,
+                hydrationYear,
+                () => setHydrationYear(y => y - 1),
+                () => setHydrationYear(y => y + 1),
+                '📊 Resumen Anual',
+                hydrationColor,
+                hydrationGoal,
+                maxHydroAvg,
+                'ml',
               )}
             </div>
 
@@ -529,7 +682,10 @@ const MoodTrackerPage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ backgroundColor: C.infoLight, border: `2px solid ${C.info}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
                 <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>💧 Hoy</p>
-                <p style={{ fontSize: '2rem', fontWeight: '700', color: C.info, margin: '0' }}>{hydrationToday}ml</p>
+                <p style={{ fontSize: '2rem', fontWeight: '700', color: C.info, margin: '0' }}>{hydrationCurrent}ml</p>
+                {hydrationSavedToday > 0 && (
+                  <p style={{ fontSize: '0.75rem', color: C.warm, margin: '4px 0 0 0' }}>Guardado: {hydrationSavedToday}ml</p>
+                )}
               </div>
 
               {/* Editable goal */}
@@ -540,12 +696,12 @@ const MoodTrackerPage = () => {
                     <input
                       type="number" value={goalInput}
                       onChange={e => setGoalInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') saveGoal(); if (e.key === 'Escape') setEditingGoal(false); }}
+                      onKeyDown={e => { if (e.key === 'Enter') saveHydroGoal(); if (e.key === 'Escape') setEditingGoal(false); }}
                       autoFocus
                       style={{ width: '80px', padding: '6px', border: `1px solid ${C.accent}`, borderRadius: '6px', textAlign: 'center', fontSize: '1rem', fontWeight: '600', color: C.dark, backgroundColor: C.paper }}
                     />
                     <span style={{ fontSize: '0.85rem', color: C.dark }}>ml</span>
-                    <button onClick={saveGoal} style={{ padding: '6px 10px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>✓</button>
+                    <button onClick={saveHydroGoal} style={{ padding: '6px 10px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>✓</button>
                   </div>
                 ) : (
                   <div>
@@ -566,57 +722,104 @@ const MoodTrackerPage = () => {
           </div>
         )}
 
-        {/* ═══════════════════ MEDICATION ═══════════════════ */}
+        {/* ═══════════════════════ MEDICATION ═══════════════════════ */}
         {activeTab === 'medication' && (
           <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2rem' }}>
             <div>
-              <div style={card()}>
-                <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: '0 0 1.5rem 0', fontFamily: 'Georgia, serif' }}>
-                  💊 Mis Medicamentos
-                </h2>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {medications.map(med => (
-                    <div key={med.id} style={{
-                      backgroundColor: C.paper, border: `1px solid ${med.taken ? C.success : C.tan}`,
-                      borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
-                    }}>
-                      <input type="checkbox" checked={med.taken} onChange={() => toggleMedicationTaken(med.id)}
-                        style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: C.accent }} />
-                      <div style={{ flex: 1 }}>
-                        <p style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: 0 }}>{med.name}</p>
-                        <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0.2rem 0 0 0' }}>{med.dosage} · {med.frequency} · {med.time}</p>
-                      </div>
-                      <span style={{ padding: '0.3rem 0.75rem', backgroundColor: med.taken ? C.successLight : C.warningLight, borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>
-                        {med.taken ? '✅ Tomado' : '⏳ Pendiente'}
-                      </span>
-                      <button onClick={() => removeMedication(med.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '1.1rem', padding: '0 4px' }}>✕</button>
-                    </div>
-                  ))}
-                </div>
+              {/* Sub-tabs */}
+              <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
+                {([['daily','💊 Diario'],['monthly','📆 Mensual'],['annual','📊 Anual']] as const).map(([id, label]) => (
+                  <button key={id} onClick={() => setMedView(id)} style={subTabBtn(medView === id, C.accent)}>{label}</button>
+                ))}
               </div>
 
-              <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>➕ Agregar Medicamento</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Nombre</label>
-                    <input value={newMedName} onChange={e => setNewMedName(e.target.value)} placeholder="Vitamina D..." style={{ ...inputStyle, padding: '8px' }} />
+              {/* Daily */}
+              {medView === 'daily' && (
+                <>
+                  <div style={card()}>
+                    <h2 style={{ fontSize: '1.3rem', fontWeight: '600', color: C.dark, margin: '0 0 1.5rem 0', fontFamily: 'Georgia, serif' }}>
+                      💊 Mis Medicamentos
+                    </h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {medications.map(med => (
+                        <div key={med.id} style={{
+                          backgroundColor: C.paper, border: `1px solid ${med.taken ? C.success : C.tan}`,
+                          borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                        }}>
+                          <input type="checkbox" checked={med.taken} onChange={() => toggleMedicationTaken(med.id)}
+                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: C.accent }} />
+                          <div style={{ flex: 1 }}>
+                            <p style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: 0 }}>{med.name}</p>
+                            <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0.2rem 0 0 0' }}>{med.dosage} · {med.frequency} · {med.time}</p>
+                          </div>
+                          <span style={{ padding: '0.3rem 0.75rem', backgroundColor: med.taken ? C.successLight : C.warningLight, borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>
+                            {med.taken ? '✅ Tomado' : '⏳ Pendiente'}
+                          </span>
+                          <button onClick={() => removeMedication(med.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '1.1rem', padding: '0 4px' }}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={saveMedDay} style={{
+                      marginTop: '1rem', width: '100%', padding: '10px',
+                      backgroundColor: C.accent, color: C.paper, border: 'none',
+                      borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem',
+                    }}>
+                      💾 Guardar adherencia de hoy
+                    </button>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Dosis</label>
-                    <input value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} placeholder="2000 IU" style={{ ...inputStyle, padding: '8px' }} />
+
+                  <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>➕ Agregar Medicamento</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Nombre</label>
+                        <input value={newMedName} onChange={e => setNewMedName(e.target.value)} placeholder="Vitamina D..." style={{ ...inputStyle, padding: '8px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Dosis</label>
+                        <input value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} placeholder="2000 IU" style={{ ...inputStyle, padding: '8px' }} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Hora</label>
+                        <input type="time" value={newMedTime} onChange={e => setNewMedTime(e.target.value)} style={{ ...inputStyle, padding: '8px' }} />
+                      </div>
+                      <button onClick={addMedication} style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
+                        Agregar
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Hora</label>
-                    <input type="time" value={newMedTime} onChange={e => setNewMedTime(e.target.value)} style={{ ...inputStyle, padding: '8px' }} />
-                  </div>
-                  <button onClick={addMedication} style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                    Agregar
-                  </button>
-                </div>
-              </div>
+                </>
+              )}
+
+              {/* Monthly heatmap */}
+              {medView === 'monthly' && renderHeatmap(
+                medLog,
+                medMonth,
+                () => setMedMonth(new Date(medMonth.getFullYear(), medMonth.getMonth() - 1, 1)),
+                () => setMedMonth(new Date(medMonth.getFullYear(), medMonth.getMonth() + 1, 1)),
+                '💊 Adherencia Mensual',
+                medColor,
+                100,
+                v => `${v}%`,
+                70,
+                C.accent,
+              )}
+
+              {/* Annual chart */}
+              {medView === 'annual' && renderAnnualChart(
+                annualMedData,
+                medYear,
+                () => setMedYear(y => y - 1),
+                () => setMedYear(y => y + 1),
+                '📊 Adherencia Anual',
+                medColor,
+                100,
+                maxMedAvg,
+                '%',
+              )}
             </div>
 
+            {/* Right column */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               {[
                 { label: '✅ Tomados',    value: `${medTaken}/${medications.length}`, color: C.success, bg: C.successLight },
@@ -632,11 +835,18 @@ const MoodTrackerPage = () => {
                   💡 Registra tus medicamentos diarios y marca cada uno como tomado para mantener un historial de adherencia.
                 </p>
               </div>
+              {/* Today's adherence from log */}
+              {medLog[today] !== undefined && (
+                <div style={{ backgroundColor: C.accentGlow, border: `2px solid ${C.accent}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
+                  <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>📅 Guardado hoy</p>
+                  <p style={{ fontSize: '2rem', fontWeight: '700', color: C.accent, margin: '0' }}>{medLog[today]}%</p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* ═══════════════════ MENSTRUAL CYCLE ═══════════════════ */}
+        {/* ═══════════════════════ MENSTRUAL CYCLE ═══════════════════════ */}
         {activeTab === 'period' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
@@ -651,18 +861,15 @@ const MoodTrackerPage = () => {
                 </div>
               ))}
             </div>
-
             <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>
-                📅 Calendario de Ciclo — Abril 2026
-              </h2>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>📅 Calendario de Ciclo — Abril 2026</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(d => (
+                {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
                   <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: C.warm, padding: '4px' }}>{d}</div>
                 ))}
                 {([...Array.from({ length: 2 }, () => null as number | null), ...Array.from({ length: 30 }, (_, i) => i + 1)] as (number | null)[]).map((day, idx) => {
-                  const isPeriod    = day !== null && day >= 12 && day <= 16;
-                  const isFertile   = day !== null && day >= 22 && day <= 26;
+                  const isPeriod = day !== null && day >= 12 && day <= 16;
+                  const isFertile = day !== null && day >= 22 && day <= 26;
                   const isOvulation = day === 24;
                   return (
                     <div key={idx} style={{
@@ -680,11 +887,10 @@ const MoodTrackerPage = () => {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: C.accentGlow  }} /> Ovulación</div>
               </div>
             </div>
-
             <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Síntomas del Ciclo</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                {['Cólicos', 'Hinchazón', 'Dolor de cabeza', 'Fatiga', 'Cambios de humor', 'Acné', 'Antojos', 'Sensibilidad'].map(s => (
+                {['Cólicos','Hinchazón','Dolor de cabeza','Fatiga','Cambios de humor','Acné','Antojos','Sensibilidad'].map(s => (
                   <button key={s} style={{ padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '8px', backgroundColor: C.paper, cursor: 'pointer', fontSize: '0.8rem', color: C.dark, textAlign: 'center', transition: 'all 0.2s' }}
                     onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.dangerLight)}
                     onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.paper)}
@@ -692,12 +898,11 @@ const MoodTrackerPage = () => {
                 ))}
               </div>
             </div>
-
             <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Historial de Ciclos</h2>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr style={{ borderBottom: `2px solid ${C.lightTan}` }}>
-                  {['Inicio', 'Duración', 'Ciclo', 'Síntomas'].map(h => (
+                  {['Inicio','Duración','Ciclo','Síntomas'].map(h => (
                     <th key={h} style={{ padding: '8px', textAlign: 'left', fontSize: '0.85rem', fontWeight: '600', color: C.warm }}>{h}</th>
                   ))}
                 </tr></thead>
@@ -720,7 +925,7 @@ const MoodTrackerPage = () => {
           </div>
         )}
 
-        {/* ═══════════════════ HEALTH LOG ═══════════════════ */}
+        {/* ═══════════════════════ HEALTH LOG ═══════════════════════ */}
         {activeTab === 'healthlog' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
@@ -742,12 +947,9 @@ const MoodTrackerPage = () => {
                     {['< 1 hora','1-3 horas','3-6 horas','Todo el día','Varios días'].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                  Registrar
-                </button>
+                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Registrar</button>
               </div>
             </div>
-
             <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Historial de Síntomas</h2>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -780,13 +982,10 @@ const MoodTrackerPage = () => {
                 </tbody>
               </table>
             </div>
-
             <div style={{ ...card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` }), marginBottom: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>🏥 Citas Médicas</h2>
-                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>
-                  + Nueva Cita
-                </button>
+                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>+ Nueva Cita</button>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '1.5rem' }}>
                 {[
@@ -808,7 +1007,6 @@ const MoodTrackerPage = () => {
                   </div>
                 ))}
               </div>
-
               <h3 style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: '0 0 0.75rem 0' }}>Historial de Citas</h3>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr style={{ borderBottom: `2px solid ${C.lightTan}` }}>
@@ -818,9 +1016,9 @@ const MoodTrackerPage = () => {
                 </tr></thead>
                 <tbody>
                   {[
-                    { date: '15 Mar 2026', doctor: 'Dr. García',  specialty: 'General',       result: 'Todo en orden, análisis normal'   },
-                    { date: '20 Feb 2026', doctor: 'Dra. Ruiz',   specialty: 'Oftalmología',  result: 'Vista estable, nueva receta'      },
-                    { date: '10 Ene 2026', doctor: 'Dr. Torres',  specialty: 'Traumatología', result: 'Recuperación completa rodilla'    },
+                    { date: '15 Mar 2026', doctor: 'Dr. García', specialty: 'General',       result: 'Todo en orden, análisis normal' },
+                    { date: '20 Feb 2026', doctor: 'Dra. Ruiz',  specialty: 'Oftalmología',  result: 'Vista estable, nueva receta'    },
+                    { date: '10 Ene 2026', doctor: 'Dr. Torres', specialty: 'Traumatología', result: 'Recuperación completa rodilla'  },
                   ].map((row, i) => (
                     <tr key={i} style={{ borderBottom: `1px solid ${C.cream}` }}>
                       <td style={{ padding: '8px', fontSize: '0.85rem', color: C.dark }}>{row.date}</td>
@@ -834,6 +1032,7 @@ const MoodTrackerPage = () => {
             </div>
           </div>
         )}
+
       </div>
     </div>
   );

@@ -40,6 +40,7 @@ interface WellnessState {
     dreamJournal: string,
     date?: string
   ) => Promise<void>;
+  deleteSleepLog: (id: string) => Promise<void>;
 }
 
 export const useWellnessStore = create<WellnessState>((set, get) => ({
@@ -111,5 +112,12 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
       set({ savingSleep: false });
       throw e;
     }
+  },
+
+  deleteSleepLog: async (id) => {
+    await api.delete(`/wellness/sleep?id=${id}`);
+    set((state) => ({
+      sleepLogs: state.sleepLogs.filter((l) => l.id !== id),
+    }));
   },
 }));
