@@ -25,6 +25,45 @@ import { useFitnessStore } from "@/stores/fitness-store";
 import { useWellnessStore } from "@/stores/wellness-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
+import { useThemeStore } from "@/stores/theme-store";
+
+// Fires browser notifications at the scheduled time
+function NotificationScheduler() {
+  useEffect(() => {
+    const check = () => {
+      if (typeof Notification === "undefined") return;
+      const enabled = localStorage.getItem("habit-notifications") === "true";
+      if (!enabled || Notification.permission !== "granted") return;
+
+      const reminderTime = localStorage.getItem("habit-reminder-time") || "08:00";
+      const now = new Date();
+      const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+      if (nowTime !== reminderTime) return;
+
+      // Avoid sending twice in the same minute
+      const key = `${now.toISOString().split("T")[0]}-${reminderTime}`;
+      if (localStorage.getItem("habit-last-notif") === key) return;
+      localStorage.setItem("habit-last-notif", key);
+
+      new Notification("⏰ Ultimate Habit Tracker", {
+        body: "¡Es hora de completar tus hábitos del día! 🔥",
+        icon: "/favicon.ico",
+      });
+    };
+
+    const interval = setInterval(check, 60000);
+    check();
+    return () => clearInterval(interval);
+  }, []);
+  return null;
+}
+
+// Applies saved theme on first render
+function ThemeInitializer() {
+  const { initTheme } = useThemeStore();
+  useEffect(() => { initTheme(); }, []);
+  return null;
+}
 
 export default function MainApp() {
   const { activePage, showMonthlySummary, showWeeklySummary, toggleSidebar } = useAppStore();
@@ -99,6 +138,8 @@ export default function MainApp() {
 
   return (
     <div style={{ display: "flex", height: "100vh", backgroundColor: "var(--color-paper)" }}>
+      <NotificationScheduler />
+      <ThemeInitializer />
       {/* Sidebar */}
       <Sidebar isOpen={sidebarOpen} />
 

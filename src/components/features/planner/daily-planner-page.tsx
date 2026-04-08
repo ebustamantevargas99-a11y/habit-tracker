@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { usePlannerStore, hourToTime } from '@/stores/planner-store';
 import { useHabitStore } from '@/stores/habit-store';
+import { useUserStore } from '@/stores/user-store';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { ChevronLeft, ChevronRight, Plus, Trash2, CheckCircle, Circle } from 'lucide-react';
 
@@ -542,6 +543,7 @@ const WeeklyPlannerTab = () => {
 // ============= MONTHLY PLANNER TAB =============
 const MonthlyPlannerTab = () => {
   const { habits, logs } = useHabitStore();
+  const weekStartsOn = useUserStore(s => s.user?.profile?.weekStartsOn ?? 1);
   const [monthlyGoals, setMonthlyGoals] = useState<MonthlyGoal[]>([
     { id: '1', title: 'Completar curso de análisis avanzado' },
     { id: '2', title: 'Terminar proyecto principal' },
@@ -553,10 +555,16 @@ const MonthlyPlannerTab = () => {
 
   const getDaysInMonth = () => new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
   const daysInMonth = getDaysInMonth();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+  // Adjust firstDay offset based on weekStartsOn (0=Sun, 1=Mon)
+  const rawFirstDay = new Date(today.getFullYear(), today.getMonth(), 1).getDay();
+  const firstDay = (rawFirstDay - weekStartsOn + 7) % 7;
 
-  const calendarDays = Array.from({ length: 35 }, (_, i) => {
-    const dayNum = i - (firstDay - 1);
+  // Day labels starting from weekStartsOn
+  const ALL_DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const dayLabels = Array.from({ length: 7 }, (_, i) => ALL_DAYS[(weekStartsOn + i) % 7]);
+
+  const calendarDays = Array.from({ length: 42 }, (_, i) => {
+    const dayNum = i - firstDay + 1;
     return dayNum > 0 && dayNum <= daysInMonth ? dayNum : null;
   });
 
@@ -633,7 +641,7 @@ const MonthlyPlannerTab = () => {
               {month}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem' }}>
-              {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map(day => (
+              {dayLabels.map(day => (
                 <div key={day} style={{
                   textAlign: 'center', fontWeight: '700', color: C.dark,
                   fontSize: '0.85rem', padding: '0.5rem'

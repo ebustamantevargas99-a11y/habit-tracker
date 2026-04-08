@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 
@@ -46,4 +46,24 @@ export async function GET() {
     streakInsuranceDays: gamification.streakInsuranceDays,
     badges,
   });
+}
+
+export async function PATCH(req: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  }
+
+  const body = await req.json();
+  const { streakInsuranceDays } = body;
+
+  if (streakInsuranceDays !== undefined) {
+    await prisma.gamification.upsert({
+      where: { userId: session.user.id },
+      create: { userId: session.user.id, totalXP: 0, streakInsuranceDays },
+      update: { streakInsuranceDays },
+    });
+  }
+
+  return NextResponse.json({ ok: true });
 }

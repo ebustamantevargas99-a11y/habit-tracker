@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { User, Trophy, Zap, Shield, Download, Trash2, Bell, Palette, Globe, Lock } from 'lucide-react';
+import { User, Trophy, Zap, Shield, Download, Trash2, Bell, Palette, Globe, Lock, Check } from 'lucide-react';
 import { LEVELS, XP_REWARDS } from '@/lib/constants';
 import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { useGamificationStore } from '@/stores/gamification-store';
 import { useUserStore } from '@/stores/user-store';
+import { useThemeStore, type ThemeId } from '@/stores/theme-store';
+import { api } from '@/lib/api-client';
 
 const C = {
   dark: "#3D2B1F", brown: "#6B4226", medium: "#8B6542", warm: "#A0845C",
@@ -278,14 +280,85 @@ function GamificationTab() {
   );
 }
 
+const SUCCESS = "#7A9E3E";
+
 // ============== PREFERENCES TAB ==============
 function PreferencesTab() {
-  const [notifications, setNotifications] = useState(true);
+  const { user, saveProfile } = useUserStore();
+  const { streakInsuranceDays } = useGamificationStore();
+  const { theme, setTheme } = useThemeStore();
+
+  const [notifications, setNotifications] = useState(false);
   const [reminderTime, setReminderTime] = useState('08:00');
-  const [weekStart, setWeekStart] = useState('lunes');
-  const [theme, setTheme] = useState('warm');
+  const [notifPermission, setNotifPermission] = useState<string>('default');
+  const [notifStatus, setNotifStatus] = useState('');
+
+  const [weekStartsOn, setWeekStartsOn] = useState(1); // 1=Lunes, 0=Domingo
   const [language, setLanguage] = useState('es');
-  const [streakInsurance, setStreakInsurance] = useState(1);
+  const [insurance, setInsurance] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Load from store + localStorage on mount
+  useEffect(() => {
+    if (user?.profile) {
+      setWeekStartsOn(user.profile.weekStartsOn ?? 1);
+      setLanguage(user.profile.language ?? 'es');
+    }
+    setInsurance(streakInsuranceDays ?? 1);
+
+    // Notifications
+    const enabled = localStorage.getItem('habit-notifications') === 'true';
+    const time = localStorage.getItem('habit-reminder-time') || '08:00';
+    setNotifications(enabled);
+    setReminderTime(time);
+    if (typeof Notification !== 'undefined') {
+      setNotifPermission(Notification.permission);
+    }
+  }, [user, streakInsuranceDays]);
+
+  const handleToggleNotifications = async () => {
+    if (!notifications) {
+      if (typeof Notification === 'undefined') {
+        setNotifStatus('Tu navegador no soporta notificaciones');
+        return;
+      }
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+      if (perm === 'granted') {
+        setNotifications(true);
+        localStorage.setItem('habit-notifications', 'true');
+        new Notification('✅ Notificaciones activadas', {
+          body: `Recibirás recordatorios diarios a las ${reminderTime}`,
+          icon: '/favicon.ico',
+        });
+        setNotifStatus('Notificaciones activadas');
+      } else {
+        setNotifStatus('Permiso denegado. Habilítalas en la configuración del navegador.');
+      }
+    } else {
+      setNotifications(false);
+      localStorage.setItem('habit-notifications', 'false');
+      setNotifStatus('Notificaciones desactivadas');
+    }
+  };
+
+  const handleTimeChange = (time: string) => {
+    setReminderTime(time);
+    localStorage.setItem('habit-reminder-time', time);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      await saveProfile({ weekStartsOn, language });
+      await api.patch('/user/gamification', { streakInsuranceDays: insurance });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const cardStyle: React.CSSProperties = {
     backgroundColor: C.paper, borderRadius: '12px', padding: '24px',
@@ -300,6 +373,13 @@ function PreferencesTab() {
     backgroundColor: C.cream, fontSize: '0.9rem', color: C.dark,
   };
 
+  const THEMES: { id: ThemeId; name: string; colors: string[]; preview: string }[] = [
+    { id: 'warm',   name: 'Cálido',       preview: 'Beige & Dorado',   colors: ['#3D2B1F','#6B4226','#B8860B','#EDE0D4'] },
+    { id: 'ocean',  name: 'Océano',       preview: 'Azul Marino',      colors: ['#0D2137','#1A3A5C','#0A7ABA','#C8E0EC'] },
+    { id: 'forest', name: 'Bosque',       preview: 'Verde Natural',    colors: ['#1A2C1A','#2D4A2D','#27AE60','#C8E8C8'] },
+    { id: 'rose',   name: 'Rosa Pastel',  preview: 'Rosa & Suave',     colors: ['#4A2035','#7A3055','#C45585','#F5D8E8'] },
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       {/* Notifications */}
@@ -310,11 +390,14 @@ function PreferencesTab() {
         <div style={rowStyle}>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark }}>Recordatorios de Hábitos</div>
-            <div style={{ fontSize: '0.75rem', color: C.warm }}>Recibe notificaciones para completar tus hábitos</div>
+            <div style={{ fontSize: '0.75rem', color: C.warm }}>
+              Notificación del sistema en la hora seleccionada
+              {notifPermission === 'denied' && <span style={{ color: C.danger }}> — Permiso denegado en el navegador</span>}
+            </div>
           </div>
-          <button onClick={() => setNotifications(!notifications)} style={{
+          <button onClick={handleToggleNotifications} style={{
             width: '50px', height: '28px', borderRadius: '14px', border: 'none', cursor: 'pointer',
-            backgroundColor: notifications ? C.success : C.tan, position: 'relative', transition: 'all 0.3s',
+            backgroundColor: notifications ? SUCCESS : C.tan, position: 'relative', transition: 'all 0.3s',
           }}>
             <div style={{
               width: '22px', height: '22px', borderRadius: '50%', backgroundColor: C.paper,
@@ -323,13 +406,18 @@ function PreferencesTab() {
             }} />
           </button>
         </div>
-        <div style={rowStyle}>
+        <div style={{ ...rowStyle, borderBottom: 'none' }}>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark }}>Hora de Recordatorio</div>
-            <div style={{ fontSize: '0.75rem', color: C.warm }}>Hora del recordatorio diario</div>
+            <div style={{ fontSize: '0.75rem', color: C.warm }}>Recibirás una notificación del sistema a esta hora</div>
           </div>
-          <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)} style={selectStyle} />
+          <input type="time" value={reminderTime} onChange={e => handleTimeChange(e.target.value)} style={selectStyle} />
         </div>
+        {notifStatus && (
+          <div style={{ fontSize: '0.8rem', color: notifications ? SUCCESS : C.danger, marginTop: '8px', fontWeight: '500' }}>
+            {notifStatus}
+          </div>
+        )}
       </div>
 
       {/* General */}
@@ -340,13 +428,14 @@ function PreferencesTab() {
         <div style={rowStyle}>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark }}>Inicio de Semana</div>
+            <div style={{ fontSize: '0.75rem', color: C.warm }}>Afecta el calendario mensual del Planificador</div>
           </div>
-          <select value={weekStart} onChange={e => setWeekStart(e.target.value)} style={selectStyle}>
-            <option value="lunes">Lunes</option>
-            <option value="domingo">Domingo</option>
+          <select value={weekStartsOn} onChange={e => setWeekStartsOn(Number(e.target.value))} style={selectStyle}>
+            <option value={1}>Lunes</option>
+            <option value={0}>Domingo</option>
           </select>
         </div>
-        <div style={rowStyle}>
+        <div style={{ ...rowStyle, borderBottom: 'none' }}>
           <div>
             <div style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark }}>Idioma</div>
           </div>
@@ -357,21 +446,21 @@ function PreferencesTab() {
         </div>
       </div>
 
-      {/* Gamification */}
+      {/* Streak Insurance */}
       <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Shield size={20} color={C.accent} /> Streak Insurance
         </h3>
         <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 16px 0' }}>
-          Días libres permitidos por semana sin perder tu racha
+          Días consecutivos que puedes fallar un hábito programado sin romper tu racha
         </p>
         <div style={{ display: 'flex', gap: '10px' }}>
           {[0, 1, 2, 3].map(n => (
-            <button key={n} onClick={() => setStreakInsurance(n)} style={{
+            <button key={n} onClick={() => setInsurance(n)} style={{
               padding: '12px 20px', borderRadius: '8px', cursor: 'pointer',
-              backgroundColor: streakInsurance === n ? C.accent : C.lightCream,
-              color: streakInsurance === n ? C.paper : C.dark,
-              border: streakInsurance === n ? `2px solid ${C.accent}` : `1px solid ${C.tan}`,
+              backgroundColor: insurance === n ? C.accent : C.lightCream,
+              color: insurance === n ? C.paper : C.dark,
+              border: insurance === n ? `2px solid ${C.accent}` : `1px solid ${C.tan}`,
               fontWeight: '600', fontSize: '0.9rem',
             }}>
               {n === 0 ? 'Ninguno' : `${n} día${n > 1 ? 's' : ''}`}
@@ -380,33 +469,50 @@ function PreferencesTab() {
         </div>
       </div>
 
-      {/* Theme */}
+      {/* Visual Theme */}
       <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Palette size={20} color={C.accent} /> Tema Visual
         </h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-          {[
-            { id: 'warm', name: 'Cálido', colors: [C.dark, C.brown, C.accent, C.cream] },
-            { id: 'ocean', name: 'Océano', colors: ['#1B2838', '#2C3E50', '#3498DB', '#ECF0F1'] },
-            { id: 'forest', name: 'Bosque', colors: ['#1A2F1A', '#2D4A2D', '#27AE60', '#E8F5E9'] },
-          ].map(t => (
+        <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 16px 0' }}>
+          Cambia la paleta de colores de toda la aplicación al instante
+        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {THEMES.map(t => (
             <button key={t.id} onClick={() => setTheme(t.id)} style={{
-              padding: '16px', borderRadius: '10px', cursor: 'pointer',
+              padding: '16px 12px', borderRadius: '10px', cursor: 'pointer',
               backgroundColor: theme === t.id ? C.accentGlow : C.lightCream,
               border: theme === t.id ? `2px solid ${C.accent}` : `1px solid ${C.tan}`,
-              textAlign: 'center',
+              textAlign: 'center', transition: 'all 0.2s',
             }}>
               <div style={{ display: 'flex', justifyContent: 'center', gap: '4px', marginBottom: '8px' }}>
                 {t.colors.map((c, i) => (
-                  <div key={i} style={{ width: '20px', height: '20px', borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />
+                  <div key={i} style={{ width: '18px', height: '18px', borderRadius: '50%', backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />
                 ))}
               </div>
               <div style={{ fontSize: '0.85rem', fontWeight: '600', color: C.dark }}>{t.name}</div>
-              {t.id === 'warm' && <div style={{ fontSize: '0.65rem', color: C.success, marginTop: '2px' }}>Activo</div>}
+              <div style={{ fontSize: '0.65rem', color: C.warm, marginTop: '2px' }}>{t.preview}</div>
+              {theme === t.id && (
+                <div style={{ fontSize: '0.65rem', color: SUCCESS, marginTop: '4px', fontWeight: '700', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                  <Check size={10} /> Activo
+                </div>
+              )}
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Save Button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
+        <button onClick={handleSave} disabled={isSaving} style={{
+          padding: '12px 32px', backgroundColor: saved ? SUCCESS : C.accent,
+          color: C.paper, border: 'none', borderRadius: '8px',
+          fontWeight: '600', fontSize: '0.95rem',
+          cursor: isSaving ? 'not-allowed' : 'pointer',
+          display: 'flex', alignItems: 'center', gap: '8px', transition: 'background-color 0.3s',
+        }}>
+          {saved ? <><Check size={16} /> Guardado</> : isSaving ? 'Guardando...' : 'Guardar Preferencias'}
+        </button>
       </div>
     </div>
   );

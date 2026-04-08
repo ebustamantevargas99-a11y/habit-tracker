@@ -65,10 +65,18 @@ export async function POST(
     update: { completed },
   });
 
+  // Get streak insurance setting
+  const gamification = await prisma.gamification.findFirst({
+    where: { userId: session.user.id },
+    select: { streakInsuranceDays: true },
+  });
+  const insurance = gamification?.streakInsuranceDays ?? 0;
+
   // Recalculate and persist streaks
   const { streakCurrent, streakBest } = await recalculateStreak(
     params.id,
-    habit.targetDays
+    habit.targetDays,
+    insurance
   );
 
   const bestStreak = Math.max(streakBest, habit.streakBest);

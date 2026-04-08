@@ -3,10 +3,13 @@ import { prisma } from "@/lib/prisma";
 /**
  * Recalculates streakCurrent and streakBest for a habit based on its logs.
  * Iterates backwards from today through all target days.
+ * streakInsuranceDays: how many consecutive missed scheduled days are forgiven
+ * before the streak breaks (0 = no insurance).
  */
 export async function recalculateStreak(
   habitId: string,
-  targetDays: number[]
+  targetDays: number[],
+  streakInsuranceDays: number = 0
 ): Promise<{ streakCurrent: number; streakBest: number }> {
   const logs = await prisma.habitLog.findMany({
     where: { habitId },
@@ -22,6 +25,7 @@ export async function recalculateStreak(
 
   const streaks: number[] = [];
   let tempStreak = 0;
+  let missedInRow = 0;
 
   for (let i = 0; i < 730; i++) {
     const d = new Date(today);
@@ -34,6 +38,7 @@ export async function recalculateStreak(
     if (completed === true) {
       // Always count a completed log, even on off-schedule days
       tempStreak++;
+      missedInRow = 0;
     } else if (!activeDays.includes(dayOfWeek)) {
       // Unscheduled day with no completion — skip, don't break streak
       continue;
@@ -41,10 +46,17 @@ export async function recalculateStreak(
       // Today is scheduled but not yet logged — don't break streak
       continue;
     } else {
-      // Scheduled day with no/false completion — break streak
-      if (tempStreak > 0) {
-        streaks.push(tempStreak);
-        tempStreak = 0;
+      // Scheduled day, not completed
+      if (missedInRow < streakInsuranceDays) {
+        // Insurance covers this missed day — maintain streak
+        missedInRow++;
+      } else {
+        // Streak breaks
+        if (tempStreak > 0) {
+          streaks.push(tempStreak);
+          tempStreak = 0;
+        }
+        missedInRow = 0;
       }
     }
   }

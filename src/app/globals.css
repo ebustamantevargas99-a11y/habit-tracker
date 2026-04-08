@@ -123,6 +123,56 @@ input:focus, textarea:focus, select:focus {
   box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.1);
 }
 
+/* ─── Themes ──────────────────────────────────────────────────────────────── */
+
+/* Ocean Theme */
+.theme-ocean {
+  --color-dark: #0D2137;
+  --color-brown: #1A3A5C;
+  --color-medium: #2C5F8A;
+  --color-warm: #3A7CB5;
+  --color-tan: #64A0CC;
+  --color-light-tan: #94C2E0;
+  --color-cream: #C8E0EC;
+  --color-light-cream: #DCF0FA;
+  --color-warm-white: #F0F6FB;
+  --color-paper: #F8FBFE;
+  --color-accent: #0A7ABA;
+  --color-accent-light: #2AA0E0;
+}
+
+/* Forest Theme */
+.theme-forest {
+  --color-dark: #1A2C1A;
+  --color-brown: #2D4A2D;
+  --color-medium: #3D6B3D;
+  --color-warm: #4A8B4A;
+  --color-tan: #7AB87A;
+  --color-light-tan: #A0CFA0;
+  --color-cream: #C8E8C8;
+  --color-light-cream: #E0F0E0;
+  --color-warm-white: #F0F8F0;
+  --color-paper: #F8FCF8;
+  --color-accent: #27AE60;
+  --color-accent-light: #48C87A;
+}
+
+/* Rose Pastel Theme */
+.theme-rose {
+  --color-dark: #4A2035;
+  --color-brown: #7A3055;
+  --color-medium: #A06080;
+  --color-warm: #C080A0;
+  --color-tan: #E0A0C0;
+  --color-light-tan: #ECC0D5;
+  --color-cream: #F5D8E8;
+  --color-light-cream: #FAE8F0;
+  --color-warm-white: #FDF0F5;
+  --color-paper: #FEFAFB;
+  --color-accent: #C45585;
+  --color-accent-light: #E07AAF;
+}
+
 /* Utility Classes */
 .text-dark {
   color: var(--color-dark);
