@@ -37,7 +37,8 @@ interface WellnessState {
     wakeTime: string,
     quality: number,
     durationHours: number,
-    dreamJournal: string
+    dreamJournal: string,
+    date?: string
   ) => Promise<void>;
 }
 
@@ -87,16 +88,17 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
     }
   },
 
-  saveSleepToday: async (bedtime, wakeTime, quality, durationHours, dreamJournal) => {
+  saveSleepToday: async (bedtime, wakeTime, quality, durationHours, dreamJournal, date) => {
     set({ savingSleep: true });
     try {
+      const targetDate = date ?? new Date().toISOString().split("T")[0];
       const log = await api.post<SleepLog>("/wellness/sleep", {
         bedtime,
         wakeTime,
         quality,
         durationHours,
         dreamJournal,
-        date: new Date().toISOString().split("T")[0],
+        date: targetDate,
       });
       set((state) => ({
         sleepLogs: [
