@@ -11,17 +11,6 @@ export const NAV_ITEMS = [
     sections: [],
   },
   {
-    key: "vision",
-    label: "Visión",
-    icon: "Sparkles",
-    sections: [
-      "Dream Life Vision",
-      "Manifestation Planner",
-      "Daily Affirmations",
-      "Bucket List",
-    ],
-  },
-  {
     key: "plan",
     label: "Plan",
     icon: "Calendar",
@@ -45,6 +34,7 @@ export const NAV_ITEMS = [
       "Task List",
       "Work Time Log",
       "Pomodoro",
+      "Mis Metas",
     ],
   },
   {
@@ -126,7 +116,6 @@ export type PageKey = (typeof NAV_ITEMS)[number]["key"];
 
 // ─── Life Score Weights ───────────────────────────────────────────────────────
 export const LIFE_SCORE_WEIGHTS = {
-  vision: 0.10,
   plan: 0.10,
   productivity: 0.15,
   organization: 0.08,

@@ -11,7 +11,6 @@ import BudgetTrackerPage from "@/components/features/finance/budget-tracker-page
 import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
-import VisionPage from "@/components/features/vision/vision-page";
 import OrganizationPage from "@/components/features/organization/organization-page";
 import MonthlySummaryModal from "@/components/features/home/monthly-summary-modal";
 import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal";
@@ -103,8 +102,6 @@ export default function MainApp() {
         return <FitnessPage />;
       case "nutrition":
         return <NutritionPage />;
-      case "vision":
-        return <VisionPage />;
       case "organization":
         return <OrganizationPage />;
       case "settings":
@@ -118,7 +115,6 @@ export default function MainApp() {
   const getPageTitle = () => {
     const titles: { [key: string]: string } = {
       home: "Dashboard",
-      vision: "Visión",
       plan: "Planificador",
       productivity: "Productividad",
       organization: "Organización",
