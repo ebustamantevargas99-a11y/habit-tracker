@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/stores/app-store";
+import { useAppStore, type WellnessTab } from "@/stores/app-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
+
+// Map sidebar section label → wellnessSubTab id
+const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
+  "Sleep Tracker": "sleep",
+  "Hydration": "hydration",
+  "Medication": "medication",
+  "Menstrual Cycle": "period",
+  "Health Log": "healthlog",
+};
 import * as LucideIcons from "lucide-react";
 import React from "react";
 import { signOut } from "next-auth/react";
@@ -14,7 +23,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
-  const { activePage, setActivePage } = useAppStore();
+  const { activePage, setActivePage, setWellnessSubTab } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
   const { user } = useUserStore();
   const displayName = user?.name ?? 'Usuario';
@@ -163,7 +172,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                   {item.sections.map((section) => (
                     <button
                       key={section}
-                      onClick={() => setActivePage(item.key)}
+                      onClick={() => {
+                        setActivePage(item.key);
+                        if (item.key === "wellness" && WELLNESS_SECTION_MAP[section]) {
+                          setWellnessSubTab(WELLNESS_SECTION_MAP[section]);
+                        }
+                      }}
                       style={{
                         width: "100%",
                         padding: "0.5rem 1rem 0.5rem 2.5rem",

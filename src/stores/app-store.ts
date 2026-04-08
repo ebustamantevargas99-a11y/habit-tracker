@@ -1,12 +1,18 @@
 import { create } from "zustand";
 import type { PageKey } from "@/lib/constants";
 
+export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'period' | 'healthlog';
+
 interface AppState {
   // Navigation
   activePage: PageKey;
   sidebarOpen: boolean;
   setActivePage: (page: PageKey) => void;
   toggleSidebar: () => void;
+
+  // Wellness deep-link
+  wellnessSubTab: WellnessTab;
+  setWellnessSubTab: (tab: WellnessTab) => void;
 
   // Modals
   showMonthlySummary: boolean;
@@ -20,6 +26,9 @@ export const useAppStore = create<AppState>((set) => ({
   sidebarOpen: true,
   setActivePage: (page) => set({ activePage: page }),
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+
+  wellnessSubTab: 'sleep',
+  setWellnessSubTab: (tab) => set({ wellnessSubTab: tab }),
 
   showMonthlySummary: false,
   showWeeklySummary: false,

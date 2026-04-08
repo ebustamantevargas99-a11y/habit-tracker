@@ -100,12 +100,11 @@ export const NAV_ITEMS = [
     label: "Bienestar",
     icon: "Heart",
     sections: [
-      "Mood Tracker",
       "Sleep Tracker",
       "Hydration",
       "Medication",
-      "Journals",
-      "Gratitude",
+      "Menstrual Cycle",
+      "Health Log",
     ],
   },
   {
