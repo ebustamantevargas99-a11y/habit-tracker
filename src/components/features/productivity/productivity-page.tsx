@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useAppStore, type ProductivityTab } from '@/stores/app-store';
 import HabitTrackerPage from '@/components/features/habits/habit-tracker-page';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -49,45 +50,57 @@ interface TimeEntry {
   duration: number;
 }
 
+const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro'];
+const TAB_LABELS: Record<ProductivityTab, string> = {
+  habits:     '🔁 Habit Tracker',
+  projects:   '📋 Project Management',
+  tasks:      '✅ Task List',
+  worktimelog:'⏱️ Work Time Log',
+  pomodoro:   '🍅 Pomodoro',
+};
+
 export default function ProductivityPage() {
-  const [activeTab, setActiveTab] = useState(0);
+  const { productivitySubTab, setProductivitySubTab } = useAppStore();
+
+  // Sync with sidebar deep-link
+  const [activeTab, setActiveTab] = useState<ProductivityTab>(productivitySubTab);
+  useEffect(() => { setActiveTab(productivitySubTab); }, [productivitySubTab]);
+
+  const switchTab = (tab: ProductivityTab) => {
+    setActiveTab(tab);
+    setProductivitySubTab(tab);
+  };
 
   return (
     <div style={{ backgroundColor: C.warmWhite }}>
       {/* Tab Navigation */}
-      <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: `2px solid ${C.tan}`, paddingBottom: '10px' }}>
-        {[
-          { label: '🍅 Pomodoro' },
-          { label: '📋 Proyectos' },
-          { label: '✅ Tareas' },
-          { label: '⏱️ Tiempo' },
-          { label: '🔁 Hábitos' },
-        ].map((tab, idx) => (
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', borderBottom: `2px solid ${C.tan}`, paddingBottom: '10px', flexWrap: 'wrap' }}>
+        {TAB_KEYS.map((key) => (
           <button
-            key={idx}
-            onClick={() => setActiveTab(idx)}
+            key={key}
+            onClick={() => switchTab(key)}
             style={{
               padding: '10px 20px',
-              backgroundColor: activeTab === idx ? C.accent : C.cream,
-              color: activeTab === idx ? C.warmWhite : C.dark,
+              backgroundColor: activeTab === key ? C.accent : C.cream,
+              color: activeTab === key ? C.warmWhite : C.dark,
               border: 'none',
               borderRadius: '6px',
               cursor: 'pointer',
-              fontWeight: activeTab === idx ? 'bold' : 'normal',
+              fontWeight: activeTab === key ? 'bold' : 'normal',
               fontSize: '14px',
             }}
           >
-            {tab.label}
+            {TAB_LABELS[key]}
           </button>
         ))}
       </div>
 
       {/* Tab Content */}
-      {activeTab === 0 && <PomodoroTab />}
-      {activeTab === 1 && <KanbanTab />}
-      {activeTab === 2 && <TasksTab />}
-      {activeTab === 3 && <TimeLogTab />}
-      {activeTab === 4 && <HabitTrackerPage />}
+      {activeTab === 'habits'      && <HabitTrackerPage />}
+      {activeTab === 'projects'    && <KanbanTab />}
+      {activeTab === 'tasks'       && <TasksTab />}
+      {activeTab === 'worktimelog' && <TimeLogTab />}
+      {activeTab === 'pomodoro'    && <PomodoroTab />}
     </div>
   );
 }

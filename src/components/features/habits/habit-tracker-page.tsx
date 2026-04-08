@@ -76,7 +76,10 @@ export default function HabitTrackerPage() {
   // Always fetch fresh data (streaks, logs) when opening this tab
   useEffect(() => { refresh(); }, []);
 
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm]           = useState(false);
+  const [heatmapView, setHeatmapView]     = useState<'monthly' | 'annual'>('monthly');
+  const [heatmapMonth, setHeatmapMonth]   = useState(() => new Date());
+  const [heatmapYear, setHeatmapYear]     = useState(() => new Date().getFullYear());
   const [form, setForm] = useState({
     name: "",
     icon: "⭐",
@@ -123,17 +126,36 @@ export default function HabitTrackerPage() {
       .filter((g) => g.items.length > 0);
   }, [activeHabits]);
 
-  // Last 30 days presence for each habit
-  const getHeatmap = (habitId: string) => {
-    return Array.from({ length: 30 }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - (29 - i));
-      const ds = d.toISOString().split("T")[0];
-      return {
-        dateStr: ds,
-        isToday: ds === today,
-        done: logs.some((l) => l.habitId === habitId && l.date === ds && l.completed),
-      };
+  // Brown pastel palette for habit heatmap
+  const habitCellColor = (done: boolean) => done ? '#8B6542' : '#EDE0D4';
+  const annualBarColor = (rate: number) =>
+    rate === 0 ? '#EDE0D4' : rate < 33 ? '#D4BEA0' : rate < 66 ? '#C4A882' : rate < 100 ? '#A0845C' : '#8B6542';
+
+  // Monthly calendar data per habit
+  const getMonthlyHeatmap = (habitId: string, year: number, month: number) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const firstDay    = (new Date(year, month, 1).getDay() + 6) % 7; // Mon=0
+    return { daysInMonth, firstDay, cells: Array.from({ length: daysInMonth }, (_, i) => {
+      const d  = i + 1;
+      const ds = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      return { day: d, dateStr: ds, isToday: ds === today, done: logs.some(l => l.habitId === habitId && l.date === ds && l.completed) };
+    })};
+  };
+
+  // Annual completion rate per month
+  const getAnnualData = (habitId: string, year: number) => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, m) => {
+      const daysInMonth = new Date(year, m + 1, 0).getDate();
+      let done = 0, total = 0;
+      for (let d = 1; d <= daysInMonth; d++) {
+        const ds = `${year}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+        if (new Date(ds + 'T12:00:00') <= now) {
+          total++;
+          if (logs.some(l => l.habitId === habitId && l.date === ds && l.completed)) done++;
+        }
+      }
+      return { month: m, rate: total > 0 ? Math.round((done / total) * 100) : 0, total };
     });
   };
 
@@ -408,6 +430,44 @@ export default function HabitTrackerPage() {
         </div>
       )}
 
+      {/* Heatmap view controls */}
+      {activeHabits.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "6px" }}>
+            {(['monthly', 'annual'] as const).map(v => (
+              <button key={v} onClick={() => setHeatmapView(v)} style={{
+                padding: "6px 14px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer",
+                backgroundColor: heatmapView === v ? C.medium : C.cream,
+                color: heatmapView === v ? C.paper : C.dark,
+                border: `1px solid ${heatmapView === v ? C.medium : C.tan}`,
+              }}>
+                {v === 'monthly' ? '📆 Monthly' : '📊 Annual'}
+              </button>
+            ))}
+          </div>
+          {heatmapView === 'monthly' && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => setHeatmapMonth(new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() - 1, 1))}
+                style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>‹</button>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: C.dark, minWidth: "120px", textAlign: "center" }}>
+                {heatmapMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}
+              </span>
+              <button onClick={() => setHeatmapMonth(new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() + 1, 1))}
+                style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>›</button>
+            </div>
+          )}
+          {heatmapView === 'annual' && (
+            <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+              <button onClick={() => setHeatmapYear(y => y - 1)}
+                style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>‹</button>
+              <span style={{ fontSize: "0.85rem", fontWeight: "600", color: C.dark, minWidth: "50px", textAlign: "center" }}>{heatmapYear}</span>
+              <button onClick={() => setHeatmapYear(y => y + 1)}
+                style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>›</button>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Habit groups */}
       {activeHabits.length === 0 ? (
         <div style={{
@@ -427,10 +487,25 @@ export default function HabitTrackerPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
               {items.map((habit) => {
                 const done = completedIds.has(habit.id);
-                const heatmap = getHeatmap(habit.id);
-                const last30Done = heatmap.filter((d) => d.done).length;
-                const rate = last30Done / 30;
-                const strength = STRENGTH_LABEL(rate);
+                // Stats from last 30 days for badges
+                const last30Start = new Date(); last30Start.setDate(last30Start.getDate() - 29);
+                const last30Logs = logs.filter(l => l.habitId === habit.id && l.date >= last30Start.toISOString().split("T")[0] && l.completed);
+                const last30Done = last30Logs.length;
+                const rate       = last30Done / 30;
+                const strength   = STRENGTH_LABEL(rate);
+
+                // Monthly heatmap data
+                const moYear  = heatmapMonth.getFullYear();
+                const moMonth = heatmapMonth.getMonth();
+                const { daysInMonth, firstDay, cells } = getMonthlyHeatmap(habit.id, moYear, moMonth);
+                const emptyBefore = Array(firstDay).fill(null);
+
+                // Annual data
+                const annualData = getAnnualData(habit.id, heatmapYear);
+                const maxRate    = Math.max(...annualData.map(d => d.rate), 1);
+
+                const MONTH_SHORT = ['J','F','M','A','M','J','J','A','S','O','N','D'];
+
                 return (
                   <div
                     key={habit.id}
@@ -461,49 +536,90 @@ export default function HabitTrackerPage() {
 
                     {/* Badges */}
                     <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
-                      <span style={{
-                        fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px",
-                        backgroundColor: C.lightCream, color: C.dark, fontWeight: "600",
-                      }}>
+                      <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: C.lightCream, color: C.dark, fontWeight: "600" }}>
                         🔥 {habit.streakCurrent} días racha
                       </span>
-                      <span style={{
-                        fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px",
-                        backgroundColor: STRENGTH_COLOR(strength), color: C.paper, fontWeight: "600",
-                      }}>
+                      <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: STRENGTH_COLOR(strength), color: C.paper, fontWeight: "600" }}>
                         {strength}
                       </span>
-                      <span style={{
-                        fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px",
-                        backgroundColor: C.infoLight, color: C.info, fontWeight: "600",
-                      }}>
+                      <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: C.infoLight, color: C.info, fontWeight: "600" }}>
                         {last30Done}/30 días
                       </span>
                     </div>
 
-                    {/* 30-day heatmap */}
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(10, 1fr)", gap: "3px", marginBottom: "0.75rem" }}>
-                      {heatmap.map(({ dateStr, isToday, done: dayDone }, i) => (
-                        <button
-                          key={i}
-                          onClick={isToday ? () => toggleHabitToday(habit.id) : undefined}
-                          title={isToday ? (dayDone ? "Marcar como pendiente" : "Marcar como completado") : dateStr}
-                          style={{
-                            width: "100%", aspectRatio: "1",
-                            border: isToday ? `2px solid ${C.accent}` : `1px solid ${C.lightTan}`,
-                            borderRadius: "4px",
-                            backgroundColor: dayDone ? C.accent : C.lightCream,
-                            cursor: isToday ? "pointer" : "default",
-                            transition: "background-color 0.15s",
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                          }}
-                        >
-                          {dayDone && (
-                            <span style={{ color: C.paper, fontSize: "0.55rem", fontWeight: "700" }}>✓</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
+                    {/* ── MONTHLY HEATMAP ── */}
+                    {heatmapView === 'monthly' && (
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        {/* Day headers */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "3px", marginBottom: "2px" }}>
+                          {['L','M','M','J','V','S','D'].map((d, i) => (
+                            <div key={i} style={{ textAlign: "center", fontSize: "0.55rem", color: C.warm, fontWeight: "600" }}>{d}</div>
+                          ))}
+                        </div>
+                        {/* Calendar cells */}
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "3px" }}>
+                          {emptyBefore.map((_, i) => <div key={`e-${i}`} />)}
+                          {cells.map(({ day, dateStr, isToday, done: dayDone }) => (
+                            <button
+                              key={dateStr}
+                              onClick={isToday ? () => toggleHabitToday(habit.id) : undefined}
+                              title={isToday ? (dayDone ? "Mark as pending" : "Mark as completed") : dateStr}
+                              style={{
+                                width: "100%", aspectRatio: "1",
+                                border: isToday ? `2px solid ${C.accent}` : `1px solid ${C.tan}`,
+                                borderRadius: "4px",
+                                backgroundColor: habitCellColor(dayDone),
+                                cursor: isToday ? "pointer" : "default",
+                                transition: "background-color 0.15s",
+                                display: "flex", alignItems: "center", justifyContent: "center",
+                                padding: 0,
+                              }}
+                            >
+                              <span style={{ fontSize: "0.5rem", color: dayDone ? C.paper : C.warm, fontWeight: "600", lineHeight: 1 }}>{day}</span>
+                            </button>
+                          ))}
+                        </div>
+                        {/* Legend */}
+                        <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px", justifyContent: "flex-end" }}>
+                          <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "#EDE0D4", border: `1px solid ${C.tan}` }} />
+                          <span style={{ fontSize: "0.55rem", color: C.warm }}>No</span>
+                          <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: "#8B6542" }} />
+                          <span style={{ fontSize: "0.55rem", color: C.warm }}>Done</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── ANNUAL CHART ── */}
+                    {heatmapView === 'annual' && (
+                      <div style={{ marginBottom: "0.75rem" }}>
+                        <div style={{ display: "flex", alignItems: "flex-end", gap: "3px", height: "50px", borderBottom: `1px solid ${C.lightTan}` }}>
+                          {annualData.map(({ month: m, rate: r }) => {
+                            const h   = maxRate > 0 ? (r / maxRate) * 100 : 0;
+                            const isCurMo = m === new Date().getMonth() && heatmapYear === new Date().getFullYear();
+                            return (
+                              <div key={m} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end" }}>
+                                <div
+                                  title={`${['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][m]}: ${r}%`}
+                                  style={{
+                                    width: "100%", height: `${Math.max(r > 0 ? h : 2, 2)}%`,
+                                    backgroundColor: annualBarColor(r),
+                                    borderRadius: "2px 2px 0 0",
+                                    border: isCurMo ? `1px solid ${C.accent}` : "none",
+                                    minHeight: "2px",
+                                    transition: "height 0.3s",
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div style={{ display: "flex", gap: "3px", marginTop: "2px" }}>
+                          {MONTH_SHORT.map((s, i) => (
+                            <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "0.5rem", color: C.warm }}>{s}</div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Toggle today button */}
                     <button
@@ -589,8 +705,9 @@ export default function HabitTrackerPage() {
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
             {activeHabits.map((habit) => {
-              const hm = getHeatmap(habit.id);
-              const pct = Math.round((hm.filter((d) => d.done).length / 30) * 100);
+              const start30 = new Date(); start30.setDate(start30.getDate() - 29);
+              const done30  = logs.filter(l => l.habitId === habit.id && l.date >= start30.toISOString().split("T")[0] && l.completed).length;
+              const pct = Math.round((done30 / 30) * 100);
               return (
                 <div key={habit.id}>
                   <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>

@@ -38,11 +38,11 @@ export const NAV_ITEMS = [
     label: "Productividad",
     icon: "Zap",
     sections: [
+      "Habit Tracker",
       "Project Management",
       "Task List",
-      "Habit Tracker",
-      "Pomodoro",
       "Work Time Log",
+      "Pomodoro",
     ],
   },
   {
