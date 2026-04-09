@@ -57,183 +57,14 @@ interface TimeEntry {
   duration: number;
 }
 
-// ─── Goals types & helpers ────────────────────────────────────────────────────
-interface Meta {
-  id: string;
-  title: string;
-  category: string;
-  deadline: string;
-  createdAt: string;
-  progress: number;
-  actionPlan: { id: string; text: string; done: boolean }[];
-  note: string;
-}
 
-function daysUntil(dateStr: string): number {
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  return Math.ceil((new Date(dateStr).getTime() - today.getTime()) / 86400000);
-}
-function urgencyColor(deadline: string): { bg: string; text: string; label: string } {
-  const r = daysUntil(deadline);
-  if (r < 0)  return { bg: C.danger,  text: C.paper,     label: `Vencida hace ${Math.abs(r)}d` };
-  if (r < 14) return { bg: C.dark,    text: C.accentGlow, label: `${r} días restantes` };
-  if (r < 30) return { bg: C.brown,   text: C.accentGlow, label: `${r} días restantes` };
-  if (r < 60) return { bg: C.warm,    text: C.paper,     label: `${r} días restantes` };
-  if (r < 90) return { bg: C.tan,     text: C.dark,      label: `${r} días restantes` };
-  return { bg: C.cream, text: C.medium, label: `${r} días restantes` };
-}
-function urgencyBarWidth(deadline: string, createdAt: string): number {
-  const total = Math.max(1, Math.abs(daysUntil(createdAt)) + daysUntil(deadline) + Math.abs(daysUntil(createdAt)));
-  const elapsed = total - Math.max(0, daysUntil(deadline));
-  return Math.min(100, Math.round((elapsed / total) * 100));
-}
-
-const initialMetas: Meta[] = [
-  { id: "m1", title: "Completar mi primer maratón", category: "Salud", deadline: "2026-12-31", createdAt: "2026-01-01", progress: 35, note: "", actionPlan: [{ id: "a1", text: "Entrenar 4 días a la semana", done: true }, { id: "a2", text: "Seguir plan nutricional", done: false }] },
-  { id: "m2", title: "Lanzar mi proyecto digital", category: "Carrera", deadline: "2026-06-30", createdAt: "2026-01-15", progress: 60, note: "", actionPlan: [{ id: "b1", text: "Completar desarrollo del MVP", done: true }, { id: "b2", text: "Lanzamiento oficial", done: false }] },
-];
-
-// ─── Goals Tab ────────────────────────────────────────────────────────────────
-function GoalsTab() {
-  const [metas, setMetas] = useLocalStorage<Meta[]>("vision_metas", initialMetas);
-  const [showForm, setShowForm] = useState(false);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [newMeta, setNewMeta] = useState({ title: "", category: "Salud", deadline: "", note: "" });
-  const [newStep, setNewStep] = useState<Record<string, string>>({});
-
-  const inp: React.CSSProperties = { padding: "10px 12px", border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "14px", backgroundColor: C.cream, color: C.dark, width: "100%", boxSizing: "border-box" };
-  const statusFromProgress = (p: number) => p >= 100 ? "Completado" : p > 0 ? "En Progreso" : "Pendiente";
-  const statusColors: Record<string, { bg: string; color: string }> = {
-    "Completado":  { bg: C.successLight, color: C.success },
-    "En Progreso": { bg: C.infoLight,    color: C.info },
-    "Pendiente":   { bg: C.lightCream,   color: C.medium },
-  };
-
-  const addStep = (metaId: string) => {
-    const text = newStep[metaId]?.trim(); if (!text) return;
-    const meta = metas.find(m => m.id === metaId); if (!meta) return;
-    setMetas(prev => prev.map(m => m.id === metaId ? { ...m, actionPlan: [...m.actionPlan, { id: `s${Date.now()}`, text, done: false }] } : m));
-    setNewStep({ ...newStep, [metaId]: "" });
-  };
-
-  const toggleStep = (metaId: string, stepId: string) => {
-    setMetas(prev => prev.map(m => {
-      if (m.id !== metaId) return m;
-      const updated = m.actionPlan.map(s => s.id === stepId ? { ...s, done: !s.done } : s);
-      const doneCount = updated.filter(s => s.done).length;
-      return { ...m, actionPlan: updated, progress: updated.length > 0 ? Math.round((doneCount / updated.length) * 100) : m.progress };
-    }));
-  };
-
-  return (
-    <div style={{ backgroundColor: C.paper }}>
-      <button onClick={() => setShowForm(!showForm)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "12px 24px", backgroundColor: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "14px", marginBottom: "28px" }}>
-        <Plus size={18} /> Nueva Meta
-      </button>
-      {showForm && (
-        <div style={{ background: C.lightCream, border: `2px solid ${C.accent}`, borderRadius: "12px", padding: "22px", marginBottom: "28px", display: "grid", gap: "14px" }}>
-          <h3 style={{ margin: "0 0 4px 0", fontFamily: "'Georgia', serif", color: C.dark, fontSize: "18px" }}>Crear Nueva Meta</h3>
-          <input placeholder="¿Qué quieres lograr? *" value={newMeta.title} onChange={e => setNewMeta({ ...newMeta, title: e.target.value })} style={inp} />
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-            <select value={newMeta.category} onChange={e => setNewMeta({ ...newMeta, category: e.target.value })} style={inp}>
-              {["Salud", "Carrera", "Finanzas", "Aventura", "Relaciones", "Crecimiento"].map(c => <option key={c}>{c}</option>)}
-            </select>
-            <input type="date" value={newMeta.deadline} onChange={e => setNewMeta({ ...newMeta, deadline: e.target.value })} style={inp} />
-          </div>
-          <input placeholder="Notas adicionales (opcional)" value={newMeta.note} onChange={e => setNewMeta({ ...newMeta, note: e.target.value })} style={inp} />
-          <div style={{ display: "flex", gap: "10px" }}>
-            <button onClick={() => {
-              if (!newMeta.title.trim() || !newMeta.deadline) return;
-              setMetas(prev => [...prev, { id: `m${Date.now()}`, title: newMeta.title, category: newMeta.category, deadline: newMeta.deadline, createdAt: new Date().toISOString().split("T")[0], progress: 0, actionPlan: [], note: newMeta.note }]);
-              setNewMeta({ title: "", category: "Salud", deadline: "", note: "" });
-              setShowForm(false);
-            }} style={{ flex: 1, padding: "10px", backgroundColor: C.success, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600" }}>Guardar Meta</button>
-            <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: "10px", backgroundColor: C.lightTan, color: C.dark, border: "none", borderRadius: "8px", cursor: "pointer" }}>Cancelar</button>
-          </div>
-        </div>
-      )}
-      <div style={{ display: "grid", gap: "18px" }}>
-        {metas.map(meta => {
-          const status = statusFromProgress(meta.progress);
-          const sc = statusColors[status];
-          const isExpanded = expandedId === meta.id;
-          const uc = urgencyColor(meta.deadline);
-          const barW = urgencyBarWidth(meta.deadline, meta.createdAt);
-          const isComplete = meta.progress >= 100;
-          return (
-            <div key={meta.id} style={{ background: C.warmWhite, border: `2px solid ${isComplete ? C.success : C.lightCream}`, borderRadius: "14px", overflow: "hidden", boxShadow: "0 4px 14px rgba(0,0,0,0.07)" }}>
-              <div style={{ height: "6px", backgroundColor: C.lightCream }}>
-                <div style={{ height: "100%", width: `${barW}%`, backgroundColor: uc.bg }} />
-              </div>
-              <div style={{ padding: "20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px", gap: "12px" }}>
-                  <div style={{ flex: 1 }}>
-                    <h3 style={{ fontSize: "17px", fontFamily: "'Georgia', serif", color: C.dark, margin: "0 0 6px 0" }}>{isComplete && "✅ "}{meta.title}</h3>
-                    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
-                      <span style={{ fontSize: "12px", color: C.warm, backgroundColor: C.lightCream, padding: "2px 8px", borderRadius: "12px" }}>{meta.category}</span>
-                      <span style={{ fontSize: "12px", padding: "2px 10px", borderRadius: "12px", backgroundColor: sc.bg, color: sc.color, fontWeight: "600" }}>{status}</span>
-                    </div>
-                  </div>
-                  <button onClick={() => setMetas(prev => prev.filter(m => m.id !== meta.id))} style={{ background: "none", border: "none", cursor: "pointer", color: C.tan, padding: "4px" }}><X size={16} /></button>
-                </div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "5px 12px", backgroundColor: uc.bg, borderRadius: "20px", marginBottom: "14px" }}>
-                  <span style={{ fontSize: "12px", fontWeight: "700", color: uc.text }}>⏱ {uc.label}</span>
-                  <span style={{ fontSize: "11px", color: uc.text, opacity: 0.8 }}>· {new Date(meta.deadline).toLocaleDateString("es-ES", { day: "numeric", month: "short", year: "numeric" })}</span>
-                </div>
-                <div style={{ marginBottom: "16px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                    <span style={{ fontSize: "12px", fontWeight: "600", color: C.dark }}>Progreso</span>
-                    <span style={{ fontSize: "13px", fontWeight: "700", color: C.accent }}>{meta.progress}%</span>
-                  </div>
-                  <input type="range" min={0} max={100} value={meta.progress} onChange={e => setMetas(prev => prev.map(m => m.id === meta.id ? { ...m, progress: Number(e.target.value) } : m))} style={{ width: "100%", accentColor: C.accent }} />
-                  <div style={{ width: "100%", height: "6px", backgroundColor: C.lightCream, borderRadius: "3px", overflow: "hidden", marginTop: "4px" }}>
-                    <div style={{ height: "100%", width: `${meta.progress}%`, background: isComplete ? `linear-gradient(90deg, ${C.success}, ${C.successLight})` : `linear-gradient(90deg, ${C.accent}, ${C.accentLight})` }} />
-                  </div>
-                </div>
-                <button onClick={() => setExpandedId(isExpanded ? null : meta.id)} style={{ width: "100%", padding: "8px", backgroundColor: C.lightCream, color: C.dark, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "13px", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontWeight: "600" }}>
-                  {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
-                  {isExpanded ? "Ocultar plan de acción" : `Plan de acción (${meta.actionPlan.filter(s => s.done).length}/${meta.actionPlan.length})`}
-                </button>
-                {isExpanded && (
-                  <div style={{ marginTop: "16px", display: "grid", gap: "8px" }}>
-                    {meta.actionPlan.map(step => (
-                      <div key={step.id} onClick={() => toggleStep(meta.id, step.id)} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "10px 12px", backgroundColor: step.done ? C.successLight : C.paper, border: `1px solid ${step.done ? C.success : C.lightTan}`, borderRadius: "8px", cursor: "pointer" }}>
-                        <div style={{ width: "20px", height: "20px", minWidth: "20px", borderRadius: "50%", border: `2px solid ${step.done ? C.success : C.tan}`, backgroundColor: step.done ? C.success : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {step.done && <Check size={12} color={C.paper} />}
-                        </div>
-                        <span style={{ fontSize: "13px", color: C.dark, textDecoration: step.done ? "line-through" : "none", opacity: step.done ? 0.7 : 1 }}>{step.text}</span>
-                      </div>
-                    ))}
-                    <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
-                      <input placeholder="Agregar paso..." value={newStep[meta.id] ?? ""} onChange={e => setNewStep({ ...newStep, [meta.id]: e.target.value })} onKeyDown={e => e.key === "Enter" && addStep(meta.id)} style={{ ...inp, fontSize: "13px", padding: "8px 12px" }} />
-                      <button onClick={() => addStep(meta.id)} style={{ padding: "8px 14px", backgroundColor: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", whiteSpace: "nowrap" }}>+ Agregar</button>
-                    </div>
-                    {meta.note && <p style={{ fontSize: "12px", color: C.warm, fontStyle: "italic", margin: "6px 0 0 0" }}>📝 {meta.note}</p>}
-                  </div>
-                )}
-                {isComplete && (
-                  <div style={{ marginTop: "14px", padding: "12px", background: `linear-gradient(135deg, ${C.successLight}, ${C.accentGlow})`, borderRadius: "10px", textAlign: "center", border: `1px solid ${C.success}` }}>
-                    <span style={{ fontSize: "20px" }}>🏆</span>
-                    <p style={{ margin: "4px 0 0 0", fontSize: "13px", fontWeight: "700", color: C.dark }}>¡Meta cumplida! Felicitaciones.</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro', 'goals', 'command', 'heatmap', 'projection'];
+const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro', 'command', 'heatmap', 'projection'];
 const TAB_LABELS: Record<ProductivityTab, string> = {
   habits:     '🔁 Habit Tracker',
   projects:   '📋 Project Management',
   tasks:      '✅ Task List',
   worktimelog:'⏱️ Work Time Log',
   pomodoro:   '🍅 Pomodoro',
-  goals:      '🎯 Mis Metas',
   command:    '⚡ Daily Command',
   heatmap:    '🔥 Heatmaps',
   projection: '📈 Proyecciones',
@@ -281,7 +112,7 @@ export default function ProductivityPage() {
       {activeTab === 'tasks'       && <TasksTab />}
       {activeTab === 'worktimelog' && <TimeLogTab />}
       {activeTab === 'pomodoro'    && <PomodoroTab />}
-      {activeTab === 'goals'       && <GoalsTab />}
+
       {activeTab === 'command'     && <DailyCommandCenter />}
       {activeTab === 'heatmap'     && <HeatMapGallery />}
       {activeTab === 'projection'  && <ProjectionDashboard />}

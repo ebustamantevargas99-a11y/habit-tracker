@@ -33,7 +33,6 @@ export const NAV_ITEMS = [
       "Task List",
       "Work Time Log",
       "Pomodoro",
-      "Mis Metas",
       "Daily Command",
       "Heatmaps",
       "Proyecciones",
