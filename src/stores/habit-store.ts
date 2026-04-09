@@ -15,6 +15,7 @@ interface HabitState {
 
   // Actions
   toggleHabitToday: (habitId: string) => Promise<void>;
+  toggleHabitDate: (habitId: string, date: string) => Promise<void>;
   addHabit: (habit: Omit<Habit, "id" | "streakCurrent" | "streakBest" | "strength" | "createdAt">) => Promise<void>;
   removeHabit: (habitId: string) => Promise<void>;
 
@@ -113,6 +114,49 @@ export const useHabitStore = create<HabitState>((set, get) => ({
       } else {
         set((state) => ({
           logs: state.logs.filter((l) => !(l.habitId === habitId && l.date === today)),
+        }));
+      }
+    }
+  },
+
+  toggleHabitDate: async (habitId, date) => {
+    const { logs } = get();
+    const existingLog = logs.find((l) => l.habitId === habitId && l.date === date);
+    const newCompleted = existingLog ? !existingLog.completed : true;
+
+    // Optimistic update
+    if (existingLog) {
+      set((state) => ({
+        logs: state.logs.map((l) =>
+          l.habitId === habitId && l.date === date ? { ...l, completed: newCompleted } : l
+        ),
+      }));
+    } else {
+      set((state) => ({
+        logs: [...state.logs, { id: `temp-${habitId}-${date}`, habitId, date, completed: true }],
+      }));
+    }
+
+    try {
+      const result = await api.post<{ log: HabitLog; habit: Habit }>(
+        `/habits/${habitId}/logs`,
+        { date, completed: newCompleted }
+      );
+      set((state) => ({
+        logs: [
+          ...state.logs.filter((l) => !(l.habitId === habitId && l.date === date)),
+          result.log,
+        ],
+        habits: state.habits.map((h) => h.id === habitId ? { ...h, ...result.habit } : h),
+      }));
+    } catch {
+      if (existingLog) {
+        set((state) => ({
+          logs: state.logs.map((l) => l.habitId === habitId && l.date === date ? existingLog : l),
+        }));
+      } else {
+        set((state) => ({
+          logs: state.logs.filter((l) => !(l.habitId === habitId && l.date === date)),
         }));
       }
     }

@@ -2,7 +2,8 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useHabitStore } from "@/stores/habit-store";
-import { Trash2, Plus, X, TrendingUp, Flame, Award } from "lucide-react";
+import type { HabitLog } from "@/types";
+import { Trash2, Plus, X, TrendingUp, Flame, CalendarDays } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
@@ -54,31 +55,57 @@ const WEEK_DAYS = [
   { idx: 0, label: "D" },
 ];
 
-const STRENGTH_LABEL = (rate: number) => {
-  if (rate === 0) return "Nuevo";
-  if (rate < 0.3) return "En Progreso";
-  if (rate < 0.7) return "Formándose";
-  return "Arraigado";
-};
-const STRENGTH_COLOR = (label: string) => {
-  if (label === "Arraigado") return C.success;
-  if (label === "Formándose") return C.warning;
-  if (label === "En Progreso") return C.info;
-  return C.warm;
-};
+// ─── Habit consolidation system ──────────────────────────────────────────────
+const META_DIAS = 92;
+
+function habitLabel(diasCumplidos: number): { text: string; color: string; bg: string } {
+  if (diasCumplidos <= 0)     return { text: "Sin iniciar",           color: C.warm,    bg: C.lightCream };
+  if (diasCumplidos === 1)    return { text: "Nuevo",                 color: C.info,    bg: C.infoLight };
+  if (diasCumplidos < META_DIAS) {
+    const r = META_DIAS - diasCumplidos;
+    return { text: `A ${r} día${r === 1 ? "" : "s"} de arraigar`, color: C.warning,  bg: C.warningLight };
+  }
+  if (diasCumplidos === META_DIAS) return { text: "¡Hábito Arraigado!", color: C.success, bg: C.successLight };
+  const extra = diasCumplidos - META_DIAS;
+  return { text: `Arraigo Firme: Día ${extra}`,  color: C.brown,   bg: C.accentGlow };
+}
+
+// Tolerance streak: 1 missed day = grace (pause, don't reset); 2+ = reset to 0
+function computeToleranceStreak(habitId: string, logs: HabitLog[]): number {
+  const logMap = new Map(
+    logs.filter(l => l.habitId === habitId).map(l => [l.date, l.completed])
+  );
+  let streak = 0;
+  let consecutiveMisses = 0;
+  const d = new Date();
+  for (let i = 0; i < 400; i++) {
+    const ds = d.toISOString().split("T")[0];
+    if (logMap.get(ds) === true) {
+      streak++;
+      consecutiveMisses = 0;
+    } else {
+      consecutiveMisses++;
+      if (consecutiveMisses >= 2) break;
+      // 1 miss = grace day: don't count it, don't reset
+    }
+    d.setDate(d.getDate() - 1);
+  }
+  return streak;
+}
 
 const EMOJIS = ["⭐","🧘","💪","📚","💧","😴","💻","🏃","🎯","🥗","🎸","✍️","🧠","🌿","🫁","🚴","🤸","📖","🍎","☀️"];
 
 export default function HabitTrackerPage() {
   const {
     habits, logs, isLoaded, isLoading,
-    toggleHabitToday, addHabit, removeHabit, refresh,
+    toggleHabitToday, toggleHabitDate, addHabit, removeHabit, refresh,
   } = useHabitStore();
 
   // Always fetch fresh data (streaks, logs) when opening this tab
   useEffect(() => { refresh(); }, []);
 
   const [showForm, setShowForm]           = useState(false);
+  const [selectedDate, setSelectedDate]   = useState(() => new Date().toISOString().split("T")[0]);
   const [heatmapView, setHeatmapView]     = useState<'monthly' | '6months' | 'annual'>('monthly');
   const [heatmapMonth, setHeatmapMonth]   = useState(() => new Date());
   const [heatmapYear, setHeatmapYear]     = useState(() => new Date().getFullYear());
@@ -105,8 +132,14 @@ export default function HabitTrackerPage() {
   };
 
   const today = new Date().toISOString().split("T")[0];
-  const todayLogs = logs.filter((l) => l.date === today && l.completed);
-  const completedIds = new Set(todayLogs.map((l) => l.habitId));
+  // completedIds reflects the selected date (for card toggle state)
+  const completedIds = new Set(
+    logs.filter((l) => l.date === selectedDate && l.completed).map((l) => l.habitId)
+  );
+  // todayCompletedIds always reflects real today (for header stats)
+  const todayCompletedIds = new Set(
+    logs.filter((l) => l.date === today && l.completed).map((l) => l.habitId)
+  );
 
   const activeHabits = habits.filter((h) => h.isActive !== false);
 
@@ -294,7 +327,7 @@ export default function HabitTrackerPage() {
     );
   }
 
-  const completedTodayCount = activeHabits.filter((h) => completedIds.has(h.id)).length;
+  const completedTodayCount = activeHabits.filter((h) => todayCompletedIds.has(h.id)).length;
   const bestStreak = activeHabits.length > 0 ? Math.max(...activeHabits.map((h) => h.streakCurrent)) : 0;
   const overallRate = (() => {
     const last30Logs = logs.filter((l) => {
@@ -503,6 +536,45 @@ export default function HabitTrackerPage() {
         </div>
       )}
 
+      {/* ── Date selector ── */}
+      {activeHabits.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 14px", backgroundColor: C.paper, border: `2px solid ${selectedDate === today ? C.accent : C.warning}`, borderRadius: "10px" }}>
+            <CalendarDays size={16} color={selectedDate === today ? C.accent : C.warning} />
+            <span style={{ fontSize: "0.82rem", fontWeight: "600", color: C.dark }}>
+              {selectedDate === today ? "Hoy" : "Fecha seleccionada:"}
+            </span>
+            <input
+              type="date"
+              value={selectedDate}
+              max={today}
+              onChange={e => {
+                setSelectedDate(e.target.value);
+                // sync monthly heatmap view to selected month
+                if (e.target.value) {
+                  const d = new Date(e.target.value + "T12:00:00");
+                  setHeatmapMonth(new Date(d.getFullYear(), d.getMonth(), 1));
+                }
+              }}
+              style={{ border: "none", background: "transparent", fontSize: "0.82rem", color: C.dark, cursor: "pointer", fontWeight: "600" }}
+            />
+          </div>
+          {selectedDate !== today && (
+            <button
+              onClick={() => setSelectedDate(today)}
+              style={{ padding: "7px 14px", backgroundColor: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontSize: "0.8rem", fontWeight: "600" }}
+            >
+              Volver a hoy
+            </button>
+          )}
+          {selectedDate !== today && (
+            <span style={{ fontSize: "0.78rem", color: C.warning, fontStyle: "italic" }}>
+              Registrando para {new Date(selectedDate + "T12:00:00").toLocaleDateString("es", { weekday: "long", day: "numeric", month: "long" })}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Heatmap view controls */}
       {activeHabits.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
@@ -565,12 +637,13 @@ export default function HabitTrackerPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
               {items.map((habit) => {
                 const done = completedIds.has(habit.id);
+                // Tolerance-adjusted streak from logs
+                const toleranceStreak = computeToleranceStreak(habit.id, logs);
+                const label = habitLabel(toleranceStreak);
                 // Stats from last 30 days for badges
                 const last30Start = new Date(); last30Start.setDate(last30Start.getDate() - 29);
                 const last30Logs = logs.filter(l => l.habitId === habit.id && l.date >= last30Start.toISOString().split("T")[0] && l.completed);
                 const last30Done = last30Logs.length;
-                const rate       = last30Done / 30;
-                const strength   = STRENGTH_LABEL(rate);
 
                 // Monthly heatmap data
                 const moYear  = heatmapMonth.getFullYear();
@@ -615,10 +688,10 @@ export default function HabitTrackerPage() {
                     {/* Badges */}
                     <div style={{ display: "flex", gap: "0.5rem", marginBottom: "0.75rem", flexWrap: "wrap" }}>
                       <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: C.lightCream, color: C.dark, fontWeight: "600" }}>
-                        🔥 {habit.streakCurrent} días racha
+                        🔥 {toleranceStreak}d racha
                       </span>
-                      <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: STRENGTH_COLOR(strength), color: C.paper, fontWeight: "600" }}>
-                        {strength}
+                      <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: label.bg, color: label.color, fontWeight: "700" }}>
+                        {label.text}
                       </span>
                       <span style={{ fontSize: "0.7rem", padding: "3px 8px", borderRadius: "4px", backgroundColor: C.infoLight, color: C.info, fontWeight: "600" }}>
                         {last30Done}/30 días
@@ -637,25 +710,35 @@ export default function HabitTrackerPage() {
                         {/* Calendar cells */}
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "3px" }}>
                           {emptyBefore.map((_, i) => <div key={`e-${i}`} />)}
-                          {cells.map(({ day, dateStr, isToday, done: dayDone }) => (
-                            <button
-                              key={dateStr}
-                              onClick={isToday ? () => toggleHabitToday(habit.id) : undefined}
-                              title={isToday ? (dayDone ? "Mark as pending" : "Mark as completed") : dateStr}
-                              style={{
-                                width: "100%", aspectRatio: "1",
-                                border: isToday ? `2px solid ${C.accent}` : `1px solid ${C.tan}`,
-                                borderRadius: "4px",
-                                backgroundColor: habitCellColor(dayDone),
-                                cursor: isToday ? "pointer" : "default",
-                                transition: "background-color 0.15s",
-                                display: "flex", alignItems: "center", justifyContent: "center",
-                                padding: 0,
-                              }}
-                            >
-                              <span style={{ fontSize: "0.5rem", color: dayDone ? C.paper : C.warm, fontWeight: "600", lineHeight: 1 }}>{day}</span>
-                            </button>
-                          ))}
+                          {cells.map(({ day, dateStr, isToday, done: dayDone }) => {
+                            const isFuture = dateStr > today;
+                            const isSelected = dateStr === selectedDate;
+                            return (
+                              <button
+                                key={dateStr}
+                                onClick={isFuture ? undefined : () => {
+                                  setSelectedDate(dateStr);
+                                  toggleHabitDate(habit.id, dateStr);
+                                }}
+                                title={isFuture ? "Fecha futura" : (dayDone ? "Quitar completado" : "Marcar completado")}
+                                style={{
+                                  width: "100%", aspectRatio: "1",
+                                  border: isSelected ? `2px solid ${C.accent}` : isToday ? `2px solid ${C.warm}` : `1px solid ${C.tan}`,
+                                  borderRadius: "4px",
+                                  backgroundColor: dayDone ? '#8B6542' : isFuture ? C.lightCream : '#EDE0D4',
+                                  cursor: isFuture ? "default" : "pointer",
+                                  opacity: isFuture ? 0.4 : 1,
+                                  transition: "background-color 0.15s, transform 0.1s",
+                                  display: "flex", alignItems: "center", justifyContent: "center",
+                                  padding: 0,
+                                }}
+                                onMouseEnter={e => { if (!isFuture) (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.15)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; }}
+                              >
+                                <span style={{ fontSize: "0.5rem", color: dayDone ? C.paper : C.warm, fontWeight: "600", lineHeight: 1 }}>{day}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                         {/* Legend */}
                         <div style={{ display: "flex", alignItems: "center", gap: "4px", marginTop: "4px", justifyContent: "flex-end" }}>
@@ -729,20 +812,25 @@ export default function HabitTrackerPage() {
                       </div>
                     )}
 
-                    {/* Toggle today button */}
+                    {/* Toggle date button */}
                     <button
-                      onClick={() => toggleHabitToday(habit.id)}
+                      onClick={() => toggleHabitDate(habit.id, selectedDate)}
                       style={{
                         width: "100%", padding: "0.5rem",
                         backgroundColor: done ? C.successLight : C.accentGlow,
-                        border: `1px solid ${done ? C.success : C.accent}`,
+                        border: `2px solid ${done ? C.success : selectedDate !== today ? C.warning : C.accent}`,
                         borderRadius: "8px", cursor: "pointer",
                         fontSize: "0.85rem", fontWeight: "600",
-                        color: done ? C.success : C.accent,
+                        color: done ? C.success : selectedDate !== today ? C.warning : C.accent,
                         transition: "all 0.2s",
                       }}
                     >
-                      {done ? "✓ Completado hoy" : "Marcar hoy como completado"}
+                      {done
+                        ? `✓ Completado${selectedDate === today ? " hoy" : ` el ${new Date(selectedDate + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" })}`}`
+                        : selectedDate === today
+                          ? "Marcar como completado"
+                          : `Registrar el ${new Date(selectedDate + "T12:00:00").toLocaleDateString("es", { day: "numeric", month: "short" })}`
+                      }
                     </button>
                   </div>
                 );
