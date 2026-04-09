@@ -23,6 +23,9 @@ const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Work Time Log": "worktimelog",
   "Pomodoro": "pomodoro",
   "Mis Metas": "goals",
+  "Daily Command": "command",
+  "Heatmaps": "heatmap",
+  "Proyecciones": "projection",
 };
 
 // Map sidebar section label → planTab index

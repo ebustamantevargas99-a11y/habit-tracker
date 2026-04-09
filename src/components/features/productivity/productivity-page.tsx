@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocalStorage } from '@/lib/use-local-storage';
 import { useAppStore, type ProductivityTab } from '@/stores/app-store';
+import { useOKRStore } from '@/stores/okr-store';
 import HabitTrackerPage from '@/components/features/habits/habit-tracker-page';
+import DailyCommandCenter from './daily-command-center';
+import HeatMapGallery from './heatmap-gallery';
+import ProjectionDashboard from './projection-dashboard';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
-  Play, Pause, RotateCcw, Plus, Trash2, ChevronRight, ChevronLeft, Clock, Check, Square, X, ChevronDown, ChevronUp,
+  Play, Pause, RotateCcw, Plus, Trash2, ChevronRight, ChevronLeft, Clock, Check, Square, X, ChevronDown, ChevronUp, Target,
 } from 'lucide-react';
 
 const C = {
@@ -32,6 +36,8 @@ interface KanbanCard {
   priority: 'Alta' | 'Media' | 'Baja';
   dueDate?: string;
   category: string;
+  objectiveId?: string;
+  weight: number;
 }
 
 interface Task {
@@ -220,7 +226,7 @@ function GoalsTab() {
   );
 }
 
-const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro', 'goals'];
+const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro', 'goals', 'command', 'heatmap', 'projection'];
 const TAB_LABELS: Record<ProductivityTab, string> = {
   habits:     '🔁 Habit Tracker',
   projects:   '📋 Project Management',
@@ -228,6 +234,9 @@ const TAB_LABELS: Record<ProductivityTab, string> = {
   worktimelog:'⏱️ Work Time Log',
   pomodoro:   '🍅 Pomodoro',
   goals:      '🎯 Mis Metas',
+  command:    '⚡ Daily Command',
+  heatmap:    '🔥 Heatmaps',
+  projection: '📈 Proyecciones',
 };
 
 export default function ProductivityPage() {
@@ -273,6 +282,9 @@ export default function ProductivityPage() {
       {activeTab === 'worktimelog' && <TimeLogTab />}
       {activeTab === 'pomodoro'    && <PomodoroTab />}
       {activeTab === 'goals'       && <GoalsTab />}
+      {activeTab === 'command'     && <DailyCommandCenter />}
+      {activeTab === 'heatmap'     && <HeatMapGallery />}
+      {activeTab === 'projection'  && <ProjectionDashboard />}
     </div>
   );
 }
@@ -439,20 +451,28 @@ function PomodoroTab() {
 
 // ========== KANBAN TAB ==========
 function KanbanTab() {
+  const { objectives, recalcObjectiveProgress } = useOKRStore();
+  const [toast, setToast] = useState<string | null>(null);
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
   const initialKanban: { [key: string]: KanbanCard[] } = {
     todo: [
-      { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño' },
-      { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión' },
-      { id: '3', title: 'Actualizar documentación', priority: 'Baja', category: 'Documentación' },
+      { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño', weight: 2 },
+      { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión', weight: 1 },
+      { id: '3', title: 'Actualizar documentación', priority: 'Baja', category: 'Documentación', weight: 1 },
     ],
     inProgress: [
-      { id: '4', title: 'Implementar autenticación', priority: 'Alta', dueDate: '2026-04-07', category: 'Desarrollo' },
-      { id: '5', title: 'Optimizar base de datos', priority: 'Media', dueDate: '2026-04-09', category: 'Backend' },
+      { id: '4', title: 'Implementar autenticación', priority: 'Alta', dueDate: '2026-04-07', category: 'Desarrollo', weight: 3 },
+      { id: '5', title: 'Optimizar base de datos', priority: 'Media', dueDate: '2026-04-09', category: 'Backend', weight: 2 },
     ],
     done: [
-      { id: '6', title: 'Setup del proyecto', priority: 'Alta', category: 'Setup' },
-      { id: '7', title: 'Crear repositorio Git', priority: 'Media', category: 'DevOps' },
-      { id: '8', title: 'Configurar CI/CD', priority: 'Media', category: 'DevOps' },
+      { id: '6', title: 'Setup del proyecto', priority: 'Alta', category: 'Setup', weight: 1 },
+      { id: '7', title: 'Crear repositorio Git', priority: 'Media', category: 'DevOps', weight: 1 },
+      { id: '8', title: 'Configurar CI/CD', priority: 'Media', category: 'DevOps', weight: 2 },
     ],
   };
   const [kanban, setKanban] = useLocalStorage<{ [key: string]: KanbanCard[] }>("productivity_kanban", initialKanban);
@@ -460,15 +480,50 @@ function KanbanTab() {
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardPriority, setNewCardPriority] = useState<'Alta' | 'Media' | 'Baja'>('Media');
   const [newCardCategory, setNewCardCategory] = useState('Desarrollo');
+  const [newCardObjectiveId, setNewCardObjectiveId] = useState('');
+  const [newCardWeight, setNewCardWeight] = useState(1);
+
+  const getAllCards = (k: { [key: string]: KanbanCard[] }) =>
+    Object.entries(k).flatMap(([col, cards]) => cards.map(c => ({ ...c, column: col })));
 
   const moveCard = (cardId: string, fromColumn: string, toColumn: string) => {
-    const card = kanban[fromColumn].find(c => c.id === cardId);
-    if (!card) return;
-    setKanban(prev => ({
-      ...prev,
-      [fromColumn]: prev[fromColumn].filter(c => c.id !== cardId),
-      [toColumn]: [...prev[toColumn], card],
-    }));
+    setKanban(prev => {
+      const card = prev[fromColumn].find(c => c.id === cardId);
+      if (!card) return prev;
+      const next = {
+        ...prev,
+        [fromColumn]: prev[fromColumn].filter(c => c.id !== cardId),
+        [toColumn]: [...prev[toColumn], card],
+      };
+
+      // When moving to Done, update OKR progress
+      if (toColumn === 'done' && card.objectiveId) {
+        const allCards = getAllCards(next).map(c => ({
+          objectiveId: c.objectiveId ?? '',
+          weight: c.weight,
+          done: c.column === 'done',
+        })).filter(c => c.objectiveId === card.objectiveId);
+        recalcObjectiveProgress(card.objectiveId, allCards);
+        const obj = objectives.find(o => o.id === card.objectiveId);
+        if (obj) {
+          const total = allCards.reduce((s, c) => s + c.weight, 0);
+          const done = allCards.filter(c => c.done).reduce((s, c) => s + c.weight, 0);
+          const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+          setTimeout(() => showToast(`OKR actualizado: "${obj.title}" → ${pct}%`), 50);
+        }
+      }
+      // When un-moving from Done, also recalc
+      if (fromColumn === 'done' && card.objectiveId) {
+        const allCards = getAllCards(next).map(c => ({
+          objectiveId: c.objectiveId ?? '',
+          weight: c.weight,
+          done: c.column === 'done',
+        })).filter(c => c.objectiveId === card.objectiveId);
+        recalcObjectiveProgress(card.objectiveId, allCards);
+      }
+
+      return next;
+    });
   };
 
   const addCard = (column: string) => {
@@ -478,9 +533,13 @@ function KanbanTab() {
       title: newCardTitle,
       priority: newCardPriority,
       category: newCardCategory,
+      weight: newCardWeight,
+      objectiveId: newCardObjectiveId || undefined,
     };
     setKanban(prev => ({ ...prev, [column]: [...prev[column], newCard] }));
     setNewCardTitle('');
+    setNewCardObjectiveId('');
+    setNewCardWeight(1);
   };
 
   const deleteCard = (cardId: string) => {
@@ -499,15 +558,25 @@ function KanbanTab() {
     return C.success;
   };
 
+  const getObjectiveLabel = (id: string) => objectives.find(o => o.id === id);
+
   return (
-    <div>
-      <div style={{ marginBottom: '20px', backgroundColor: C.cream, padding: '15px', borderRadius: '8px' }}>
+    <div style={{ position: 'relative' }}>
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, backgroundColor: C.success, color: C.paper, padding: '12px 20px', borderRadius: '10px', fontWeight: '600', fontSize: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Target size={16} /> {toast}
+        </div>
+      )}
+
+      <div style={{ marginBottom: '20px', backgroundColor: C.cream, padding: '18px', borderRadius: '10px' }}>
         <h3 style={{ color: C.dark, margin: '0 0 15px 0', fontFamily: 'Georgia, serif' }}>Agregar tarjeta</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 150px 100px', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 130px', gap: '10px', marginBottom: '10px' }}>
           <input
             type="text"
             value={newCardTitle}
             onChange={e => setNewCardTitle(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addCard('todo')}
             placeholder="Título de la tarea..."
             style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
           />
@@ -527,6 +596,29 @@ function KanbanTab() {
             placeholder="Categoría..."
             style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
           />
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px', gap: '10px' }}>
+          <select
+            value={newCardObjectiveId}
+            onChange={e => setNewCardObjectiveId(e.target.value)}
+            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '13px', color: newCardObjectiveId ? C.dark : C.warm }}
+          >
+            <option value="">Sin objetivo OKR</option>
+            {objectives.map(o => (
+              <option key={o.id} value={o.id}>{o.emoji} {o.title}</option>
+            ))}
+          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <label style={{ fontSize: '12px', color: C.warm, whiteSpace: 'nowrap' }}>Peso:</label>
+            <input
+              type="number"
+              min={1}
+              max={10}
+              value={newCardWeight}
+              onChange={e => setNewCardWeight(Number(e.target.value))}
+              style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px', width: '100%' }}
+            />
+          </div>
           <button
             onClick={() => addCard('todo')}
             style={{ padding: '10px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
@@ -548,64 +640,84 @@ function KanbanTab() {
               </span>
             </h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {kanban[column].map(card => (
-                <div key={card.id} style={{ backgroundColor: C.paper, padding: '12px', borderRadius: '6px', border: `2px solid ${C.tan}` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                    <p style={{ color: C.dark, margin: '0', fontWeight: 'bold', flex: 1 }}>{card.title}</p>
-                    <button
-                      onClick={() => deleteCard(card.id)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ backgroundColor: getPriorityColor(card.priority), color: C.warmWhite, padding: '3px 8px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
-                      {card.priority}
-                    </span>
-                    <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '3px 8px', borderRadius: '4px', fontSize: '11px' }}>
-                      {card.category}
-                    </span>
-                  </div>
-                  {card.dueDate && <p style={{ color: C.tan, fontSize: '12px', margin: '5px 0' }}>Vence: {card.dueDate}</p>}
-                  <div style={{ display: 'flex', gap: '5px' }}>
-                    {column === 'todo' && (
+              {kanban[column].map(card => {
+                const linkedObj = card.objectiveId ? getObjectiveLabel(card.objectiveId) : null;
+                return (
+                  <div key={card.id} style={{ backgroundColor: C.paper, padding: '12px', borderRadius: '8px', border: `2px solid ${linkedObj ? C.accent : C.tan}`, boxShadow: linkedObj ? `0 0 0 1px ${C.accentGlow}` : 'none' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                      <p style={{ color: C.dark, margin: '0', fontWeight: 'bold', flex: 1, fontSize: '13px' }}>{card.title}</p>
                       <button
-                        onClick={() => moveCard(card.id, column, 'inProgress')}
-                        style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        onClick={() => deleteCard(card.id)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '0 0 0 6px' }}
                       >
-                        <ChevronRight size={14} /> Siguiente
+                        <Trash2 size={14} />
                       </button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                      <span style={{ backgroundColor: getPriorityColor(card.priority), color: C.warmWhite, padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
+                        {card.priority}
+                      </span>
+                      <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '2px 7px', borderRadius: '4px', fontSize: '11px' }}>
+                        {card.category}
+                      </span>
+                      <span style={{ backgroundColor: C.lightCream, color: C.warm, padding: '2px 7px', borderRadius: '4px', fontSize: '11px' }}>
+                        ×{card.weight}
+                      </span>
+                    </div>
+                    {linkedObj && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', backgroundColor: C.accentGlow, borderRadius: '6px', marginBottom: '8px' }}>
+                        <Target size={11} color={C.dark} />
+                        <span style={{ fontSize: '11px', color: C.dark, fontWeight: '600' }}>{linkedObj.emoji} {linkedObj.title}</span>
+                      </div>
                     )}
-                    {column === 'inProgress' && (
-                      <>
+                    {card.dueDate && <p style={{ color: C.tan, fontSize: '12px', margin: '0 0 8px 0' }}>Vence: {card.dueDate}</p>}
+                    <div style={{ display: 'flex', gap: '5px' }}>
+                      {column === 'todo' && (
                         <button
-                          onClick={() => moveCard(card.id, column, 'todo')}
-                          style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                        >
-                          <ChevronLeft size={14} /> Atrás
-                        </button>
-                        <button
-                          onClick={() => moveCard(card.id, column, 'done')}
+                          onClick={() => moveCard(card.id, column, 'inProgress')}
                           style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
                         >
                           <ChevronRight size={14} /> Siguiente
                         </button>
-                      </>
-                    )}
-                    {column === 'done' && (
-                      <button
-                        onClick={() => {
-                          if (window.confirm(`¿Eliminar "${card.title}"?`)) deleteCard(card.id);
-                        }}
-                        style={{ flex: 1, padding: '6px', backgroundColor: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}`, borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                      >
-                        <Trash2 size={14} /> Eliminar
-                      </button>
-                    )}
+                      )}
+                      {column === 'inProgress' && (
+                        <>
+                          <button
+                            onClick={() => moveCard(card.id, column, 'todo')}
+                            style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                          >
+                            <ChevronLeft size={14} /> Atrás
+                          </button>
+                          <button
+                            onClick={() => moveCard(card.id, column, 'done')}
+                            style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                          >
+                            <ChevronRight size={14} /> Listo ✓
+                          </button>
+                        </>
+                      )}
+                      {column === 'done' && (
+                        <button
+                          onClick={() => moveCard(card.id, column, 'inProgress')}
+                          style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        >
+                          <ChevronLeft size={14} /> Deshacer
+                        </button>
+                      )}
+                      {column === 'done' && (
+                        <button
+                          onClick={() => {
+                            if (window.confirm(`¿Eliminar "${card.title}"?`)) deleteCard(card.id);
+                          }}
+                          style={{ flex: 1, padding: '6px', backgroundColor: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}`, borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
+                        >
+                          <Trash2 size={14} /> Eliminar
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ))}

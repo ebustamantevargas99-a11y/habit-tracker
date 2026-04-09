@@ -34,6 +34,9 @@ export const NAV_ITEMS = [
       "Work Time Log",
       "Pomodoro",
       "Mis Metas",
+      "Daily Command",
+      "Heatmaps",
+      "Proyecciones",
     ],
   },
   {
