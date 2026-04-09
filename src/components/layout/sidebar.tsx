@@ -17,12 +17,10 @@ const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
 
 // Map sidebar section label → productivitySubTab id
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
+  "Operations Center": "command",
   "Habit Tracker": "habits",
   "Project Management": "projects",
-  "Task List": "tasks",
-
   "Pomodoro": "pomodoro",
-  "Daily Command": "command",
   "Dashboard KPIs": "projection",
 };
 

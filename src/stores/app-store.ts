@@ -2,7 +2,7 @@ import { create } from "zustand";
 import type { PageKey } from "@/lib/constants";
 
 export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'period' | 'healthlog';
-export type ProductivityTab = 'habits' | 'projects' | 'tasks' | 'pomodoro' | 'command' | 'projection';
+export type ProductivityTab = 'command' | 'habits' | 'projects' | 'pomodoro' | 'projection';
 export type PlanTab = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
 interface AppState {

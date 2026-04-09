@@ -9,7 +9,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
 } from 'recharts';
 import {
-  Play, Pause, RotateCcw, Plus, Trash2, ChevronRight, ChevronLeft, Clock, Check, Square, X, ChevronDown, ChevronUp, Target,
+  Play, Pause, RotateCcw, Plus, Trash2, ChevronRight, ChevronLeft, Clock, Check, X, ChevronDown, ChevronUp, Target,
 } from 'lucide-react';
 
 const C = {
@@ -39,23 +39,23 @@ interface KanbanCard {
   weight: number;
 }
 
-interface Task {
+interface Project {
   id: string;
   name: string;
-  dueDate?: string;
-  tags: string[];
-  completed: boolean;
+  description: string;
+  color: string;
+  emoji: string;
+  createdAt: string;
 }
 
 
 
-const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'pomodoro', 'command', 'projection'];
+const TAB_KEYS: ProductivityTab[] = ['command', 'habits', 'projects', 'pomodoro', 'projection'];
 const TAB_LABELS: Record<ProductivityTab, string> = {
+  command:    '⚡ Operations Center',
   habits:     '🔁 Habit Tracker',
   projects:   '📋 Project Management',
-  tasks:      '✅ Task List',
   pomodoro:   '🍅 Pomodoro',
-  command:    '⚡ Daily Command',
   projection: '📊 Dashboard KPIs',
 };
 
@@ -96,11 +96,10 @@ export default function ProductivityPage() {
       </div>
 
       {/* Tab Content */}
+      {activeTab === 'command'     && <DailyCommandCenter />}
       {activeTab === 'habits'      && <HabitTrackerPage />}
       {activeTab === 'projects'    && <KanbanTab />}
-      {activeTab === 'tasks'       && <TasksTab />}
       {activeTab === 'pomodoro'    && <PomodoroTab />}
-      {activeTab === 'command'     && <DailyCommandCenter />}
       {activeTab === 'projection'  && <ProjectionDashboard />}
     </div>
   );
@@ -266,39 +265,87 @@ function PomodoroTab() {
   );
 }
 
-// ========== KANBAN TAB ==========
+// ========== PROJECT MANAGEMENT TAB ==========
+const PROJECT_COLORS = ['#B8860B','#7A9E3E','#5A8FA8','#D4943A','#C0544F','#6B4226','#8B6542','#A0845C'];
+const PROJECT_EMOJIS = ['🚀','💼','🎯','🏗️','💡','🔧','📱','🌐','🎨','📊'];
+
 function KanbanTab() {
   const { objectives, recalcObjectiveProgress } = useOKRStore();
   const [toast, setToast] = useState<string | null>(null);
+  const [showProjectForm, setShowProjectForm] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newProjectColor, setNewProjectColor] = useState(PROJECT_COLORS[0]);
+  const [newProjectEmoji, setNewProjectEmoji] = useState(PROJECT_EMOJIS[0]);
 
   const showToast = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 3000);
   };
 
-  const initialKanban: { [key: string]: KanbanCard[] } = {
-    todo: [
-      { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño', weight: 2 },
-      { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión', weight: 1 },
-      { id: '3', title: 'Actualizar documentación', priority: 'Baja', category: 'Documentación', weight: 1 },
-    ],
-    inProgress: [
-      { id: '4', title: 'Implementar autenticación', priority: 'Alta', dueDate: '2026-04-07', category: 'Desarrollo', weight: 3 },
-      { id: '5', title: 'Optimizar base de datos', priority: 'Media', dueDate: '2026-04-09', category: 'Backend', weight: 2 },
-    ],
-    done: [
-      { id: '6', title: 'Setup del proyecto', priority: 'Alta', category: 'Setup', weight: 1 },
-      { id: '7', title: 'Crear repositorio Git', priority: 'Media', category: 'DevOps', weight: 1 },
-      { id: '8', title: 'Configurar CI/CD', priority: 'Media', category: 'DevOps', weight: 2 },
-    ],
+  // Projects list
+  const [projects, setProjects] = useLocalStorage<Project[]>('pm_projects', [
+    { id: 'p_default', name: 'Mi Primer Proyecto', description: 'Proyecto de ejemplo', color: '#B8860B', emoji: '🚀', createdAt: '2026-04-01' },
+  ]);
+  const [activeProjectId, setActiveProjectId] = useLocalStorage<string>('pm_active_project', 'p_default');
+
+  // Kanban boards keyed by projectId: { [projectId]: { todo, inProgress, done } }
+  const [allBoards, setAllBoards] = useLocalStorage<Record<string, { [col: string]: KanbanCard[] }>>('pm_boards', {
+    p_default: {
+      todo: [
+        { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño', weight: 2 },
+        { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión', weight: 1 },
+      ],
+      inProgress: [
+        { id: '4', title: 'Implementar autenticación', priority: 'Alta', dueDate: '2026-04-07', category: 'Desarrollo', weight: 3 },
+      ],
+      done: [
+        { id: '6', title: 'Setup del proyecto', priority: 'Alta', category: 'Setup', weight: 1 },
+      ],
+    },
+  });
+
+  const emptyBoard = { todo: [], inProgress: [], done: [] };
+  const kanban: { [col: string]: KanbanCard[] } = allBoards[activeProjectId] ?? emptyBoard;
+  const setKanban = (updater: (prev: { [col: string]: KanbanCard[] }) => { [col: string]: KanbanCard[] }) => {
+    setAllBoards(prev => ({
+      ...prev,
+      [activeProjectId]: updater(prev[activeProjectId] ?? emptyBoard),
+    }));
   };
-  const [kanban, setKanban] = useLocalStorage<{ [key: string]: KanbanCard[] }>("productivity_kanban", initialKanban);
+
+  const activeProject = projects.find(p => p.id === activeProjectId) ?? projects[0];
+
+  const addProject = () => {
+    if (!newProjectName.trim()) return;
+    const id = `p_${Date.now()}`;
+    const newProject: Project = {
+      id, name: newProjectName.trim(), description: newProjectDesc.trim(),
+      color: newProjectColor, emoji: newProjectEmoji,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    setProjects(prev => [...prev, newProject]);
+    setAllBoards(prev => ({ ...prev, [id]: emptyBoard }));
+    setActiveProjectId(id);
+    setShowProjectForm(false);
+    setNewProjectName('');
+    setNewProjectDesc('');
+  };
+
+  const deleteProject = (id: string) => {
+    if (projects.length <= 1) return;
+    if (!window.confirm(`¿Eliminar el proyecto "${projects.find(p => p.id === id)?.name}"? Se eliminarán todas sus tareas.`)) return;
+    setProjects(prev => prev.filter(p => p.id !== id));
+    setAllBoards(prev => { const n = { ...prev }; delete n[id]; return n; });
+    if (activeProjectId === id) setActiveProjectId(projects.find(p => p.id !== id)?.id ?? '');
+  };
 
   const [newCardTitle, setNewCardTitle] = useState('');
   const [newCardPriority, setNewCardPriority] = useState<'Alta' | 'Media' | 'Baja'>('Media');
   const [newCardCategory, setNewCardCategory] = useState('Desarrollo');
   const [newCardObjectiveId, setNewCardObjectiveId] = useState('');
   const [newCardWeight, setNewCardWeight] = useState(1);
+  const [newCardDueDate, setNewCardDueDate] = useState('');
 
   const getAllCards = (k: { [key: string]: KanbanCard[] }) =>
     Object.entries(k).flatMap(([col, cards]) => cards.map(c => ({ ...c, column: col })));
@@ -352,11 +399,13 @@ function KanbanTab() {
       category: newCardCategory,
       weight: newCardWeight,
       objectiveId: newCardObjectiveId || undefined,
+      dueDate: newCardDueDate || undefined,
     };
     setKanban(prev => ({ ...prev, [column]: [...prev[column], newCard] }));
     setNewCardTitle('');
     setNewCardObjectiveId('');
     setNewCardWeight(1);
+    setNewCardDueDate('');
   };
 
   const deleteCard = (cardId: string) => {
@@ -377,8 +426,10 @@ function KanbanTab() {
 
   const getObjectiveLabel = (id: string) => objectives.find(o => o.id === id);
 
+  const inp = { padding: '9px 12px', border: `1px solid ${C.tan}`, borderRadius: '8px', fontSize: '13px', backgroundColor: C.paper, color: C.dark, width: '100%', boxSizing: 'border-box' as const };
+
   return (
-    <div style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '220px 1fr', gap: '20px', alignItems: 'start' }}>
       {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, backgroundColor: C.success, color: C.paper, padding: '12px 20px', borderRadius: '10px', fontWeight: '600', fontSize: '14px', boxShadow: '0 4px 20px rgba(0,0,0,0.2)', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -386,303 +437,191 @@ function KanbanTab() {
         </div>
       )}
 
-      <div style={{ marginBottom: '20px', backgroundColor: C.cream, padding: '18px', borderRadius: '10px' }}>
-        <h3 style={{ color: C.dark, margin: '0 0 15px 0', fontFamily: 'Georgia, serif' }}>Agregar tarjeta</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 130px', gap: '10px', marginBottom: '10px' }}>
-          <input
-            type="text"
-            value={newCardTitle}
-            onChange={e => setNewCardTitle(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addCard('todo')}
-            placeholder="Título de la tarea..."
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-          />
-          <select
-            value={newCardPriority}
-            onChange={e => setNewCardPriority(e.target.value as 'Alta' | 'Media' | 'Baja')}
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-          >
-            <option>Alta</option>
-            <option>Media</option>
-            <option>Baja</option>
-          </select>
-          <input
-            type="text"
-            value={newCardCategory}
-            onChange={e => setNewCardCategory(e.target.value)}
-            placeholder="Categoría..."
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-          />
+      {/* ── Project Sidebar ── */}
+      <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '14px', padding: '16px', position: 'sticky', top: '0' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+          <span style={{ fontFamily: 'Georgia, serif', fontWeight: '700', color: C.dark, fontSize: '15px' }}>Proyectos</span>
+          <button onClick={() => setShowProjectForm(!showProjectForm)} style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: C.accent, color: C.paper, border: 'none', cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '700' }}>+</button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 100px', gap: '10px' }}>
-          <select
-            value={newCardObjectiveId}
-            onChange={e => setNewCardObjectiveId(e.target.value)}
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '13px', color: newCardObjectiveId ? C.dark : C.warm }}
-          >
-            <option value="">Sin objetivo OKR</option>
-            {objectives.map(o => (
-              <option key={o.id} value={o.id}>{o.emoji} {o.title}</option>
-            ))}
-          </select>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <label style={{ fontSize: '12px', color: C.warm, whiteSpace: 'nowrap' }}>Peso:</label>
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={newCardWeight}
-              onChange={e => setNewCardWeight(Number(e.target.value))}
-              style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px', width: '100%' }}
-            />
-          </div>
-          <button
-            onClick={() => addCard('todo')}
-            style={{ padding: '10px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            Agregar
-          </button>
-        </div>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-        {(['todo', 'inProgress', 'done'] as const).map(column => (
-          <div key={column} style={{ backgroundColor: C.lightCream, borderRadius: '8px', padding: '15px', minHeight: '600px' }}>
-            <h3 style={{ color: C.dark, fontFamily: 'Georgia, serif', marginTop: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              {column === 'todo' && 'Por Hacer'}
-              {column === 'inProgress' && 'En Progreso'}
-              {column === 'done' && 'Completado'}
-              <span style={{ backgroundColor: C.accent, color: C.warmWhite, padding: '2px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>
-                {kanban[column].length}
-              </span>
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {kanban[column].map(card => {
-                const linkedObj = card.objectiveId ? getObjectiveLabel(card.objectiveId) : null;
-                return (
-                  <div key={card.id} style={{ backgroundColor: C.paper, padding: '12px', borderRadius: '8px', border: `2px solid ${linkedObj ? C.accent : C.tan}`, boxShadow: linkedObj ? `0 0 0 1px ${C.accentGlow}` : 'none' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                      <p style={{ color: C.dark, margin: '0', fontWeight: 'bold', flex: 1, fontSize: '13px' }}>{card.title}</p>
-                      <button
-                        onClick={() => deleteCard(card.id)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '0 0 0 6px' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                      <span style={{ backgroundColor: getPriorityColor(card.priority), color: C.warmWhite, padding: '2px 7px', borderRadius: '4px', fontSize: '11px', fontWeight: 'bold' }}>
-                        {card.priority}
-                      </span>
-                      <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '2px 7px', borderRadius: '4px', fontSize: '11px' }}>
-                        {card.category}
-                      </span>
-                      <span style={{ backgroundColor: C.lightCream, color: C.warm, padding: '2px 7px', borderRadius: '4px', fontSize: '11px' }}>
-                        ×{card.weight}
-                      </span>
-                    </div>
-                    {linkedObj && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '5px', padding: '4px 8px', backgroundColor: C.accentGlow, borderRadius: '6px', marginBottom: '8px' }}>
-                        <Target size={11} color={C.dark} />
-                        <span style={{ fontSize: '11px', color: C.dark, fontWeight: '600' }}>{linkedObj.emoji} {linkedObj.title}</span>
-                      </div>
-                    )}
-                    {card.dueDate && <p style={{ color: C.tan, fontSize: '12px', margin: '0 0 8px 0' }}>Vence: {card.dueDate}</p>}
-                    <div style={{ display: 'flex', gap: '5px' }}>
-                      {column === 'todo' && (
-                        <button
-                          onClick={() => moveCard(card.id, column, 'inProgress')}
-                          style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                        >
-                          <ChevronRight size={14} /> Siguiente
-                        </button>
-                      )}
-                      {column === 'inProgress' && (
-                        <>
-                          <button
-                            onClick={() => moveCard(card.id, column, 'todo')}
-                            style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                          >
-                            <ChevronLeft size={14} /> Atrás
-                          </button>
-                          <button
-                            onClick={() => moveCard(card.id, column, 'done')}
-                            style={{ flex: 1, padding: '6px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                          >
-                            <ChevronRight size={14} /> Listo ✓
-                          </button>
-                        </>
-                      )}
-                      {column === 'done' && (
-                        <button
-                          onClick={() => moveCard(card.id, column, 'inProgress')}
-                          style={{ flex: 1, padding: '6px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                        >
-                          <ChevronLeft size={14} /> Deshacer
-                        </button>
-                      )}
-                      {column === 'done' && (
-                        <button
-                          onClick={() => {
-                            if (window.confirm(`¿Eliminar "${card.title}"?`)) deleteCard(card.id);
-                          }}
-                          style={{ flex: 1, padding: '6px', backgroundColor: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}`, borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}
-                        >
-                          <Trash2 size={14} /> Eliminar
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+        {/* New project form */}
+        {showProjectForm && (
+          <div style={{ backgroundColor: C.lightCream, borderRadius: '10px', padding: '12px', marginBottom: '14px', display: 'grid', gap: '8px' }}>
+            <input placeholder="Nombre del proyecto *" value={newProjectName} onChange={e => setNewProjectName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addProject()} style={inp} />
+            <input placeholder="Descripción (opcional)" value={newProjectDesc} onChange={e => setNewProjectDesc(e.target.value)} style={inp} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+              <div>
+                <label style={{ fontSize: '11px', color: C.warm, display: 'block', marginBottom: '4px' }}>Emoji</label>
+                <select value={newProjectEmoji} onChange={e => setNewProjectEmoji(e.target.value)} style={inp}>
+                  {PROJECT_EMOJIS.map(e => <option key={e} value={e}>{e}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ fontSize: '11px', color: C.warm, display: 'block', marginBottom: '4px' }}>Color</label>
+                <select value={newProjectColor} onChange={e => setNewProjectColor(e.target.value)} style={inp}>
+                  {PROJECT_COLORS.map(c => <option key={c} value={c} style={{ backgroundColor: c, color: '#fff' }}>{c}</option>)}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '6px' }}>
+              <button onClick={addProject} style={{ flex: 1, padding: '7px', backgroundColor: C.success, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700', fontSize: '12px' }}>Crear</button>
+              <button onClick={() => { setShowProjectForm(false); setNewProjectName(''); }} style={{ flex: 1, padding: '7px', backgroundColor: C.cream, color: C.dark, border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '12px' }}>Cancelar</button>
             </div>
           </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+        )}
 
-// ========== TASKS TAB (EISENHOWER MATRIX) ==========
-function TasksTab() {
-  const initialTasks = {
-    urgent_important: [
-      { id: '1', name: 'Entregar proyecto cliente', dueDate: '2026-04-06', tags: ['Trabajo'], completed: false },
-      { id: '2', name: 'Resolver bug crítico', dueDate: '2026-04-06', tags: ['Trabajo'], completed: false },
-    ],
-    important: [
-      { id: '3', name: 'Planificar próximo sprint', dueDate: '2026-04-12', tags: ['Trabajo'], completed: false },
-      { id: '4', name: 'Mejorar performance', dueDate: '2026-04-15', tags: ['Trabajo'], completed: false },
-      { id: '5', name: 'Escribir tests', dueDate: '2026-04-18', tags: ['Trabajo'], completed: false },
-    ],
-    urgent: [
-      { id: '6', name: 'Responder emails', dueDate: '2026-04-06', tags: ['Trabajo'], completed: false },
-      { id: '7', name: 'Llamada con stakeholder', dueDate: '2026-04-06', tags: ['Trabajo'], completed: true },
-    ],
-    neither: [
-      { id: '8', name: 'Leer artículo de tecnología', tags: ['Personal'], completed: false },
-      { id: '9', name: 'Organizar escritorio', tags: ['Personal'], completed: false },
-    ],
-  };
-  const [tasks, setTasks] = useLocalStorage<{ [key: string]: Task[] }>("productivity_tasks", initialTasks);
-
-  const [newTaskName, setNewTaskName] = useState('');
-  const [newTaskQuadrant, setNewTaskQuadrant] = useState('urgent_important');
-  const [filterTag, setFilterTag] = useState('');
-
-  const addTask = (quadrant: string) => {
-    if (!newTaskName.trim()) return;
-    const newTask: Task = { id: Date.now().toString(), name: newTaskName, tags: ['Trabajo'], completed: false };
-    setTasks(prev => ({ ...prev, [quadrant]: [...prev[quadrant], newTask] }));
-    setNewTaskName('');
-  };
-
-  const toggleTask = (quadrant: string, taskId: string) => {
-    setTasks(prev => ({
-      ...prev,
-      [quadrant]: prev[quadrant].map(t => (t.id === taskId ? { ...t, completed: !t.completed } : t)),
-    }));
-  };
-
-  const deleteTask = (quadrant: string, taskId: string) => {
-    setTasks(prev => ({ ...prev, [quadrant]: prev[quadrant].filter(t => t.id !== taskId) }));
-  };
-
-  const quadrants = [
-    { key: 'urgent_important', label: 'Urgente e Importante', color: C.danger, bgColor: '#FFE5E2' },
-    { key: 'important', label: 'Importante', color: C.info, bgColor: '#DCF0FF' },
-    { key: 'urgent', label: 'Urgente', color: C.warning, bgColor: '#FFF4E5' },
-    { key: 'neither', label: 'Ni urgente ni importante', color: C.medium, bgColor: '#F0F0F0' },
-  ];
-
-  return (
-    <div>
-      <div style={{ marginBottom: '20px', backgroundColor: C.cream, padding: '15px', borderRadius: '8px' }}>
-        <h3 style={{ color: C.dark, margin: '0 0 15px 0', fontFamily: 'Georgia, serif' }}>Agregar tarea</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px 100px', gap: '10px' }}>
-          <input
-            type="text"
-            value={newTaskName}
-            onChange={e => setNewTaskName(e.target.value)}
-            placeholder="Nombre de la tarea..."
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-          />
-          <select
-            value={newTaskQuadrant}
-            onChange={e => setNewTaskQuadrant(e.target.value)}
-            style={{ padding: '10px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-          >
-            {quadrants.map(q => <option key={q.key} value={q.key}>{q.label}</option>)}
-          </select>
-          <button
-            onClick={() => addTask(newTaskQuadrant)}
-            style={{ padding: '10px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
-          >
-            Agregar
-          </button>
-        </div>
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
-        {quadrants.map(quadrant => (
-          <div key={quadrant.key} style={{ backgroundColor: quadrant.bgColor, borderRadius: '8px', padding: '15px', border: `3px solid ${quadrant.color}` }}>
-            <h3 style={{ color: quadrant.color, fontFamily: 'Georgia, serif', margin: '0 0 15px 0' }}>
-              {quadrant.label}
-            </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {tasks[quadrant.key as keyof typeof tasks].map(task => (
-                <div
-                  key={task.id}
-                  style={{
-                    backgroundColor: C.paper,
-                    padding: '10px',
-                    borderRadius: '6px',
-                    display: 'flex',
-                    gap: '10px',
-                    alignItems: 'flex-start',
-                    opacity: task.completed ? 0.6 : 1,
-                  }}
-                >
-                  <button
-                    onClick={() => toggleTask(quadrant.key as string, task.id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, marginTop: '2px' }}
-                  >
-                    {task.completed ? (
-                      <Check size={18} color={C.success} />
-                    ) : (
-                      <Square size={18} color={C.tan} />
-                    )}
-                  </button>
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        color: C.dark,
-                        margin: '0 0 4px 0',
-                        fontWeight: 'bold',
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                      }}
-                    >
-                      {task.name}
-                    </p>
-                    {task.dueDate && (
-                      <p style={{ color: C.tan, fontSize: '12px', margin: 0 }}>
-                        Vence: {task.dueDate}
-                      </p>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => deleteTask(quadrant.key as string, task.id)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger }}
-                  >
-                    <Trash2 size={16} />
-                  </button>
+        {/* Project list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+          {projects.map(p => {
+            const board = allBoards[p.id] ?? emptyBoard;
+            const total = Object.values(board).flat().length;
+            const done = (board.done ?? []).length;
+            const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+            const isActive = p.id === activeProjectId;
+            return (
+              <div
+                key={p.id}
+                onClick={() => setActiveProjectId(p.id)}
+                style={{ padding: '10px 12px', borderRadius: '10px', cursor: 'pointer', backgroundColor: isActive ? p.color : C.lightCream, border: `2px solid ${isActive ? p.color : 'transparent'}`, transition: 'all 0.15s' }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '700', color: isActive ? C.paper : C.dark, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '140px' }}>
+                    {p.emoji} {p.name}
+                  </span>
+                  {!isActive && projects.length > 1 && (
+                    <button onClick={e => { e.stopPropagation(); deleteProject(p.id); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '0', flexShrink: 0 }}>
+                      <X size={13} />
+                    </button>
+                  )}
                 </div>
-              ))}
+                <div style={{ height: '4px', backgroundColor: isActive ? 'rgba(255,255,255,0.3)' : C.lightTan, borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, backgroundColor: isActive ? C.paper : p.color, borderRadius: '2px', transition: 'width 0.4s ease' }} />
+                </div>
+                <span style={{ fontSize: '10px', color: isActive ? 'rgba(255,255,255,0.8)' : C.warm, marginTop: '3px', display: 'block' }}>{done}/{total} tareas · {pct}%</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* ── Board ── */}
+      <div>
+        {/* Project header */}
+        {activeProject && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px', padding: '14px 18px', backgroundColor: C.paper, border: `2px solid ${activeProject.color}`, borderRadius: '12px' }}>
+            <span style={{ fontSize: '26px' }}>{activeProject.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ margin: 0, fontFamily: 'Georgia, serif', color: C.dark, fontSize: '18px' }}>{activeProject.name}</h2>
+              {activeProject.description && <p style={{ margin: 0, fontSize: '12px', color: C.warm }}>{activeProject.description}</p>}
+            </div>
+            <div style={{ textAlign: 'right', fontSize: '12px', color: C.warm }}>
+              {(kanban.todo?.length ?? 0)} por hacer · {(kanban.inProgress?.length ?? 0)} en progreso · {(kanban.done?.length ?? 0)} listas
             </div>
           </div>
-        ))}
+        )}
+
+        {/* Add card form */}
+        <div style={{ marginBottom: '20px', backgroundColor: C.cream, padding: '16px', borderRadius: '10px' }}>
+          <h3 style={{ color: C.dark, margin: '0 0 12px 0', fontFamily: 'Georgia, serif', fontSize: '15px' }}>Agregar tarea</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 130px 110px', gap: '8px', marginBottom: '8px' }}>
+            <input type="text" value={newCardTitle} onChange={e => setNewCardTitle(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCard('todo')} placeholder="Título de la tarea..." style={{ ...inp, padding: '9px 12px' }} />
+            <select value={newCardPriority} onChange={e => setNewCardPriority(e.target.value as 'Alta' | 'Media' | 'Baja')} style={inp}>
+              <option>Alta</option><option>Media</option><option>Baja</option>
+            </select>
+            <input type="text" value={newCardCategory} onChange={e => setNewCardCategory(e.target.value)} placeholder="Categoría..." style={inp} />
+            <input type="date" value={newCardDueDate} onChange={e => setNewCardDueDate(e.target.value)} style={inp} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 90px', gap: '8px' }}>
+            <select value={newCardObjectiveId} onChange={e => setNewCardObjectiveId(e.target.value)} style={{ ...inp, color: newCardObjectiveId ? C.dark : C.warm }}>
+              <option value="">Sin objetivo OKR</option>
+              {objectives.map(o => <option key={o.id} value={o.id}>{o.emoji} {o.title}</option>)}
+            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <label style={{ fontSize: '11px', color: C.warm, whiteSpace: 'nowrap' }}>Peso:</label>
+              <input type="number" min={1} max={10} value={newCardWeight} onChange={e => setNewCardWeight(Number(e.target.value))} style={{ ...inp, width: '60px' }} />
+            </div>
+            <button onClick={() => addCard('todo')} style={{ padding: '9px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}>Agregar</button>
+          </div>
+        </div>
+
+        {/* Kanban columns */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+          {(['todo', 'inProgress', 'done'] as const).map(column => {
+            const colCards = kanban[column] ?? [];
+            const colColors = { todo: C.info, inProgress: C.warning, done: C.success };
+            const colLabels = { todo: 'Por Hacer', inProgress: 'En Progreso', done: 'Completado' };
+            return (
+              <div key={column} style={{ backgroundColor: C.lightCream, borderRadius: '10px', padding: '14px', minHeight: '500px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: colColors[column] }} />
+                    <span style={{ fontFamily: 'Georgia, serif', fontWeight: '700', color: C.dark, fontSize: '14px' }}>{colLabels[column]}</span>
+                  </div>
+                  <span style={{ backgroundColor: colColors[column], color: C.paper, padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 'bold' }}>{colCards.length}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {colCards.map(card => {
+                    const linkedObj = card.objectiveId ? getObjectiveLabel(card.objectiveId) : null;
+                    return (
+                      <div key={card.id} style={{ backgroundColor: C.paper, padding: '12px', borderRadius: '8px', border: `2px solid ${linkedObj ? C.accent : C.tan}`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                          <p style={{ color: C.dark, margin: '0', fontWeight: '700', flex: 1, fontSize: '13px', lineHeight: 1.3 }}>{card.title}</p>
+                          <button onClick={() => deleteCard(card.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '0 0 0 6px', flexShrink: 0 }}><Trash2 size={13} /></button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '5px', marginBottom: '7px', flexWrap: 'wrap' }}>
+                          <span style={{ backgroundColor: getPriorityColor(card.priority), color: C.paper, padding: '2px 7px', borderRadius: '4px', fontSize: '10px', fontWeight: 'bold' }}>{card.priority}</span>
+                          <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '2px 7px', borderRadius: '4px', fontSize: '10px' }}>{card.category}</span>
+                          <span style={{ backgroundColor: C.lightCream, color: C.warm, padding: '2px 7px', borderRadius: '4px', fontSize: '10px' }}>×{card.weight}</span>
+                        </div>
+                        {linkedObj && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '3px 7px', backgroundColor: C.accentGlow, borderRadius: '5px', marginBottom: '7px' }}>
+                            <Target size={10} color={C.dark} />
+                            <span style={{ fontSize: '10px', color: C.dark, fontWeight: '600', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{linkedObj.emoji} {linkedObj.title}</span>
+                          </div>
+                        )}
+                        {card.dueDate && (
+                          <p style={{ color: new Date(card.dueDate + 'T12:00:00') < new Date() ? C.danger : C.warm, fontSize: '11px', margin: '0 0 8px 0', fontWeight: new Date(card.dueDate + 'T12:00:00') < new Date() ? '700' : '400' }}>
+                            {new Date(card.dueDate + 'T12:00:00') < new Date() ? '⚠ Venció: ' : '📅 Vence: '}{card.dueDate}
+                          </p>
+                        )}
+                        <div style={{ display: 'flex', gap: '5px' }}>
+                          {column === 'todo' && (
+                            <button onClick={() => moveCard(card.id, column, 'inProgress')} style={{ flex: 1, padding: '5px', backgroundColor: C.accentLight, color: C.dark, border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                              <ChevronRight size={13} /> Iniciar
+                            </button>
+                          )}
+                          {column === 'inProgress' && (
+                            <>
+                              <button onClick={() => moveCard(card.id, column, 'todo')} style={{ flex: 1, padding: '5px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                <ChevronLeft size={13} /> Atrás
+                              </button>
+                              <button onClick={() => moveCard(card.id, column, 'done')} style={{ flex: 1, padding: '5px', backgroundColor: C.success, color: C.paper, border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                <Check size={13} /> Listo
+                              </button>
+                            </>
+                          )}
+                          {column === 'done' && (
+                            <>
+                              <button onClick={() => moveCard(card.id, column, 'inProgress')} style={{ flex: 1, padding: '5px', backgroundColor: C.lightTan, color: C.dark, border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                <ChevronLeft size={13} /> Deshacer
+                              </button>
+                              <button onClick={() => { if (window.confirm(`¿Eliminar "${card.title}"?`)) deleteCard(card.id); }} style={{ flex: 1, padding: '5px', backgroundColor: C.dangerLight, color: C.danger, border: `1px solid ${C.danger}`, borderRadius: '5px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                                <Trash2 size={12} /> Eliminar
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
 }
+
 
