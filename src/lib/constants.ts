@@ -21,7 +21,6 @@ export const NAV_ITEMS = [
       "Monthly Planner",
       "Quarterly Planner",
       "Yearly Planner",
-      "Meeting Minutes",
     ],
   },
   {
@@ -35,17 +34,6 @@ export const NAV_ITEMS = [
       "Work Time Log",
       "Pomodoro",
       "Mis Metas",
-    ],
-  },
-  {
-    key: "organization",
-    label: "Organización",
-    icon: "FolderOpen",
-    sections: [
-      "Cleaning Tracker",
-      "Relationships",
-      "Reading Journal",
-      "Movies & TV",
     ],
   },
   {
@@ -118,7 +106,6 @@ export type PageKey = (typeof NAV_ITEMS)[number]["key"];
 export const LIFE_SCORE_WEIGHTS = {
   plan: 0.10,
   productivity: 0.15,
-  organization: 0.08,
   finance: 0.15,
   fitness: 0.15,
   nutrition: 0.12,

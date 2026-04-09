@@ -33,7 +33,6 @@ const PLAN_SECTION_MAP: Record<string, PlanTab> = {
   "Monthly Planner": 3,
   "Quarterly Planner": 4,
   "Yearly Planner": 5,
-  "Meeting Minutes": 6,
 };
 import * as LucideIcons from "lucide-react";
 import React from "react";
