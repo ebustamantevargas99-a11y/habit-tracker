@@ -115,7 +115,7 @@ export default function MainApp() {
   const getPageTitle = () => {
     const titles: { [key: string]: string } = {
       home: "Dashboard",
-      plan: "Planificador",
+      plan: "Calendar",
       productivity: "Productividad",
       organization: "Organización",
       finance: "Finanzas",

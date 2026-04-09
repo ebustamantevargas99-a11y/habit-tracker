@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
   },
   {
     key: "plan",
-    label: "Plan",
+    label: "Calendar",
     icon: "Calendar",
     sections: [
       "Calendar",
