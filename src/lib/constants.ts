@@ -31,11 +31,9 @@ export const NAV_ITEMS = [
       "Habit Tracker",
       "Project Management",
       "Task List",
-      "Work Time Log",
       "Pomodoro",
       "Daily Command",
-      "Heatmaps",
-      "Proyecciones",
+      "Dashboard KPIs",
     ],
   },
   {

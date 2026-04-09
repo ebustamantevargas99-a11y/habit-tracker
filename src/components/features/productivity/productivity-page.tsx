@@ -4,7 +4,6 @@ import { useAppStore, type ProductivityTab } from '@/stores/app-store';
 import { useOKRStore } from '@/stores/okr-store';
 import HabitTrackerPage from '@/components/features/habits/habit-tracker-page';
 import DailyCommandCenter from './daily-command-center';
-import HeatMapGallery from './heatmap-gallery';
 import ProjectionDashboard from './projection-dashboard';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
@@ -48,26 +47,16 @@ interface Task {
   completed: boolean;
 }
 
-interface TimeEntry {
-  id: string;
-  project: string;
-  category: string;
-  startTime: string;
-  endTime: string;
-  duration: number;
-}
 
 
-const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'worktimelog', 'pomodoro', 'command', 'heatmap', 'projection'];
+const TAB_KEYS: ProductivityTab[] = ['habits', 'projects', 'tasks', 'pomodoro', 'command', 'projection'];
 const TAB_LABELS: Record<ProductivityTab, string> = {
   habits:     '🔁 Habit Tracker',
   projects:   '📋 Project Management',
   tasks:      '✅ Task List',
-  worktimelog:'⏱️ Work Time Log',
   pomodoro:   '🍅 Pomodoro',
   command:    '⚡ Daily Command',
-  heatmap:    '🔥 Heatmaps',
-  projection: '📈 Proyecciones',
+  projection: '📊 Dashboard KPIs',
 };
 
 export default function ProductivityPage() {
@@ -110,11 +99,8 @@ export default function ProductivityPage() {
       {activeTab === 'habits'      && <HabitTrackerPage />}
       {activeTab === 'projects'    && <KanbanTab />}
       {activeTab === 'tasks'       && <TasksTab />}
-      {activeTab === 'worktimelog' && <TimeLogTab />}
       {activeTab === 'pomodoro'    && <PomodoroTab />}
-
       {activeTab === 'command'     && <DailyCommandCenter />}
-      {activeTab === 'heatmap'     && <HeatMapGallery />}
       {activeTab === 'projection'  && <ProjectionDashboard />}
     </div>
   );
@@ -700,221 +686,3 @@ function TasksTab() {
   );
 }
 
-// ========== TIME LOG TAB ==========
-function TimeLogTab() {
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [selectedProject, setSelectedProject] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Desarrollo');
-  const [projects, setProjects] = useState<string[]>([]);
-  const [newProjectInput, setNewProjectInput] = useState('');
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
-
-  useEffect(() => {
-    if (!isTimerRunning) return;
-    const interval = setInterval(() => setElapsedSeconds(p => p + 1), 1000);
-    return () => clearInterval(interval);
-  }, [isTimerRunning]);
-
-  const stopTimer = () => {
-    if (elapsedSeconds > 0) {
-      const newEntry: TimeEntry = {
-        id: Date.now().toString(),
-        project: selectedProject,
-        category: selectedCategory,
-        startTime: new Date(Date.now() - elapsedSeconds * 1000).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        endTime: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
-        duration: Math.floor(elapsedSeconds / 60),
-      };
-      setTimeEntries(p => [newEntry, ...p]);
-      setElapsedSeconds(0);
-    }
-    setIsTimerRunning(false);
-  };
-
-  const minutes = Math.floor(elapsedSeconds / 60);
-  const seconds = elapsedSeconds % 60;
-
-  // Calculate weekly summary
-  const weeklySummary: { [key: string]: number } = {};
-  timeEntries.forEach(entry => {
-    weeklySummary[entry.project] = (weeklySummary[entry.project] || 0) + entry.duration;
-  });
-
-  const chartData = Object.entries(weeklySummary).map(([project, minutes]) => ({
-    name: project,
-    horas: Math.round(minutes / 60 * 10) / 10,
-  }));
-
-  return (
-    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-      {/* Active Timer */}
-      <div style={{ backgroundColor: C.cream, padding: '20px', borderRadius: '8px', marginBottom: '30px' }}>
-        <h3 style={{ color: C.dark, fontFamily: 'Georgia, serif', marginTop: 0 }}>Temporizador Activo</h3>
-        <div style={{ fontSize: '48px', fontWeight: 'bold', color: C.accent, marginBottom: '20px', fontFamily: 'monospace' }}>
-          {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
-        </div>
-        {/* Add project */}
-        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-          <input
-            value={newProjectInput}
-            onChange={e => setNewProjectInput(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' && newProjectInput.trim()) {
-                const name = newProjectInput.trim();
-                if (!projects.includes(name)) setProjects(p => [...p, name]);
-                setSelectedProject(name);
-                setNewProjectInput('');
-              }
-            }}
-            placeholder="Nuevo proyecto (Enter para agregar)..."
-            style={{ flex: 1, padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '13px', backgroundColor: C.warmWhite, color: C.dark }}
-          />
-          <button
-            onClick={() => {
-              const name = newProjectInput.trim();
-              if (name && !projects.includes(name)) setProjects(p => [...p, name]);
-              if (name) { setSelectedProject(name); setNewProjectInput(''); }
-            }}
-            style={{ padding: '8px 14px', backgroundColor: C.accent, color: C.warmWhite, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '13px' }}
-          >
-            + Agregar
-          </button>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '15px' }}>
-          <div>
-            <label style={{ display: 'block', color: C.dark, marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>
-              Proyecto {projects.length === 0 && <span style={{ color: C.warning }}>(agrega uno arriba)</span>}
-            </label>
-            <select
-              value={selectedProject}
-              onChange={e => setSelectedProject(e.target.value)}
-              style={{ width: '100%', padding: '8px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px', backgroundColor: C.warmWhite }}
-            >
-              {projects.length === 0
-                ? <option value="">— sin proyectos —</option>
-                : projects.map(p => <option key={p} value={p}>{p}</option>)
-              }
-            </select>
-          </div>
-          <div>
-            <label style={{ display: 'block', color: C.dark, marginBottom: '5px', fontWeight: 'bold', fontSize: '12px' }}>Categoría</label>
-            <select
-              value={selectedCategory}
-              onChange={e => setSelectedCategory(e.target.value)}
-              style={{ width: '100%', padding: '8px', border: `2px solid ${C.tan}`, borderRadius: '6px', fontSize: '14px' }}
-            >
-              <option>Desarrollo</option>
-              <option>Diseño</option>
-              <option>Reunión</option>
-              <option>Admin</option>
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
-            <button
-              onClick={() => setIsTimerRunning(!isTimerRunning)}
-              disabled={!selectedProject}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: isTimerRunning ? C.warning : C.accent,
-                color: C.warmWhite,
-                border: 'none',
-                borderRadius: '6px',
-                cursor: selectedProject ? 'pointer' : 'not-allowed',
-                opacity: selectedProject ? 1 : 0.5,
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '5px',
-              }}
-            >
-              {isTimerRunning ? <Pause size={18} /> : <Play size={18} />}
-              {isTimerRunning ? 'Pausar' : 'Iniciar'}
-            </button>
-            <button
-              onClick={stopTimer}
-              style={{
-                flex: 1,
-                padding: '10px',
-                backgroundColor: C.danger,
-                color: C.warmWhite,
-                border: 'none',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontWeight: 'bold',
-              }}
-            >
-              Detener
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Weekly Summary Chart */}
-      <div style={{ marginBottom: '30px', backgroundColor: C.lightCream, padding: '20px', borderRadius: '8px' }}>
-        <h3 style={{ color: C.dark, fontFamily: 'Georgia, serif', marginTop: 0 }}>Resumen por Proyecto (hoy)</h3>
-        {chartData.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" stroke={C.dark} />
-              <YAxis stroke={C.dark} label={{ value: 'Horas', angle: -90, position: 'insideLeft' }} />
-              <Tooltip contentStyle={{ backgroundColor: C.cream, border: `2px solid ${C.tan}` }} />
-              <Bar dataKey="horas" fill={C.accent} radius={[8, 8, 0, 0]}>
-                {chartData.map((entry, idx) => (
-                  <Cell key={`cell-${idx}`} fill={[C.accent, C.accentLight, C.warning, C.success][idx % 4]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        ) : (
-          <p style={{ color: C.tan }}>Sin datos registrados</p>
-        )}
-      </div>
-
-      {/* Time Log Table */}
-      <div>
-        <h3 style={{ color: C.dark, fontFamily: 'Georgia, serif', marginBottom: '15px' }}>Registro de hoy</h3>
-        <div style={{ backgroundColor: C.paper, borderRadius: '8px', overflow: 'hidden', border: `1px solid ${C.tan}` }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ backgroundColor: C.cream, borderBottom: `2px solid ${C.tan}` }}>
-                <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Proyecto</th>
-                <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Inicio</th>
-                <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Fin</th>
-                <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Duración</th>
-                <th style={{ padding: '12px', textAlign: 'left', color: C.dark, fontWeight: 'bold' }}>Categoría</th>
-                <th style={{ padding: '12px' }}></th>
-              </tr>
-            </thead>
-            <tbody>
-              {timeEntries.map((entry, idx) => (
-                <tr key={entry.id} style={{ borderBottom: idx < timeEntries.length - 1 ? `1px solid ${C.lightCream}` : 'none' }}>
-                  <td style={{ padding: '12px', color: C.dark, fontWeight: 'bold' }}>{entry.project}</td>
-                  <td style={{ padding: '12px', color: C.dark }}>{entry.startTime}</td>
-                  <td style={{ padding: '12px', color: C.dark }}>{entry.endTime}</td>
-                  <td style={{ padding: '12px', color: C.dark, fontWeight: 'bold' }}>{entry.duration} min</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{ backgroundColor: C.infoLight, color: C.dark, padding: '4px 12px', borderRadius: '4px', fontSize: '12px', fontWeight: 'bold' }}>
-                      {entry.category}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px' }}>
-                    <button
-                      onClick={() => setTimeEntries(p => p.filter(e => e.id !== entry.id))}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, padding: '2px' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-}

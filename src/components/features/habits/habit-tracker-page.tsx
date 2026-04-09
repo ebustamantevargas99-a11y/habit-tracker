@@ -2,10 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import { useHabitStore } from "@/stores/habit-store";
-import { Trash2, Plus, X } from "lucide-react";
+import { Trash2, Plus, X, TrendingUp, Flame, Award } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend,
+  PieChart, Pie, Cell,
+  AreaChart, Area, CartesianGrid,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis,
 } from "recharts";
 import type { TimeOfDay } from "@/types";
 
@@ -77,7 +79,7 @@ export default function HabitTrackerPage() {
   useEffect(() => { refresh(); }, []);
 
   const [showForm, setShowForm]           = useState(false);
-  const [heatmapView, setHeatmapView]     = useState<'monthly' | 'annual'>('monthly');
+  const [heatmapView, setHeatmapView]     = useState<'monthly' | '6months' | 'annual'>('monthly');
   const [heatmapMonth, setHeatmapMonth]   = useState(() => new Date());
   const [heatmapYear, setHeatmapYear]     = useState(() => new Date().getFullYear());
   const [form, setForm] = useState({
@@ -159,6 +161,20 @@ export default function HabitTrackerPage() {
     });
   };
 
+  // 6-month completion per month
+  const get6MonthsData = (habitId: string) => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+      const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+      const monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const done = logs.filter(l => l.habitId === habitId && l.date.startsWith(monthStr) && l.completed).length;
+      const pct = Math.round((done / daysInMonth) * 100);
+      const MONTHS = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      return { label: MONTHS[d.getMonth()], pct, done, days: daysInMonth };
+    });
+  };
+
   // Charts — last 14 days
   const last14 = useMemo(() => {
     return Array.from({ length: 14 }, (_, i) => {
@@ -181,6 +197,63 @@ export default function HabitTrackerPage() {
     });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [activeHabits]);
+
+  // 30-day completion rate trend (daily %)
+  const trend30 = useMemo(() => {
+    const total = activeHabits.length;
+    return Array.from({ length: 30 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - (29 - i));
+      const ds = d.toISOString().split("T")[0];
+      const done = logs.filter(l => l.date === ds && l.completed).length;
+      return {
+        date: d.toLocaleDateString("es", { day: "2-digit", month: "2-digit" }),
+        tasa: total > 0 ? Math.round((done / total) * 100) : 0,
+      };
+    });
+  }, [logs, activeHabits]);
+
+  // Best day of week (Mon-Sun)
+  const dayOfWeekData = useMemo(() => {
+    const DAY_LABELS = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    const counts = Array(7).fill(0);
+    const totals = Array(7).fill(0);
+    logs.filter(l => l.completed).forEach(l => {
+      const dow = new Date(l.date + 'T12:00:00').getDay();
+      counts[dow]++;
+    });
+    // count how many of each weekday have passed in the last 90 days
+    for (let i = 0; i < 90; i++) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      totals[d.getDay()]++;
+    }
+    return [1,2,3,4,5,6,0].map(dow => ({
+      day: DAY_LABELS[dow],
+      completados: totals[dow] > 0 ? Math.round((counts[dow] / totals[dow]) * activeHabits.length) : 0,
+    }));
+  }, [logs, activeHabits]);
+
+  // Streak leaderboard
+  const streakLeaderboard = useMemo(() =>
+    [...activeHabits].sort((a, b) => b.streakCurrent - a.streakCurrent).slice(0, 5),
+    [activeHabits]
+  );
+
+  // Radar: per category avg completion last 30d
+  const radarData = useMemo(() => {
+    const start30 = new Date(); start30.setDate(start30.getDate() - 29);
+    const s30 = start30.toISOString().split("T")[0];
+    const map: Record<string, { done: number; possible: number }> = {};
+    activeHabits.forEach(h => {
+      if (!map[h.category]) map[h.category] = { done: 0, possible: 0 };
+      const done = logs.filter(l => l.habitId === h.id && l.date >= s30 && l.completed).length;
+      map[h.category].done += done;
+      map[h.category].possible += 30;
+    });
+    return Object.entries(map).map(([cat, { done, possible }]) => ({
+      categoria: cat.length > 8 ? cat.slice(0, 8) + '…' : cat,
+      valor: possible > 0 ? Math.round((done / possible) * 100) : 0,
+    }));
+  }, [activeHabits, logs]);
 
   const handleAdd = async () => {
     if (!form.name.trim()) return;
@@ -433,15 +506,20 @@ export default function HabitTrackerPage() {
       {/* Heatmap view controls */}
       {activeHabits.length > 0 && (
         <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-          <div style={{ display: "flex", gap: "6px" }}>
-            {(['monthly', 'annual'] as const).map(v => (
-              <button key={v} onClick={() => setHeatmapView(v)} style={{
-                padding: "6px 14px", borderRadius: "6px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer",
-                backgroundColor: heatmapView === v ? C.medium : C.cream,
-                color: heatmapView === v ? C.paper : C.dark,
-                border: `1px solid ${heatmapView === v ? C.medium : C.tan}`,
+          <span style={{ fontSize: "0.8rem", fontWeight: "700", color: C.warm }}>Vista de hábitos:</span>
+          <div style={{ display: "flex", border: `1px solid ${C.tan}`, borderRadius: "8px", overflow: "hidden" }}>
+            {([
+              { key: 'monthly',  label: '📆 Mes' },
+              { key: '6months',  label: '📊 6 Meses' },
+              { key: 'annual',   label: '🗓 Anual' },
+            ] as const).map(v => (
+              <button key={v.key} onClick={() => setHeatmapView(v.key)} style={{
+                padding: "7px 14px", fontSize: "0.8rem", fontWeight: "600", cursor: "pointer",
+                backgroundColor: heatmapView === v.key ? C.accent : C.paper,
+                color: heatmapView === v.key ? C.paper : C.dark,
+                border: "none", borderRight: `1px solid ${C.tan}`, transition: "background-color 0.15s",
               }}>
-                {v === 'monthly' ? '📆 Monthly' : '📊 Annual'}
+                {v.label}
               </button>
             ))}
           </div>
@@ -450,7 +528,7 @@ export default function HabitTrackerPage() {
               <button onClick={() => setHeatmapMonth(new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() - 1, 1))}
                 style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>‹</button>
               <span style={{ fontSize: "0.85rem", fontWeight: "600", color: C.dark, minWidth: "120px", textAlign: "center" }}>
-                {heatmapMonth.toLocaleDateString("en", { month: "long", year: "numeric" })}
+                {heatmapMonth.toLocaleDateString("es", { month: "long", year: "numeric" })}
               </span>
               <button onClick={() => setHeatmapMonth(new Date(heatmapMonth.getFullYear(), heatmapMonth.getMonth() + 1, 1))}
                 style={{ padding: "4px 10px", border: `1px solid ${C.tan}`, borderRadius: "6px", backgroundColor: C.cream, cursor: "pointer", color: C.dark, fontWeight: "700" }}>›</button>
@@ -589,6 +667,36 @@ export default function HabitTrackerPage() {
                       </div>
                     )}
 
+                    {/* ── 6 MONTHS ── */}
+                    {heatmapView === '6months' && (() => {
+                      const sixData = get6MonthsData(habit.id);
+                      const maxPct = Math.max(...sixData.map(d => d.pct), 1);
+                      return (
+                        <div style={{ marginBottom: "0.75rem" }}>
+                          <div style={{ display: "flex", alignItems: "flex-end", gap: "4px", height: "56px" }}>
+                            {sixData.map((m, i) => {
+                              const h = maxPct > 0 ? (m.pct / maxPct) * 100 : 0;
+                              const bg = m.pct >= 80 ? C.success : m.pct >= 50 ? C.accent : m.pct >= 20 ? C.tan : C.lightCream;
+                              return (
+                                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", height: "100%", justifyContent: "flex-end", gap: "2px" }}>
+                                  <span style={{ fontSize: "0.45rem", color: C.warm, fontWeight: "700" }}>{m.pct}%</span>
+                                  <div
+                                    title={`${m.label}: ${m.done}/${m.days} días (${m.pct}%)`}
+                                    style={{ width: "100%", height: `${Math.max(h, 4)}%`, backgroundColor: bg, borderRadius: "3px 3px 0 0", minHeight: "4px", transition: "height 0.4s ease" }}
+                                  />
+                                </div>
+                              );
+                            })}
+                          </div>
+                          <div style={{ display: "flex", gap: "4px", marginTop: "3px", borderTop: `1px solid ${C.lightTan}`, paddingTop: "3px" }}>
+                            {sixData.map((m, i) => (
+                              <div key={i} style={{ flex: 1, textAlign: "center", fontSize: "0.5rem", color: C.medium, fontWeight: "600" }}>{m.label}</div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+
                     {/* ── ANNUAL CHART ── */}
                     {heatmapView === 'annual' && (
                       <div style={{ marginBottom: "0.75rem" }}>
@@ -644,89 +752,182 @@ export default function HabitTrackerPage() {
         ))
       )}
 
-      {/* Charts */}
+      {/* ── Analytics Section ── */}
       {activeHabits.length > 0 && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: "2rem", marginTop: "1rem" }}>
-          {/* Bar chart */}
-          <div style={{
-            backgroundColor: C.paper, border: `1px solid ${C.lightTan}`,
-            borderRadius: "12px", padding: "1.5rem",
-          }}>
-            <h3 style={{ fontSize: "1rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
-              📊 Hábitos completados por día (últimos 14 días)
+        <div style={{ marginTop: "2.5rem" }}>
+          <h2 style={{ fontSize: "1.2rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1.5rem 0", display: "flex", alignItems: "center", gap: "8px" }}>
+            <TrendingUp size={20} color={C.accent} /> Analítica de Hábitos
+          </h2>
+
+          {/* Row 1: Trend + Day of week */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+            {/* 30-day trend area chart */}
+            <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
+                📈 Tasa de completado — últimos 30 días
+              </h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <AreaChart data={trend30} margin={{ top: 5, right: 5, bottom: 0, left: -25 }}>
+                  <defs>
+                    <linearGradient id="trendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor={C.accent} stopOpacity={0.3} />
+                      <stop offset="95%" stopColor={C.accent} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
+                  <XAxis dataKey="date" tick={{ fontSize: 9, fill: C.warm }} interval={4} />
+                  <YAxis tick={{ fontSize: 9, fill: C.warm }} domain={[0, 100]} tickFormatter={v => `${v}%`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "12px" }}
+                    formatter={(v: number) => [`${v}%`, "Completado"]}
+                  />
+                  <Area type="monotone" dataKey="tasa" stroke={C.accent} strokeWidth={2.5} fill="url(#trendGrad)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Best day of week */}
+            <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
+                📅 Mejor día de la semana
+              </h3>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={dayOfWeekData} margin={{ top: 5, right: 5, bottom: 0, left: -25 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
+                  <XAxis dataKey="day" tick={{ fontSize: 10, fill: C.warm }} />
+                  <YAxis tick={{ fontSize: 10, fill: C.warm }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "12px" }} />
+                  <Bar dataKey="completados" name="Promedio completados" radius={[6, 6, 0, 0]}>
+                    {dayOfWeekData.map((entry, i) => (
+                      <Cell key={i} fill={entry.completados === Math.max(...dayOfWeekData.map(d => d.completados)) ? C.success : C.accent} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Row 2: Per-habit progress bars + Pie */}
+          <div style={{ display: "grid", gridTemplateColumns: "1.6fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+            {/* Progress bars */}
+            <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1.25rem 0" }}>
+                🎯 Cumplimiento individual — últimos 30 días
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem" }}>
+                {activeHabits.map((habit) => {
+                  const start30 = new Date(); start30.setDate(start30.getDate() - 29);
+                  const done30  = logs.filter(l => l.habitId === habit.id && l.date >= start30.toISOString().split("T")[0] && l.completed).length;
+                  const pct = Math.round((done30 / 30) * 100);
+                  const barColor = pct >= 70 ? C.success : pct >= 40 ? C.accent : C.warning;
+                  return (
+                    <div key={habit.id}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "0.82rem", color: C.dark, fontWeight: "600" }}>{habit.icon} {habit.name}</span>
+                        <span style={{ fontSize: "0.82rem", fontWeight: "700", color: barColor }}>{pct}%</span>
+                      </div>
+                      <div style={{ height: "9px", backgroundColor: C.lightTan, borderRadius: "5px", overflow: "hidden", position: "relative" }}>
+                        <div style={{ height: "100%", borderRadius: "5px", width: `${pct}%`, backgroundColor: barColor, transition: "width 0.6s ease" }} />
+                      </div>
+                      <div style={{ fontSize: "0.7rem", color: C.warm, marginTop: "2px" }}>{done30} de 30 días · Racha: {habit.streakCurrent}d</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Category pie + radar stacked */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+              <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem", flex: 1 }}>
+                <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 0.75rem 0" }}>
+                  🏷 Por categoría
+                </h3>
+                {categoryData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={170}>
+                    <PieChart>
+                      <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={35} outerRadius={65} paddingAngle={3}>
+                        {categoryData.map((_, idx) => (
+                          <Cell key={idx} fill={CATEGORY_COLORS[idx % CATEGORY_COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "12px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : <p style={{ color: C.warm, textAlign: "center", fontSize: "0.85rem" }}>Sin datos aún</p>}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Radar by category + Streak leaderboard */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", marginBottom: "1.5rem" }}>
+            {/* Radar */}
+            {radarData.length >= 3 && (
+              <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+                <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
+                  🕸 Consistencia por categoría (30d)
+                </h3>
+                <ResponsiveContainer width="100%" height={200}>
+                  <RadarChart data={radarData}>
+                    <PolarGrid stroke={C.lightTan} />
+                    <PolarAngleAxis dataKey="categoria" tick={{ fontSize: 10, fill: C.warm }} />
+                    <Radar name="Completado" dataKey="valor" stroke={C.accent} fill={C.accent} fillOpacity={0.25} />
+                    <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "12px" }} formatter={(v: number) => [`${v}%`, "Completado"]} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+
+            {/* Streak leaderboard */}
+            <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+              <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Flame size={16} color={C.warning} /> Ranking de Rachas
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                {streakLeaderboard.map((habit, rank) => {
+                  const medals = ["🥇","🥈","🥉","4️⃣","5️⃣"];
+                  const barW = streakLeaderboard[0]?.streakCurrent > 0
+                    ? Math.round((habit.streakCurrent / streakLeaderboard[0].streakCurrent) * 100)
+                    : 0;
+                  return (
+                    <div key={habit.id} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ fontSize: "1.1rem", minWidth: "24px" }}>{medals[rank]}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "3px" }}>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "700", color: C.dark, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{habit.icon} {habit.name}</span>
+                          <span style={{ fontSize: "0.82rem", fontWeight: "700", color: C.warning, marginLeft: "8px", flexShrink: 0 }}>{habit.streakCurrent}d 🔥</span>
+                        </div>
+                        <div style={{ height: "6px", backgroundColor: C.lightTan, borderRadius: "3px", overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${barW}%`, backgroundColor: rank === 0 ? C.accent : C.tan, borderRadius: "3px", transition: "width 0.5s ease" }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                {streakLeaderboard.length === 0 && (
+                  <p style={{ color: C.warm, fontSize: "0.85rem", textAlign: "center" }}>Completa hábitos para ver tu ranking</p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Row 4: 14-day daily bar */}
+          <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "14px", padding: "1.5rem" }}>
+            <h3 style={{ fontSize: "0.95rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
+              📊 Hábitos completados por día — últimos 14 días
             </h3>
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={last14} margin={{ top: 0, right: 0, bottom: 0, left: -20 }}>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={last14} margin={{ top: 5, right: 10, bottom: 0, left: -20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
                 <XAxis dataKey="date" stroke={C.warm} tick={{ fontSize: 10 }} />
                 <YAxis stroke={C.warm} tick={{ fontSize: 10 }} allowDecimals={false} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: C.lightCream, border: `1px solid ${C.tan}`, borderRadius: "8px" }}
-                  cursor={{ fill: C.lightCream }}
-                />
-                <Bar dataKey="completados" fill={C.accent} radius={[6, 6, 0, 0]} />
+                <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "12px" }} cursor={{ fill: C.lightCream }} />
+                <Bar dataKey="completados" name="Completados" fill={C.accent} radius={[6, 6, 0, 0]}>
+                  {last14.map((entry, i) => (
+                    <Cell key={i} fill={entry.completados === activeHabits.length ? C.success : C.accent} />
+                  ))}
+                </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
-
-          {/* Pie chart */}
-          <div style={{
-            backgroundColor: C.paper, border: `1px solid ${C.lightTan}`,
-            borderRadius: "12px", padding: "1.5rem",
-          }}>
-            <h3 style={{ fontSize: "1rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1rem 0" }}>
-              🎯 Por categoría
-            </h3>
-            {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie data={categoryData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name }) => name}>
-                    {categoryData.map((_, idx) => (
-                      <Cell key={idx} fill={CATEGORY_COLORS[idx % CATEGORY_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: C.lightCream, border: `1px solid ${C.tan}`, borderRadius: "8px" }} />
-                </PieChart>
-              </ResponsiveContainer>
-            ) : (
-              <p style={{ color: C.warm, textAlign: "center" }}>Sin datos aún</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Per-habit progress bars */}
-      {activeHabits.length > 0 && (
-        <div style={{
-          backgroundColor: C.paper, border: `1px solid ${C.lightTan}`,
-          borderRadius: "12px", padding: "1.5rem", marginTop: "2rem",
-        }}>
-          <h3 style={{ fontSize: "1rem", fontFamily: "Georgia, serif", color: C.dark, margin: "0 0 1.25rem 0" }}>
-            📈 Progreso individual (últimos 30 días)
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-            {activeHabits.map((habit) => {
-              const start30 = new Date(); start30.setDate(start30.getDate() - 29);
-              const done30  = logs.filter(l => l.habitId === habit.id && l.date >= start30.toISOString().split("T")[0] && l.completed).length;
-              const pct = Math.round((done30 / 30) * 100);
-              return (
-                <div key={habit.id}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "4px" }}>
-                    <span style={{ fontSize: "0.85rem", color: C.dark, fontWeight: "600" }}>
-                      {habit.icon} {habit.name}
-                    </span>
-                    <span style={{ fontSize: "0.85rem", color: C.warm, fontWeight: "600" }}>{pct}%</span>
-                  </div>
-                  <div style={{ height: "8px", backgroundColor: C.lightTan, borderRadius: "4px", overflow: "hidden" }}>
-                    <div style={{
-                      height: "100%", borderRadius: "4px",
-                      width: `${pct}%`,
-                      backgroundColor: pct >= 70 ? C.success : pct >= 40 ? C.accent : C.warning,
-                      transition: "width 0.5s ease",
-                    }} />
-                  </div>
-                </div>
-              );
-            })}
           </div>
         </div>
       )}

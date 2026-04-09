@@ -20,11 +20,10 @@ const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Habit Tracker": "habits",
   "Project Management": "projects",
   "Task List": "tasks",
-  "Work Time Log": "worktimelog",
+
   "Pomodoro": "pomodoro",
   "Daily Command": "command",
-  "Heatmaps": "heatmap",
-  "Proyecciones": "projection",
+  "Dashboard KPIs": "projection",
 };
 
 // Map sidebar section label → planTab index
