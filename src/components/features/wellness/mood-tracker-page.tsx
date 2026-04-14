@@ -212,9 +212,13 @@ const MoodTrackerPage = () => {
     setMedications(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
 
   const addSuppFact = () => {
-    if (!newSuppNutrient.trim() || !newSuppAmount.trim()) return;
-    setNewSuppFacts(prev => [...prev, { nutrient: newSuppNutrient, amount: newSuppAmount, dv: newSuppDv }]);
-    setNewSuppNutrient(''); setNewSuppAmount(''); setNewSuppDv('');
+    const nutrient = newSuppNutrient.trim();
+    const amount   = newSuppAmount.trim();
+    if (!nutrient || !amount) return;
+    setNewSuppFacts(prev => [...prev, { nutrient, amount, dv: newSuppDv.trim() }]);
+    setNewSuppNutrient('');
+    setNewSuppAmount('');
+    setNewSuppDv('');
   };
 
   const removeSuppFact = (idx: number) => setNewSuppFacts(prev => prev.filter((_, i) => i !== idx));
@@ -298,13 +302,25 @@ const MoodTrackerPage = () => {
   const [newApptNotes,     setNewApptNotes]     = useState('');
 
   const addAppointment = () => {
-    if (!newApptDoctor.trim() || !newApptDate) return;
+    const doctor = newApptDoctor.trim();
+    if (!doctor) return;
     setAppointments(prev => [...prev, {
-      id: Date.now().toString(), doctor: newApptDoctor, specialty: newApptSpecialty,
-      date: newApptDate, time: newApptTime, location: newApptLocation, notes: newApptNotes, status: 'Pendiente',
+      id: Date.now().toString(),
+      doctor,
+      specialty: newApptSpecialty.trim(),
+      date: newApptDate,
+      time: newApptTime,
+      location: newApptLocation.trim(),
+      notes: newApptNotes.trim(),
+      status: 'Pendiente',
     }]);
-    setNewApptDoctor(''); setNewApptSpecialty(''); setNewApptDate(''); setNewApptTime('');
-    setNewApptLocation(''); setNewApptNotes(''); setShowApptForm(false);
+    setNewApptDoctor('');
+    setNewApptSpecialty('');
+    setNewApptDate('');
+    setNewApptTime('');
+    setNewApptLocation('');
+    setNewApptNotes('');
+    setShowApptForm(false);
   };
 
   const removeAppointment = (id: string) => setAppointments(prev => prev.filter(a => a.id !== id));
@@ -905,7 +921,7 @@ const MoodTrackerPage = () => {
                               <span style={{ flex: 1, color: C.dark }}>{sf.nutrient}</span>
                               <span style={{ color: C.warm }}>{sf.amount}</span>
                               {sf.dv && <span style={{ color: C.warm }}>{sf.dv} VD</span>}
-                              <button onClick={() => removeSuppFact(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '0.9rem', padding: '0 2px' }}>✕</button>
+                              <button type="button" onClick={() => removeSuppFact(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '0.9rem', padding: '0 2px' }}>✕</button>
                             </div>
                           ))}
                         </div>
@@ -923,7 +939,17 @@ const MoodTrackerPage = () => {
                           <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '3px' }}>% VD</label>
                           <input value={newSuppDv} onChange={e => setNewSuppDv(e.target.value)} placeholder="556%" style={{ ...inputStyle, padding: '6px', fontSize: '0.8rem' }} />
                         </div>
-                        <button onClick={addSuppFact} style={{ padding: '6px 12px', backgroundColor: C.medium, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}>
+                        <button
+                          type="button"
+                          onClick={addSuppFact}
+                          disabled={!newSuppNutrient.trim() || !newSuppAmount.trim()}
+                          style={{
+                            padding: '6px 12px', border: 'none', borderRadius: '6px', fontWeight: '600', fontSize: '0.8rem',
+                            backgroundColor: (!newSuppNutrient.trim() || !newSuppAmount.trim()) ? C.lightTan : C.medium,
+                            color: (!newSuppNutrient.trim() || !newSuppAmount.trim()) ? C.warm : C.paper,
+                            cursor: (!newSuppNutrient.trim() || !newSuppAmount.trim()) ? 'not-allowed' : 'pointer',
+                          }}
+                        >
                           + Añadir
                         </button>
                       </div>
@@ -1060,7 +1086,7 @@ const MoodTrackerPage = () => {
             <div style={{ ...card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` }), marginBottom: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>🏥 Citas Médicas</h2>
-                <button onClick={() => setShowApptForm(v => !v)}
+                <button type="button" onClick={() => setShowApptForm(v => !v)}
                   style={{ padding: '8px 16px', backgroundColor: showApptForm ? C.medium : C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>
                   {showApptForm ? '✕ Cancelar' : '+ Nueva Cita'}
                 </button>
@@ -1102,7 +1128,17 @@ const MoodTrackerPage = () => {
                         style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
                     </div>
                   </div>
-                  <button onClick={addAppointment} style={{ padding: '8px 20px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                  <button
+                    type="button"
+                    onClick={addAppointment}
+                    disabled={!newApptDoctor.trim()}
+                    style={{
+                      padding: '8px 20px', border: 'none', borderRadius: '8px', fontWeight: '600',
+                      backgroundColor: !newApptDoctor.trim() ? C.lightTan : C.accent,
+                      color: !newApptDoctor.trim() ? C.warm : C.paper,
+                      cursor: !newApptDoctor.trim() ? 'not-allowed' : 'pointer',
+                    }}
+                  >
                     Guardar Cita
                   </button>
                 </div>
