@@ -11,7 +11,6 @@ const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
   "Sleep Tracker": "sleep",
   "Hydration": "hydration",
   "Medication": "medication",
-  "Menstrual Cycle": "period",
   "Health Log": "healthlog",
 };
 

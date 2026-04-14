@@ -32,13 +32,21 @@ function medColor(pct: number): string {
   return '#D4A843';
 }
 
+interface SupplementFact {
+  nutrient: string;
+  amount: string;
+  dv: string; // % Daily Value
+}
+
 interface MedicationItem {
   id: string;
   name: string;
+  brand: string;
   dosage: string;
   frequency: string;
   time: string;
   taken: boolean;
+  supplementFacts: SupplementFact[];
 }
 
 type HydrationLog  = Record<string, number>;          // date → ml
@@ -178,14 +186,21 @@ const MoodTrackerPage = () => {
 
   // ── MEDICATION STATE ─────────────────────────────────────────────────────
   const [medications, setMedications] = useState<MedicationItem[]>([
-    { id: '1', name: 'Vitamina D',  dosage: '2000 IU',   frequency: 'Diario', time: '08:00', taken: true  },
-    { id: '2', name: 'Complejo B',  dosage: '1 tableta', frequency: 'Diario', time: '08:30', taken: true  },
-    { id: '3', name: 'Omega-3',     dosage: '1000 mg',   frequency: 'Diario', time: '12:00', taken: false },
-    { id: '4', name: 'Magnesio',    dosage: '400 mg',    frequency: 'Diario', time: '21:00', taken: false },
+    { id: '1', name: 'Vitamina D',  brand: 'Nature Made', dosage: '2000 IU',   frequency: 'Diario', time: '08:00', taken: true,  supplementFacts: [{ nutrient: 'Vitamina D3', amount: '2000 IU', dv: '500%' }] },
+    { id: '2', name: 'Complejo B',  brand: 'Solgar',      dosage: '1 tableta', frequency: 'Diario', time: '08:30', taken: true,  supplementFacts: [{ nutrient: 'B12', amount: '1000 mcg', dv: '41667%' }, { nutrient: 'B6', amount: '2 mg', dv: '118%' }] },
+    { id: '3', name: 'Omega-3',     brand: 'Nordic',      dosage: '1000 mg',   frequency: 'Diario', time: '12:00', taken: false, supplementFacts: [{ nutrient: 'EPA', amount: '180 mg', dv: '' }, { nutrient: 'DHA', amount: '120 mg', dv: '' }] },
+    { id: '4', name: 'Magnesio',    brand: '',            dosage: '400 mg',    frequency: 'Diario', time: '21:00', taken: false, supplementFacts: [{ nutrient: 'Magnesio', amount: '400 mg', dv: '95%' }] },
   ]);
   const [newMedName,   setNewMedName]   = useState('');
+  const [newMedBrand,  setNewMedBrand]  = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
   const [newMedTime,   setNewMedTime]   = useState('08:00');
+  const [expandedMedId, setExpandedMedId] = useState<string | null>(null);
+  // Supplement facts form for new med
+  const [newSuppFacts, setNewSuppFacts] = useState<SupplementFact[]>([]);
+  const [newSuppNutrient, setNewSuppNutrient] = useState('');
+  const [newSuppAmount, setNewSuppAmount]   = useState('');
+  const [newSuppDv, setNewSuppDv]           = useState('');
   const [medLog, setMedLog]             = useState<MedicationLog>({});
   const [medView, setMedView]           = useState<'daily' | 'monthly' | 'annual'>('daily');
   const [medMonth, setMedMonth]         = useState(() => new Date());
@@ -196,10 +211,18 @@ const MoodTrackerPage = () => {
   const toggleMedicationTaken = (id: string) =>
     setMedications(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
 
+  const addSuppFact = () => {
+    if (!newSuppNutrient.trim() || !newSuppAmount.trim()) return;
+    setNewSuppFacts(prev => [...prev, { nutrient: newSuppNutrient, amount: newSuppAmount, dv: newSuppDv }]);
+    setNewSuppNutrient(''); setNewSuppAmount(''); setNewSuppDv('');
+  };
+
+  const removeSuppFact = (idx: number) => setNewSuppFacts(prev => prev.filter((_, i) => i !== idx));
+
   const addMedication = () => {
     if (!newMedName.trim()) return;
-    setMedications(prev => [...prev, { id: Date.now().toString(), name: newMedName, dosage: newMedDosage, frequency: 'Diario', time: newMedTime, taken: false }]);
-    setNewMedName(''); setNewMedDosage(''); setNewMedTime('08:00');
+    setMedications(prev => [...prev, { id: Date.now().toString(), name: newMedName, brand: newMedBrand, dosage: newMedDosage, frequency: 'Diario', time: newMedTime, taken: false, supplementFacts: newSuppFacts }]);
+    setNewMedName(''); setNewMedBrand(''); setNewMedDosage(''); setNewMedTime('08:00'); setNewSuppFacts([]);
   };
 
   const removeMedication = (id: string) => setMedications(prev => prev.filter(m => m.id !== id));
@@ -236,12 +259,61 @@ const MoodTrackerPage = () => {
   });
   const maxMedAvg = Math.max(...annualMedData.map(d => d.avg), 100);
 
+  // ── HEALTH LOG STATE ─────────────────────────────────────────────────────
+  const SYMPTOM_OPTIONS = ['Dolor de cabeza','Dolor de espalda','Fatiga','Náuseas','Mareo','Dolor muscular','Congestión','Tos','Insomnio','Ansiedad','Otros'];
+  const [selectedSymptom, setSelectedSymptom] = useState(SYMPTOM_OPTIONS[0]);
+  const [customSymptom, setCustomSymptom]     = useState('');
+  const [symptomIntensity, setSymptomIntensity] = useState(5);
+  const [symptomDuration, setSymptomDuration]   = useState('< 1 hora');
+  const [symptomNotes, setSymptomNotes]         = useState('');
+
+  interface SymptomLog { id: string; date: string; symptom: string; intensity: number; duration: string; notes: string; }
+  const [symptomLogs, setSymptomLogs] = useState<SymptomLog[]>([
+    { id: '1', date: '5 Abr', symptom: 'Dolor de cabeza', intensity: 6, duration: '3-6 horas', notes: 'Después de trabajo intenso' },
+    { id: '2', date: '4 Abr', symptom: 'Fatiga',           intensity: 4, duration: 'Todo el día', notes: 'Dormí mal' },
+    { id: '3', date: '3 Abr', symptom: 'Dolor muscular',   intensity: 7, duration: '1-3 horas', notes: 'Post-entrenamiento' },
+    { id: '4', date: '1 Abr', symptom: 'Congestión',       intensity: 3, duration: 'Todo el día', notes: 'Cambio de clima' },
+  ]);
+
+  const addSymptomLog = () => {
+    const symptomName = selectedSymptom === 'Otros' ? (customSymptom.trim() || 'Otros') : selectedSymptom;
+    const dateStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
+    setSymptomLogs(prev => [{ id: Date.now().toString(), date: dateStr, symptom: symptomName, intensity: symptomIntensity, duration: symptomDuration, notes: symptomNotes }, ...prev]);
+    setCustomSymptom(''); setSymptomNotes(''); setSymptomIntensity(5);
+  };
+
+  // ── APPOINTMENT STATE ────────────────────────────────────────────────────
+  interface Appointment { id: string; doctor: string; specialty: string; date: string; time: string; location: string; notes: string; status: 'Pendiente' | 'Completada'; }
+  const [appointments, setAppointments] = useState<Appointment[]>([
+    { id: '1', doctor: 'Dr. García',   specialty: 'Medicina General', date: '10 Abr 2026', time: '10:00', location: 'Clínica Central', notes: 'Chequeo anual',       status: 'Pendiente' },
+    { id: '2', doctor: 'Dra. López',   specialty: 'Dermatología',     date: '18 Abr 2026', time: '15:30', location: 'Hospital Sur',    notes: 'Revisión lunar',     status: 'Pendiente' },
+    { id: '3', doctor: 'Dr. Martínez', specialty: 'Odontología',      date: '25 Abr 2026', time: '09:00', location: 'Clínica Dental',  notes: 'Limpieza semestral', status: 'Pendiente' },
+  ]);
+  const [showApptForm, setShowApptForm] = useState(false);
+  const [newApptDoctor,    setNewApptDoctor]    = useState('');
+  const [newApptSpecialty, setNewApptSpecialty] = useState('');
+  const [newApptDate,      setNewApptDate]      = useState('');
+  const [newApptTime,      setNewApptTime]      = useState('');
+  const [newApptLocation,  setNewApptLocation]  = useState('');
+  const [newApptNotes,     setNewApptNotes]     = useState('');
+
+  const addAppointment = () => {
+    if (!newApptDoctor.trim() || !newApptDate) return;
+    setAppointments(prev => [...prev, {
+      id: Date.now().toString(), doctor: newApptDoctor, specialty: newApptSpecialty,
+      date: newApptDate, time: newApptTime, location: newApptLocation, notes: newApptNotes, status: 'Pendiente',
+    }]);
+    setNewApptDoctor(''); setNewApptSpecialty(''); setNewApptDate(''); setNewApptTime('');
+    setNewApptLocation(''); setNewApptNotes(''); setShowApptForm(false);
+  };
+
+  const removeAppointment = (id: string) => setAppointments(prev => prev.filter(a => a.id !== id));
+
   // ── SHARED STYLES ────────────────────────────────────────────────────────
   const tabConfig: { id: WellnessTab; label: string }[] = [
     { id: 'sleep',     label: '😴 Sleep Tracker'  },
     { id: 'hydration', label: '💧 Hydration'       },
     { id: 'medication',label: '💊 Medication'      },
-    { id: 'period',    label: '🩸 Menstrual Cycle' },
     { id: 'healthlog', label: '🏥 Health Log'      },
   ];
 
@@ -744,18 +816,48 @@ const MoodTrackerPage = () => {
                       {medications.map(med => (
                         <div key={med.id} style={{
                           backgroundColor: C.paper, border: `1px solid ${med.taken ? C.success : C.tan}`,
-                          borderRadius: '8px', padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                          borderRadius: '8px', overflow: 'hidden',
                         }}>
-                          <input type="checkbox" checked={med.taken} onChange={() => toggleMedicationTaken(med.id)}
-                            style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: C.accent }} />
-                          <div style={{ flex: 1 }}>
-                            <p style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: 0 }}>{med.name}</p>
-                            <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0.2rem 0 0 0' }}>{med.dosage} · {med.frequency} · {med.time}</p>
+                          <div style={{ padding: '1rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <input type="checkbox" checked={med.taken} onChange={() => toggleMedicationTaken(med.id)}
+                              style={{ width: '20px', height: '20px', cursor: 'pointer', accentColor: C.accent }} />
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: 0 }}>{med.name}</p>
+                              <p style={{ fontSize: '0.8rem', color: C.warm, margin: '0.15rem 0 0 0' }}>
+                                {med.brand && <span style={{ color: C.medium, fontStyle: 'italic' }}>{med.brand} · </span>}
+                                {med.dosage} · {med.frequency} · {med.time}
+                              </p>
+                            </div>
+                            {med.supplementFacts.length > 0 && (
+                              <button onClick={() => setExpandedMedId(expandedMedId === med.id ? null : med.id)}
+                                style={{ background: 'none', border: `1px solid ${C.tan}`, borderRadius: '6px', cursor: 'pointer', color: C.warm, fontSize: '0.75rem', padding: '4px 8px' }}>
+                                {expandedMedId === med.id ? '▲ Facts' : '▼ Facts'}
+                              </button>
+                            )}
+                            <span style={{ padding: '0.3rem 0.75rem', backgroundColor: med.taken ? C.successLight : C.warningLight, borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>
+                              {med.taken ? '✅ Tomado' : '⏳ Pendiente'}
+                            </span>
+                            <button onClick={() => removeMedication(med.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '1.1rem', padding: '0 4px' }}>✕</button>
                           </div>
-                          <span style={{ padding: '0.3rem 0.75rem', backgroundColor: med.taken ? C.successLight : C.warningLight, borderRadius: '6px', fontSize: '0.8rem', fontWeight: '600' }}>
-                            {med.taken ? '✅ Tomado' : '⏳ Pendiente'}
-                          </span>
-                          <button onClick={() => removeMedication(med.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '1.1rem', padding: '0 4px' }}>✕</button>
+                          {expandedMedId === med.id && med.supplementFacts.length > 0 && (
+                            <div style={{ borderTop: `1px solid ${C.cream}`, backgroundColor: C.lightCream, padding: '0.75rem 1rem' }}>
+                              <p style={{ fontSize: '0.75rem', fontWeight: '700', color: C.dark, margin: '0 0 0.5rem 0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Supplement Facts</p>
+                              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem' }}>
+                                <thead><tr style={{ borderBottom: `1px solid ${C.tan}` }}>
+                                  {['Nutriente','Cantidad','% VD'].map(h => <th key={h} style={{ padding: '4px 8px', textAlign: 'left', color: C.warm, fontWeight: '600' }}>{h}</th>)}
+                                </tr></thead>
+                                <tbody>
+                                  {med.supplementFacts.map((sf, i) => (
+                                    <tr key={i} style={{ borderBottom: `1px solid ${C.cream}` }}>
+                                      <td style={{ padding: '4px 8px', color: C.dark }}>{sf.nutrient}</td>
+                                      <td style={{ padding: '4px 8px', color: C.warm }}>{sf.amount}</td>
+                                      <td style={{ padding: '4px 8px', color: C.warm }}>{sf.dv || '—'}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -770,11 +872,17 @@ const MoodTrackerPage = () => {
 
                   <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>➕ Agregar Medicamento</h2>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '10px', alignItems: 'end' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Nombre</label>
                         <input value={newMedName} onChange={e => setNewMedName(e.target.value)} placeholder="Vitamina D..." style={{ ...inputStyle, padding: '8px' }} />
                       </div>
+                      <div>
+                        <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Marca</label>
+                        <input value={newMedBrand} onChange={e => setNewMedBrand(e.target.value)} placeholder="Nature Made..." style={{ ...inputStyle, padding: '8px' }} />
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '10px', alignItems: 'end', marginBottom: '1rem' }}>
                       <div>
                         <label style={{ fontSize: '0.8rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Dosis</label>
                         <input value={newMedDosage} onChange={e => setNewMedDosage(e.target.value)} placeholder="2000 IU" style={{ ...inputStyle, padding: '8px' }} />
@@ -786,6 +894,39 @@ const MoodTrackerPage = () => {
                       <button onClick={addMedication} style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
                         Agregar
                       </button>
+                    </div>
+                    {/* Supplement Facts */}
+                    <div style={{ borderTop: `1px solid ${C.cream}`, paddingTop: '0.75rem' }}>
+                      <p style={{ fontSize: '0.8rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>Supplement Facts (opcional)</p>
+                      {newSuppFacts.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginBottom: '8px' }}>
+                          {newSuppFacts.map((sf, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '8px', alignItems: 'center', fontSize: '0.8rem', backgroundColor: C.paper, padding: '4px 8px', borderRadius: '6px', border: `1px solid ${C.cream}` }}>
+                              <span style={{ flex: 1, color: C.dark }}>{sf.nutrient}</span>
+                              <span style={{ color: C.warm }}>{sf.amount}</span>
+                              {sf.dv && <span style={{ color: C.warm }}>{sf.dv} VD</span>}
+                              <button onClick={() => removeSuppFact(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '0.9rem', padding: '0 2px' }}>✕</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr auto', gap: '8px', alignItems: 'end' }}>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '3px' }}>Nutriente</label>
+                          <input value={newSuppNutrient} onChange={e => setNewSuppNutrient(e.target.value)} placeholder="Vitamina C..." style={{ ...inputStyle, padding: '6px', fontSize: '0.8rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '3px' }}>Cantidad</label>
+                          <input value={newSuppAmount} onChange={e => setNewSuppAmount(e.target.value)} placeholder="500 mg" style={{ ...inputStyle, padding: '6px', fontSize: '0.8rem' }} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '3px' }}>% VD</label>
+                          <input value={newSuppDv} onChange={e => setNewSuppDv(e.target.value)} placeholder="556%" style={{ ...inputStyle, padding: '6px', fontSize: '0.8rem' }} />
+                        </div>
+                        <button onClick={addSuppFact} style={{ padding: '6px 12px', backgroundColor: C.medium, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.8rem' }}>
+                          + Añadir
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </>
@@ -846,110 +987,47 @@ const MoodTrackerPage = () => {
           </div>
         )}
 
-        {/* ═══════════════════════ MENSTRUAL CYCLE ═══════════════════════ */}
-        {activeTab === 'period' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
-              {[
-                { label: 'Último Período',    value: '15 Mar 2026', color: C.danger,  bg: C.dangerLight  },
-                { label: 'Próximo Estimado',  value: '12 Abr 2026', color: C.info,    bg: C.infoLight    },
-                { label: 'Ciclo Promedio',    value: '28 días',     color: C.warning, bg: C.warningLight },
-              ].map((s, i) => (
-                <div key={i} style={{ backgroundColor: s.bg, border: `2px solid ${s.color}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-                  <div style={{ fontSize: '0.85rem', color: s.color, fontWeight: '600', marginBottom: '0.5rem' }}>{s.label}</div>
-                  <div style={{ fontSize: '1.5rem', fontWeight: '700', color: C.dark, fontFamily: 'Georgia, serif' }}>{s.value}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>📅 Calendario de Ciclo — Abril 2026</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-                {['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(d => (
-                  <div key={d} style={{ textAlign: 'center', fontSize: '0.75rem', fontWeight: '600', color: C.warm, padding: '4px' }}>{d}</div>
-                ))}
-                {([...Array.from({ length: 2 }, () => null as number | null), ...Array.from({ length: 30 }, (_, i) => i + 1)] as (number | null)[]).map((day, idx) => {
-                  const isPeriod = day !== null && day >= 12 && day <= 16;
-                  const isFertile = day !== null && day >= 22 && day <= 26;
-                  const isOvulation = day === 24;
-                  return (
-                    <div key={idx} style={{
-                      textAlign: 'center', padding: '8px 4px', borderRadius: '6px', fontSize: '0.85rem',
-                      backgroundColor: isOvulation ? C.accentGlow : isPeriod ? C.dangerLight : isFertile ? C.infoLight : day ? C.paper : 'transparent',
-                      color: isPeriod ? C.danger : isOvulation ? C.accent : C.dark,
-                      border: day === 5 ? `2px solid ${C.accent}` : '1px solid transparent',
-                    }}>{day || ''}</div>
-                  );
-                })}
-              </div>
-              <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '0.75rem', color: C.warm }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: C.dangerLight }} /> Período</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: C.infoLight   }} /> Ventana fértil</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><div style={{ width: 12, height: 12, borderRadius: 3, backgroundColor: C.accentGlow  }} /> Ovulación</div>
-              </div>
-            </div>
-            <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Síntomas del Ciclo</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-                {['Cólicos','Hinchazón','Dolor de cabeza','Fatiga','Cambios de humor','Acné','Antojos','Sensibilidad'].map(s => (
-                  <button key={s} style={{ padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '8px', backgroundColor: C.paper, cursor: 'pointer', fontSize: '0.8rem', color: C.dark, textAlign: 'center', transition: 'all 0.2s' }}
-                    onMouseEnter={e => (e.currentTarget.style.backgroundColor = C.dangerLight)}
-                    onMouseLeave={e => (e.currentTarget.style.backgroundColor = C.paper)}
-                  >{s}</button>
-                ))}
-              </div>
-            </div>
-            <div style={{ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}`, borderRadius: '12px', padding: '1.5rem' }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Historial de Ciclos</h2>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead><tr style={{ borderBottom: `2px solid ${C.lightTan}` }}>
-                  {['Inicio','Duración','Ciclo','Síntomas'].map(h => (
-                    <th key={h} style={{ padding: '8px', textAlign: 'left', fontSize: '0.85rem', fontWeight: '600', color: C.warm }}>{h}</th>
-                  ))}
-                </tr></thead>
-                <tbody>
-                  {[
-                    { start: '15 Mar', dur: '5 días', cycle: '28 días', symptoms: 'Cólicos, Fatiga'    },
-                    { start: '15 Feb', dur: '4 días', cycle: '29 días', symptoms: 'Leve'               },
-                    { start: '17 Ene', dur: '5 días', cycle: '28 días', symptoms: 'Cólicos, Hinchazón' },
-                  ].map((row, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${C.cream}` }}>
-                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.dark }}>{row.start}</td>
-                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.dur}</td>
-                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.cycle}</td>
-                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.symptoms}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
         {/* ═══════════════════════ HEALTH LOG ═══════════════════════ */}
         {activeTab === 'healthlog' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* ── Registrar Síntoma ── */}
             <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
               <h2 style={{ fontSize: '1.2rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>🩺 Registrar Síntoma</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Síntoma</label>
-                  <select style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper }}>
-                    {['Dolor de cabeza','Dolor de espalda','Fatiga','Náuseas','Mareo','Dolor muscular','Congestión','Tos','Insomnio','Ansiedad'].map(s => <option key={s}>{s}</option>)}
+                  <select value={selectedSymptom} onChange={e => setSelectedSymptom(e.target.value)}
+                    style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark }}>
+                    {SYMPTOM_OPTIONS.map(s => <option key={s}>{s}</option>)}
                   </select>
+                  {selectedSymptom === 'Otros' && (
+                    <input value={customSymptom} onChange={e => setCustomSymptom(e.target.value)}
+                      placeholder="Describe el síntoma..."
+                      style={{ width: '100%', padding: '8px', border: `1px solid ${C.accent}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, marginTop: '6px', boxSizing: 'border-box' }} />
+                  )}
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Intensidad (1-10)</label>
-                  <input type="number" min="1" max="10" defaultValue="5" style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper }} />
+                  <input type="number" min="1" max="10" value={symptomIntensity} onChange={e => setSymptomIntensity(Number(e.target.value))}
+                    style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark }} />
                 </div>
                 <div>
                   <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Duración</label>
-                  <select style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper }}>
+                  <select value={symptomDuration} onChange={e => setSymptomDuration(e.target.value)}
+                    style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark }}>
                     {['< 1 hora','1-3 horas','3-6 horas','Todo el día','Varios días'].map(s => <option key={s}>{s}</option>)}
                   </select>
                 </div>
-                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Registrar</button>
+                <button onClick={addSymptomLog} style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Registrar</button>
+              </div>
+              <div style={{ marginTop: '10px' }}>
+                <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Notas (opcional)</label>
+                <input value={symptomNotes} onChange={e => setSymptomNotes(e.target.value)} placeholder="Contexto del síntoma..."
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
               </div>
             </div>
+
+            {/* ── Historial de Síntomas ── */}
             <div style={card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` })}>
               <h2 style={{ fontSize: '1.1rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0', fontFamily: 'Georgia, serif' }}>Historial de Síntomas</h2>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -959,13 +1037,8 @@ const MoodTrackerPage = () => {
                   ))}
                 </tr></thead>
                 <tbody>
-                  {[
-                    { date: '5 Abr', symptom: 'Dolor de cabeza', intensity: 6, dur: '3-6 horas', notes: 'Después de trabajo intenso' },
-                    { date: '4 Abr', symptom: 'Fatiga',           intensity: 4, dur: 'Todo el día', notes: 'Dormí mal' },
-                    { date: '3 Abr', symptom: 'Dolor muscular',   intensity: 7, dur: '1-3 horas', notes: 'Post-entrenamiento' },
-                    { date: '1 Abr', symptom: 'Congestión',       intensity: 3, dur: 'Todo el día', notes: 'Cambio de clima' },
-                  ].map((row, i) => (
-                    <tr key={i} style={{ borderBottom: `1px solid ${C.cream}` }}>
+                  {symptomLogs.map((row) => (
+                    <tr key={row.id} style={{ borderBottom: `1px solid ${C.cream}` }}>
                       <td style={{ padding: '8px', fontSize: '0.85rem', color: C.dark }}>{row.date}</td>
                       <td style={{ padding: '8px', fontSize: '0.85rem', fontWeight: '500', color: C.dark }}>{row.symptom}</td>
                       <td style={{ padding: '8px', textAlign: 'center' }}>
@@ -975,38 +1048,84 @@ const MoodTrackerPage = () => {
                           color: row.intensity >= 7 ? C.danger : row.intensity >= 4 ? C.warning : C.success,
                         }}>{row.intensity}/10</span>
                       </td>
-                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.dur}</td>
+                      <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.duration}</td>
                       <td style={{ padding: '8px', fontSize: '0.85rem', color: C.warm }}>{row.notes}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+
+            {/* ── Citas Médicas ── */}
             <div style={{ ...card({ backgroundColor: C.warmWhite, border: `2px solid ${C.lightTan}` }), marginBottom: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h2 style={{ fontSize: '1.2rem', fontWeight: '600', color: C.dark, margin: 0, fontFamily: 'Georgia, serif' }}>🏥 Citas Médicas</h2>
-                <button style={{ padding: '8px 16px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>+ Nueva Cita</button>
+                <button onClick={() => setShowApptForm(v => !v)}
+                  style={{ padding: '8px 16px', backgroundColor: showApptForm ? C.medium : C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600', fontSize: '0.9rem' }}>
+                  {showApptForm ? '✕ Cancelar' : '+ Nueva Cita'}
+                </button>
               </div>
+
+              {/* Formulario nueva cita */}
+              {showApptForm && (
+                <div style={{ backgroundColor: C.lightCream, border: `1px solid ${C.tan}`, borderRadius: '10px', padding: '1.25rem', marginBottom: '1.25rem' }}>
+                  <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: C.dark, margin: '0 0 1rem 0' }}>Nueva Cita Médica</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Doctor / Médico *</label>
+                      <input value={newApptDoctor} onChange={e => setNewApptDoctor(e.target.value)} placeholder="Dr. García"
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Especialidad</label>
+                      <input value={newApptSpecialty} onChange={e => setNewApptSpecialty(e.target.value)} placeholder="Medicina General"
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Fecha *</label>
+                      <input type="date" value={newApptDate} onChange={e => setNewApptDate(e.target.value)}
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Hora</label>
+                      <input type="time" value={newApptTime} onChange={e => setNewApptTime(e.target.value)}
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Lugar / Clínica</label>
+                      <input value={newApptLocation} onChange={e => setNewApptLocation(e.target.value)} placeholder="Clínica Central"
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: '0.75rem', color: C.warm, display: 'block', marginBottom: '4px' }}>Notas</label>
+                      <input value={newApptNotes} onChange={e => setNewApptNotes(e.target.value)} placeholder="Chequeo anual..."
+                        style={{ width: '100%', padding: '8px', border: `1px solid ${C.tan}`, borderRadius: '6px', fontSize: '0.85rem', backgroundColor: C.paper, color: C.dark, boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+                  <button onClick={addAppointment} style={{ padding: '8px 20px', backgroundColor: C.accent, color: C.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '600' }}>
+                    Guardar Cita
+                  </button>
+                </div>
+              )}
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '1.5rem' }}>
-                {[
-                  { doctor: 'Dr. García',   specialty: 'Medicina General', date: '10 Abr 2026', time: '10:00', location: 'Clínica Central', notes: 'Chequeo anual'       },
-                  { doctor: 'Dra. López',   specialty: 'Dermatología',     date: '18 Abr 2026', time: '15:30', location: 'Hospital Sur',    notes: 'Revisión lunar'     },
-                  { doctor: 'Dr. Martínez', specialty: 'Odontología',      date: '25 Abr 2026', time: '09:00', location: 'Clínica Dental',  notes: 'Limpieza semestral' },
-                ].map((apt, i) => (
-                  <div key={i} style={{ backgroundColor: C.paper, border: `1px solid ${C.cream}`, borderRadius: '10px', padding: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                {appointments.filter(a => a.status === 'Pendiente').map(apt => (
+                  <div key={apt.id} style={{ backgroundColor: C.paper, border: `1px solid ${C.cream}`, borderRadius: '10px', padding: '16px', position: 'relative' }}>
+                    <button onClick={() => removeAppointment(apt.id)} style={{ position: 'absolute', top: '8px', right: '8px', background: 'none', border: 'none', cursor: 'pointer', color: C.danger, fontSize: '0.9rem' }}>✕</button>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', paddingRight: '20px' }}>
                       <div>
                         <div style={{ fontSize: '1rem', fontWeight: '600', color: C.dark }}>{apt.doctor}</div>
                         <div style={{ fontSize: '0.8rem', color: C.warm }}>{apt.specialty}</div>
                       </div>
-                      <span style={{ backgroundColor: C.infoLight, color: C.info, padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600', height: 'fit-content' }}>Pendiente</span>
+                      <span style={{ backgroundColor: C.infoLight, color: C.info, padding: '4px 10px', borderRadius: '12px', fontSize: '0.75rem', fontWeight: '600', height: 'fit-content' }}>{apt.status}</span>
                     </div>
-                    <div style={{ fontSize: '0.85rem', color: C.dark, marginBottom: '4px' }}>📅 {apt.date} a las {apt.time}</div>
-                    <div style={{ fontSize: '0.85rem', color: C.warm, marginBottom: '4px' }}>📍 {apt.location}</div>
-                    <div style={{ fontSize: '0.85rem', color: C.warm }}>📝 {apt.notes}</div>
+                    <div style={{ fontSize: '0.85rem', color: C.dark, marginBottom: '4px' }}>📅 {apt.date}{apt.time && ` a las ${apt.time}`}</div>
+                    {apt.location && <div style={{ fontSize: '0.85rem', color: C.warm, marginBottom: '4px' }}>📍 {apt.location}</div>}
+                    {apt.notes && <div style={{ fontSize: '0.85rem', color: C.warm }}>📝 {apt.notes}</div>}
                   </div>
                 ))}
               </div>
+
               <h3 style={{ fontSize: '1rem', fontWeight: '600', color: C.dark, margin: '0 0 0.75rem 0' }}>Historial de Citas</h3>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead><tr style={{ borderBottom: `2px solid ${C.lightTan}` }}>
