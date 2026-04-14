@@ -428,10 +428,57 @@ interface WorkoutTrackerProps {
   onExercisesChange: (exercises: EngineExercise[]) => void;
 }
 
+const EXERCISE_NAMES = Object.keys({
+  'Press Banca': 1, 'Press Inclinado': 1, 'Press Militar': 1, 'Fondos': 1, 'Extensión Tríceps': 1,
+  'Peso Muerto': 1, 'Remo': 1, 'Dominadas': 1, 'Curl Bíceps': 1, 'Curl Martillo': 1,
+  'Sentadilla': 1, 'Leg Press': 1, 'Sentadilla Búlgara': 1, 'Extensión': 1, 'Curl Femoral': 1, 'Hip Thrust': 1,
+});
+
 function WorkoutTracker({ exercises, onExercisesChange }: WorkoutTrackerProps) {
   // Wrapper para soportar actualizaciones funcionales
   const updateExercises = (updater: (prev: EngineExercise[]) => EngineExercise[]) => {
     onExercisesChange(updater(exercises));
+  };
+
+  // — Add exercise form state —
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newExName, setNewExName] = useState('');
+  const [newExCustomName, setNewExCustomName] = useState('');
+  const [newExMuscle, setNewExMuscle] = useState('');
+  const [newExWeight, setNewExWeight] = useState(0);
+  const [newExRepMin, setNewExRepMin] = useState(8);
+  const [newExRepMax, setNewExRepMax] = useState(12);
+
+  const handleAddExercise = () => {
+    const name = newExName === '__custom__' ? newExCustomName.trim() : newExName;
+    if (!name) return;
+    // Auto-detect primary muscle from EXERCISE_IMPACT or fallback to manual
+    const impactKeys = Object.keys(EXERCISE_IMPACT[name] ?? {});
+    const muscle = newExMuscle || impactKeys[0] || 'Otro';
+    const newEx: EngineExercise = {
+      id: Date.now(),
+      name,
+      muscleGroup: muscle,
+      lastWeight: newExWeight,
+      lastReps: newExRepMin,
+      pr: 0,
+      sets: [{ id: String(Date.now() + 1), weight: newExWeight, reps: newExRepMin, rpe: 7 }],
+      repMin: newExRepMin,
+      repMax: newExRepMax,
+      lastWeekReps: [],
+    };
+    updateExercises((prev) => [...prev, newEx]);
+    setNewExName('');
+    setNewExCustomName('');
+    setNewExMuscle('');
+    setNewExWeight(0);
+    setNewExRepMin(8);
+    setNewExRepMax(12);
+    setShowAddForm(false);
+  };
+
+  const removeExercise = (exerciseId: number) => {
+    updateExercises((prev) => prev.filter((ex) => ex.id !== exerciseId));
   };
 
   const addSet = (exerciseId: number) => {
@@ -493,12 +540,27 @@ function WorkoutTracker({ exercises, onExercisesChange }: WorkoutTrackerProps) {
           >
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <h4 style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: colors.dark, margin: '0 0 4px 0' }}>
-                    {exercise.name}
-                  </h4>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <h4 style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: colors.dark, margin: '0 0 4px 0' }}>
+                      {exercise.name}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => removeExercise(exercise.id)}
+                      title="Eliminar ejercicio"
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        width: '22px', height: '22px', borderRadius: '50%',
+                        backgroundColor: colors.dangerLight, color: colors.danger,
+                        border: 'none', cursor: 'pointer', fontSize: '12px', flexShrink: 0,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
                   <p style={{ color: colors.warm, fontSize: '14px', margin: 0 }}>
-                    {exercise.muscleGroup} • PR actual: {exercise.pr}kg
+                    {exercise.muscleGroup} • PR actual: {exercise.pr > 0 ? `${exercise.pr}kg` : '—'}
                     {getBest1RM(exercise) > 0 && (
                       <span style={{
                         marginLeft: '8px', padding: '2px 8px', borderRadius: '8px', fontSize: '12px',
@@ -693,7 +755,145 @@ function WorkoutTracker({ exercises, onExercisesChange }: WorkoutTrackerProps) {
             </button>
           </div>
         ))}
-      </div>
+
+        {/* Add Exercise Button / Form */}
+        {!showAddForm ? (
+          <button
+            type="button"
+            onClick={() => setShowAddForm(true)}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '8px',
+              padding: '12px 20px',
+              backgroundColor: 'transparent',
+              color: colors.accent,
+              border: `2px dashed ${colors.accent}`,
+              borderRadius: '12px', cursor: 'pointer',
+              fontSize: '14px', fontWeight: 'bold', width: '100%',
+              justifyContent: 'center', transition: 'all 0.2s ease',
+            }}
+          >
+            <Plus size={18} /> Agregar ejercicio
+          </button>
+        ) : (
+          <div style={{
+            backgroundColor: colors.paper, border: `1px solid ${colors.tan}`,
+            borderRadius: '12px', padding: '20px',
+            display: 'flex', flexDirection: 'column', gap: '14px',
+          }}>
+            <h4 style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: colors.dark, margin: 0 }}>
+              Nuevo ejercicio
+            </h4>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                  Ejercicio
+                </label>
+                <select
+                  value={newExName}
+                  onChange={(e) => {
+                    setNewExName(e.target.value);
+                    if (e.target.value !== '__custom__') {
+                      const keys = Object.keys(EXERCISE_IMPACT[e.target.value] ?? {});
+                      setNewExMuscle(keys[0] ?? '');
+                    }
+                  }}
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px' }}
+                >
+                  <option value="">— Selecciona —</option>
+                  {EXERCISE_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                  <option value="__custom__">Otro (personalizado)…</option>
+                </select>
+              </div>
+              {newExName === '__custom__' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                    Nombre personalizado
+                  </label>
+                  <input
+                    type="text"
+                    value={newExCustomName}
+                    onChange={(e) => setNewExCustomName(e.target.value)}
+                    placeholder="Ej: Prensa inclinada"
+                    style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              )}
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                  Grupo muscular
+                </label>
+                <select
+                  value={newExMuscle}
+                  onChange={(e) => setNewExMuscle(e.target.value)}
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px' }}
+                >
+                  <option value="">— Auto —</option>
+                  {MUSCLE_GROUPS.map((m) => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                  Peso inicial (kg)
+                </label>
+                <input
+                  type="number"
+                  value={newExWeight}
+                  onChange={(e) => setNewExWeight(parseFloat(e.target.value) || 0)}
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                  Reps mín.
+                </label>
+                <input
+                  type="number"
+                  value={newExRepMin}
+                  onChange={(e) => setNewExRepMin(parseInt(e.target.value) || 1)}
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: colors.dark, marginBottom: '4px' }}>
+                  Reps máx.
+                </label>
+                <input
+                  type="number"
+                  value={newExRepMax}
+                  onChange={(e) => setNewExRepMax(parseInt(e.target.value) || 1)}
+                  style={{ width: '100%', padding: '8px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                style={{
+                  padding: '8px 16px', backgroundColor: colors.lightCream, color: colors.dark,
+                  border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '13px',
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={handleAddExercise}
+                disabled={!newExName || (newExName === '__custom__' && !newExCustomName.trim())}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: (!newExName || (newExName === '__custom__' && !newExCustomName.trim())) ? colors.lightTan : colors.accent,
+                  color: colors.paper, border: 'none', borderRadius: '6px',
+                  cursor: (!newExName || (newExName === '__custom__' && !newExCustomName.trim())) ? 'not-allowed' : 'pointer',
+                  fontSize: '13px', fontWeight: 'bold',
+                }}
+              >
+                Agregar
+              </button>
+            </div>
+          </div>
+        )}
+      </div>  {/* end Main Workout Grid */}
 
       {/* Rest Timer Sidebar */}
       <div style={{ position: 'sticky', top: '24px', height: 'fit-content' }}>
@@ -900,6 +1100,13 @@ function WeeklyWorkoutPlan({ plan, onPlanChange }: WeeklyWorkoutPlanProps) {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [editType, setEditType] = useState<string>('');
 
+  // Per-day exercise add form state
+  const [addingExToDay, setAddingExToDay] = useState<number | null>(null);
+  const [newExName, setNewExName] = useState('');
+  const [newExSets, setNewExSets] = useState(3);
+  const [newExRepMin, setNewExRepMin] = useState(8);
+  const [newExRepMax, setNewExRepMax] = useState(12);
+
   const handleEditStart = (index: number, type: string) => {
     setEditingDay(index);
     setEditType(type);
@@ -914,29 +1121,37 @@ function WeeklyWorkoutPlan({ plan, onPlanChange }: WeeklyWorkoutPlanProps) {
     setEditingDay(null);
   };
 
+  const handleAddExercise = (dayIndex: number) => {
+    if (!newExName.trim()) return;
+    const newEx: PlanExercise = { name: newExName.trim(), sets: newExSets, repMin: newExRepMin, repMax: newExRepMax };
+    onPlanChange(plan.map((day, i) =>
+      i === dayIndex ? { ...day, exercises: [...day.exercises, newEx] } : day
+    ));
+    setNewExName('');
+    setNewExSets(3);
+    setNewExRepMin(8);
+    setNewExRepMax(12);
+    setAddingExToDay(null);
+  };
+
+  const handleRemoveExercise = (dayIndex: number, exIndex: number) => {
+    onPlanChange(plan.map((day, i) =>
+      i === dayIndex ? { ...day, exercises: day.exercises.filter((_, j) => j !== exIndex) } : day
+    ));
+  };
+
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'Push':
-        return colors.warning;
-      case 'Pull':
-        return colors.info;
-      case 'Legs':
-        return colors.success;
-      case 'Rest':
-        return colors.danger;
-      default:
-        return colors.warm;
+      case 'Push': return colors.warning;
+      case 'Pull': return colors.info;
+      case 'Legs': return colors.success;
+      case 'Rest': return colors.danger;
+      default: return colors.warm;
     }
   };
 
   return (
-    <div
-      style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '12px',
-      }}
-    >
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px' }}>
       {plan.map((day, index) => (
         <div
           key={index}
@@ -947,34 +1162,21 @@ function WeeklyWorkoutPlan({ plan, onPlanChange }: WeeklyWorkoutPlanProps) {
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
-            gap: '12px',
+            gap: '10px',
           }}
         >
-          <div>
-            <h4
-              style={{
-                fontFamily: 'Georgia, serif',
-                fontSize: '14px',
-                color: colors.dark,
-                margin: 0,
-              }}
-            >
-              {day.day}
-            </h4>
-          </div>
+          {/* Day name */}
+          <h4 style={{ fontFamily: 'Georgia, serif', fontSize: '14px', color: colors.dark, margin: 0 }}>
+            {day.day}
+          </h4>
 
+          {/* Day type row */}
           {editingDay === index ? (
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '6px' }}>
               <select
                 value={editType}
                 onChange={(e) => setEditType(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '8px',
-                  border: `1px solid ${colors.tan}`,
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                }}
+                style={{ flex: 1, padding: '6px', border: `1px solid ${colors.tan}`, borderRadius: '6px', fontSize: '12px' }}
               >
                 <option value="Push">Push</option>
                 <option value="Pull">Pull</option>
@@ -982,101 +1184,158 @@ function WeeklyWorkoutPlan({ plan, onPlanChange }: WeeklyWorkoutPlanProps) {
                 <option value="Rest">Rest</option>
               </select>
               <button
+                type="button"
                 onClick={() => handleEditSave(index)}
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  width: '32px',
-                  height: '32px',
-                  backgroundColor: colors.success,
-                  color: colors.paper,
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '28px', height: '28px', backgroundColor: colors.success,
+                  color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer',
                 }}
               >
-                <Check size={16} />
+                <Check size={14} />
               </button>
             </div>
           ) : (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '8px',
-              }}
-            >
-              <div
-                style={{
-                  display: 'inline-block',
-                  padding: '6px 12px',
-                  backgroundColor: getTypeColor(day.type),
-                  color: colors.paper,
-                  borderRadius: '6px',
-                  fontSize: '13px',
-                  fontWeight: 'bold',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+              <div style={{
+                display: 'inline-block', padding: '4px 10px',
+                backgroundColor: getTypeColor(day.type), color: colors.paper,
+                borderRadius: '6px', fontSize: '12px', fontWeight: 'bold',
+              }}>
                 {day.type}
               </div>
-              {day.type !== 'Rest' && (
-                <button
-                  onClick={() => handleEditStart(index, day.type)}
+              <button
+                type="button"
+                onClick={() => handleEditStart(index, day.type)}
+                title="Cambiar tipo"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: '24px', height: '24px', backgroundColor: colors.lightCream,
+                  color: colors.dark, border: 'none', borderRadius: '4px', cursor: 'pointer',
+                }}
+              >
+                <Edit2 size={12} />
+              </button>
+            </div>
+          )}
+
+          {/* Exercises list */}
+          {day.type !== 'Rest' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+              {day.exercises.map((ex, exIndex) => (
+                <div
+                  key={exIndex}
                   style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '28px',
-                    height: '28px',
+                    padding: '6px 8px',
                     backgroundColor: colors.lightCream,
-                    color: colors.dark,
-                    border: 'none',
                     borderRadius: '6px',
-                    cursor: 'pointer',
+                    fontSize: '11px',
+                    color: colors.dark,
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: '4px',
                   }}
                 >
-                  <Edit2 size={14} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {ex.name}
+                    </div>
+                    <div style={{ color: colors.warm, marginTop: '1px' }}>
+                      {ex.sets}×{ex.repMin}-{ex.repMax}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveExercise(index, exIndex)}
+                    title="Eliminar"
+                    style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      width: '18px', height: '18px', borderRadius: '50%',
+                      backgroundColor: colors.dangerLight, color: colors.danger,
+                      border: 'none', cursor: 'pointer', fontSize: '11px', flexShrink: 0,
+                    }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+
+              {/* Add exercise to this day */}
+              {addingExToDay === index ? (
+                <div style={{
+                  backgroundColor: colors.warmWhite, border: `1px solid ${colors.tan}`,
+                  borderRadius: '8px', padding: '10px',
+                  display: 'flex', flexDirection: 'column', gap: '8px',
+                }}>
+                  <select
+                    value={newExName}
+                    onChange={(e) => setNewExName(e.target.value)}
+                    style={{ width: '100%', padding: '6px', border: `1px solid ${colors.tan}`, borderRadius: '4px', fontSize: '11px' }}
+                  >
+                    <option value="">— Ejercicio —</option>
+                    {EXERCISE_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
+                    <div>
+                      <div style={{ fontSize: '10px', color: colors.warm, marginBottom: '2px' }}>Series</div>
+                      <input type="number" value={newExSets} min={1}
+                        onChange={(e) => setNewExSets(parseInt(e.target.value) || 1)}
+                        style={{ width: '100%', padding: '4px', border: `1px solid ${colors.tan}`, borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: colors.warm, marginBottom: '2px' }}>Rep mín</div>
+                      <input type="number" value={newExRepMin} min={1}
+                        onChange={(e) => setNewExRepMin(parseInt(e.target.value) || 1)}
+                        style={{ width: '100%', padding: '4px', border: `1px solid ${colors.tan}`, borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box' }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '10px', color: colors.warm, marginBottom: '2px' }}>Rep máx</div>
+                      <input type="number" value={newExRepMax} min={1}
+                        onChange={(e) => setNewExRepMax(parseInt(e.target.value) || 1)}
+                        style={{ width: '100%', padding: '4px', border: `1px solid ${colors.tan}`, borderRadius: '4px', fontSize: '11px', boxSizing: 'border-box' }} />
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button type="button" onClick={() => setAddingExToDay(null)}
+                      style={{ flex: 1, padding: '5px', backgroundColor: colors.lightCream, color: colors.dark, border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px' }}>
+                      Cancelar
+                    </button>
+                    <button type="button" onClick={() => handleAddExercise(index)}
+                      disabled={!newExName}
+                      style={{
+                        flex: 1, padding: '5px',
+                        backgroundColor: newExName ? colors.accent : colors.lightTan,
+                        color: colors.paper, border: 'none', borderRadius: '4px',
+                        cursor: newExName ? 'pointer' : 'not-allowed', fontSize: '11px', fontWeight: 'bold',
+                      }}>
+                      OK
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setAddingExToDay(index); setNewExName(''); }}
+                  style={{
+                    width: '100%', padding: '5px',
+                    backgroundColor: 'transparent', color: colors.accent,
+                    border: `1px dashed ${colors.accent}`, borderRadius: '6px',
+                    cursor: 'pointer', fontSize: '11px', fontWeight: 'bold',
+                  }}
+                >
+                  + Ejercicio
                 </button>
               )}
             </div>
           )}
 
-          {day.type !== 'Rest' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {day.exercises.map((ex, exIndex) => (
-                <div
-                  key={exIndex}
-                  style={{
-                    padding: '8px',
-                    backgroundColor: colors.lightCream,
-                    borderRadius: '6px',
-                    fontSize: '11px',
-                    color: colors.dark,
-                  }}
-                >
-                  <div style={{ fontWeight: 600 }}>{ex.name}</div>
-                  <div style={{ color: colors.warm, marginTop: '2px' }}>
-                    {ex.sets} × {ex.repMin}-{ex.repMax} reps
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
           {day.type === 'Rest' && (
-            <div
-              style={{
-                padding: '20px',
-                backgroundColor: colors.dangerLight,
-                borderRadius: '6px',
-                textAlign: 'center',
-                fontSize: '13px',
-                color: colors.danger,
-                fontWeight: 'bold',
-              }}
-            >
+            <div style={{
+              padding: '16px', backgroundColor: colors.dangerLight,
+              borderRadius: '6px', textAlign: 'center',
+              fontSize: '12px', color: colors.danger, fontWeight: 'bold',
+            }}>
               Descanso
             </div>
           )}
