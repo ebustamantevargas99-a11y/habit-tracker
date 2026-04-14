@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   LineChart,
   Line,
@@ -38,10 +38,10 @@ import { VOLUME_LANDMARKS } from '@/lib/constants';
 // ============================================================================
 
 const SAMPLE_EXERCISES = [
-  { id: 1, name: 'Press Banca', muscleGroup: 'Pecho', lastWeight: 80, lastReps: 8, pr: 90 },
-  { id: 2, name: 'Sentadilla', muscleGroup: 'Cuádriceps', lastWeight: 100, lastReps: 6, pr: 120 },
-  { id: 3, name: 'Peso Muerto', muscleGroup: 'Espalda', lastWeight: 120, lastReps: 5, pr: 140 },
-  { id: 4, name: 'Curl Bíceps', muscleGroup: 'Bíceps', lastWeight: 14, lastReps: 12, pr: 16 },
+  { id: 1, name: 'Press Banca',  muscleGroup: 'Pecho',       lastWeight: 80,  lastReps: 8,  pr: 90,  repMin: 8,  repMax: 12, lastWeekReps: [10, 9, 8, 8]    },
+  { id: 2, name: 'Sentadilla',   muscleGroup: 'Cuádriceps',  lastWeight: 100, lastReps: 6,  pr: 120, repMin: 6,  repMax: 10, lastWeekReps: [8, 7, 7, 6]     },
+  { id: 3, name: 'Peso Muerto',  muscleGroup: 'Espalda',     lastWeight: 120, lastReps: 5,  pr: 140, repMin: 5,  repMax: 8,  lastWeekReps: [6, 5, 5]        },
+  { id: 4, name: 'Curl Bíceps',  muscleGroup: 'Bíceps',      lastWeight: 14,  lastReps: 12, pr: 16,  repMin: 10, repMax: 15, lastWeekReps: [12, 12, 12, 12] },
 ];
 
 const MUSCLE_GROUPS = [
@@ -59,15 +59,145 @@ const MUSCLE_GROUPS = [
 
 const REST_TIMER_PRESETS = [30, 60, 90, 120, 180] as const;
 
-const WEEKLY_PLAN_DEFAULT: { day: string; type: 'Push' | 'Pull' | 'Legs' | 'Rest'; exercises: string[] }[] = [
-  { day: 'Lunes', type: 'Push', exercises: ['Press Banca', 'Press Militar'] },
-  { day: 'Martes', type: 'Pull', exercises: ['Peso Muerto', 'Remo'] },
-  { day: 'Miércoles', type: 'Legs', exercises: ['Sentadilla', 'Leg Press'] },
-  { day: 'Jueves', type: 'Push', exercises: ['Press Inclinado', 'Fondos'] },
-  { day: 'Viernes', type: 'Pull', exercises: ['Dominadas', 'Curl'] },
-  { day: 'Sábado', type: 'Legs', exercises: ['Sentadilla Búlgara', 'Extensión'] },
-  { day: 'Domingo', type: 'Rest', exercises: [] },
+interface PlanExercise {
+  name: string;
+  sets: number;
+  repMin: number;
+  repMax: number;
+}
+
+interface EnginePlanDay {
+  day: string;
+  type: 'Push' | 'Pull' | 'Legs' | 'Rest';
+  exercises: PlanExercise[];
+}
+
+const WEEKLY_PLAN_DEFAULT: EnginePlanDay[] = [
+  { day: 'Lunes',     type: 'Push', exercises: [{ name: 'Press Banca',       sets: 4, repMin: 8,  repMax: 12 }, { name: 'Press Militar',       sets: 3, repMin: 8,  repMax: 12 }] },
+  { day: 'Martes',    type: 'Pull', exercises: [{ name: 'Peso Muerto',        sets: 4, repMin: 5,  repMax: 8  }, { name: 'Remo',                sets: 3, repMin: 8,  repMax: 12 }] },
+  { day: 'Miércoles', type: 'Legs', exercises: [{ name: 'Sentadilla',         sets: 4, repMin: 6,  repMax: 10 }, { name: 'Leg Press',           sets: 3, repMin: 10, repMax: 15 }] },
+  { day: 'Jueves',    type: 'Push', exercises: [{ name: 'Press Inclinado',    sets: 4, repMin: 8,  repMax: 12 }, { name: 'Fondos',              sets: 3, repMin: 10, repMax: 15 }] },
+  { day: 'Viernes',   type: 'Pull', exercises: [{ name: 'Dominadas',          sets: 4, repMin: 6,  repMax: 10 }, { name: 'Curl Bíceps',         sets: 3, repMin: 10, repMax: 15 }] },
+  { day: 'Sábado',    type: 'Legs', exercises: [{ name: 'Sentadilla Búlgara', sets: 4, repMin: 8,  repMax: 12 }, { name: 'Extensión',           sets: 3, repMin: 12, repMax: 15 }] },
+  { day: 'Domingo',   type: 'Rest', exercises: [] },
 ];
+
+// ============================================================================
+// FITNESS ENGINE — Motor de Volumen Fraccional + 1RM + Sobrecarga Progresiva
+// ============================================================================
+
+/**
+ * Perfil de impacto muscular fraccional por ejercicio.
+ * 1.0 = músculo primario | <1.0 = sinergista
+ * Se usa para distribuir sets a múltiples grupos en Volumen Muscular.
+ */
+const EXERCISE_IMPACT: Record<string, Partial<Record<string, number>>> = {
+  // PUSH
+  'Press Banca':        { Pecho: 1.0, Tríceps: 0.5, Hombros: 0.3 },
+  'Press Inclinado':    { Pecho: 1.0, Tríceps: 0.4, Hombros: 0.3 },
+  'Press Militar':      { Hombros: 1.0, Tríceps: 0.5, Core: 0.2 },
+  'Fondos':             { Tríceps: 1.0, Pecho: 0.5 },
+  'Extensión Tríceps':  { Tríceps: 1.0 },
+  // PULL
+  'Peso Muerto':        { Espalda: 1.0, Isquiotibiales: 0.7, Glúteos: 0.5, Core: 0.3, Bíceps: 0.2 },
+  'Remo':               { Espalda: 1.0, Bíceps: 0.5 },
+  'Dominadas':          { Espalda: 1.0, Bíceps: 0.7 },
+  'Curl Bíceps':        { Bíceps: 1.0 },
+  'Curl Martillo':      { Bíceps: 1.0 },
+  // LEGS
+  'Sentadilla':         { Cuádriceps: 1.0, Glúteos: 0.7, Isquiotibiales: 0.3, Core: 0.2 },
+  'Leg Press':          { Cuádriceps: 0.8, Glúteos: 0.6 },
+  'Sentadilla Búlgara': { Cuádriceps: 0.8, Glúteos: 0.9, Isquiotibiales: 0.5 },
+  'Extensión':          { Cuádriceps: 1.0 },
+  'Curl Femoral':       { Isquiotibiales: 1.0 },
+  'Hip Thrust':         { Glúteos: 1.0, Isquiotibiales: 0.5 },
+};
+
+/** Fórmula de Epley: estima el 1RM a partir de peso × reps */
+function epley1RM(weight: number, reps: number): number {
+  if (reps <= 0 || weight <= 0) return 0;
+  if (reps === 1) return weight;
+  return Math.round(weight * (1 + reps / 30) * 10) / 10;
+}
+
+/** Epley inversa: estima el peso para N repeticiones desde el 1RM */
+function epleyNRM(oneRM: number, n: number): number {
+  if (n <= 0 || oneRM <= 0) return 0;
+  if (n === 1) return oneRM;
+  return Math.round((oneRM / (1 + n / 30)) * 10) / 10;
+}
+
+/** Calcula el volumen fraccional de una sesión activa → Record<músculo, series> */
+function computeFractionalVolume(exercises: EngineExercise[]): Record<string, number> {
+  const vol: Record<string, number> = {};
+  for (const ex of exercises) {
+    const activeSets = ex.sets.filter(s => s.weight > 0 && s.reps > 0).length;
+    if (activeSets === 0) continue;
+    const impact = EXERCISE_IMPACT[ex.name] ?? { [ex.muscleGroup]: 1.0 };
+    for (const [muscle, fraction] of Object.entries(impact)) {
+      vol[muscle] = (vol[muscle] ?? 0) + activeSets * (fraction as number);
+    }
+  }
+  return Object.fromEntries(Object.entries(vol).map(([k, v]) => [k, Math.round(v * 10) / 10]));
+}
+
+/** Calcula la sugerencia de progresión doble para un ejercicio */
+function getProgressionSuggestion(
+  lastWeight: number,
+  lastWeekReps: number[],
+  repMin: number,
+  repMax: number
+): { weight: number; reps: number; label: string } {
+  if (lastWeekReps.length === 0) {
+    return { weight: lastWeight, reps: repMin, label: `Objetivo inicial: ${repMin}-${repMax} reps` };
+  }
+  const allHitTop = lastWeekReps.every(r => r >= repMax);
+  if (allHitTop) {
+    // Progresión: subir peso 2.5 kg y resetear a rep mínimo
+    return { weight: lastWeight + 2.5, reps: repMin, label: `↑ Subir a ${lastWeight + 2.5} kg · ${repMin} reps` };
+  }
+  // Mismo peso, apuntar una rep más que el peor set de la semana pasada
+  const worstSet = Math.min(...lastWeekReps);
+  const targetReps = Math.min(worstSet + 1, repMax);
+  return { weight: lastWeight, reps: targetReps, label: `Objetivo: ${lastWeight} kg × ${targetReps} reps` };
+}
+
+// ── Tipos compartidos del motor ───────────────────────────────────────────────
+
+interface EngineSet {
+  id: string;
+  weight: number;
+  reps: number;
+  rpe: number;
+}
+
+interface EngineExercise {
+  id: number;
+  name: string;
+  muscleGroup: string;
+  lastWeight: number;
+  lastReps: number;
+  pr: number;
+  sets: EngineSet[];
+  repMin: number;
+  repMax: number;
+  lastWeekReps: number[];
+}
+
+interface LivePR {
+  exercise: string;
+  oneRM: number;
+  fiveRM: number;
+  tenRM: number;
+  date: string;
+  prevOneRM: number;
+  isNewPR: boolean;
+}
+
+interface TonelagePoint {
+  week: string;
+  volume: number;
+}
 
 // ============================================================================
 // REST TIMER COMPONENT
@@ -293,73 +423,40 @@ function RestTimer({ onDurationChange }: RestTimerProps) {
 // WORKOUT TRACKER COMPONENT
 // ============================================================================
 
-interface WorkoutSet {
-  id: string;
-  weight: number;
-  reps: number;
-  rpe: number;
+interface WorkoutTrackerProps {
+  exercises: EngineExercise[];
+  onExercisesChange: (exercises: EngineExercise[]) => void;
 }
 
-interface WorkoutExercise {
-  id: number;
-  name: string;
-  muscleGroup: string;
-  lastWeight: number;
-  lastReps: number;
-  pr: number;
-  sets: WorkoutSet[];
-}
-
-function WorkoutTracker() {
-  const [exercises, setExercises] = useState<WorkoutExercise[]>(
-    SAMPLE_EXERCISES.map((ex) => ({
-      ...ex,
-      sets: [{ id: '1', weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }],
-    }))
-  );
+function WorkoutTracker({ exercises, onExercisesChange }: WorkoutTrackerProps) {
+  // Wrapper para soportar actualizaciones funcionales
+  const updateExercises = (updater: (prev: EngineExercise[]) => EngineExercise[]) => {
+    onExercisesChange(updater(exercises));
+  };
 
   const addSet = (exerciseId: number) => {
-    setExercises((prev) =>
+    updateExercises((prev) =>
       prev.map((ex) =>
         ex.id === exerciseId
-          ? {
-              ...ex,
-              sets: [
-                ...ex.sets,
-                {
-                  id: String(Date.now()),
-                  weight: ex.lastWeight,
-                  reps: ex.lastReps,
-                  rpe: 7,
-                },
-              ],
-            }
+          ? { ...ex, sets: [...ex.sets, { id: String(Date.now()), weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }] }
           : ex
       )
     );
   };
 
   const removeSet = (exerciseId: number, setId: string) => {
-    setExercises((prev) =>
+    updateExercises((prev) =>
       prev.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: ex.sets.filter((s) => s.id !== setId) } : ex
+        ex.id === exerciseId ? { ...ex, sets: ex.sets.filter((s: EngineSet) => s.id !== setId) } : ex
       )
     );
   };
 
-  const updateSet = (
-    exerciseId: number,
-    setId: string,
-    field: 'weight' | 'reps' | 'rpe',
-    value: number
-  ) => {
-    setExercises((prev) =>
+  const updateSet = (exerciseId: number, setId: string, field: 'weight' | 'reps' | 'rpe', value: number) => {
+    updateExercises((prev) =>
       prev.map((ex) =>
         ex.id === exerciseId
-          ? {
-              ...ex,
-              sets: ex.sets.map((s) => (s.id === setId ? { ...s, [field]: value } : s)),
-            }
+          ? { ...ex, sets: ex.sets.map((s: EngineSet) => (s.id === setId ? { ...s, [field]: value } : s)) }
           : ex
       )
     );
@@ -370,6 +467,14 @@ function WorkoutTracker() {
     if (!exercise) return false;
     const set = exercise.sets.find((s) => s.id === setId);
     return set ? set.weight >= exercise.pr : false;
+  };
+
+  // Mejor 1RM estimado por ejercicio (Epley)
+  const getBest1RM = (exercise: EngineExercise): number => {
+    return exercise.sets.reduce((best, s) => {
+      const est = epley1RM(s.weight, s.reps);
+      return est > best ? est : best;
+    }, 0);
   };
 
   return (
@@ -387,24 +492,49 @@ function WorkoutTracker() {
             }}
           >
             <div style={{ marginBottom: '16px' }}>
-              <h4
-                style={{
-                  fontFamily: 'Georgia, serif',
-                  fontSize: '18px',
-                  color: colors.dark,
-                  margin: '0 0 4px 0',
-                }}
-              >
-                {exercise.name}
-              </h4>
-              <p style={{ color: colors.warm, fontSize: '14px', margin: 0 }}>
-                {exercise.muscleGroup} • PR: {exercise.pr}kg
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <h4 style={{ fontFamily: 'Georgia, serif', fontSize: '18px', color: colors.dark, margin: '0 0 4px 0' }}>
+                    {exercise.name}
+                  </h4>
+                  <p style={{ color: colors.warm, fontSize: '14px', margin: 0 }}>
+                    {exercise.muscleGroup} • PR actual: {exercise.pr}kg
+                    {getBest1RM(exercise) > 0 && (
+                      <span style={{
+                        marginLeft: '8px', padding: '2px 8px', borderRadius: '8px', fontSize: '12px',
+                        backgroundColor: getBest1RM(exercise) > exercise.pr ? colors.accentGlow : colors.lightCream,
+                        color: getBest1RM(exercise) > exercise.pr ? colors.accent : colors.warm,
+                        fontWeight: getBest1RM(exercise) > exercise.pr ? '700' : 'normal',
+                      }}>
+                        {getBest1RM(exercise) > exercise.pr ? '🏆 ' : ''}1RM est. {getBest1RM(exercise)}kg
+                      </span>
+                    )}
+                  </p>
+                </div>
+                {/* Sugerencia de progresión doble */}
+                {(() => {
+                  const s = getProgressionSuggestion(exercise.lastWeight, exercise.lastWeekReps, exercise.repMin, exercise.repMax);
+                  return (
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontSize: '11px', color: colors.warm, marginBottom: '2px' }}>Objetivo esta sesión</div>
+                      <div style={{ fontSize: '12px', fontWeight: '700', color: s.weight > exercise.lastWeight ? colors.success : colors.accent }}>
+                        {s.label}
+                      </div>
+                      <div style={{ fontSize: '10px', color: colors.warm }}>
+                        Rango: {exercise.repMin}-{exercise.repMax} reps
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
             </div>
 
             {/* Sets Grid */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-              {exercise.sets.map((set, setIndex) => (
+              {exercise.sets.map((set, setIndex) => {
+                const est1RM = epley1RM(set.weight, set.reps);
+                const isNewPR = est1RM > exercise.pr && set.weight > 0 && set.reps > 0;
+                return (
                 <div
                   key={set.id}
                   style={{
@@ -413,14 +543,21 @@ function WorkoutTracker() {
                     alignItems: 'center',
                     gap: '12px',
                     padding: '12px',
-                    backgroundColor: colors.lightCream,
+                    backgroundColor: isNewPR ? colors.accentGlow : colors.lightCream,
                     borderRadius: '8px',
-                    border: isPR(exercise.id, set.id) ? `2px solid ${colors.accent}` : 'none',
+                    border: (isPR(exercise.id, set.id) || isNewPR) ? `2px solid ${colors.accent}` : 'none',
                   }}
                 >
-                  <span style={{ fontSize: '14px', color: colors.warm, fontWeight: 'bold' }}>
-                    Set {setIndex + 1}
-                  </span>
+                  <div>
+                    <span style={{ fontSize: '14px', color: colors.warm, fontWeight: 'bold', display: 'block' }}>
+                      Set {setIndex + 1}
+                    </span>
+                    {est1RM > 0 && (
+                      <span style={{ fontSize: '10px', color: isNewPR ? colors.accent : colors.warm, fontWeight: isNewPR ? '700' : 'normal' }}>
+                        ~{est1RM}kg
+                      </span>
+                    )}
+                  </div>
 
                   <div>
                     <label
@@ -531,7 +668,8 @@ function WorkoutTracker() {
                     <Trash2 size={16} />
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
 
             <button
@@ -569,19 +707,29 @@ function WorkoutTracker() {
 // VOLUME TRACKER COMPONENT
 // ============================================================================
 
-function VolumeTracker() {
-  const [volumeData] = useState([
-    { group: 'Pecho', volume: 18, mev: 8, mav: 20, mrv: 22 },
-    { group: 'Espalda', volume: 22, mev: 8, mav: 22, mrv: 25 },
-    { group: 'Hombros', volume: 15, mev: 6, mav: 14, mrv: 18 },
-    { group: 'Bíceps', volume: 12, mev: 4, mav: 10, mrv: 15 },
-    { group: 'Tríceps', volume: 14, mev: 4, mav: 12, mrv: 16 },
-    { group: 'Cuádriceps', volume: 20, mev: 8, mav: 18, mrv: 24 },
-    { group: 'Isquiotibiales', volume: 11, mev: 6, mav: 12, mrv: 18 },
-    { group: 'Glúteos', volume: 10, mev: 6, mav: 14, mrv: 20 },
-    { group: 'Core', volume: 8, mev: 4, mav: 8, mrv: 10 },
-    { group: 'Pantorrillas', volume: 6, mev: 4, mav: 10, mrv: 15 },
-  ]);
+// Volumen base acumulado de semanas anteriores (simula datos de DB)
+const BASE_WEEKLY_VOLUME: Record<string, number> = {
+  Pecho: 8, Espalda: 10, Hombros: 6, Bíceps: 6, Tríceps: 6,
+  Cuádriceps: 8, Isquiotibiales: 6, Glúteos: 6, Core: 4, Pantorrillas: 4,
+};
+
+function VolumeTracker({ sessionVolume }: { sessionVolume: Record<string, number> }) {
+  const volumeData = [
+    { group: 'Pecho',          mev: 8,  mav: 20, mrv: 22 },
+    { group: 'Espalda',        mev: 8,  mav: 22, mrv: 25 },
+    { group: 'Hombros',        mev: 6,  mav: 14, mrv: 18 },
+    { group: 'Bíceps',         mev: 4,  mav: 10, mrv: 15 },
+    { group: 'Tríceps',        mev: 4,  mav: 12, mrv: 16 },
+    { group: 'Cuádriceps',     mev: 8,  mav: 18, mrv: 24 },
+    { group: 'Isquiotibiales', mev: 6,  mav: 12, mrv: 18 },
+    { group: 'Glúteos',        mev: 6,  mav: 14, mrv: 20 },
+    { group: 'Core',           mev: 4,  mav: 8,  mrv: 10 },
+    { group: 'Pantorrillas',   mev: 4,  mav: 10, mrv: 15 },
+  ].map(d => ({
+    ...d,
+    // Base histórico + contribución fraccional de la sesión activa
+    volume: Math.round(((BASE_WEEKLY_VOLUME[d.group] ?? 0) + (sessionVolume[d.group] ?? 0)) * 10) / 10,
+  }));
 
   const getVolumeColor = (volume: number, mav: number, mrv: number) => {
     if (volume > mrv) return colors.danger;
@@ -743,14 +891,12 @@ function VolumeTracker() {
 // WEEKLY WORKOUT PLAN COMPONENT
 // ============================================================================
 
-interface WeeklyDay {
-  day: string;
-  type: 'Push' | 'Pull' | 'Legs' | 'Rest';
-  exercises: string[];
+interface WeeklyWorkoutPlanProps {
+  plan: EnginePlanDay[];
+  onPlanChange: (plan: EnginePlanDay[]) => void;
 }
 
-function WeeklyWorkoutPlan() {
-  const [plan, setPlan] = useState<WeeklyDay[]>(WEEKLY_PLAN_DEFAULT);
+function WeeklyWorkoutPlan({ plan, onPlanChange }: WeeklyWorkoutPlanProps) {
   const [editingDay, setEditingDay] = useState<number | null>(null);
   const [editType, setEditType] = useState<string>('');
 
@@ -760,9 +906,9 @@ function WeeklyWorkoutPlan() {
   };
 
   const handleEditSave = (index: number) => {
-    setPlan((prev) =>
-      prev.map((day, i) =>
-        i === index ? { ...day, type: editType as 'Push' | 'Pull' | 'Legs' | 'Rest' } : day
+    onPlanChange(
+      plan.map((day, i) =>
+        i === index ? { ...day, type: editType as EnginePlanDay['type'] } : day
       )
     );
     setEditingDay(null);
@@ -906,11 +1052,14 @@ function WeeklyWorkoutPlan() {
                     padding: '8px',
                     backgroundColor: colors.lightCream,
                     borderRadius: '6px',
-                    fontSize: '12px',
+                    fontSize: '11px',
                     color: colors.dark,
                   }}
                 >
-                  {ex}
+                  <div style={{ fontWeight: 600 }}>{ex.name}</div>
+                  <div style={{ color: colors.warm, marginTop: '2px' }}>
+                    {ex.sets} × {ex.repMin}-{ex.repMax} reps
+                  </div>
                 </div>
               ))}
             </div>
@@ -941,15 +1090,32 @@ function WeeklyWorkoutPlan() {
 // PR BOARD COMPONENT
 // ============================================================================
 
-function PRBoard() {
-  const [prData] = useState([
-    { exercise: 'Press Banca', oneRM: 95, fiveRM: 85, tenRM: 75, monthChange: '+5kg' },
-    { exercise: 'Sentadilla', oneRM: 130, fiveRM: 120, tenRM: 110, monthChange: '+10kg' },
-    { exercise: 'Peso Muerto', oneRM: 150, fiveRM: 140, tenRM: 130, monthChange: '+5kg' },
-    { exercise: 'Curl Bíceps', oneRM: 18, fiveRM: 16, tenRM: 14, monthChange: '+2kg' },
-  ]);
+// Historial de tonelaje inicial (simulación últimas 8 semanas)
+const INITIAL_TONELAGE: Record<string, TonelagePoint[]> = {
+  'Press Banca':  [{ week: 'S1', volume: 5600 }, { week: 'S2', volume: 5880 }, { week: 'S3', volume: 6160 }, { week: 'S4', volume: 6000 }, { week: 'S5', volume: 6400 }, { week: 'S6', volume: 6720 }, { week: 'S7', volume: 7040 }, { week: 'S8', volume: 7200 }],
+  'Sentadilla':   [{ week: 'S1', volume: 8000 }, { week: 'S2', volume: 8400 }, { week: 'S3', volume: 8800 }, { week: 'S4', volume: 8600 }, { week: 'S5', volume: 9000 }, { week: 'S6', volume: 9600 }, { week: 'S7', volume: 9800 }, { week: 'S8', volume: 10200 }],
+  'Peso Muerto':  [{ week: 'S1', volume: 9600 }, { week: 'S2', volume: 10200 }, { week: 'S3', volume: 10400 }, { week: 'S4', volume: 10800 }, { week: 'S5', volume: 11200 }, { week: 'S6', volume: 11600 }, { week: 'S7', volume: 12000 }, { week: 'S8', volume: 12400 }],
+  'Curl Bíceps':  [{ week: 'S1', volume: 840 }, { week: 'S2', volume: 900 }, { week: 'S3', volume: 960 }, { week: 'S4', volume: 980 }, { week: 'S5', volume: 1020 }, { week: 'S6', volume: 1080 }, { week: 'S7', volume: 1120 }, { week: 'S8', volume: 1176 }],
+};
 
-  const newPRsThisMonth = 2;
+// PRs base iniciales (sin sesión activa)
+const INITIAL_PRS: LivePR[] = [
+  { exercise: 'Press Banca', oneRM: 95,  fiveRM: epleyNRM(95, 5),  tenRM: epleyNRM(95, 10),  date: '2026-03-10', prevOneRM: 90,  isNewPR: false },
+  { exercise: 'Sentadilla',  oneRM: 130, fiveRM: epleyNRM(130, 5), tenRM: epleyNRM(130, 10), date: '2026-03-15', prevOneRM: 120, isNewPR: false },
+  { exercise: 'Peso Muerto', oneRM: 150, fiveRM: epleyNRM(150, 5), tenRM: epleyNRM(150, 10), date: '2026-03-08', prevOneRM: 145, isNewPR: false },
+  { exercise: 'Curl Bíceps', oneRM: 18,  fiveRM: epleyNRM(18, 5),  tenRM: epleyNRM(18, 10),  date: '2026-03-12', prevOneRM: 16,  isNewPR: false },
+];
+
+interface PRBoardProps {
+  liveRecords: LivePR[];
+  tonelageHistory: Record<string, TonelagePoint[]>;
+}
+
+function PRBoard({ liveRecords, tonelageHistory }: PRBoardProps) {
+  const [selectedExercise, setSelectedExercise] = useState(liveRecords[0]?.exercise ?? 'Press Banca');
+
+  const newPRsThisMonth = liveRecords.filter(r => r.isNewPR).length;
+  const chartData = tonelageHistory[selectedExercise] ?? [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1057,64 +1223,124 @@ function PRBoard() {
             </tr>
           </thead>
           <tbody>
-            {prData.map((pr, index) => (
-              <tr
-                key={index}
-                style={{
-                  borderBottom: `1px solid ${colors.lightCream}`,
-                  backgroundColor: index % 2 === 0 ? colors.paper : colors.warmWhite,
-                }}
-              >
-                <td
+            {liveRecords.map((pr, index) => {
+              const monthChange = Math.round((pr.oneRM - pr.prevOneRM) * 10) / 10;
+              return (
+                <tr
+                  key={index}
                   style={{
-                    padding: '12px 16px',
-                    color: colors.dark,
-                    fontWeight: '600',
+                    borderBottom: `1px solid ${colors.lightCream}`,
+                    backgroundColor: pr.isNewPR ? colors.accentGlow : (index % 2 === 0 ? colors.paper : colors.warmWhite),
                   }}
                 >
-                  {pr.exercise}
-                </td>
-                <td
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    color: colors.dark,
-                  }}
-                >
-                  <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{pr.oneRM}kg</span>
-                </td>
-                <td
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    color: colors.dark,
-                  }}
-                >
-                  {pr.fiveRM}kg
-                </td>
-                <td
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    color: colors.dark,
-                  }}
-                >
-                  {pr.tenRM}kg
-                </td>
-                <td
-                  style={{
-                    padding: '12px 16px',
-                    textAlign: 'center',
-                    color: colors.success,
-                    fontWeight: 'bold',
-                  }}
-                >
-                  {pr.monthChange}
-                </td>
-              </tr>
-            ))}
+                  <td
+                    style={{
+                      padding: '12px 16px',
+                      color: colors.dark,
+                      fontWeight: '600',
+                    }}
+                  >
+                    {pr.isNewPR && <span style={{ marginRight: '6px' }}>🏆</span>}
+                    {pr.exercise}
+                  </td>
+                  <td
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      color: pr.isNewPR ? colors.accent : colors.dark,
+                    }}
+                  >
+                    <span style={{ fontSize: '16px', fontWeight: 'bold' }}>{pr.oneRM}kg</span>
+                  </td>
+                  <td
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      color: colors.dark,
+                    }}
+                  >
+                    {pr.fiveRM}kg
+                  </td>
+                  <td
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      color: colors.dark,
+                    }}
+                  >
+                    {pr.tenRM}kg
+                  </td>
+                  <td
+                    style={{
+                      padding: '12px 16px',
+                      textAlign: 'center',
+                      color: monthChange >= 0 ? colors.success : colors.danger,
+                      fontWeight: 'bold',
+                    }}
+                  >
+                    {monthChange >= 0 ? '+' : ''}{monthChange}kg
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
+      </div>
+
+      {/* Tonelaje Chart */}
+      <div
+        style={{
+          backgroundColor: colors.paper,
+          border: `1px solid ${colors.lightTan}`,
+          borderRadius: '12px',
+          padding: '20px',
+        }}
+      >
+        <h3 style={{ fontFamily: 'Georgia, serif', fontSize: '16px', color: colors.dark, margin: '0 0 16px 0' }}>
+          Historial de Tonelaje
+        </h3>
+        {/* Exercise selector tabs */}
+        <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+          {liveRecords.map((pr) => (
+            <button
+              key={pr.exercise}
+              type="button"
+              onClick={() => setSelectedExercise(pr.exercise)}
+              style={{
+                padding: '6px 12px',
+                backgroundColor: selectedExercise === pr.exercise ? colors.accent : colors.lightCream,
+                color: selectedExercise === pr.exercise ? colors.paper : colors.dark,
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '12px',
+                fontWeight: selectedExercise === pr.exercise ? 'bold' : 'normal',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {pr.exercise}
+            </button>
+          ))}
+        </div>
+        <ResponsiveContainer width="100%" height={200}>
+          <LineChart data={chartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke={colors.lightTan} />
+            <XAxis dataKey="week" tick={{ fontSize: 11, fill: colors.warm }} />
+            <YAxis tick={{ fontSize: 11, fill: colors.warm }} />
+            <Tooltip
+              contentStyle={{ backgroundColor: colors.paper, border: `1px solid ${colors.tan}`, borderRadius: '8px', fontSize: '12px' }}
+              formatter={(value: number) => [`${value.toLocaleString()} kg`, 'Tonelaje']}
+            />
+            <Line
+              type="monotone"
+              dataKey="volume"
+              stroke={colors.warning}
+              strokeWidth={2}
+              dot={{ fill: colors.accent, r: 4, strokeWidth: 0 }}
+              activeDot={{ r: 6, fill: colors.accent }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -2347,6 +2573,47 @@ function ProgressPhotos() {
 export default function FitnessPage() {
   const [activeTab, setActiveTab] = useState<string>('entrenamiento');
 
+  // ── Lifted state for the 3 engines ──────────────────────────────────────────
+  const [sessionExercises, setSessionExercises] = useState<EngineExercise[]>(() =>
+    SAMPLE_EXERCISES.map((ex) => ({
+      ...ex,
+      sets: [{ id: String(Date.now() + ex.id), weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }],
+    }))
+  );
+
+  const [livePRs, setLivePRs] = useState<LivePR[]>(INITIAL_PRS);
+  const [weeklyPlan, setWeeklyPlan] = useState<EnginePlanDay[]>(WEEKLY_PLAN_DEFAULT);
+  const [tonelageHistory] = useState<Record<string, TonelagePoint[]>>(INITIAL_TONELAGE);
+
+  // Motor 1: Volumen fraccional en tiempo real
+  const sessionVolume = useMemo(() => computeFractionalVolume(sessionExercises), [sessionExercises]);
+
+  // Motor 2: 1RM automático — actualiza PRs cuando cambian los sets
+  useEffect(() => {
+    setLivePRs((prev) =>
+      prev.map((record) => {
+        const ex = sessionExercises.find((e) => e.name === record.exercise);
+        if (!ex) return record;
+        const best = ex.sets.reduce((max, s) => {
+          const est = epley1RM(s.weight, s.reps);
+          return est > max ? est : max;
+        }, 0);
+        if (best > record.oneRM) {
+          return {
+            ...record,
+            prevOneRM: record.oneRM,
+            oneRM: best,
+            fiveRM: epleyNRM(best, 5),
+            tenRM: epleyNRM(best, 10),
+            date: new Date().toISOString().split('T')[0],
+            isNewPR: true,
+          };
+        }
+        return record;
+      })
+    );
+  }, [sessionExercises]);
+
   const tabs = [
     { id: 'entrenamiento', label: 'Entrenamiento Activo' },
     { id: 'volumen', label: 'Volumen Muscular' },
@@ -2413,10 +2680,16 @@ export default function FitnessPage() {
 
       {/* Tab Content */}
       <div>
-        {activeTab === 'entrenamiento' && <WorkoutTracker />}
-        {activeTab === 'volumen' && <VolumeTracker />}
-        {activeTab === 'plan' && <WeeklyWorkoutPlan />}
-        {activeTab === 'records' && <PRBoard />}
+        {activeTab === 'entrenamiento' && (
+          <WorkoutTracker exercises={sessionExercises} onExercisesChange={setSessionExercises} />
+        )}
+        {activeTab === 'volumen' && <VolumeTracker sessionVolume={sessionVolume} />}
+        {activeTab === 'plan' && (
+          <WeeklyWorkoutPlan plan={weeklyPlan} onPlanChange={setWeeklyPlan} />
+        )}
+        {activeTab === 'records' && (
+          <PRBoard liveRecords={livePRs} tonelageHistory={tonelageHistory} />
+        )}
         {activeTab === 'metricas' && <BodyMetrics />}
         {activeTab === 'peso' && <WeightTracker />}
         {activeTab === 'pasos' && <StepsTracker />}
