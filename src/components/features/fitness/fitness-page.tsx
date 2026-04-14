@@ -32,6 +32,7 @@ import {
 } from 'lucide-react';
 import { colors } from '@/lib/colors';
 import { VOLUME_LANDMARKS } from '@/lib/constants';
+import { useFitnessExtendedStore } from '@/stores/fitness-extended-store';
 
 // ============================================================================
 // SAMPLE DATA
@@ -2134,6 +2135,9 @@ function StepsTracker() {
 // ============================================================================
 
 function FastingTracker() {
+  const { fastingLogs, startFast, completeFast, initialize } = useFitnessExtendedStore();
+  useEffect(() => { initialize(); }, [initialize]);
+
   const protocols = [
     { id: "16/8", fastHours: 16, eatHours: 8, label: "16/8 — Estándar" },
     { id: "18/6", fastHours: 18, eatHours: 6, label: "18/6 — Intermedio" },
@@ -2143,7 +2147,39 @@ function FastingTracker() {
 
   const [selectedProtocol, setSelectedProtocol] = useState(protocols[0]);
   const [isFasting, setIsFasting] = useState(false);
-  const [elapsedHours, setElapsedHours] = useState(12.5);
+  const [activeFastId, setActiveFastId] = useState<string | null>(null);
+  const [elapsedHours, setElapsedHours] = useState(0);
+
+  // Derive fasting history from store
+  const fastingHistory = fastingLogs.map(f => {
+    const start = new Date(f.startTime);
+    const end = f.endTime ? new Date(f.endTime) : null;
+    const duration = end ? Math.round(((end.getTime() - start.getTime()) / 3600000) * 10) / 10 : 0;
+    const targetH = f.targetHours;
+    const protocol = targetH >= 23 ? "OMAD" : targetH >= 20 ? "20/4" : targetH >= 18 ? "18/6" : "16/8";
+    return {
+      date: start.toISOString().split("T")[0],
+      protocol,
+      duration,
+      completed: f.completed,
+    };
+  });
+
+  const handleToggleFast = () => {
+    if (isFasting) {
+      if (activeFastId) {
+        completeFast(activeFastId, elapsedHours >= selectedProtocol.fastHours);
+        setActiveFastId(null);
+      }
+      setIsFasting(false);
+    } else {
+      startFast(selectedProtocol.fastHours).then(log => {
+        setActiveFastId(log.id);
+        setElapsedHours(0);
+        setIsFasting(true);
+      });
+    }
+  };
 
   const zones = [
     { start: 0, end: 4, label: "Digestión", color: colors.lightTan, desc: "El cuerpo procesa la última comida" },
@@ -2151,14 +2187,6 @@ function FastingTracker() {
     { start: 8, end: 12, label: "Autofagia", color: colors.accentGlow, desc: "Reciclaje celular activado" },
     { start: 12, end: 16, label: "Ketosis", color: colors.accentLight, desc: "Producción de cuerpos cetónicos" },
     { start: 16, end: 24, label: "Reparación celular", color: colors.successLight, desc: "Regeneración profunda" },
-  ];
-
-  const fastingHistory = [
-    { date: "2026-04-04", protocol: "16/8", duration: 16.2, completed: true },
-    { date: "2026-04-03", protocol: "16/8", duration: 17.1, completed: true },
-    { date: "2026-04-02", protocol: "18/6", duration: 14.5, completed: false },
-    { date: "2026-04-01", protocol: "16/8", duration: 16.0, completed: true },
-    { date: "2026-03-31", protocol: "16/8", duration: 16.8, completed: true },
   ];
 
   const progress = Math.min((elapsedHours / selectedProtocol.fastHours) * 100, 100);
@@ -2201,7 +2229,7 @@ function FastingTracker() {
           </div>
 
           <div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-            <button onClick={() => { setIsFasting(!isFasting); if (!isFasting) setElapsedHours(0); }} style={{ padding: "10px 24px", background: isFasting ? colors.danger : colors.success, color: colors.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
+            <button onClick={handleToggleFast} style={{ padding: "10px 24px", background: isFasting ? colors.danger : colors.success, color: colors.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" }}>
               {isFasting ? "Detener Ayuno" : "Iniciar Ayuno"}
             </button>
           </div>
@@ -2285,53 +2313,43 @@ interface Challenge {
 }
 
 function ChallengesTracker() {
-  const [challenges, setChallenges] = useState<Challenge[]>([
-    {
-      id: '1', name: '30 Días de Abdominales', emoji: '🔥', description: 'Rutina diaria de abs progresiva',
-      totalDays: 30, completedDays: Array.from({ length: 30 }, (_, i) => i < 12), category: 'Fuerza',
-    },
-    {
-      id: '2', name: '10K Pasos Diarios', emoji: '🚶', description: 'Caminar 10,000 pasos cada día',
-      totalDays: 30, completedDays: Array.from({ length: 30 }, (_, i) => i < 18), category: 'Cardio',
-    },
-    {
-      id: '3', name: 'Flexiones Progresivas', emoji: '💪', description: 'De 10 a 50 flexiones en 30 días',
-      totalDays: 30, completedDays: Array.from({ length: 30 }, (_, i) => i < 8), category: 'Fuerza',
-    },
-    {
-      id: '4', name: 'Yoga Matutino', emoji: '🧘', description: '15 minutos de yoga cada mañana',
-      totalDays: 21, completedDays: Array.from({ length: 21 }, (_, i) => i < 21), category: 'Flexibilidad',
-    },
-    {
-      id: '5', name: 'Sentadillas 30 Días', emoji: '🦵', description: 'Aumentar sentadillas progresivamente',
-      totalDays: 30, completedDays: Array.from({ length: 30 }, (_, i) => i < 5), category: 'Fuerza',
-    },
-  ]);
-  const [selectedChallenge, setSelectedChallenge] = useState<string>('1');
+  const { challenges: storeChallenges, addChallenge: storeAddChallenge, toggleChallengeDay, initialize } = useFitnessExtendedStore();
+  useEffect(() => { initialize(); }, [initialize]);
+
+  // Map store challenges to local display format
+  const challenges: Challenge[] = storeChallenges.map(c => ({
+    id: c.id,
+    name: c.name,
+    emoji: '🏆',
+    description: c.description ?? `Reto de ${c.targetValue} días`,
+    totalDays: c.targetValue,
+    completedDays: Array.from({ length: c.targetValue }, (_, i) => c.completedDays.includes(i)),
+    category: c.unit ?? 'Personalizado',
+  }));
+
+  const [selectedChallenge, setSelectedChallenge] = useState<string>('');
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newDays, setNewDays] = useState(30);
 
-  const current = challenges.find(c => c.id === selectedChallenge);
+  // Auto-select first challenge when loaded
+  useEffect(() => {
+    if (challenges.length > 0 && !selectedChallenge) {
+      setSelectedChallenge(challenges[0].id);
+    }
+  }, [challenges.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const current = challenges.find(c => c.id === selectedChallenge) ?? challenges[0];
 
   const toggleDay = (challengeId: string, dayIndex: number) => {
-    setChallenges(prev => prev.map(c => {
-      if (c.id !== challengeId) return c;
-      const updated = [...c.completedDays];
-      updated[dayIndex] = !updated[dayIndex];
-      return { ...c, completedDays: updated };
-    }));
+    toggleChallengeDay(challengeId, dayIndex);
   };
 
   const addChallenge = () => {
     if (!newName) return;
-    const ch: Challenge = {
-      id: Date.now().toString(), name: newName, emoji: '🎯',
-      description: `Reto de ${newDays} días`, totalDays: newDays,
-      completedDays: Array(newDays).fill(false), category: 'Personalizado',
-    };
-    setChallenges(prev => [...prev, ch]);
-    setSelectedChallenge(ch.id);
+    storeAddChallenge({ name: newName, totalDays: newDays, category: 'Personalizado' }).then(created => {
+      setSelectedChallenge(created.id);
+    });
     setShowNewForm(false);
     setNewName('');
   };
@@ -2345,7 +2363,6 @@ function ChallengesTracker() {
     let streak = 0;
     for (let i = days.length - 1; i >= 0; i--) {
       if (!days[i]) {
-        // Find last completed
         for (let j = i; j >= 0; j--) {
           if (days[j]) { streak++; } else break;
         }

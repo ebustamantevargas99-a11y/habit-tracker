@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useWellnessStore } from '@/stores/wellness-store';
 import { useAppStore, type WellnessTab } from '@/stores/app-store';
+import { useWellnessExtendedStore } from '@/stores/wellness-extended-store';
 
 const C = {
   dark: "#3D2B1F", brown: "#6B4226", medium: "#8B6542", warm: "#A0845C",
@@ -49,14 +50,7 @@ interface MedicationItem {
   supplementFacts: SupplementFact[];
 }
 
-type HydrationLog  = Record<string, number>;          // date → ml
-type MedicationLog = Record<string, number>;           // date → adherence %
-
-const HYDRATION_LOG_KEY   = 'hydration_log';
-const HYDRATION_GOAL_KEY  = 'hydration_goal';
-const MEDICATION_LOG_KEY  = 'medication_log';
 const SLEEP_GOAL_KEY      = 'sleep_goal';
-const DEFAULT_HYDRO_GOAL  = 2500;
 const DEFAULT_SLEEP_GOAL  = 8;
 
 function loadLS<T>(key: string, fallback: T): T {
@@ -78,9 +72,24 @@ const MoodTrackerPage = () => {
   const { wellnessSubTab, setWellnessSubTab } = useAppStore();
   const [activeTab, setActiveTab] = useState<WellnessTab>(wellnessSubTab);
   const { saveSleepToday, savingSleep, sleepLogs, deleteSleepLog, initialize } = useWellnessStore();
+  const {
+    hydrationLogs, hydrationGoalMl,
+    medications: storeMedications, todayMedicationLogs,
+    symptomLogs: storeSymptomLogs,
+    appointments: storeAppointments,
+    initialize: initWellness,
+    saveHydration: storeHydration,
+    addMedication: storeAddMed,
+    removeMedication: storeRemoveMed,
+    toggleMedicationTaken: storeToggleMed,
+    addSymptomLog: storeAddSymptom,
+    addAppointment: storeAddAppt,
+    removeAppointment: storeRemoveAppt,
+  } = useWellnessExtendedStore();
 
   useEffect(() => { setActiveTab(wellnessSubTab); }, [wellnessSubTab]);
   useEffect(() => { initialize(); }, [initialize]);
+  useEffect(() => { initWellness(); }, [initWellness]);
 
   const switchTab = (tab: WellnessTab) => { setActiveTab(tab); setWellnessSubTab(tab); };
 
@@ -134,8 +143,11 @@ const MoodTrackerPage = () => {
   const getQualityEmoji = (q: number) => q <= 1 ? '😫' : q <= 2 ? '😞' : q <= 3 ? '😑' : q <= 4 ? '😊' : '😄';
 
   // ── HYDRATION STATE ──────────────────────────────────────────────────────
-  const [hydrationLog, setHydrationLog]     = useState<HydrationLog>({});
-  const [hydrationGoal, setHydrationGoal]   = useState(DEFAULT_HYDRO_GOAL);
+  // Derive hydration log map from store
+  const hydrationLogMap: Record<string, number> = Object.fromEntries(
+    hydrationLogs.map(h => [h.date, h.amountMl])
+  );
+  const hydrationGoal = hydrationGoalMl;
   const [editingGoal, setEditingGoal]       = useState(false);
   const [goalInput, setGoalInput]           = useState('');
   const [hydrationView, setHydrationView]   = useState<'daily' | 'monthly' | 'annual'>('daily');
@@ -144,12 +156,7 @@ const MoodTrackerPage = () => {
   const [hydrationSession, setHydrationSession] = useState(0); // ml added this session (not yet saved)
   const [savedToday, setSavedToday]         = useState(false);
 
-  useEffect(() => {
-    setHydrationLog(loadLS(HYDRATION_LOG_KEY, {}));
-    setHydrationGoal(loadLS(HYDRATION_GOAL_KEY, DEFAULT_HYDRO_GOAL));
-  }, []);
-
-  const hydrationSavedToday = hydrationLog[today] ?? 0;
+  const hydrationSavedToday = hydrationLogMap[today] ?? 0;
   const hydrationCurrent    = hydrationSavedToday + hydrationSession;
   const hydrationPct        = Math.min(Math.round((hydrationCurrent / hydrationGoal) * 100), 100);
 
@@ -159,17 +166,16 @@ const MoodTrackerPage = () => {
 
   const saveDayHydration = () => {
     if (hydrationCurrent <= 0) return;
-    const updated = { ...hydrationLog, [today]: hydrationCurrent };
-    setHydrationLog(updated);
-    saveLS(HYDRATION_LOG_KEY, updated);
-    setHydrationSession(0);
-    setSavedToday(true);
-    setTimeout(() => setSavedToday(false), 3000);
+    storeHydration(hydrationCurrent, hydrationGoal).then(() => {
+      setHydrationSession(0);
+      setSavedToday(true);
+      setTimeout(() => setSavedToday(false), 3000);
+    });
   };
 
   const saveHydroGoal = () => {
     const g = parseInt(goalInput);
-    if (!isNaN(g) && g > 0) { setHydrationGoal(g); saveLS(HYDRATION_GOAL_KEY, g); }
+    if (!isNaN(g) && g > 0) { storeHydration(hydrationSavedToday, g); }
     setEditingGoal(false);
   };
 
@@ -178,19 +184,28 @@ const MoodTrackerPage = () => {
     let total = 0, count = 0;
     for (let d = 1; d <= days; d++) {
       const key = `${hydrationYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if ((hydrationLog[key] ?? 0) > 0) { total += hydrationLog[key]; count++; }
+      if ((hydrationLogMap[key] ?? 0) > 0) { total += hydrationLogMap[key]; count++; }
     }
     return { month: m, avg: count > 0 ? Math.round(total / count) : 0, count };
   });
   const maxHydroAvg = Math.max(...annualHydroData.map(d => d.avg), hydrationGoal);
 
   // ── MEDICATION STATE ─────────────────────────────────────────────────────
-  const [medications, setMedications] = useState<MedicationItem[]>([
-    { id: '1', name: 'Vitamina D',  brand: 'Nature Made', dosage: '2000 IU',   frequency: 'Diario', time: '08:00', taken: true,  supplementFacts: [{ nutrient: 'Vitamina D3', amount: '2000 IU', dv: '500%' }] },
-    { id: '2', name: 'Complejo B',  brand: 'Solgar',      dosage: '1 tableta', frequency: 'Diario', time: '08:30', taken: true,  supplementFacts: [{ nutrient: 'B12', amount: '1000 mcg', dv: '41667%' }, { nutrient: 'B6', amount: '2 mg', dv: '118%' }] },
-    { id: '3', name: 'Omega-3',     brand: 'Nordic',      dosage: '1000 mg',   frequency: 'Diario', time: '12:00', taken: false, supplementFacts: [{ nutrient: 'EPA', amount: '180 mg', dv: '' }, { nutrient: 'DHA', amount: '120 mg', dv: '' }] },
-    { id: '4', name: 'Magnesio',    brand: '',            dosage: '400 mg',    frequency: 'Diario', time: '21:00', taken: false, supplementFacts: [{ nutrient: 'Magnesio', amount: '400 mg', dv: '95%' }] },
-  ]);
+  // Derive display items from store (adds 'taken' field from todayMedicationLogs)
+  const medications: MedicationItem[] = storeMedications.map(med => ({
+    id: med.id,
+    name: med.name,
+    brand: med.brand ?? '',
+    dosage: med.dosage ?? '',
+    frequency: med.frequency,
+    time: med.timeOfDay ?? '',
+    taken: todayMedicationLogs.some(l => l.medicationId === med.id && l.taken),
+    supplementFacts: med.supplementFacts.map(sf => ({
+      nutrient: sf.nutrient,
+      amount: sf.amount,
+      dv: sf.dailyValuePct ?? '',
+    })),
+  }));
   const [newMedName,   setNewMedName]   = useState('');
   const [newMedBrand,  setNewMedBrand]  = useState('');
   const [newMedDosage, setNewMedDosage] = useState('');
@@ -201,15 +216,14 @@ const MoodTrackerPage = () => {
   const [newSuppNutrient, setNewSuppNutrient] = useState('');
   const [newSuppAmount, setNewSuppAmount]   = useState('');
   const [newSuppDv, setNewSuppDv]           = useState('');
-  const [medLog, setMedLog]             = useState<MedicationLog>({});
   const [medView, setMedView]           = useState<'daily' | 'monthly' | 'annual'>('daily');
   const [medMonth, setMedMonth]         = useState(() => new Date());
   const [medYear, setMedYear]           = useState(() => new Date().getFullYear());
 
-  useEffect(() => { setMedLog(loadLS(MEDICATION_LOG_KEY, {})); }, []);
-
-  const toggleMedicationTaken = (id: string) =>
-    setMedications(prev => prev.map(m => m.id === id ? { ...m, taken: !m.taken } : m));
+  const toggleMedicationTaken = (id: string) => {
+    const isTaken = medications.find(m => m.id === id)?.taken ?? false;
+    storeToggleMed(id, !isTaken);
+  };
 
   const addSuppFact = () => {
     const nutrient = newSuppNutrient.trim();
@@ -225,43 +239,31 @@ const MoodTrackerPage = () => {
 
   const addMedication = () => {
     if (!newMedName.trim()) return;
-    setMedications(prev => [...prev, { id: Date.now().toString(), name: newMedName, brand: newMedBrand, dosage: newMedDosage, frequency: 'Diario', time: newMedTime, taken: false, supplementFacts: newSuppFacts }]);
+    storeAddMed({
+      name: newMedName.trim(),
+      brand: newMedBrand.trim() || undefined,
+      dosage: newMedDosage.trim() || undefined,
+      frequency: 'Diario',
+      timeOfDay: newMedTime,
+      supplementFacts: newSuppFacts.map(sf => ({ nutrient: sf.nutrient, amount: sf.amount, dailyValuePct: sf.dv || undefined })),
+    });
     setNewMedName(''); setNewMedBrand(''); setNewMedDosage(''); setNewMedTime('08:00'); setNewSuppFacts([]);
   };
 
-  const removeMedication = (id: string) => setMedications(prev => prev.filter(m => m.id !== id));
+  const removeMedication = (id: string) => storeRemoveMed(id);
 
   const medTaken     = medications.filter(m => m.taken).length;
   const medAdherence = medications.length > 0 ? Math.round((medTaken / medications.length) * 100) : 0;
 
-  const saveMedDay = () => {
-    if (medications.length === 0) return;
-    const pct = Math.round((medTaken / medications.length) * 100);
-    const updated = { ...medLog, [today]: pct };
-    setMedLog(updated);
-    saveLS(MEDICATION_LOG_KEY, updated);
-  };
+  // Auto-saved via toggleMedicationTaken — no localStorage needed
+  const saveMedDay = () => { /* auto-saved on toggle */ };
 
-  // Auto-save medication adherence on toggle
-  useEffect(() => {
-    if (medications.length === 0) return;
-    const pct = Math.round((medTaken / medications.length) * 100);
-    const updated = { ...medLog, [today]: pct };
-    setMedLog(updated);
-    saveLS(MEDICATION_LOG_KEY, updated);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [medications]);
-
+  // Empty medication adherence history (historical logs not fetched in this view)
+  const medLog: Record<string, number> = {};
   const annualMedData = Array.from({ length: 12 }, (_, m) => {
-    const days = getDaysInMonth(medYear, m);
-    let total = 0, count = 0;
-    for (let d = 1; d <= days; d++) {
-      const key = `${medYear}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-      if ((medLog[key] ?? 0) > 0) { total += medLog[key]; count++; }
-    }
-    return { month: m, avg: count > 0 ? Math.round(total / count) : 0, count };
+    return { month: m, avg: 0, count: 0 };
   });
-  const maxMedAvg = Math.max(...annualMedData.map(d => d.avg), 100);
+  const maxMedAvg = 100;
 
   // ── HEALTH LOG STATE ─────────────────────────────────────────────────────
   const SYMPTOM_OPTIONS = ['Dolor de cabeza','Dolor de espalda','Fatiga','Náuseas','Mareo','Dolor muscular','Congestión','Tos','Insomnio','Ansiedad','Otros'];
@@ -271,28 +273,34 @@ const MoodTrackerPage = () => {
   const [symptomDuration, setSymptomDuration]   = useState('< 1 hora');
   const [symptomNotes, setSymptomNotes]         = useState('');
 
-  interface SymptomLog { id: string; date: string; symptom: string; intensity: number; duration: string; notes: string; }
-  const [symptomLogs, setSymptomLogs] = useState<SymptomLog[]>([
-    { id: '1', date: '5 Abr', symptom: 'Dolor de cabeza', intensity: 6, duration: '3-6 horas', notes: 'Después de trabajo intenso' },
-    { id: '2', date: '4 Abr', symptom: 'Fatiga',           intensity: 4, duration: 'Todo el día', notes: 'Dormí mal' },
-    { id: '3', date: '3 Abr', symptom: 'Dolor muscular',   intensity: 7, duration: '1-3 horas', notes: 'Post-entrenamiento' },
-    { id: '4', date: '1 Abr', symptom: 'Congestión',       intensity: 3, duration: 'Todo el día', notes: 'Cambio de clima' },
-  ]);
+  // Map store symptomLogs to local display format
+  const symptomLogs = storeSymptomLogs.map(s => ({
+    id: s.id,
+    date: new Date(s.date + 'T12:00:00').toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }),
+    symptom: s.symptom,
+    intensity: s.intensity,
+    duration: s.duration ?? '',
+    notes: s.notes ?? '',
+  }));
 
   const addSymptomLog = () => {
     const symptomName = selectedSymptom === 'Otros' ? (customSymptom.trim() || 'Otros') : selectedSymptom;
-    const dateStr = new Date().toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
-    setSymptomLogs(prev => [{ id: Date.now().toString(), date: dateStr, symptom: symptomName, intensity: symptomIntensity, duration: symptomDuration, notes: symptomNotes }, ...prev]);
+    storeAddSymptom({ symptom: symptomName, intensity: symptomIntensity, duration: symptomDuration, notes: symptomNotes || undefined, date: today });
     setCustomSymptom(''); setSymptomNotes(''); setSymptomIntensity(5);
   };
 
   // ── APPOINTMENT STATE ────────────────────────────────────────────────────
-  interface Appointment { id: string; doctor: string; specialty: string; date: string; time: string; location: string; notes: string; status: 'Pendiente' | 'Completada'; }
-  const [appointments, setAppointments] = useState<Appointment[]>([
-    { id: '1', doctor: 'Dr. García',   specialty: 'Medicina General', date: '10 Abr 2026', time: '10:00', location: 'Clínica Central', notes: 'Chequeo anual',       status: 'Pendiente' },
-    { id: '2', doctor: 'Dra. López',   specialty: 'Dermatología',     date: '18 Abr 2026', time: '15:30', location: 'Hospital Sur',    notes: 'Revisión lunar',     status: 'Pendiente' },
-    { id: '3', doctor: 'Dr. Martínez', specialty: 'Odontología',      date: '25 Abr 2026', time: '09:00', location: 'Clínica Dental',  notes: 'Limpieza semestral', status: 'Pendiente' },
-  ]);
+  // Map store appointments to local display format
+  const appointments = storeAppointments.map(a => ({
+    id: a.id,
+    doctor: a.doctorName,
+    specialty: a.specialty,
+    date: a.dateTime ? new Date(a.dateTime).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' }) : '',
+    time: a.dateTime && a.dateTime.includes('T') ? a.dateTime.split('T')[1]?.substring(0, 5) ?? '' : '',
+    location: a.location ?? '',
+    notes: a.notes ?? '',
+    status: a.status === 'pending' ? 'Pendiente' : a.status,
+  }));
   const [showApptForm, setShowApptForm] = useState(false);
   const [newApptDoctor,    setNewApptDoctor]    = useState('');
   const [newApptSpecialty, setNewApptSpecialty] = useState('');
@@ -304,16 +312,13 @@ const MoodTrackerPage = () => {
   const addAppointment = () => {
     const doctor = newApptDoctor.trim();
     if (!doctor) return;
-    setAppointments(prev => [...prev, {
-      id: Date.now().toString(),
-      doctor,
+    storeAddAppt({
+      doctorName: doctor,
       specialty: newApptSpecialty.trim(),
-      date: newApptDate,
-      time: newApptTime,
-      location: newApptLocation.trim(),
-      notes: newApptNotes.trim(),
-      status: 'Pendiente',
-    }]);
+      dateTime: newApptDate ? `${newApptDate}T${newApptTime || '00:00'}` : new Date().toISOString(),
+      location: newApptLocation.trim() || undefined,
+      notes: newApptNotes.trim() || undefined,
+    });
     setNewApptDoctor('');
     setNewApptSpecialty('');
     setNewApptDate('');
@@ -323,7 +328,7 @@ const MoodTrackerPage = () => {
     setShowApptForm(false);
   };
 
-  const removeAppointment = (id: string) => setAppointments(prev => prev.filter(a => a.id !== id));
+  const removeAppointment = (id: string) => storeRemoveAppt(id);
 
   // ── SHARED STYLES ────────────────────────────────────────────────────────
   const tabConfig: { id: WellnessTab; label: string }[] = [
@@ -740,7 +745,7 @@ const MoodTrackerPage = () => {
 
               {/* Monthly heatmap */}
               {hydrationView === 'monthly' && renderHeatmap(
-                hydrationLog,
+                hydrationLogMap,
                 hydrationMonth,
                 () => setHydrationMonth(new Date(hydrationMonth.getFullYear(), hydrationMonth.getMonth() - 1, 1)),
                 () => setHydrationMonth(new Date(hydrationMonth.getFullYear(), hydrationMonth.getMonth() + 1, 1)),
@@ -1002,11 +1007,11 @@ const MoodTrackerPage = () => {
                   💡 Registra tus medicamentos diarios y marca cada uno como tomado para mantener un historial de adherencia.
                 </p>
               </div>
-              {/* Today's adherence from log */}
-              {medLog[today] !== undefined && (
+              {/* Today's adherence */}
+              {medications.length > 0 && (
                 <div style={{ backgroundColor: C.accentGlow, border: `2px solid ${C.accent}`, borderRadius: '12px', padding: '1.5rem', textAlign: 'center' }}>
-                  <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>📅 Guardado hoy</p>
-                  <p style={{ fontSize: '2rem', fontWeight: '700', color: C.accent, margin: '0' }}>{medLog[today]}%</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: '600', color: C.dark, margin: '0 0 0.5rem 0' }}>📅 Adherencia hoy</p>
+                  <p style={{ fontSize: '2rem', fontWeight: '700', color: C.accent, margin: '0' }}>{medAdherence}%</p>
                 </div>
               )}
             </div>

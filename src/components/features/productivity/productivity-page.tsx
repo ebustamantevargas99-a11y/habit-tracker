@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useLocalStorage } from '@/lib/use-local-storage';
 import { useAppStore, type ProductivityTab } from '@/stores/app-store';
 import { useOKRStore } from '@/stores/okr-store';
+import { useProductivityStore } from '@/stores/productivity-store';
 import HabitTrackerPage from '@/components/features/habits/habit-tracker-page';
 import DailyCommandCenter from './daily-command-center';
 import ProjectionDashboard from './projection-dashboard';
@@ -107,18 +107,23 @@ export default function ProductivityPage() {
 
 // ========== POMODORO TAB ==========
 function PomodoroTab() {
+  const { pomodoroSessions, addPomodoroSession, initialize } = useProductivityStore();
+  useEffect(() => { initialize(); }, [initialize]);
+
   const [workMin, setWorkMin] = useState(25);
   const [breakMin, setBreakMin] = useState(5);
   const [totalSeconds, setTotalSeconds] = useState(25 * 60);
   const [isRunning, setIsRunning] = useState(false);
   const [isWorkSession, setIsWorkSession] = useState(true);
   const [currentTask, setCurrentTask] = useState('');
-  const [completedToday, setCompletedToday] = useState(8);
-  const [sessions, setSessions] = useState<PomodoroSession[]>([
-    { id: '1', task: 'Diseño UI', duration: 25, timestamp: new Date(Date.now() - 2 * 60000) },
-    { id: '2', task: 'Revisar código', duration: 25, timestamp: new Date(Date.now() - 32 * 60000) },
-    { id: '3', task: 'Escribir documentación', duration: 25, timestamp: new Date(Date.now() - 62 * 60000) },
-  ]);
+
+  const completedToday = pomodoroSessions.filter(s => s.isWork).length;
+  const sessions: PomodoroSession[] = pomodoroSessions.map(s => ({
+    id: s.id,
+    task: s.task ?? '',
+    duration: s.duration,
+    timestamp: new Date(s.completedAt),
+  }));
 
   useEffect(() => {
     if (!isRunning) return;
@@ -127,13 +132,11 @@ function PomodoroTab() {
         if (prev <= 1) {
           if (isWorkSession) {
             setIsWorkSession(false);
-            setCompletedToday(p => p + 1);
             if (currentTask) {
-              setSessions(p => [
-                { id: Date.now().toString(), task: currentTask, duration: workMin, timestamp: new Date() },
-                ...p,
-              ]);
+              addPomodoroSession({ task: currentTask, duration: workMin, isWork: true });
               setCurrentTask('');
+            } else {
+              addPomodoroSession({ duration: workMin, isWork: true });
             }
             return breakMin * 60;
           }
@@ -144,7 +147,7 @@ function PomodoroTab() {
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [isRunning, workMin, breakMin, isWorkSession, currentTask]);
+  }, [isRunning, workMin, breakMin, isWorkSession, currentTask, addPomodoroSession]);
 
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
@@ -271,6 +274,19 @@ const PROJECT_EMOJIS = ['🚀','💼','🎯','🏗️','💡','🔧','📱','�
 
 function KanbanTab() {
   const { objectives, recalcObjectiveProgress } = useOKRStore();
+  const {
+    projects,
+    activeProjectId,
+    setActiveProjectId,
+    addProject: storeAddProject,
+    deleteProject: storeDeleteProject,
+    addTask: storeAddTask,
+    deleteTask: storeDeleteTask,
+    moveTaskStatus,
+    initialize: initProductivity,
+  } = useProductivityStore();
+  useEffect(() => { initProductivity(); }, [initProductivity]);
+
   const [toast, setToast] = useState<string | null>(null);
   const [showProjectForm, setShowProjectForm] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
@@ -283,50 +299,34 @@ function KanbanTab() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  // Projects list
-  const [projects, setProjects] = useLocalStorage<Project[]>('pm_projects', [
-    { id: 'p_default', name: 'Mi Primer Proyecto', description: 'Proyecto de ejemplo', color: '#B8860B', emoji: '🚀', createdAt: '2026-04-01' },
-  ]);
-  const [activeProjectId, setActiveProjectId] = useLocalStorage<string>('pm_active_project', 'p_default');
-
-  // Kanban boards keyed by projectId: { [projectId]: { todo, inProgress, done } }
-  const [allBoards, setAllBoards] = useLocalStorage<Record<string, { [col: string]: KanbanCard[] }>>('pm_boards', {
-    p_default: {
-      todo: [
-        { id: '1', title: 'Diseñar nueva interfaz', priority: 'Alta', dueDate: '2026-04-08', category: 'Diseño', weight: 2 },
-        { id: '2', title: 'Revisar propuesta de cliente', priority: 'Media', dueDate: '2026-04-10', category: 'Reunión', weight: 1 },
-      ],
-      inProgress: [
-        { id: '4', title: 'Implementar autenticación', priority: 'Alta', dueDate: '2026-04-07', category: 'Desarrollo', weight: 3 },
-      ],
-      done: [
-        { id: '6', title: 'Setup del proyecto', priority: 'Alta', category: 'Setup', weight: 1 },
-      ],
-    },
+  // Derive Kanban board from active project's tasks
+  const activeProjectData = projects.find(p => p.id === activeProjectId) ?? projects[0];
+  const taskToCard = (t: { id: string; title: string; priority: string | null; dueDate: string | null; description: string | null; objectiveId: string | null; weight: number }): KanbanCard => ({
+    id: t.id,
+    title: t.title,
+    priority: (t.priority as 'Alta' | 'Media' | 'Baja') ?? 'Media',
+    dueDate: t.dueDate ?? undefined,
+    category: t.description ?? 'General',
+    objectiveId: t.objectiveId ?? undefined,
+    weight: t.weight,
   });
+  const emptyBoard = { todo: [] as KanbanCard[], inProgress: [] as KanbanCard[], done: [] as KanbanCard[] };
+  const kanban = activeProjectData ? {
+    todo: activeProjectData.tasks.filter(t => t.status === 'todo').map(taskToCard),
+    inProgress: activeProjectData.tasks.filter(t => t.status === 'inProgress').map(taskToCard),
+    done: activeProjectData.tasks.filter(t => t.status === 'done').map(taskToCard),
+  } : emptyBoard;
 
-  const emptyBoard = { todo: [], inProgress: [], done: [] };
-  const kanban: { [col: string]: KanbanCard[] } = allBoards[activeProjectId] ?? emptyBoard;
-  const setKanban = (updater: (prev: { [col: string]: KanbanCard[] }) => { [col: string]: KanbanCard[] }) => {
-    setAllBoards(prev => ({
-      ...prev,
-      [activeProjectId]: updater(prev[activeProjectId] ?? emptyBoard),
-    }));
-  };
-
-  const activeProject = projects.find(p => p.id === activeProjectId) ?? projects[0];
+  const activeProject = activeProjectData;
 
   const addProject = () => {
     if (!newProjectName.trim()) return;
-    const id = `p_${Date.now()}`;
-    const newProject: Project = {
-      id, name: newProjectName.trim(), description: newProjectDesc.trim(),
-      color: newProjectColor, emoji: newProjectEmoji,
-      createdAt: new Date().toISOString().split('T')[0],
-    };
-    setProjects(prev => [...prev, newProject]);
-    setAllBoards(prev => ({ ...prev, [id]: emptyBoard }));
-    setActiveProjectId(id);
+    storeAddProject({
+      name: newProjectName.trim(),
+      description: newProjectDesc.trim() || undefined,
+      color: newProjectColor,
+      emoji: newProjectEmoji,
+    });
     setShowProjectForm(false);
     setNewProjectName('');
     setNewProjectDesc('');
@@ -335,9 +335,7 @@ function KanbanTab() {
   const deleteProject = (id: string) => {
     if (projects.length <= 1) return;
     if (!window.confirm(`¿Eliminar el proyecto "${projects.find(p => p.id === id)?.name}"? Se eliminarán todas sus tareas.`)) return;
-    setProjects(prev => prev.filter(p => p.id !== id));
-    setAllBoards(prev => { const n = { ...prev }; delete n[id]; return n; });
-    if (activeProjectId === id) setActiveProjectId(projects.find(p => p.id !== id)?.id ?? '');
+    storeDeleteProject(id);
   };
 
   const [newCardTitle, setNewCardTitle] = useState('');
@@ -347,27 +345,32 @@ function KanbanTab() {
   const [newCardWeight, setNewCardWeight] = useState(1);
   const [newCardDueDate, setNewCardDueDate] = useState('');
 
-  const getAllCards = (k: { [key: string]: KanbanCard[] }) =>
-    Object.entries(k).flatMap(([col, cards]) => cards.map(c => ({ ...c, column: col })));
+  const getAllCardsFlat = () => {
+    if (!activeProjectData) return [];
+    return activeProjectData.tasks.map(t => ({
+      ...taskToCard(t),
+      column: t.status,
+    }));
+  };
 
   const moveCard = (cardId: string, fromColumn: string, toColumn: string) => {
-    setKanban(prev => {
-      const card = prev[fromColumn].find(c => c.id === cardId);
-      if (!card) return prev;
-      const next = {
-        ...prev,
-        [fromColumn]: prev[fromColumn].filter(c => c.id !== cardId),
-        [toColumn]: [...prev[toColumn], card],
-      };
+    if (!activeProjectData) return;
+    const card = kanban[fromColumn as keyof typeof kanban]?.find(c => c.id === cardId);
+    if (!card) return;
 
-      // When moving to Done, update OKR progress
-      if (toColumn === 'done' && card.objectiveId) {
-        const allCards = getAllCards(next).map(c => ({
+    moveTaskStatus(activeProjectData.id, cardId, toColumn);
+
+    // OKR progress recalc
+    if ((toColumn === 'done' || fromColumn === 'done') && card.objectiveId) {
+      const allCards = getAllCardsFlat()
+        .map(c => ({
           objectiveId: c.objectiveId ?? '',
           weight: c.weight,
-          done: c.column === 'done',
-        })).filter(c => c.objectiveId === card.objectiveId);
-        recalcObjectiveProgress(card.objectiveId, allCards);
+          done: c.id === cardId ? toColumn === 'done' : c.column === 'done',
+        }))
+        .filter(c => c.objectiveId === card.objectiveId);
+      recalcObjectiveProgress(card.objectiveId, allCards);
+      if (toColumn === 'done') {
         const obj = objectives.find(o => o.id === card.objectiveId);
         if (obj) {
           const total = allCards.reduce((s, c) => s + c.weight, 0);
@@ -376,32 +379,21 @@ function KanbanTab() {
           setTimeout(() => showToast(`OKR actualizado: "${obj.title}" → ${pct}%`), 50);
         }
       }
-      // When un-moving from Done, also recalc
-      if (fromColumn === 'done' && card.objectiveId) {
-        const allCards = getAllCards(next).map(c => ({
-          objectiveId: c.objectiveId ?? '',
-          weight: c.weight,
-          done: c.column === 'done',
-        })).filter(c => c.objectiveId === card.objectiveId);
-        recalcObjectiveProgress(card.objectiveId, allCards);
-      }
-
-      return next;
-    });
+    }
   };
 
   const addCard = (column: string) => {
-    if (!newCardTitle.trim()) return;
-    const newCard: KanbanCard = {
-      id: Date.now().toString(),
-      title: newCardTitle,
+    if (!newCardTitle.trim() || !activeProjectData) return;
+    storeAddTask(activeProjectData.id, {
+      title: newCardTitle.trim(),
+      description: newCardCategory || undefined,
+      status: column,
       priority: newCardPriority,
-      category: newCardCategory,
-      weight: newCardWeight,
       objectiveId: newCardObjectiveId || undefined,
+      weight: newCardWeight,
       dueDate: newCardDueDate || undefined,
-    };
-    setKanban(prev => ({ ...prev, [column]: [...prev[column], newCard] }));
+      orderIndex: kanban[column as keyof typeof kanban]?.length ?? 0,
+    });
     setNewCardTitle('');
     setNewCardObjectiveId('');
     setNewCardWeight(1);
@@ -409,13 +401,8 @@ function KanbanTab() {
   };
 
   const deleteCard = (cardId: string) => {
-    setKanban(prev => {
-      const updated = { ...prev };
-      Object.keys(updated).forEach(col => {
-        updated[col] = updated[col].filter(c => c.id !== cardId);
-      });
-      return updated;
-    });
+    if (!activeProjectData) return;
+    storeDeleteTask(activeProjectData.id, cardId);
   };
 
   const getPriorityColor = (priority: string) => {
@@ -473,9 +460,8 @@ function KanbanTab() {
         {/* Project list */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
           {projects.map(p => {
-            const board = allBoards[p.id] ?? emptyBoard;
-            const total = Object.values(board).flat().length;
-            const done = (board.done ?? []).length;
+            const total = p.tasks.length;
+            const done = p.tasks.filter(t => t.status === 'done').length;
             const pct = total > 0 ? Math.round((done / total) * 100) : 0;
             const isActive = p.id === activeProjectId;
             return (

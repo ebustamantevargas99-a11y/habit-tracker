@@ -1,5 +1,6 @@
 "use client";
 import { create } from "zustand";
+import { api } from "@/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type ObjType = "yearly" | "quarterly" | "monthly" | "milestone";
@@ -14,8 +15,8 @@ export interface Objective {
   startDate: string;
   endDate: string;
   targetValue: number;
-  unit: string;          // '%', 'km', 'kg', 'tasks', etc.
-  progress: number;      // 0-100, auto-calculated from kanban
+  unit: string;
+  progress: number;
   color: string;
   emoji: string;
   userId?: string;
@@ -23,10 +24,11 @@ export interface Objective {
 
 export interface Milestone {
   id: string;
-  objectiveId: string;
-  habitId?: string;
+  objectiveId?: string;
+  projectionConfigId?: string;
   weekNumber: number;
   targetDate: string;
+  date?: string;
   targetValue: number;
   actualValue: number;
   status: MilestoneStatus;
@@ -34,98 +36,142 @@ export interface Milestone {
 }
 
 export interface ProjectionConfig {
+  id?: string;
   objectiveId: string;
   baseline: number;
   goal: number;
   unit: string;
   endDate: string;
   progression: ProjectionType;
-  alertThreshold: number;   // fraction (0.15 = 15% behind triggers at_risk)
+  alertThreshold: number;
   autoGenerateMilestones: boolean;
+  milestones?: Milestone[];
 }
 
-// ─── Store ────────────────────────────────────────────────────────────────────
+// ─── State ────────────────────────────────────────────────────────────────────
 interface OKRState {
   objectives: Objective[];
   milestones: Milestone[];
   projectionConfigs: ProjectionConfig[];
+  isLoaded: boolean;
 
-  // Objectives CRUD
-  addObjective: (obj: Omit<Objective, "id" | "progress">) => string;
-  updateObjective: (id: string, updates: Partial<Objective>) => void;
-  deleteObjective: (id: string) => void;
+  initialize: () => Promise<void>;
+  refresh: () => Promise<void>;
 
-  // Progress (called by Kanban when a card is completed/uncompleted)
-  recalcObjectiveProgress: (objectiveId: string, cards: { objectiveId: string; weight: number; done: boolean }[]) => void;
+  addObjective: (obj: Omit<Objective, "id" | "progress">) => Promise<string>;
+  updateObjective: (id: string, updates: Partial<Objective>) => Promise<void>;
+  deleteObjective: (id: string) => Promise<void>;
 
-  // Milestones
+  recalcObjectiveProgress: (objectiveId: string, cards: { objectiveId: string; weight: number; done: boolean }[]) => Promise<void>;
+
   setMilestones: (objectiveId: string, milestones: Milestone[]) => void;
   updateMilestoneActual: (milestoneId: string, actual: number) => void;
 
-  // Projection configs
-  saveProjectionConfig: (cfg: ProjectionConfig) => void;
-  deleteProjectionConfig: (objectiveId: string) => void;
+  saveProjectionConfig: (cfg: ProjectionConfig) => Promise<void>;
+  deleteProjectionConfig: (objectiveId: string) => Promise<void>;
 }
 
-// ─── Sample data ──────────────────────────────────────────────────────────────
-const SAMPLE_OBJECTIVES: Objective[] = [
-  { id: "obj_yr_2026",   title: "Año de Alto Rendimiento 2026", type: "yearly",     parentId: null,         startDate: "2026-01-01", endDate: "2026-12-31", targetValue: 100, unit: "%",    progress: 42, color: "#B8860B", emoji: "🏆" },
-  { id: "obj_q2_2026",   title: "Q2: Lanzar MVP + Fitness",     type: "quarterly",  parentId: "obj_yr_2026", startDate: "2026-04-01", endDate: "2026-06-30", targetValue: 100, unit: "%",    progress: 55, color: "#5A8FA8", emoji: "🚀" },
-  { id: "obj_apr_run",   title: "Correr 8km sin parar",         type: "monthly",    parentId: "obj_q2_2026", startDate: "2026-04-01", endDate: "2026-04-30", targetValue: 8,   unit: "km",   progress: 37, color: "#7A9E3E", emoji: "🏃" },
-  { id: "obj_apr_mvp",   title: "Lanzar MVP Inmobiliaria",      type: "monthly",    parentId: "obj_q2_2026", startDate: "2026-04-01", endDate: "2026-04-30", targetValue: 100, unit: "%",    progress: 60, color: "#D4943A", emoji: "🏗️" },
-];
+// ─── One-time migration localStorage → API ───────────────────────────────────
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function loadLS<T>(key: string, fallback: T): T {
-  if (typeof window === "undefined") return fallback;
-  try { const s = localStorage.getItem(key); return s ? JSON.parse(s) : fallback; } catch { return fallback; }
-}
-function saveLS(key: string, value: unknown) {
+async function migrateFromLocalStorage() {
   if (typeof window === "undefined") return;
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+  try {
+    const objRaw = localStorage.getItem("okr_objectives");
+    if (!objRaw) return;
+
+    const objectives: Objective[] = JSON.parse(objRaw);
+    if (!objectives?.length) return;
+
+    // Upload objectives that don't look like sample data IDs
+    const nonSample = objectives.filter(o => !o.id.startsWith("obj_yr_") && !o.id.startsWith("obj_q") && !o.id.startsWith("obj_apr_"));
+    await Promise.allSettled(
+      nonSample.map(o =>
+        api.post("/okr/objectives", {
+          title: o.title, type: o.type, parentId: o.parentId,
+          startDate: o.startDate, endDate: o.endDate,
+          targetValue: o.targetValue, unit: o.unit,
+          color: o.color, emoji: o.emoji,
+        })
+      )
+    );
+
+    localStorage.removeItem("okr_objectives");
+    localStorage.removeItem("okr_milestones");
+    localStorage.removeItem("okr_projection_configs");
+  } catch {
+    // Non-fatal
+  }
 }
 
-// ─── Store implementation ─────────────────────────────────────────────────────
+// ─── Store ────────────────────────────────────────────────────────────────────
 export const useOKRStore = create<OKRState>((set, get) => ({
-  objectives:        loadLS("okr_objectives",        SAMPLE_OBJECTIVES),
-  milestones:        loadLS("okr_milestones",        []),
-  projectionConfigs: loadLS("okr_projection_configs", []),
+  objectives: [],
+  milestones: [],
+  projectionConfigs: [],
+  isLoaded: false,
 
-  addObjective: (obj) => {
-    const id = `obj_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    const newObj: Objective = { ...obj, id, progress: 0 };
-    set(s => {
-      const next = [...s.objectives, newObj];
-      saveLS("okr_objectives", next);
-      return { objectives: next };
-    });
-    return id;
+  initialize: async () => {
+    if (get().isLoaded) return;
+    await migrateFromLocalStorage();
+    await get().refresh();
   },
 
-  updateObjective: (id, updates) => set(s => {
-    const next = s.objectives.map(o => o.id === id ? { ...o, ...updates } : o);
-    saveLS("okr_objectives", next);
-    return { objectives: next };
-  }),
+  refresh: async () => {
+    try {
+      const [objectives, projections] = await Promise.all([
+        api.get<Objective[]>("/okr/objectives"),
+        api.get<(ProjectionConfig & { milestones: Milestone[] })[]>("/okr/projections"),
+      ]);
 
-  deleteObjective: (id) => set(s => {
-    // Cascade: delete children and their milestones
+      const allMilestones = (projections as (ProjectionConfig & { milestones: Milestone[] })[]).flatMap(p =>
+        (p.milestones ?? []).map(m => ({
+          ...m,
+          objectiveId: p.objectiveId ?? "",
+          targetDate: m.date ?? "",
+          actualValue: m.actualValue ?? 0,
+          recalculated: m.recalculated ?? false,
+        }))
+      );
+
+      set({
+        objectives: objectives as Objective[],
+        projectionConfigs: projections as ProjectionConfig[],
+        milestones: allMilestones,
+        isLoaded: true,
+      });
+    } catch {
+      set({ isLoaded: true });
+    }
+  },
+
+  addObjective: async (obj) => {
+    const created = await api.post<Objective>("/okr/objectives", obj);
+    set(s => ({ objectives: [...s.objectives, created] }));
+    return created.id;
+  },
+
+  updateObjective: async (id, updates) => {
+    const updated = await api.patch<Objective>(`/okr/objectives/${id}`, updates);
+    set(s => ({ objectives: s.objectives.map(o => o.id === id ? { ...o, ...updated } : o) }));
+  },
+
+  deleteObjective: async (id) => {
+    await api.delete(`/okr/objectives/${id}`);
+    // Remove from local state recursively
     const toDelete = new Set<string>();
     const collect = (pid: string) => {
       toDelete.add(pid);
-      s.objectives.filter(o => o.parentId === pid).forEach(c => collect(c.id));
+      get().objectives.filter(o => o.parentId === pid).forEach(c => collect(c.id));
     };
     collect(id);
-    const nextObjs = s.objectives.filter(o => !toDelete.has(o.id));
-    const nextMil  = s.milestones.filter(m => !toDelete.has(m.objectiveId));
-    const nextCfg  = s.projectionConfigs.filter(c => !toDelete.has(c.objectiveId));
-    saveLS("okr_objectives", nextObjs);
-    saveLS("okr_milestones", nextMil);
-    saveLS("okr_projection_configs", nextCfg);
-    return { objectives: nextObjs, milestones: nextMil, projectionConfigs: nextCfg };
-  }),
+    set(s => ({
+      objectives: s.objectives.filter(o => !toDelete.has(o.id)),
+      milestones: s.milestones.filter(m => m.objectiveId && !toDelete.has(m.objectiveId)),
+      projectionConfigs: s.projectionConfigs.filter(c => !toDelete.has(c.objectiveId)),
+    }));
+  },
 
-  recalcObjectiveProgress: (objectiveId, cards) => {
+  recalcObjectiveProgress: async (objectiveId, cards) => {
     const relevant = cards.filter(c => c.objectiveId === objectiveId);
     const total = relevant.reduce((s, c) => s + c.weight, 0);
     if (total === 0) return;
@@ -136,13 +182,11 @@ export const useOKRStore = create<OKRState>((set, get) => ({
       let nextObjs = s.objectives.map(o =>
         o.id === objectiveId ? { ...o, progress: newProgress } : o
       );
-      // Propagate to parent
       const current = nextObjs.find(o => o.id === objectiveId);
       if (current?.parentId) {
         const siblings = nextObjs.filter(o => o.parentId === current.parentId);
         const avgParent = Math.round(siblings.reduce((acc, o) => acc + o.progress, 0) / siblings.length);
         nextObjs = nextObjs.map(o => o.id === current.parentId ? { ...o, progress: avgParent } : o);
-        // Propagate grandparent
         const parent = nextObjs.find(o => o.id === current.parentId);
         if (parent?.parentId) {
           const uncles = nextObjs.filter(o => o.parentId === parent.parentId);
@@ -150,40 +194,61 @@ export const useOKRStore = create<OKRState>((set, get) => ({
           nextObjs = nextObjs.map(o => o.id === parent.parentId ? { ...o, progress: avgGrand } : o);
         }
       }
-      saveLS("okr_objectives", nextObjs);
       return { objectives: nextObjs };
     });
+    // Persist to API asynchronously
+    api.patch(`/okr/objectives/${objectiveId}`, { progress: newProgress }).catch(() => {});
   },
 
-  setMilestones: (objectiveId, milestones) => set(s => {
-    const next = [...s.milestones.filter(m => m.objectiveId !== objectiveId), ...milestones];
-    saveLS("okr_milestones", next);
-    return { milestones: next };
-  }),
+  setMilestones: (objectiveId, milestones) => {
+    set(s => ({
+      milestones: [...s.milestones.filter(m => m.objectiveId !== objectiveId), ...milestones],
+    }));
+  },
 
-  updateMilestoneActual: (milestoneId, actual) => set(s => {
-    const next = s.milestones.map(m => {
-      if (m.id !== milestoneId) return m;
-      const delta = m.targetValue > 0 ? (m.targetValue - actual) / m.targetValue : 0;
-      const cfg = s.projectionConfigs.find(c => c.objectiveId === m.objectiveId);
-      const threshold = cfg?.alertThreshold ?? 0.15;
-      let status: MilestoneStatus = actual >= m.targetValue ? "hit" : delta > threshold ? "missed" : "at_risk";
-      if (new Date(m.targetDate) > new Date()) status = actual >= m.targetValue ? "hit" : delta > threshold ? "at_risk" : "pending";
-      return { ...m, actualValue: actual, status };
-    });
-    saveLS("okr_milestones", next);
-    return { milestones: next };
-  }),
+  updateMilestoneActual: (milestoneId, actual) => {
+    set(s => ({
+      milestones: s.milestones.map(m => {
+        if (m.id !== milestoneId) return m;
+        const delta = m.targetValue > 0 ? (m.targetValue - actual) / m.targetValue : 0;
+        const cfg = s.projectionConfigs.find(c => c.objectiveId === m.objectiveId);
+        const threshold = cfg?.alertThreshold ?? 0.15;
+        let status: MilestoneStatus = actual >= m.targetValue ? "hit" : delta > threshold ? "missed" : "at_risk";
+        if (new Date(m.targetDate) > new Date()) status = actual >= m.targetValue ? "hit" : delta > threshold ? "at_risk" : "pending";
+        return { ...m, actualValue: actual, status };
+      }),
+    }));
+  },
 
-  saveProjectionConfig: (cfg) => set(s => {
-    const next = [...s.projectionConfigs.filter(c => c.objectiveId !== cfg.objectiveId), cfg];
-    saveLS("okr_projection_configs", next);
-    return { projectionConfigs: next };
-  }),
+  saveProjectionConfig: async (cfg) => {
+    try {
+      if (cfg.id) {
+        const updated = await api.patch<ProjectionConfig>(`/okr/projections/${cfg.id}`, {
+          baseline: cfg.baseline, goal: cfg.goal, unit: cfg.unit,
+          endDate: cfg.endDate, alertThreshold: cfg.alertThreshold,
+          model: cfg.progression,
+        });
+        set(s => ({ projectionConfigs: s.projectionConfigs.map(c => c.objectiveId === cfg.objectiveId ? { ...c, ...updated } : c) }));
+      } else {
+        const created = await api.post<ProjectionConfig>("/okr/projections", {
+          objectiveId: cfg.objectiveId,
+          name: `Proyección ${cfg.objectiveId}`,
+          model: cfg.progression,
+          baseline: cfg.baseline, goal: cfg.goal, unit: cfg.unit,
+          startDate: new Date().toISOString().split("T")[0],
+          endDate: cfg.endDate, alertThreshold: cfg.alertThreshold,
+          autoGenerate: cfg.autoGenerateMilestones,
+        });
+        set(s => ({ projectionConfigs: [...s.projectionConfigs.filter(c => c.objectiveId !== cfg.objectiveId), created] }));
+      }
+    } catch {
+      // Non-fatal — keep local state
+    }
+  },
 
-  deleteProjectionConfig: (objectiveId) => set(s => {
-    const next = s.projectionConfigs.filter(c => c.objectiveId !== objectiveId);
-    saveLS("okr_projection_configs", next);
-    return { projectionConfigs: next };
-  }),
+  deleteProjectionConfig: async (objectiveId) => {
+    const cfg = get().projectionConfigs.find(c => c.objectiveId === objectiveId);
+    if (cfg?.id) await api.delete(`/okr/projections/${cfg.id}`).catch(() => {});
+    set(s => ({ projectionConfigs: s.projectionConfigs.filter(c => c.objectiveId !== objectiveId) }));
+  },
 }));
