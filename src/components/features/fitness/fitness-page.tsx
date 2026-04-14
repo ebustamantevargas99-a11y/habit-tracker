@@ -33,6 +33,7 @@ import {
 import { colors } from '@/lib/colors';
 import { VOLUME_LANDMARKS } from '@/lib/constants';
 import { useFitnessExtendedStore } from '@/stores/fitness-extended-store';
+import { useFitnessStore } from '@/stores/fitness-store';
 
 // ============================================================================
 // SAMPLE DATA
@@ -1610,7 +1611,19 @@ function PRBoard({ liveRecords, tonelageHistory }: PRBoardProps) {
 // BODY METRICS COMPONENT
 // ============================================================================
 
-function BodyMetrics() {
+interface BodyMetricEntry {
+  date: string;
+  weight?: number;
+  bodyFat?: number;
+  chest?: number;
+  waist?: number;
+  armLeft?: number;
+  armRight?: number;
+  thighLeft?: number;
+  thighRight?: number;
+}
+
+function BodyMetrics({ onSave }: { onSave: (metric: BodyMetricEntry) => Promise<void> }) {
   const [weight, setWeight] = useState(75);
   const [bodyFat, setBodyFat] = useState(18);
   const [height] = useState(1.75);
@@ -1909,6 +1922,33 @@ function BodyMetrics() {
             </div>
           ))}
         </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button
+            onClick={() => onSave({
+              date: new Date().toISOString().split('T')[0],
+              weight,
+              bodyFat,
+              chest: measurements.chest,
+              waist: measurements.waist,
+              armLeft: measurements.arms,
+              armRight: measurements.arms,
+              thighLeft: measurements.thighs,
+              thighRight: measurements.thighs,
+            }).catch(() => {})}
+            style={{
+              padding: '8px 20px',
+              backgroundColor: colors.accent,
+              color: colors.paper,
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '13px',
+            }}
+          >
+            Guardar medidas
+          </button>
+        </div>
       </div>
 
       {/* Radar Chart */}
@@ -1953,27 +1993,35 @@ function BodyMetrics() {
 // WEIGHT TRACKER COMPONENT
 // ============================================================================
 
-function WeightTracker() {
+interface WeightTrackerProps {
+  weightLog: { date: string; weight: number }[];
+  onAddWeight: (entry: { date: string; weight: number }) => Promise<void>;
+}
+
+function WeightTracker({ weightLog: storedLog, onAddWeight }: WeightTrackerProps) {
   const [goalWeight] = useState(72);
-  const [weightLog, setWeightLog] = useState(
-    Array.from({ length: 30 }, (_, i) => ({
-      day: i + 1,
-      weight: 75.5 - i * 0.08 + Math.sin(i * 0.3) * 0.8 + (Math.random() - 0.5) * 0.4,
-    }))
-  );
+
+  // Use stored log for display, pad with sample data if empty
+  const displayLog = storedLog.length > 0
+    ? storedLog.map((e, i) => ({ day: i + 1, weight: e.weight }))
+    : Array.from({ length: 30 }, (_, i) => ({
+        day: i + 1,
+        weight: 75.5 - i * 0.08 + Math.sin(i * 0.3) * 0.8,
+      }));
+
   const [newWeight, setNewWeight] = useState("");
 
-  const currentWeight = weightLog[weightLog.length - 1]?.weight || 75;
-  const weekAvg = weightLog.slice(-7).reduce((s, w) => s + w.weight, 0) / 7;
-  const movingAvg = weightLog.map((entry, i) => {
-    const slice = weightLog.slice(Math.max(0, i - 6), i + 1);
+  const currentWeight = displayLog[displayLog.length - 1]?.weight || 75;
+  const weekAvg = displayLog.slice(-7).reduce((s, w) => s + w.weight, 0) / Math.min(displayLog.length, 7);
+  const movingAvg = displayLog.map((entry, i) => {
+    const slice = displayLog.slice(Math.max(0, i - 6), i + 1);
     return { day: entry.day, weight: entry.weight, avg: slice.reduce((s, w) => s + w.weight, 0) / slice.length };
   });
   const daysToGoal = Math.abs(currentWeight - goalWeight) > 0.1 ? Math.round(Math.abs(currentWeight - goalWeight) / 0.08) : 0;
 
   const addWeight = () => {
     if (!newWeight) return;
-    setWeightLog([...weightLog, { day: weightLog.length + 1, weight: parseFloat(newWeight) }]);
+    onAddWeight({ date: new Date().toISOString().split('T')[0], weight: parseFloat(newWeight) }).catch(() => {});
     setNewWeight("");
   };
 
@@ -2019,13 +2067,31 @@ function WeightTracker() {
 // STEPS TRACKER COMPONENT
 // ============================================================================
 
-function StepsTracker() {
+interface StepsTrackerProps {
+  stepsLog: { date: string; steps: number }[];
+  onAddSteps: (entry: { date: string; steps: number }) => Promise<void>;
+}
+
+function StepsTracker({ stepsLog: storedLog, onAddSteps }: StepsTrackerProps) {
   const [dailyGoal] = useState(10000);
-  const [todaySteps, setTodaySteps] = useState(7432);
-  const weekData = [
-    { day: "Lun", steps: 8234 }, { day: "Mar", steps: 11250 }, { day: "Mié", steps: 6890 },
-    { day: "Jue", steps: 9540 }, { day: "Vie", steps: 12100 }, { day: "Sáb", steps: 5430 }, { day: "Dom", steps: todaySteps },
-  ];
+  const [todaySteps, setTodaySteps] = useState(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return storedLog.find((e) => e.date === today)?.steps ?? 0;
+  });
+
+  // Save steps on blur
+  const handleStepsBlur = () => {
+    if (todaySteps > 0) {
+      onAddSteps({ date: new Date().toISOString().split('T')[0], steps: todaySteps }).catch(() => {});
+    }
+  };
+
+  const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+  const weekData = DAYS.map((day, i) => {
+    const entry = storedLog[storedLog.length - 7 + i];
+    return { day, steps: entry?.steps ?? 0 };
+  });
+  weekData[6] = { day: 'Dom', steps: todaySteps };
   const monthGrid = Array.from({ length: 30 }, (_, i) => ({
     day: i + 1,
     steps: Math.floor(Math.random() * 15000) + 2000,
@@ -2074,7 +2140,7 @@ function StepsTracker() {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ display: "flex", gap: "12px", alignItems: "center", marginBottom: "12px" }}>
-            <input type="number" value={todaySteps} onChange={(e) => setTodaySteps(parseInt(e.target.value) || 0)} style={{ padding: "8px 12px", border: `1px solid ${colors.tan}`, borderRadius: "6px", fontSize: "14px", width: "140px" }} />
+            <input type="number" value={todaySteps} onChange={(e) => setTodaySteps(parseInt(e.target.value) || 0)} onBlur={handleStepsBlur} style={{ padding: "8px 12px", border: `1px solid ${colors.tan}`, borderRadius: "6px", fontSize: "14px", width: "140px" }} />
             <span style={{ fontSize: "12px", color: colors.warm }}>pasos hoy</span>
           </div>
           <div style={{ fontSize: "12px", color: colors.warm }}>
@@ -2846,25 +2912,114 @@ function ProgressPhotos() {
 // MAIN FITNESS PAGE COMPONENT
 // ============================================================================
 
+const DRAFT_KEY = 'fitness_draft_exercises';
+
+function makeDefaultExercises(): EngineExercise[] {
+  return SAMPLE_EXERCISES.map((ex) => ({
+    ...ex,
+    sets: [{ id: String(Date.now() + ex.id), weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }],
+  }));
+}
+
 export default function FitnessPage() {
   const [activeTab, setActiveTab] = useState<string>('entrenamiento');
 
-  // ── Lifted state for the 3 engines ──────────────────────────────────────────
-  const [sessionExercises, setSessionExercises] = useState<EngineExercise[]>(() =>
-    SAMPLE_EXERCISES.map((ex) => ({
-      ...ex,
-      sets: [{ id: String(Date.now() + ex.id), weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }],
-    }))
-  );
+  // ── Store ────────────────────────────────────────────────────────────────────
+  const {
+    initialize: initFitness,
+    personalRecords,
+    workouts,
+    weeklyPlan: storedWeeklyPlan,
+    weightLog,
+    stepsLog,
+    isLoaded,
+    saveWeeklyPlanDay,
+    addWorkout,
+    updatePR,
+    addBodyMetric: storeAddBodyMetric,
+    addWeight: storeAddWeight,
+    addSteps: storeAddSteps,
+    getTonelageHistory,
+  } = useFitnessStore();
 
+  useEffect(() => { initFitness(); }, [initFitness]);
+
+  // ── Lifted state for the 3 engines ──────────────────────────────────────────
+
+  // sessionExercises: load from sessionStorage draft on mount, fallback to defaults
+  const [sessionExercises, setSessionExercises] = useState<EngineExercise[]>(() => {
+    if (typeof window === 'undefined') return makeDefaultExercises();
+    try {
+      const draft = sessionStorage.getItem(DRAFT_KEY);
+      if (draft) return JSON.parse(draft) as EngineExercise[];
+    } catch { /* ignore */ }
+    return makeDefaultExercises();
+  });
+
+  // Persist draft on every exercises change
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(sessionExercises)); } catch { /* ignore */ }
+  }, [sessionExercises]);
+
+  // livePRs: start with INITIAL_PRS, sync from store on first load
   const [livePRs, setLivePRs] = useState<LivePR[]>(INITIAL_PRS);
+  const prsSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || prsSyncedRef.current) return;
+    prsSyncedRef.current = true;
+    if (personalRecords.length > 0) {
+      setLivePRs((prev) =>
+        prev.map((pr) => {
+          const stored = personalRecords.find((s) => s.exercise === pr.exercise);
+          if (!stored) return pr;
+          // Only apply stored value if session hasn't already beaten it
+          if (stored.oneRM >= pr.oneRM) {
+            return { ...pr, ...stored, prevOneRM: stored.oneRM, isNewPR: false };
+          }
+          return pr;
+        })
+      );
+    }
+  }, [isLoaded, personalRecords]);
+
+  // weeklyPlan: start with WEEKLY_PLAN_DEFAULT, sync from store on first load
   const [weeklyPlan, setWeeklyPlan] = useState<EnginePlanDay[]>(WEEKLY_PLAN_DEFAULT);
-  const [tonelageHistory] = useState<Record<string, TonelagePoint[]>>(INITIAL_TONELAGE);
+  const planSyncedRef = useRef(false);
+  useEffect(() => {
+    if (!isLoaded || planSyncedRef.current || storedWeeklyPlan.length === 0) return;
+    planSyncedRef.current = true;
+    // Merge stored exercises into WEEKLY_PLAN_DEFAULT (preserve day/type labels)
+    setWeeklyPlan((prev) =>
+      prev.map((day, i) => {
+        const stored = (storedWeeklyPlan as unknown as Array<{ _dayOfWeek?: number; exercises: typeof day.exercises }>).find(
+          (r) => r._dayOfWeek === i
+        );
+        return stored ? { ...day, exercises: stored.exercises } : day;
+      })
+    );
+  }, [isLoaded, storedWeeklyPlan]);
+
+  // tonelageHistory: derived from store workouts, fallback to INITIAL_TONELAGE
+  const tonelageHistory = useMemo<Record<string, TonelagePoint[]>>(() => {
+    const derived = getTonelageHistory();
+    return Object.keys(derived).length > 0 ? derived : INITIAL_TONELAGE;
+  }, [workouts, getTonelageHistory]);
+
+  // Plan change handler: update state + persist changed days
+  const handleWeeklyPlanChange = (newPlan: EnginePlanDay[]) => {
+    setWeeklyPlan(newPlan);
+    newPlan.forEach((day, i) => {
+      if (JSON.stringify(weeklyPlan[i]) !== JSON.stringify(day)) {
+        saveWeeklyPlanDay(i, day);
+      }
+    });
+  };
 
   // Motor 1: Volumen fraccional en tiempo real
   const sessionVolume = useMemo(() => computeFractionalVolume(sessionExercises), [sessionExercises]);
 
-  // Motor 2: 1RM automático — actualiza PRs cuando cambian los sets
+  // Motor 2: 1RM automático — actualiza PRs y persiste nuevos records
   useEffect(() => {
     setLivePRs((prev) =>
       prev.map((record) => {
@@ -2875,7 +3030,7 @@ export default function FitnessPage() {
           return est > max ? est : max;
         }, 0);
         if (best > record.oneRM) {
-          return {
+          const updated = {
             ...record,
             prevOneRM: record.oneRM,
             oneRM: best,
@@ -2884,11 +3039,48 @@ export default function FitnessPage() {
             date: new Date().toISOString().split('T')[0],
             isNewPR: true,
           };
+          // Persist new PR to store (fire-and-forget)
+          updatePR({ exercise: updated.exercise, oneRM: updated.oneRM, fiveRM: updated.fiveRM, tenRM: updated.tenRM, date: updated.date }).catch(() => {});
+          return updated;
         }
         return record;
       })
     );
   }, [sessionExercises]);
+
+  // Finalizar sesión: save workout to DB and clear draft
+  const [isSavingSession, setIsSavingSession] = useState(false);
+  const handleFinishSession = async () => {
+    const hasData = sessionExercises.some((ex) => ex.sets.some((s) => s.weight > 0 && s.reps > 0));
+    if (!hasData) return;
+    setIsSavingSession(true);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const totalVolume = sessionExercises.reduce(
+        (sum, ex) => sum + ex.sets.reduce((s, set) => s + set.weight * set.reps, 0),
+        0
+      );
+      const prsHit = livePRs.filter((pr) => pr.isNewPR).length;
+      await addWorkout({
+        date: today,
+        name: `Sesión ${today}`,
+        duration: 0,
+        totalVolume,
+        prsHit,
+        exercises: sessionExercises.map((ex) => ({
+          id: String(ex.id),
+          exerciseName: ex.name,
+          muscleGroup: ex.muscleGroup,
+          sets: ex.sets.filter((s) => s.weight > 0 && s.reps > 0).map((s) => ({ weight: s.weight, reps: s.reps, rpe: s.rpe })),
+        })),
+      });
+      // Clear draft and reset exercises
+      if (typeof window !== 'undefined') sessionStorage.removeItem(DRAFT_KEY);
+      setSessionExercises(makeDefaultExercises());
+    } finally {
+      setIsSavingSession(false);
+    }
+  };
 
   const tabs = [
     { id: 'entrenamiento', label: 'Entrenamiento Activo' },
@@ -2957,18 +3149,39 @@ export default function FitnessPage() {
       {/* Tab Content */}
       <div>
         {activeTab === 'entrenamiento' && (
-          <WorkoutTracker exercises={sessionExercises} onExercisesChange={setSessionExercises} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <WorkoutTracker exercises={sessionExercises} onExercisesChange={setSessionExercises} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button
+                onClick={handleFinishSession}
+                disabled={isSavingSession}
+                style={{
+                  padding: '12px 28px',
+                  backgroundColor: isSavingSession ? colors.lightTan : colors.accent,
+                  color: colors.paper,
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 'bold',
+                  fontFamily: 'Georgia, serif',
+                  cursor: isSavingSession ? 'not-allowed' : 'pointer',
+                }}
+              >
+                {isSavingSession ? 'Guardando…' : 'Finalizar Sesión'}
+              </button>
+            </div>
+          </div>
         )}
         {activeTab === 'volumen' && <VolumeTracker sessionVolume={sessionVolume} />}
         {activeTab === 'plan' && (
-          <WeeklyWorkoutPlan plan={weeklyPlan} onPlanChange={setWeeklyPlan} />
+          <WeeklyWorkoutPlan plan={weeklyPlan} onPlanChange={handleWeeklyPlanChange} />
         )}
         {activeTab === 'records' && (
           <PRBoard liveRecords={livePRs} tonelageHistory={tonelageHistory} />
         )}
-        {activeTab === 'metricas' && <BodyMetrics />}
-        {activeTab === 'peso' && <WeightTracker />}
-        {activeTab === 'pasos' && <StepsTracker />}
+        {activeTab === 'metricas' && <BodyMetrics onSave={storeAddBodyMetric} />}
+        {activeTab === 'peso' && <WeightTracker onAddWeight={storeAddWeight} weightLog={weightLog} />}
+        {activeTab === 'pasos' && <StepsTracker onAddSteps={storeAddSteps} stepsLog={stepsLog} />}
         {activeTab === 'ayuno' && <FastingTracker />}
         {activeTab === 'retos' && <ChallengesTracker />}
         {activeTab === 'fotos' && <ProgressPhotos />}

@@ -53,6 +53,7 @@ model User {
   challenges       FitnessChallenge[]
   weightLogs       WeightLog[]
   stepsLogs        StepsLog[]
+  weeklyPlan       WeeklyPlan[]
 }
 
 model Account {
@@ -317,6 +318,18 @@ model FitnessChallenge {
   updatedAt    DateTime @updatedAt
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@index([userId])
+}
+
+model WeeklyPlan {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dayOfWeek Int      // 0=Lunes … 6=Domingo
+  exercises Json     // PlanExercise[]
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, dayOfWeek])
   @@index([userId])
 }
 
