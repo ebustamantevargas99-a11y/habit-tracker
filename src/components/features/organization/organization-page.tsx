@@ -1,1489 +1,647 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Calendar,
-  Heart,
-  BookOpen,
-  Film,
-  Trash2,
-  Plus,
-  Star,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-  Edit2,
-} from "lucide-react";
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer,
+} from "recharts";
+import { Plus, Trash2, Search, Pin, Edit2, X, Check } from "lucide-react";
 import { colors } from "@/lib/colors";
+import { useOrganizationStore, Note, LifeArea, WeeklyReview } from "@/stores/organization-store";
+import { useAppStore } from "@/stores/app-store";
 
-interface CleaningRoom {
-  id: string;
-  nombre: string;
-  tareas: CleaningTask[];
-  puntuacion: number;
-}
+// ─── Notes Tab ────────────────────────────────────────────────────────────────
 
-interface CleaningTask {
-  id: string;
-  nombre: string;
-  frecuencia: "Diario" | "Semanal" | "Mensual";
-  completado: boolean;
-  ultimoCompletado: string | null;
-}
+const NOTE_CATEGORIES = [
+  "general", "personal", "trabajo", "ideas", "salud", "finanzas", "aprendizaje",
+] as const;
 
-interface ContactPerson {
-  id: string;
-  nombre: string;
-  categoria: "Familia" | "Amigos" | "Trabajo";
-  ultimoContacto: string;
-  proximoContacto: string;
-  notas: string;
-}
+const NOTE_COLORS = [
+  "#FEFCE8", "#FEF3C7", "#D1FAE5", "#DBEAFE", "#EDE9FE", "#FCE7F3", "#FFF7ED",
+];
 
-interface Book {
-  id: string;
-  titulo: string;
-  autor: string;
-  paginasLeidas: number;
-  paginasTotal: number;
-  clasificacion: number;
-  estado: "Leyendo" | "Terminado" | "Pendiente";
-}
+function NotesTab() {
+  const { notes, activeCategory, searchQuery, setActiveCategory, setSearchQuery, addNote, updateNote, deleteNote, togglePin, getFilteredNotes } = useOrganizationStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ title: "", content: "", category: "general", color: NOTE_COLORS[0] });
 
-interface Movie {
-  id: string;
-  titulo: string;
-  genero: string;
-  clasificacion: number;
-  estado: "Visto" | "Viendo" | "Pendiente";
-  notas: string;
-}
+  const filtered = getFilteredNotes();
 
-export default function OrganizationPage() {
-  const [activeTab, setActiveTab] = useState<
-    "limpieza" | "relaciones" | "lectura" | "peliculas"
-  >("limpieza");
+  const handleAdd = async () => {
+    if (!form.title.trim()) return;
+    await addNote(form);
+    setForm({ title: "", content: "", category: "general", color: NOTE_COLORS[0] });
+    setShowForm(false);
+  };
+
+  const handleUpdate = async (note: Note) => {
+    await updateNote(note.id, { title: note.title, content: note.content, category: note.category });
+    setEditingId(null);
+  };
+
+  const categories = ["all", ...Array.from(new Set(notes.map((n) => n.category)))];
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: colors.warmWhite,
-        padding: "24px",
-        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-      }}
-    >
-      {/* Header */}
-      <div style={{ marginBottom: "32px" }}>
-        <h1
+    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+      {/* Controls */}
+      <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div style={{ flex: 1, minWidth: "200px", position: "relative" }}>
+          <Search size={16} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: colors.medium }} />
+          <input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Buscar notas..."
+            style={{
+              width: "100%", padding: "0.5rem 0.5rem 0.5rem 2.25rem",
+              border: `1px solid ${colors.lightTan}`, borderRadius: "8px",
+              fontSize: "0.875rem", color: colors.dark, backgroundColor: colors.warmWhite,
+              boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <button
+          onClick={() => setShowForm(true)}
           style={{
-            fontSize: "36px",
-            fontFamily: "Georgia, serif",
-            color: colors.dark,
-            marginBottom: "8px",
-            fontWeight: "bold",
+            display: "flex", alignItems: "center", gap: "0.5rem",
+            padding: "0.5rem 1rem", backgroundColor: colors.accent, color: "#fff",
+            border: "none", borderRadius: "8px", cursor: "pointer",
           }}
         >
-          Organización
-        </h1>
-        <p style={{ color: colors.brown, fontSize: "14px" }}>
-          Gestiona tu hogar, relaciones, lectura y entretenimiento
-        </p>
+          <Plus size={16} /> Nueva nota
+        </button>
       </div>
 
-      {/* Tab Navigation */}
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "28px",
-          borderBottom: `2px solid ${colors.lightTan}`,
-          overflowX: "auto",
-          paddingBottom: "0",
-        }}
-      >
-        {[
-          { id: "limpieza", label: "Limpieza", icon: CheckCircle2 },
-          { id: "relaciones", label: "Relaciones", icon: Heart },
-          { id: "lectura", label: "Diario de Lectura", icon: BookOpen },
-          { id: "peliculas", label: "Películas y Series", icon: Film },
-        ].map((tab) => (
+      {/* Category filter */}
+      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+        {categories.map((cat) => (
           <button
-            key={tab.id}
-            onClick={() =>
-              setActiveTab(
-                tab.id as "limpieza" | "relaciones" | "lectura" | "peliculas"
-              )
-            }
+            key={cat}
+            onClick={() => setActiveCategory(cat)}
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              padding: "12px 16px",
+              padding: "0.25rem 0.75rem", borderRadius: "20px", cursor: "pointer",
+              fontSize: "0.75rem", fontWeight: activeCategory === cat ? 600 : 400,
+              backgroundColor: activeCategory === cat ? colors.accent : colors.cream,
+              color: activeCategory === cat ? "#fff" : colors.medium,
               border: "none",
-              backgroundColor: "transparent",
-              borderBottom:
-                activeTab === tab.id
-                  ? `3px solid ${colors.accent}`
-                  : "transparent",
-              color: activeTab === tab.id ? colors.dark : colors.brown,
-              cursor: "pointer",
-              fontSize: "14px",
-              fontWeight: activeTab === tab.id ? "600" : "500",
-              transition: "all 0.2s ease",
-              whiteSpace: "nowrap",
-            }}
-            onMouseEnter={(e) => {
-              if (activeTab !== tab.id) {
-                (e.currentTarget as HTMLElement).style.color = colors.dark;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (activeTab !== tab.id) {
-                (e.currentTarget as HTMLElement).style.color = colors.brown;
-              }
             }}
           >
-            <tab.icon size={18} />
-            {tab.label}
+            {cat === "all" ? "Todas" : cat}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      <div>
-        {activeTab === "limpieza" && <LimpiezaTab />}
-        {activeTab === "relaciones" && <RelacionesTab />}
-        {activeTab === "lectura" && <LecturaTab />}
-        {activeTab === "peliculas" && <PeliculasTab />}
-      </div>
-    </div>
-  );
-}
-
-// ============== LIMPIEZA TAB ==============
-function LimpiezaTab() {
-  const [rooms, setRooms] = useState<CleaningRoom[]>([
-    {
-      id: "cocina",
-      nombre: "Cocina",
-      puntuacion: 95,
-      tareas: [
-        {
-          id: "1",
-          nombre: "Limpiar encimeras",
-          frecuencia: "Diario",
-          completado: true,
-          ultimoCompletado: "Hoy",
-        },
-        {
-          id: "2",
-          nombre: "Lavar platos",
-          frecuencia: "Diario",
-          completado: true,
-          ultimoCompletado: "Hoy",
-        },
-        {
-          id: "3",
-          nombre: "Limpiar piso",
-          frecuencia: "Semanal",
-          completado: false,
-          ultimoCompletado: "Hace 3 días",
-        },
-        {
-          id: "4",
-          nombre: "Limpiar refrigerador",
-          frecuencia: "Mensual",
-          completado: false,
-          ultimoCompletado: "Hace 2 semanas",
-        },
-      ],
-    },
-    {
-      id: "bano",
-      nombre: "Baño",
-      puntuacion: 85,
-      tareas: [
-        {
-          id: "5",
-          nombre: "Limpiar inodoro",
-          frecuencia: "Diario",
-          completado: true,
-          ultimoCompletado: "Ayer",
-        },
-        {
-          id: "6",
-          nombre: "Limpiar espejo",
-          frecuencia: "Semanal",
-          completado: true,
-          ultimoCompletado: "Ayer",
-        },
-        {
-          id: "7",
-          nombre: "Limpiar ducha",
-          frecuencia: "Semanal",
-          completado: false,
-          ultimoCompletado: "Hace 4 días",
-        },
-      ],
-    },
-    {
-      id: "dormitorio",
-      nombre: "Dormitorio",
-      puntuacion: 78,
-      tareas: [
-        {
-          id: "8",
-          nombre: "Hacer cama",
-          frecuencia: "Diario",
-          completado: true,
-          ultimoCompletado: "Hoy",
-        },
-        {
-          id: "9",
-          nombre: "Pasar aspiradora",
-          frecuencia: "Semanal",
-          completado: false,
-          ultimoCompletado: "Hace 6 días",
-        },
-        {
-          id: "10",
-          nombre: "Cambiar sábanas",
-          frecuencia: "Semanal",
-          completado: false,
-          ultimoCompletado: "Hace 1 semana",
-        },
-      ],
-    },
-    {
-      id: "sala",
-      nombre: "Sala",
-      puntuacion: 82,
-      tareas: [
-        {
-          id: "11",
-          nombre: "Recoger desorden",
-          frecuencia: "Diario",
-          completado: true,
-          ultimoCompletado: "Hoy",
-        },
-        {
-          id: "12",
-          nombre: "Pasar plumero",
-          frecuencia: "Semanal",
-          completado: true,
-          ultimoCompletado: "Ayer",
-        },
-        {
-          id: "13",
-          nombre: "Aspirar sofá",
-          frecuencia: "Mensual",
-          completado: false,
-          ultimoCompletado: "Hace 3 semanas",
-        },
-      ],
-    },
-    {
-      id: "oficina",
-      nombre: "Oficina",
-      puntuacion: 72,
-      tareas: [
-        {
-          id: "14",
-          nombre: "Organizar escritorio",
-          frecuencia: "Diario",
-          completado: false,
-          ultimoCompletado: "Hace 1 día",
-        },
-        {
-          id: "15",
-          nombre: "Polvo en estantes",
-          frecuencia: "Semanal",
-          completado: false,
-          ultimoCompletado: "Hace 1 semana",
-        },
-        {
-          id: "16",
-          nombre: "Limpiar teclado",
-          frecuencia: "Mensual",
-          completado: false,
-          ultimoCompletado: "Hace 1 mes",
-        },
-      ],
-    },
-  ]);
-
-  const overallScore = Math.round(
-    rooms.reduce((sum, room) => sum + room.puntuacion, 0) / rooms.length
-  );
-
-  const toggleTask = (roomId: string, taskId: string) => {
-    setRooms(
-      rooms.map((room) => {
-        if (room.id === roomId) {
-          return {
-            ...room,
-            tareas: room.tareas.map((task) => {
-              if (task.id === taskId) {
-                return {
-                  ...task,
-                  completado: !task.completado,
-                  ultimoCompletado: !task.completado ? "Hoy" : task.ultimoCompletado,
-                };
-              }
-              return task;
-            }),
-          };
-        }
-        return room;
-      })
-    );
-  };
-
-  return (
-    <div>
-      {/* Overall Score */}
-      <div
-        style={{
-          padding: "20px",
-          backgroundColor: colors.cream,
-          borderRadius: "12px",
-          marginBottom: "24px",
-          border: `2px solid ${colors.tan}`,
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <p style={{ color: colors.brown, fontSize: "14px", margin: "0" }}>
-              Puntuación general de limpieza
-            </p>
-            <h2
+      {/* New Note Form */}
+      {showForm && (
+        <div style={{ backgroundColor: NOTE_COLORS[0], borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <input
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder="Título de la nota..."
               style={{
-                fontSize: "32px",
-                fontFamily: "Georgia, serif",
-                color: colors.dark,
-                margin: "8px 0 0 0",
-              }}
-            >
-              {overallScore}%
-            </h2>
-          </div>
-          <div
-            style={{
-              width: "120px",
-              height: "120px",
-              borderRadius: "50%",
-              backgroundColor: colors.lightTan,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "48px",
-              fontWeight: "bold",
-              color: colors.accent,
-            }}
-          >
-            {overallScore}%
-          </div>
-        </div>
-      </div>
-
-      {/* Room Cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(350px, 1fr))",
-          gap: "20px",
-        }}
-      >
-        {rooms.map((room) => (
-          <div
-            key={room.id}
-            style={{
-              backgroundColor: colors.paper,
-              border: `2px solid ${colors.tan}`,
-              borderRadius: "12px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "16px",
-              }}
-            >
-              <h3
-                style={{
-                  fontSize: "18px",
-                  fontFamily: "Georgia, serif",
-                  color: colors.dark,
-                  margin: "0",
-                  fontWeight: "bold",
-                }}
-              >
-                {room.nombre}
-              </h3>
-              <div
-                style={{
-                  backgroundColor: colors.lightTan,
-                  padding: "6px 12px",
-                  borderRadius: "20px",
-                  fontSize: "13px",
-                  fontWeight: "600",
-                  color: colors.dark,
-                }}
-              >
-                {room.puntuacion}%
-              </div>
-            </div>
-
-            {/* Progress Bar */}
-            <div
-              style={{
-                width: "100%",
-                height: "8px",
-                backgroundColor: colors.lightTan,
-                borderRadius: "4px",
-                overflow: "hidden",
-                marginBottom: "16px",
-              }}
-            >
-              <div
-                style={{
-                  height: "100%",
-                  width: `${room.puntuacion}%`,
-                  backgroundColor: colors.success,
-                  transition: "width 0.3s ease",
-                }}
-              />
-            </div>
-
-            {/* Tasks */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-              {room.tareas.map((task) => (
-                <div
-                  key={task.id}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    padding: "10px",
-                    backgroundColor: colors.warmWhite,
-                    borderRadius: "8px",
-                    border: `1px solid ${colors.lightTan}`,
-                  }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={task.completado}
-                    onChange={() => toggleTask(room.id, task.id)}
-                    style={{
-                      width: "18px",
-                      height: "18px",
-                      cursor: "pointer",
-                      accentColor: colors.accent,
-                    }}
-                  />
-                  <div style={{ flex: 1 }}>
-                    <p
-                      style={{
-                        margin: "0",
-                        fontSize: "14px",
-                        color: colors.dark,
-                        textDecoration: task.completado
-                          ? "line-through"
-                          : "none",
-                        opacity: task.completado ? 0.6 : 1,
-                      }}
-                    >
-                      {task.nombre}
-                    </p>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: "12px",
-                        fontSize: "12px",
-                        color: colors.brown,
-                        marginTop: "4px",
-                      }}
-                    >
-                      <span
-                        style={{
-                          backgroundColor: colors.accentLight,
-                          padding: "2px 8px",
-                          borderRadius: "4px",
-                          color: colors.dark,
-                          fontWeight: "600",
-                        }}
-                      >
-                        {task.frecuencia}
-                      </span>
-                      <span>{task.ultimoCompletado}</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ============== RELACIONES TAB ==============
-function RelacionesTab() {
-  const [contacts, setContacts] = useState<ContactPerson[]>([
-    {
-      id: "1",
-      nombre: "María García",
-      categoria: "Familia",
-      ultimoContacto: "2026-04-02",
-      proximoContacto: "2026-04-10",
-      notas: "Mamá - Llamar los domingos",
-    },
-    {
-      id: "2",
-      nombre: "Juan López",
-      categoria: "Trabajo",
-      ultimoContacto: "2026-04-04",
-      proximoContacto: "2026-04-08",
-      notas: "Jefe - Reuniones de seguimiento",
-    },
-    {
-      id: "3",
-      nombre: "Sofia Martínez",
-      categoria: "Amigos",
-      ultimoContacto: "2026-03-28",
-      proximoContacto: "2026-04-15",
-      notas: "Mejor amiga - Café cada 2 semanas",
-    },
-    {
-      id: "4",
-      nombre: "Carlos Rodríguez",
-      categoria: "Familia",
-      ultimoContacto: "2026-03-20",
-      proximoContacto: "2026-04-20",
-      notas: "Tío - Visita ocasional",
-    },
-    {
-      id: "5",
-      nombre: "Ana Gómez",
-      categoria: "Trabajo",
-      ultimoContacto: "2026-04-03",
-      proximoContacto: "2026-04-10",
-      notas: "Compañera de proyecto",
-    },
-  ]);
-
-  const getDaysSinceContact = (lastContact: string): number => {
-    const last = new Date(lastContact);
-    const today = new Date("2026-04-05");
-    return Math.floor(
-      (today.getTime() - last.getTime()) / (1000 * 60 * 60 * 24)
-    );
-  };
-
-  const getContactStatus = (lastContact: string): string => {
-    const days = getDaysSinceContact(lastContact);
-    if (days <= 7) return "Reciente";
-    if (days <= 14) return "Vencido";
-    return "Muy vencido";
-  };
-
-  const getStatusColor = (lastContact: string): string => {
-    const days = getDaysSinceContact(lastContact);
-    if (days <= 7) return colors.success;
-    if (days <= 14) return colors.warning;
-    return colors.danger;
-  };
-
-  const categoryColors: Record<string, string> = {
-    Familia: colors.infoLight,
-    Amigos: colors.accentLight,
-    Trabajo: colors.successLight,
-  };
-
-  const categoryTextColors: Record<string, string> = {
-    Familia: colors.info,
-    Amigos: colors.accent,
-    Trabajo: colors.success,
-  };
-
-  const [showAddContact, setShowAddContact] = useState(false);
-  const [newNombre, setNewNombre] = useState('');
-  const [newCategoria, setNewCategoria] = useState<'Familia' | 'Amigos' | 'Trabajo'>('Amigos');
-  const [newProximo, setNewProximo] = useState('');
-  const [newNotas, setNewNotas] = useState('');
-
-  const addContact = () => {
-    if (!newNombre.trim()) return;
-    const today = new Date().toISOString().split('T')[0];
-    setContacts([...contacts, {
-      id: Date.now().toString(),
-      nombre: newNombre,
-      categoria: newCategoria,
-      ultimoContacto: today,
-      proximoContacto: newProximo || today,
-      notas: newNotas,
-    }]);
-    setNewNombre(''); setNewCategoria('Amigos'); setNewProximo(''); setNewNotas('');
-    setShowAddContact(false);
-  };
-
-  const deleteContact = (id: string) => {
-    setContacts(contacts.filter((c) => c.id !== id));
-  };
-
-  const inputSt: React.CSSProperties = {
-    padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`,
-    fontSize: '14px', backgroundColor: colors.cream, width: '100%', boxSizing: 'border-box',
-  };
-
-  return (
-    <div>
-      <button
-        onClick={() => setShowAddContact(!showAddContact)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "10px 16px",
-          backgroundColor: colors.accent,
-          color: colors.paper,
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "600",
-          marginBottom: "16px",
-          transition: "background-color 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.dark;
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.accent;
-        }}
-      >
-        <Plus size={18} />
-        Agregar contacto
-      </button>
-
-      {showAddContact && (
-        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <input placeholder="Nombre *" value={newNombre} onChange={e => setNewNombre(e.target.value)} style={inputSt} />
-          <select value={newCategoria} onChange={e => setNewCategoria(e.target.value as 'Familia' | 'Amigos' | 'Trabajo')} style={inputSt}>
-            <option>Familia</option><option>Amigos</option><option>Trabajo</option>
-          </select>
-          <input type="date" placeholder="Próximo contacto" value={newProximo} onChange={e => setNewProximo(e.target.value)} style={inputSt} />
-          <input placeholder="Notas" value={newNotas} onChange={e => setNewNotas(e.target.value)} style={inputSt} />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={addContact} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
-            <button onClick={() => setShowAddContact(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: "20px",
-        }}
-      >
-        {contacts.map((contact) => {
-          const daysSince = getDaysSinceContact(contact.ultimoContacto);
-          const statusColor = getStatusColor(contact.ultimoContacto);
-
-          return (
-            <div
-              key={contact.id}
-              style={{
-                backgroundColor: colors.paper,
-                border: `2px solid ${colors.tan}`,
-                borderRadius: "12px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              }}
-            >
-              {/* Header */}
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  marginBottom: "16px",
-                }}
-              >
-                <div style={{ flex: 1 }}>
-                  <h3
-                    style={{
-                      fontSize: "18px",
-                      fontFamily: "Georgia, serif",
-                      color: colors.dark,
-                      margin: "0 0 8px 0",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    {contact.nombre}
-                  </h3>
-                  <span
-                    style={{
-                      display: "inline-block",
-                      backgroundColor: categoryColors[contact.categoria],
-                      color: categoryTextColors[contact.categoria],
-                      padding: "4px 12px",
-                      borderRadius: "20px",
-                      fontSize: "12px",
-                      fontWeight: "600",
-                    }}
-                  >
-                    {contact.categoria}
-                  </span>
-                </div>
-                <button
-                  onClick={() => deleteContact(contact.id)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: colors.danger,
-                    cursor: "pointer",
-                    padding: "4px",
-                  }}
-                >
-                  <Trash2 size={18} />
-                </button>
-              </div>
-
-              {/* Status */}
-              <div
-                style={{
-                  padding: "12px",
-                  backgroundColor: colors.warmWhite,
-                  borderRadius: "8px",
-                  marginBottom: "16px",
-                  border: `2px solid ${statusColor}`,
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    marginBottom: "8px",
-                  }}
-                >
-                  <Clock size={16} style={{ color: statusColor }} />
-                  <span style={{ color: statusColor, fontWeight: "600", fontSize: "13px" }}>
-                    {daysSince === 0
-                      ? "Hoy"
-                      : daysSince === 1
-                        ? "Ayer"
-                        : `Hace ${daysSince} días`}
-                  </span>
-                </div>
-                <p
-                  style={{
-                    margin: "0",
-                    fontSize: "12px",
-                    color: colors.brown,
-                  }}
-                >
-                  Último contacto: {contact.ultimoContacto}
-                </p>
-              </div>
-
-              {/* Next Contact */}
-              <div style={{ marginBottom: "16px" }}>
-                <p
-                  style={{
-                    fontSize: "12px",
-                    color: colors.brown,
-                    margin: "0 0 4px 0",
-                  }}
-                >
-                  Próximo contacto planeado
-                </p>
-                <p
-                  style={{
-                    fontSize: "14px",
-                    fontWeight: "600",
-                    color: colors.dark,
-                    margin: "0",
-                  }}
-                >
-                  {contact.proximoContacto}
-                </p>
-              </div>
-
-              {/* Notes */}
-              <div
-                style={{
-                  padding: "12px",
-                  backgroundColor: colors.lightCream,
-                  borderRadius: "8px",
-                  borderLeft: `4px solid ${colors.accent}`,
-                }}
-              >
-                <p
-                  style={{
-                    margin: "0",
-                    fontSize: "13px",
-                    color: colors.dark,
-                    fontStyle: "italic",
-                  }}
-                >
-                  {contact.notas}
-                </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ============== LECTURA TAB ==============
-function LecturaTab() {
-  const [books, setBooks] = useState<Book[]>([
-    {
-      id: "1",
-      titulo: "La Casa de los Espíritus",
-      autor: "Isabel Allende",
-      paginasLeidas: 245,
-      paginasTotal: 400,
-      clasificacion: 5,
-      estado: "Leyendo",
-    },
-    {
-      id: "2",
-      titulo: "Cien Años de Soledad",
-      autor: "Gabriel García Márquez",
-      paginasLeidas: 432,
-      paginasTotal: 432,
-      clasificacion: 5,
-      estado: "Terminado",
-    },
-    {
-      id: "3",
-      titulo: "El Alquimista",
-      autor: "Paulo Coelho",
-      paginasLeidas: 0,
-      paginasTotal: 224,
-      clasificacion: 0,
-      estado: "Pendiente",
-    },
-    {
-      id: "4",
-      titulo: "Ficciones",
-      autor: "Jorge Luis Borges",
-      paginasLeidas: 156,
-      paginasTotal: 300,
-      clasificacion: 4,
-      estado: "Leyendo",
-    },
-  ]);
-
-  const [showAddBook, setShowAddBook] = useState(false);
-  const [newTituloL, setNewTituloL] = useState('');
-  const [newAutor, setNewAutor] = useState('');
-  const [newTotal, setNewTotal] = useState('');
-  const [newEstadoL, setNewEstadoL] = useState<'Leyendo' | 'Terminado' | 'Pendiente'>('Pendiente');
-
-  const addBook = () => {
-    if (!newTituloL.trim()) return;
-    setBooks([...books, { id: Date.now().toString(), titulo: newTituloL, autor: newAutor, paginasLeidas: 0, paginasTotal: parseInt(newTotal) || 0, clasificacion: 0, estado: newEstadoL }]);
-    setNewTituloL(''); setNewAutor(''); setNewTotal(''); setNewEstadoL('Pendiente');
-    setShowAddBook(false);
-  };
-
-  const deleteBook = (id: string) => setBooks(books.filter(b => b.id !== id));
-
-  const currentBook = books.find((b) => b.estado === "Leyendo");
-  const progressPercent = currentBook
-    ? Math.round((currentBook.paginasLeidas / currentBook.paginasTotal) * 100)
-    : 0;
-
-  const renderStars = (rating: number) => {
-    return (
-      <div style={{ display: "flex", gap: "4px" }}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={16}
-            style={{
-              fill: star <= rating ? colors.accent : colors.lightTan,
-              color: star <= rating ? colors.accent : colors.lightTan,
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  return (
-    <div>
-      {/* Add Book Button */}
-      <button
-        onClick={() => setShowAddBook(!showAddBook)}
-        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 16px', backgroundColor: colors.accent, color: colors.paper, border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}
-      >
-        <Plus size={18} /> Agregar libro
-      </button>
-      {showAddBook && (
-        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <input placeholder="Título *" value={newTituloL} onChange={e => setNewTituloL(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <input placeholder="Autor" value={newAutor} onChange={e => setNewAutor(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <input placeholder="Total de páginas" type="number" value={newTotal} onChange={e => setNewTotal(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <select value={newEstadoL} onChange={e => setNewEstadoL(e.target.value as 'Leyendo' | 'Terminado' | 'Pendiente')} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }}>
-            <option>Pendiente</option><option>Leyendo</option><option>Terminado</option>
-          </select>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={addBook} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
-            <button onClick={() => setShowAddBook(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
-          </div>
-        </div>
-      )}
-
-      {/* Currently Reading Card */}
-      {currentBook && (
-        <div
-          style={{
-            padding: "24px",
-            backgroundColor: colors.accent,
-            borderRadius: "12px",
-            marginBottom: "28px",
-            color: colors.paper,
-          }}
-        >
-          <p style={{ margin: "0 0 12px 0", fontSize: "13px", opacity: 0.9 }}>
-            Actualmente leyendo
-          </p>
-          <h2
-            style={{
-              fontSize: "28px",
-              fontFamily: "Georgia, serif",
-              margin: "0 0 8px 0",
-              fontWeight: "bold",
-            }}
-          >
-            {currentBook.titulo}
-          </h2>
-          <p style={{ margin: "0 0 16px 0", opacity: 0.95 }}>
-            por {currentBook.autor}
-          </p>
-
-          {/* Progress Bar */}
-          <div
-            style={{
-              width: "100%",
-              height: "12px",
-              backgroundColor: colors.dark,
-              borderRadius: "6px",
-              overflow: "hidden",
-              marginBottom: "12px",
-            }}
-          >
-            <div
-              style={{
-                height: "100%",
-                width: `${progressPercent}%`,
-                backgroundColor: colors.accentLight,
-                transition: "width 0.3s ease",
+                flex: 1, padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`,
+                borderRadius: "8px", fontSize: "0.9rem", fontWeight: 600, color: colors.dark,
+                backgroundColor: "transparent",
               }}
             />
+            <select
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+              style={{
+                padding: "0.5rem", border: `1px solid ${colors.lightTan}`, borderRadius: "8px",
+                fontSize: "0.8rem", color: colors.dark, backgroundColor: "transparent",
+              }}
+            >
+              {NOTE_CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+            </select>
           </div>
-
-          <p style={{ margin: "0", fontSize: "14px" }}>
-            {currentBook.paginasLeidas} de {currentBook.paginasTotal} páginas ({progressPercent}%)
-          </p>
+          <textarea
+            value={form.content}
+            onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+            placeholder="Contenido..."
+            rows={4}
+            style={{
+              width: "100%", padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`,
+              borderRadius: "8px", fontSize: "0.875rem", color: colors.dark,
+              backgroundColor: "transparent", resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+          <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.75rem" }}>
+            {NOTE_COLORS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setForm((f) => ({ ...f, color: c }))}
+                style={{
+                  width: "24px", height: "24px", borderRadius: "50%", border: form.color === c ? `2px solid ${colors.accent}` : `1px solid ${colors.lightTan}`,
+                  backgroundColor: c, cursor: "pointer",
+                }}
+              />
+            ))}
+            <div style={{ flex: 1 }} />
+            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: colors.medium }}>Cancelar</button>
+            <button
+              onClick={handleAdd}
+              style={{ padding: "0.375rem 0.875rem", backgroundColor: colors.accent, color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+            >
+              Guardar
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Add Book Button */}
-      <button
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "10px 16px",
-          backgroundColor: colors.accent,
-          color: colors.paper,
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "600",
-          marginBottom: "24px",
-          transition: "background-color 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.dark;
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.accent;
-        }}
-      >
-        <Plus size={18} />
-        Agregar libro
-      </button>
-
-      {/* Books Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "20px",
-        }}
-      >
-        {books.map((book) => {
-          const progress = Math.round((book.paginasLeidas / book.paginasTotal) * 100);
-          const statusBg =
-            book.estado === "Leyendo"
-              ? colors.infoLight
-              : book.estado === "Terminado"
-                ? colors.successLight
-                : colors.warningLight;
-          const statusColor =
-            book.estado === "Leyendo"
-              ? colors.info
-              : book.estado === "Terminado"
-                ? colors.success
-                : colors.warning;
-
-          return (
-            <div
-              key={book.id}
-              style={{
-                backgroundColor: colors.paper,
-                border: `2px solid ${colors.tan}`,
-                borderRadius: "12px",
-                padding: "20px",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                display: "flex",
-                flexDirection: "column",
-              }}
-            >
-              {/* Header */}
-              <h3
-                style={{
-                  fontSize: "16px",
-                  fontFamily: "Georgia, serif",
-                  color: colors.dark,
-                  margin: "0 0 4px 0",
-                  fontWeight: "bold",
-                }}
-              >
-                {book.titulo}
-              </h3>
-              <p
-                style={{
-                  fontSize: "13px",
-                  color: colors.brown,
-                  margin: "0 0 12px 0",
-                }}
-              >
-                {book.autor}
-              </p>
-
-              {/* Status Badge */}
-              <span
-                style={{
-                  display: "inline-block",
-                  backgroundColor: statusBg,
-                  color: statusColor,
-                  padding: "4px 12px",
-                  borderRadius: "20px",
-                  fontSize: "12px",
-                  fontWeight: "600",
-                  marginBottom: "12px",
-                  width: "fit-content",
-                }}
-              >
-                {book.estado}
-              </span>
-
-              {/* Progress */}
-              <div style={{ marginBottom: "12px" }}>
-                <div
-                  style={{
-                    width: "100%",
-                    height: "8px",
-                    backgroundColor: colors.lightTan,
-                    borderRadius: "4px",
-                    overflow: "hidden",
-                    marginBottom: "6px",
-                  }}
-                >
-                  <div
-                    style={{
-                      height: "100%",
-                      width: `${progress}%`,
-                      backgroundColor: colors.accent,
-                      transition: "width 0.3s ease",
-                    }}
-                  />
-                </div>
-                <p
-                  style={{
-                    margin: "0",
-                    fontSize: "12px",
-                    color: colors.brown,
-                  }}
-                >
-                  {book.paginasLeidas} / {book.paginasTotal} páginas
-                </p>
-              </div>
-
-              {/* Rating */}
-              <div style={{ marginBottom: "12px" }}>
-                {renderStars(book.clasificacion)}
-              </div>
-
-              {/* Delete Button */}
-              <button
-                onClick={() => { if (window.confirm(`¿Eliminar "${book.titulo}"?`)) deleteBook(book.id); }}
-                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", backgroundColor: colors.dangerLight, border: "none", borderRadius: "6px", color: colors.danger, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
-              >
-                <Trash2 size={14} />
-                Eliminar
-              </button>
-            </div>
-          );
-        })}
+      {/* Notes Grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: "0.875rem" }}>
+        {filtered.length === 0 ? (
+          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "3rem", color: colors.medium }}>
+            No hay notas. Crea una con el botón "Nueva nota".
+          </div>
+        ) : (
+          filtered.map((note) => (
+            <NoteCard
+              key={note.id}
+              note={note}
+              isEditing={editingId === note.id}
+              onEdit={() => setEditingId(note.id)}
+              onSave={handleUpdate}
+              onCancelEdit={() => setEditingId(null)}
+              onPin={() => togglePin(note.id)}
+              onDelete={() => deleteNote(note.id)}
+            />
+          ))
+        )}
       </div>
     </div>
   );
 }
 
-// ============== PELÍCULAS Y SERIES TAB ==============
-function PeliculasTab() {
-  const [movies, setMovies] = useState<Movie[]>([
-    {
-      id: "1",
-      titulo: "Interestelar",
-      genero: "Ciencia Ficción",
-      clasificacion: 5,
-      estado: "Visto",
-      notas: "Épica y emocionante. Gran cinematografía.",
-    },
-    {
-      id: "2",
-      titulo: "La Casa de Papel",
-      genero: "Drama/Thriller",
-      clasificacion: 4,
-      estado: "Viendo",
-      notas: "Muy atrapante. Voy por la temporada 3.",
-    },
-    {
-      id: "3",
-      titulo: "El Ministerio del Tiempo",
-      genero: "Ciencia Ficción",
-      clasificacion: 0,
-      estado: "Pendiente",
-      notas: "Recomendado por Pablo",
-    },
-    {
-      id: "4",
-      titulo: "Todo sobre mi madre",
-      genero: "Drama",
-      clasificacion: 5,
-      estado: "Visto",
-      notas: "Obra maestra de Almodóvar",
-    },
-    {
-      id: "5",
-      titulo: "La boca de la verdad",
-      genero: "Drama",
-      clasificacion: 0,
-      estado: "Pendiente",
-      notas: "Película italiana clásica",
-    },
-    {
-      id: "6",
-      titulo: "El Juego del Calamar",
-      genero: "Drama/Thriller",
-      clasificacion: 4,
-      estado: "Viendo",
-      notas: "Oscura pero fascinante.",
-    },
-  ]);
+interface NoteCardProps {
+  note: Note;
+  isEditing: boolean;
+  onEdit: () => void;
+  onSave: (note: Note) => void;
+  onCancelEdit: () => void;
+  onPin: () => void;
+  onDelete: () => void;
+}
 
-  const [filterStatus, setFilterStatus] = useState<"Todos" | "Visto" | "Viendo" | "Pendiente">("Todos");
-  const [showAddMovie, setShowAddMovie] = useState(false);
-  const [newTitulo, setNewTitulo] = useState('');
-  const [newGenero, setNewGenero] = useState('');
-  const [newEstado, setNewEstado] = useState<'Visto' | 'Viendo' | 'Pendiente'>('Pendiente');
-  const [newNotas, setNewNotas] = useState('');
+function NoteCard({ note, isEditing, onEdit, onSave, onCancelEdit, onPin, onDelete }: NoteCardProps) {
+  const [draft, setDraft] = useState(note);
 
-  const addMovie = () => {
-    if (!newTitulo.trim()) return;
-    setMovies([...movies, { id: Date.now().toString(), titulo: newTitulo, genero: newGenero, clasificacion: 0, estado: newEstado, notas: newNotas }]);
-    setNewTitulo(''); setNewGenero(''); setNewEstado('Pendiente'); setNewNotas('');
-    setShowAddMovie(false);
-  };
-
-  const deleteMovie = (id: string) => setMovies(movies.filter(m => m.id !== id));
-
-  const filteredMovies =
-    filterStatus === "Todos"
-      ? movies
-      : movies.filter((m) => m.estado === filterStatus);
-
-  const renderStars = (rating: number) => {
-    return (
-      <div style={{ display: "flex", gap: "4px" }}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            size={16}
-            style={{
-              fill: star <= rating ? colors.accent : colors.lightTan,
-              color: star <= rating ? colors.accent : colors.lightTan,
-            }}
-          />
-        ))}
-      </div>
-    );
-  };
-
-  const getStatusColor = (estado: string): string => {
-    if (estado === "Visto") return colors.successLight;
-    if (estado === "Viendo") return colors.infoLight;
-    return colors.warningLight;
-  };
-
-  const getStatusTextColor = (estado: string): string => {
-    if (estado === "Visto") return colors.success;
-    if (estado === "Viendo") return colors.info;
-    return colors.warning;
-  };
+  useEffect(() => setDraft(note), [note]);
 
   return (
-    <div>
-      {/* Filter Buttons */}
-      <div
-        style={{
-          display: "flex",
-          gap: "12px",
-          marginBottom: "24px",
-          flexWrap: "wrap",
-        }}
-      >
-        {["Todos", "Visto", "Viendo", "Pendiente"].map((status) => (
-          <button
-            key={status}
-            onClick={() =>
-              setFilterStatus(
-                status as "Todos" | "Visto" | "Viendo" | "Pendiente"
-              )
-            }
-            style={{
-              padding: "10px 16px",
-              border: "none",
-              borderRadius: "8px",
-              backgroundColor:
-                filterStatus === status ? colors.accent : colors.lightTan,
-              color:
-                filterStatus === status ? colors.paper : colors.dark,
-              cursor: "pointer",
-              fontSize: "13px",
-              fontWeight: "600",
-              transition: "all 0.2s ease",
-            }}
-            onMouseEnter={(e) => {
-              if (filterStatus !== status) {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  colors.tan;
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (filterStatus !== status) {
-                (e.currentTarget as HTMLElement).style.backgroundColor =
-                  colors.lightTan;
-              }
-            }}
-          >
-            {status}
-          </button>
-        ))}
-      </div>
-
-      {/* Add Button */}
-      <button
-        onClick={() => setShowAddMovie(!showAddMovie)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "8px",
-          padding: "10px 16px",
-          backgroundColor: colors.accent,
-          color: colors.paper,
-          border: "none",
-          borderRadius: "8px",
-          cursor: "pointer",
-          fontSize: "14px",
-          fontWeight: "600",
-          marginBottom: "16px",
-          transition: "background-color 0.2s ease",
-        }}
-        onMouseEnter={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.dark;
-        }}
-        onMouseLeave={(e) => {
-          (e.currentTarget as HTMLElement).style.backgroundColor = colors.accent;
-        }}
-      >
-        <Plus size={18} />
-        Agregar película/serie
-      </button>
-
-      {showAddMovie && (
-        <div style={{ backgroundColor: colors.lightCream, border: `1px solid ${colors.tan}`, borderRadius: '10px', padding: '16px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <input placeholder="Título *" value={newTitulo} onChange={e => setNewTitulo(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <input placeholder="Género" value={newGenero} onChange={e => setNewGenero(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <select value={newEstado} onChange={e => setNewEstado(e.target.value as 'Visto' | 'Viendo' | 'Pendiente')} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }}>
-            <option>Pendiente</option><option>Viendo</option><option>Visto</option>
-          </select>
-          <input placeholder="Notas" value={newNotas} onChange={e => setNewNotas(e.target.value)} style={{ padding: '8px 12px', borderRadius: '6px', border: `1px solid ${colors.tan}`, fontSize: '14px', backgroundColor: colors.cream }} />
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button onClick={addMovie} style={{ flex: 1, padding: '8px', backgroundColor: colors.success, color: colors.paper, border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>Guardar</button>
-            <button onClick={() => setShowAddMovie(false)} style={{ flex: 1, padding: '8px', backgroundColor: colors.lightTan, color: colors.dark, border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancelar</button>
-          </div>
+    <div style={{
+      backgroundColor: note.color, borderRadius: "12px", padding: "1rem",
+      border: `1px solid ${colors.cream}`,
+      boxShadow: note.isPinned ? `0 2px 8px ${colors.tan}` : "none",
+      display: "flex", flexDirection: "column", gap: "0.5rem",
+      position: "relative",
+    }}>
+      {note.isPinned && (
+        <div style={{ position: "absolute", top: "0.5rem", right: "0.5rem", color: colors.accent }}>
+          <Pin size={14} />
         </div>
       )}
 
-      {/* Movies Grid */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-          gap: "20px",
-        }}
-      >
-        {filteredMovies.map((movie) => (
+      {isEditing ? (
+        <>
+          <input
+            value={draft.title}
+            onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+            style={{ padding: "0.25rem 0.5rem", border: `1px solid ${colors.lightTan}`, borderRadius: "6px", fontSize: "0.9rem", fontWeight: 600, color: colors.dark, backgroundColor: "transparent" }}
+          />
+          <textarea
+            value={draft.content}
+            onChange={(e) => setDraft((d) => ({ ...d, content: e.target.value }))}
+            rows={3}
+            style={{ padding: "0.25rem 0.5rem", border: `1px solid ${colors.lightTan}`, borderRadius: "6px", fontSize: "0.8rem", color: colors.medium, backgroundColor: "transparent", resize: "vertical" }}
+          />
+          <div style={{ display: "flex", gap: "0.5rem", justifyContent: "flex-end" }}>
+            <button onClick={onCancelEdit} style={{ background: "none", border: "none", cursor: "pointer", color: colors.medium, padding: "0.25rem" }}><X size={15} /></button>
+            <button onClick={() => onSave(draft)} style={{ background: "none", border: "none", cursor: "pointer", color: colors.success, padding: "0.25rem" }}><Check size={15} /></button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ fontWeight: 600, fontSize: "0.9rem", color: colors.dark, paddingRight: "1.25rem" }}>{note.title}</div>
+          {note.content && (
+            <div style={{ fontSize: "0.8rem", color: colors.medium, lineHeight: 1.5, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" }}>
+              {note.content}
+            </div>
+          )}
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", justifyContent: "space-between", marginTop: "0.25rem" }}>
+            <span style={{ fontSize: "0.7rem", color: colors.medium, backgroundColor: colors.cream, padding: "0.125rem 0.5rem", borderRadius: "4px" }}>
+              {note.category}
+            </span>
+            <div style={{ display: "flex", gap: "0.25rem" }}>
+              <button onClick={onPin} style={{ background: "none", border: "none", cursor: "pointer", color: note.isPinned ? colors.accent : colors.medium, padding: "0.25rem" }}><Pin size={13} /></button>
+              <button onClick={onEdit} style={{ background: "none", border: "none", cursor: "pointer", color: colors.medium, padding: "0.25rem" }}><Edit2 size={13} /></button>
+              <button onClick={onDelete} style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.25rem" }}><Trash2 size={13} /></button>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Life Areas Tab ───────────────────────────────────────────────────────────
+
+function LifeAreasTab() {
+  const { lifeAreas, updateLifeArea, addLifeArea, deleteLifeArea } = useOrganizationStore();
+  const [showForm, setShowForm] = useState(false);
+  const [newArea, setNewArea] = useState({ name: "", emoji: "🎯", color: "#B8860B" });
+
+  const radarData = lifeAreas.map((a) => ({ subject: `${a.emoji} ${a.name}`, value: a.score, fullMark: 10 }));
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {/* Radar Chart */}
+      {lifeAreas.length >= 3 && (
+        <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
+          <h3 style={{ margin: "0 0 0.5rem", fontSize: "1rem", color: colors.dark }}>Rueda de la Vida</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <RadarChart data={radarData}>
+              <PolarGrid stroke={colors.cream} />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 12, fill: colors.medium }} />
+              <Radar name="Score" dataKey="value" stroke={colors.accent} fill={colors.accent} fillOpacity={0.3} />
+            </RadarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Area sliders */}
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        {lifeAreas.map((area) => (
           <div
-            key={movie.id}
+            key={area.id}
             style={{
-              backgroundColor: colors.paper,
-              border: `2px solid ${colors.tan}`,
-              borderRadius: "12px",
-              padding: "20px",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-              display: "flex",
-              flexDirection: "column",
+              backgroundColor: colors.warmWhite, borderRadius: "10px", padding: "1rem",
+              border: `1px solid ${colors.cream}`, display: "flex", gap: "1rem", alignItems: "center",
             }}
           >
-            {/* Header */}
-            <h3
-              style={{
-                fontSize: "16px",
-                fontFamily: "Georgia, serif",
-                color: colors.dark,
-                margin: "0 0 4px 0",
-                fontWeight: "bold",
-              }}
-            >
-              {movie.titulo}
-            </h3>
-            <p
-              style={{
-                fontSize: "13px",
-                color: colors.brown,
-                margin: "0 0 12px 0",
-              }}
-            >
-              {movie.genero}
-            </p>
-
-            {/* Status Badge */}
-            <span
-              style={{
-                display: "inline-block",
-                backgroundColor: getStatusColor(movie.estado),
-                color: getStatusTextColor(movie.estado),
-                padding: "4px 12px",
-                borderRadius: "20px",
-                fontSize: "12px",
-                fontWeight: "600",
-                marginBottom: "12px",
-                width: "fit-content",
-              }}
-            >
-              {movie.estado}
-            </span>
-
-            {/* Rating */}
-            <div style={{ marginBottom: "12px" }}>
-              {renderStars(movie.clasificacion)}
+            <span style={{ fontSize: "1.5rem" }}>{area.emoji}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.375rem" }}>
+                <span style={{ fontWeight: 600, fontSize: "0.875rem", color: colors.dark }}>{area.name}</span>
+                <span style={{ fontSize: "0.875rem", fontWeight: 700, color: area.color }}>{area.score}/10</span>
+              </div>
+              <input
+                type="range"
+                min={1} max={10}
+                value={area.score}
+                onChange={(e) => updateLifeArea(area.id, { score: parseInt(e.target.value) })}
+                style={{ width: "100%", accentColor: area.color }}
+              />
             </div>
-
-            {/* Notes */}
-            <div
-              style={{
-                padding: "12px",
-                backgroundColor: colors.lightCream,
-                borderRadius: "8px",
-                borderLeft: `4px solid ${colors.accent}`,
-                marginBottom: "12px",
-                flex: 1,
-              }}
-            >
-              <p
-                style={{
-                  margin: "0",
-                  fontSize: "13px",
-                  color: colors.dark,
-                  fontStyle: "italic",
-                }}
-              >
-                {movie.notas}
-              </p>
-            </div>
-
-            {/* Delete Button */}
             <button
-              onClick={() => { if (window.confirm(`¿Eliminar "${movie.titulo}"?`)) deleteMovie(movie.id); }}
-              style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", backgroundColor: colors.dangerLight, border: "none", borderRadius: "6px", color: colors.danger, cursor: "pointer", fontSize: "12px", fontWeight: "600" }}
+              onClick={() => deleteLifeArea(area.id)}
+              style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.25rem" }}
             >
               <Trash2 size={14} />
-              Eliminar
             </button>
           </div>
         ))}
       </div>
 
-      {filteredMovies.length === 0 && (
-        <div
+      {/* Add new area */}
+      {showForm ? (
+        <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
+          <div style={{ display: "flex", gap: "0.75rem", marginBottom: "0.75rem" }}>
+            <input
+              value={newArea.emoji}
+              onChange={(e) => setNewArea((a) => ({ ...a, emoji: e.target.value }))}
+              placeholder="🎯"
+              style={{ width: "60px", padding: "0.5rem", border: `1px solid ${colors.lightTan}`, borderRadius: "8px", textAlign: "center", fontSize: "1.25rem" }}
+            />
+            <input
+              value={newArea.name}
+              onChange={(e) => setNewArea((a) => ({ ...a, name: e.target.value }))}
+              placeholder="Nombre del área..."
+              style={{ flex: 1, padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`, borderRadius: "8px", fontSize: "0.875rem", color: colors.dark }}
+            />
+          </div>
+          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+            <button onClick={() => setShowForm(false)} style={{ background: "none", border: "none", cursor: "pointer", color: colors.medium }}>Cancelar</button>
+            <button
+              onClick={async () => {
+                if (!newArea.name.trim()) return;
+                await addLifeArea(newArea);
+                setNewArea({ name: "", emoji: "🎯", color: "#B8860B" });
+                setShowForm(false);
+              }}
+              style={{ padding: "0.5rem 1rem", backgroundColor: colors.accent, color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+            >
+              Agregar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowForm(true)}
           style={{
-            padding: "40px",
-            textAlign: "center",
-            backgroundColor: colors.lightCream,
-            borderRadius: "12px",
-            border: `2px dashed ${colors.tan}`,
+            display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center",
+            padding: "0.75rem", border: `2px dashed ${colors.lightTan}`, borderRadius: "10px",
+            background: "none", cursor: "pointer", color: colors.medium, fontSize: "0.875rem",
           }}
         >
-          <Film size={32} style={{ color: colors.brown, marginBottom: "12px" }} />
-          <p
+          <Plus size={16} /> Agregar área de vida
+        </button>
+      )}
+
+      {/* Life Score */}
+      {lifeAreas.length > 0 && (
+        <div style={{ backgroundColor: colors.cream, borderRadius: "12px", padding: "1.25rem", textAlign: "center" }}>
+          <div style={{ fontSize: "0.875rem", color: colors.medium, marginBottom: "0.25rem" }}>Puntuación promedio</div>
+          <div style={{ fontSize: "2.5rem", fontWeight: 700, color: colors.accent }}>
+            {(lifeAreas.reduce((s, a) => s + a.score, 0) / lifeAreas.length).toFixed(1)}
+          </div>
+          <div style={{ fontSize: "0.75rem", color: colors.medium }}>de 10</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Weekly Review Tab ────────────────────────────────────────────────────────
+
+function getMondayOfWeek(date: Date): string {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = (day === 0 ? -6 : 1 - day);
+  d.setDate(d.getDate() + diff);
+  return d.toISOString().split("T")[0];
+}
+
+function WeeklyReviewTab() {
+  const { weeklyReviews, addWeeklyReview, updateWeeklyReview } = useOrganizationStore();
+  const [selectedWeek, setSelectedWeek] = useState(getMondayOfWeek(new Date()));
+  const [saved, setSaved] = useState(false);
+
+  const currentReview = weeklyReviews.find((r) => r.weekStart === selectedWeek);
+
+  const [form, setForm] = useState<Omit<WeeklyReview, "id" | "createdAt" | "updatedAt">>({
+    weekStart: selectedWeek,
+    wins: [""],
+    challenges: [""],
+    learnings: [""],
+    nextWeekGoals: [""],
+    gratitude: [""],
+    overallRating: 7,
+    energyLevel: 7,
+    productivityScore: 7,
+    notes: "",
+  });
+
+  useEffect(() => {
+    if (currentReview) {
+      setForm({
+        weekStart: currentReview.weekStart,
+        wins: currentReview.wins.length ? currentReview.wins : [""],
+        challenges: currentReview.challenges.length ? currentReview.challenges : [""],
+        learnings: currentReview.learnings.length ? currentReview.learnings : [""],
+        nextWeekGoals: currentReview.nextWeekGoals.length ? currentReview.nextWeekGoals : [""],
+        gratitude: currentReview.gratitude.length ? currentReview.gratitude : [""],
+        overallRating: currentReview.overallRating,
+        energyLevel: currentReview.energyLevel,
+        productivityScore: currentReview.productivityScore,
+        notes: currentReview.notes ?? "",
+      });
+    } else {
+      setForm({
+        weekStart: selectedWeek,
+        wins: [""], challenges: [""], learnings: [""], nextWeekGoals: [""], gratitude: [""],
+        overallRating: 7, energyLevel: 7, productivityScore: 7, notes: "",
+      });
+    }
+  }, [selectedWeek, currentReview?.id]);
+
+  const handleSave = async () => {
+    const cleaned = {
+      ...form,
+      weekStart: selectedWeek,
+      wins: form.wins.filter(Boolean),
+      challenges: form.challenges.filter(Boolean),
+      learnings: form.learnings.filter(Boolean),
+      nextWeekGoals: form.nextWeekGoals.filter(Boolean),
+      gratitude: form.gratitude.filter(Boolean),
+    };
+    if (currentReview) {
+      await updateWeeklyReview(currentReview.id, cleaned);
+    } else {
+      await addWeeklyReview(cleaned);
+    }
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const ListInput = ({ field, label, placeholder }: { field: keyof typeof form; label: string; placeholder: string }) => {
+    const items = form[field] as string[];
+    return (
+      <div>
+        <label style={{ fontSize: "0.8rem", fontWeight: 600, color: colors.dark, display: "block", marginBottom: "0.5rem" }}>{label}</label>
+        {items.map((item, i) => (
+          <div key={i} style={{ display: "flex", gap: "0.5rem", marginBottom: "0.375rem" }}>
+            <input
+              value={item}
+              onChange={(e) => {
+                const arr = [...items];
+                arr[i] = e.target.value;
+                setForm((f) => ({ ...f, [field]: arr }));
+              }}
+              placeholder={`${placeholder}...`}
+              style={{
+                flex: 1, padding: "0.4rem 0.75rem", border: `1px solid ${colors.lightTan}`,
+                borderRadius: "6px", fontSize: "0.8rem", color: colors.dark,
+              }}
+            />
+            {items.length > 1 && (
+              <button
+                onClick={() => setForm((f) => ({ ...f, [field]: items.filter((_, j) => j !== i) }))}
+                style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.25rem" }}
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        ))}
+        <button
+          onClick={() => setForm((f) => ({ ...f, [field]: [...items, ""] }))}
+          style={{ fontSize: "0.75rem", color: colors.accent, background: "none", border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "0.25rem" }}
+        >
+          <Plus size={12} /> Agregar
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div style={{ display: "flex", gap: "2rem", flexWrap: "wrap" }}>
+      {/* Left: Form */}
+      <div style={{ flex: "1 1 400px", display: "flex", flexDirection: "column", gap: "1.25rem" }}>
+        {/* Week selector */}
+        <div style={{ display: "flex", gap: "1rem", alignItems: "center" }}>
+          <div>
+            <label style={{ fontSize: "0.75rem", color: colors.medium, display: "block", marginBottom: "0.25rem" }}>Semana (lunes)</label>
+            <input
+              type="date"
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(e.target.value)}
+              style={{
+                padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`,
+                borderRadius: "6px", fontSize: "0.875rem", color: colors.dark,
+              }}
+            />
+          </div>
+          {currentReview && (
+            <span style={{ fontSize: "0.75rem", color: colors.success, marginTop: "1.25rem" }}>Revisión guardada</span>
+          )}
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.25rem" }}>
+          <ListInput field="wins" label="✅ Victorias de la semana" placeholder="¿Qué salió bien?" />
+          <ListInput field="challenges" label="⚡ Retos / Obstáculos" placeholder="¿Qué fue difícil?" />
+          <ListInput field="learnings" label="📚 Aprendizajes" placeholder="¿Qué aprendiste?" />
+          <ListInput field="nextWeekGoals" label="🎯 Metas próxima semana" placeholder="¿Qué quieres lograr?" />
+          <ListInput field="gratitude" label="🙏 Gratitud" placeholder="¿Por qué estás agradecido?" />
+        </div>
+
+        {/* Ratings */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1rem" }}>
+          {[
+            { key: "overallRating", label: "Rating general" },
+            { key: "energyLevel", label: "Nivel de energía" },
+            { key: "productivityScore", label: "Productividad" },
+          ].map(({ key, label }) => (
+            <div key={key}>
+              <label style={{ fontSize: "0.75rem", color: colors.medium, display: "block", marginBottom: "0.375rem" }}>{label}</label>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <input
+                  type="range" min={1} max={10}
+                  value={form[key as keyof typeof form] as number}
+                  onChange={(e) => setForm((f) => ({ ...f, [key]: parseInt(e.target.value) }))}
+                  style={{ flex: 1, accentColor: colors.accent }}
+                />
+                <span style={{ fontWeight: 700, color: colors.accent, fontSize: "1rem", minWidth: "1.5rem" }}>
+                  {form[key as keyof typeof form] as number}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Notes */}
+        <div>
+          <label style={{ fontSize: "0.8rem", fontWeight: 600, color: colors.dark, display: "block", marginBottom: "0.5rem" }}>📝 Notas adicionales</label>
+          <textarea
+            value={form.notes ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
+            rows={3}
+            placeholder="Reflexiones, contexto, lo que sea importante recordar..."
             style={{
-              fontSize: "14px",
-              color: colors.brown,
-              margin: "0",
+              width: "100%", padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`,
+              borderRadius: "8px", fontSize: "0.875rem", color: colors.dark,
+              resize: "vertical", boxSizing: "border-box",
+            }}
+          />
+        </div>
+
+        <button
+          onClick={handleSave}
+          style={{
+            padding: "0.75rem 2rem", backgroundColor: saved ? colors.success : colors.accent,
+            color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer",
+            fontWeight: 600, transition: "background-color 0.3s", alignSelf: "flex-start",
+          }}
+        >
+          {saved ? "¡Guardado!" : "Guardar revisión"}
+        </button>
+      </div>
+
+      {/* Right: History */}
+      {weeklyReviews.length > 0 && (
+        <div style={{ flex: "0 0 260px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+          <h3 style={{ margin: 0, fontSize: "0.9rem", color: colors.dark }}>Últimas revisiones</h3>
+          {weeklyReviews.slice(0, 4).map((r) => (
+            <div
+              key={r.id}
+              onClick={() => setSelectedWeek(r.weekStart)}
+              style={{
+                backgroundColor: colors.warmWhite, borderRadius: "10px", padding: "0.875rem",
+                border: `1px solid ${selectedWeek === r.weekStart ? colors.accent : colors.cream}`,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ fontSize: "0.8rem", fontWeight: 600, color: colors.dark, marginBottom: "0.375rem" }}>
+                {new Date(r.weekStart + "T12:00:00").toLocaleDateString("es", { month: "short", day: "numeric" })}
+              </div>
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                {[
+                  { label: "G", value: r.overallRating, color: colors.accent },
+                  { label: "E", value: r.energyLevel, color: colors.success },
+                  { label: "P", value: r.productivityScore, color: colors.info },
+                ].map(({ label, value, color }) => (
+                  <div key={label} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: "0.7rem", color: colors.medium }}>{label}</div>
+                    <div style={{ fontSize: "0.875rem", fontWeight: 700, color }}>{value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+const TABS = [
+  { id: "notas", label: "Notas" },
+  { id: "areas", label: "Áreas de Vida" },
+  { id: "revision", label: "Revisión Semanal" },
+] as const;
+
+export default function OrganizationPage() {
+  const activeTab = useAppStore((s) => s.organizationTab);
+  const setActiveTab = useAppStore((s) => s.setOrganizationTab);
+  const { initialize, isLoaded } = useOrganizationStore();
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {/* Tabs */}
+      <div style={{ display: "flex", gap: "0.5rem", borderBottom: `2px solid ${colors.cream}` }}>
+        {TABS.map(({ id, label }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id)}
+            style={{
+              padding: "0.625rem 1.25rem", backgroundColor: "transparent", border: "none",
+              borderBottom: activeTab === id ? `2px solid ${colors.accent}` : "2px solid transparent",
+              marginBottom: "-2px", cursor: "pointer",
+              color: activeTab === id ? colors.accent : colors.medium,
+              fontWeight: activeTab === id ? 600 : 400,
+              fontSize: "0.875rem", transition: "color 0.2s",
             }}
           >
-            No hay películas o series en esta categoría.
-          </p>
-        </div>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {!isLoaded ? (
+        <div style={{ textAlign: "center", padding: "3rem", color: colors.medium }}>Cargando datos...</div>
+      ) : (
+        <>
+          {activeTab === "notas" && <NotesTab />}
+          {activeTab === "areas" && <LifeAreasTab />}
+          {activeTab === "revision" && <WeeklyReviewTab />}
+        </>
       )}
     </div>
   );

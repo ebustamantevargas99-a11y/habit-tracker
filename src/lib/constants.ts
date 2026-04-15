@@ -68,10 +68,20 @@ export const NAV_ITEMS = [
     label: "Nutrición",
     icon: "UtensilsCrossed",
     sections: [
-      "Recipe Book",
-      "Meal Planner",
-      "Grocery List",
-      "Kitchen Conversions",
+      "Diario",
+      "Resumen 7d",
+      "Mis Alimentos",
+      "Metas",
+    ],
+  },
+  {
+    key: "organization",
+    label: "Organización",
+    icon: "BookOpen",
+    sections: [
+      "Notas",
+      "Áreas de Vida",
+      "Revisión Semanal",
     ],
   },
   {

@@ -8,7 +8,7 @@ import type { PageKey } from "@/lib/constants";
 
 const VALID_PAGES: string[] = [
   "home", "plan", "productivity", "finance",
-  "fitness", "nutrition", "wellness", "settings",
+  "fitness", "nutrition", "wellness", "settings", "organization",
 ];
 
 const PLAN_TABS = ["calendar", "daily", "weekly", "monthly", "quarterly", "yearly"];
@@ -43,15 +43,19 @@ function tabForPage(
     planTab: number;
     fitnessTab: string;
     financeTab: string;
+    nutritionTab: string;
+    organizationTab: string;
   }
 ): string | undefined {
   switch (page) {
-    case "wellness":    return state.wellnessSubTab;
-    case "productivity": return state.productivitySubTab;
-    case "plan":        return PLAN_TABS[state.planTab];
-    case "fitness":     return state.fitnessTab;
-    case "finance":     return state.financeTab;
-    default:            return undefined;
+    case "wellness":      return state.wellnessSubTab;
+    case "productivity":  return state.productivitySubTab;
+    case "plan":          return PLAN_TABS[state.planTab];
+    case "fitness":       return state.fitnessTab;
+    case "finance":       return state.financeTab;
+    case "nutrition":     return state.nutritionTab;
+    case "organization":  return state.organizationTab;
+    default:              return undefined;
   }
 }
 
@@ -64,6 +68,8 @@ export function useRouteSync() {
   const planTab          = useAppStore((s) => s.planTab);
   const fitnessTab       = useAppStore((s) => s.fitnessTab);
   const financeTab       = useAppStore((s) => s.financeTab);
+  const nutritionTab     = useAppStore((s) => s.nutritionTab);
+  const organizationTab  = useAppStore((s) => s.organizationTab);
   const setPageFromURL   = useAppStore((s) => s.setPageFromURL);
 
   /**
@@ -123,6 +129,8 @@ export function useRouteSync() {
       planTab,
       fitnessTab,
       financeTab,
+      nutritionTab,
+      organizationTab,
     });
 
     const url = buildURL(activePage, tab);
@@ -131,5 +139,5 @@ export function useRouteSync() {
     if (url !== currentURL()) {
       window.history.pushState(null, "", url);
     }
-  }, [activePage, wellnessSubTab, productivitySubTab, planTab, fitnessTab, financeTab]);
+  }, [activePage, wellnessSubTab, productivitySubTab, planTab, fitnessTab, financeTab, nutritionTab, organizationTab]);
 }

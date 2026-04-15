@@ -258,6 +258,31 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
+  // ── Second batch: nutrition + organization ─────────────────────────────────
+  const [mealLogs, nutritionGoal, lifeAreasList, weeklyReviewsList, notesList] = await Promise.all([
+    prisma.mealLog.findMany({
+      where: { userId, date: { gte: from } },
+      include: { items: true },
+      orderBy: { date: "desc" },
+    }),
+    prisma.nutritionGoal.findUnique({ where: { userId } }),
+    prisma.lifeArea.findMany({
+      where: { userId },
+      select: { name: true, emoji: true, score: true },
+      orderBy: { orderIndex: "asc" },
+    }),
+    prisma.weeklyReview.findMany({
+      where: { userId },
+      orderBy: { weekStart: "desc" },
+      take: 4,
+    }),
+    prisma.note.findMany({
+      where: { userId },
+      select: { title: true, category: true, tags: true, isPinned: true, updatedAt: true },
+      orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
+    }),
+  ]);
+
   // ════════════════════════════════════════════════════════
   //  HABITS
   // ════════════════════════════════════════════════════════
@@ -921,6 +946,126 @@ export async function GET(req: NextRequest) {
   };
 
   // ════════════════════════════════════════════════════════
+  //  NUTRITION
+  // ════════════════════════════════════════════════════════
+
+  // Daily totals per date
+  const nutritionByDate: Record<string, { calories: number; protein: number; carbs: number; fat: number }> = {};
+  for (const meal of mealLogs) {
+    if (!nutritionByDate[meal.date]) nutritionByDate[meal.date] = { calories: 0, protein: 0, carbs: 0, fat: 0 };
+    for (const item of meal.items) {
+      nutritionByDate[meal.date].calories += item.calories;
+      nutritionByDate[meal.date].protein += item.protein;
+      nutritionByDate[meal.date].carbs += item.carbs;
+      nutritionByDate[meal.date].fat += item.fat;
+    }
+  }
+
+  const loggedDays = Object.values(nutritionByDate);
+  const loggedDayCount = loggedDays.filter((d) => d.calories > 0).length || 1;
+
+  const avgNutritionCalories = Math.round(loggedDays.reduce((s, d) => s + d.calories, 0) / loggedDayCount);
+  const avgNutritionProtein = Math.round(loggedDays.reduce((s, d) => s + d.protein, 0) / loggedDayCount);
+  const avgNutritionCarbs = Math.round(loggedDays.reduce((s, d) => s + d.carbs, 0) / loggedDayCount);
+  const avgNutritionFat = Math.round(loggedDays.reduce((s, d) => s + d.fat, 0) / loggedDayCount);
+
+  // Macro distribution
+  const totalCalFromMacros = avgNutritionProtein * 4 + avgNutritionCarbs * 4 + avgNutritionFat * 9;
+  const macroPct = totalCalFromMacros > 0 ? {
+    protein: Math.round((avgNutritionProtein * 4 / totalCalFromMacros) * 100),
+    carbs: Math.round((avgNutritionCarbs * 4 / totalCalFromMacros) * 100),
+    fat: Math.round((avgNutritionFat * 9 / totalCalFromMacros) * 100),
+  } : { protein: 0, carbs: 0, fat: 0 };
+
+  // Goal adherence
+  const goalAdherence = nutritionGoal && avgNutritionCalories > 0 ? {
+    calories: Math.round((avgNutritionCalories / nutritionGoal.calories) * 100),
+    protein: Math.round((avgNutritionProtein / nutritionGoal.protein) * 100),
+  } : null;
+
+  // Meal type distribution
+  const mealTypeCount: Record<string, number> = {};
+  for (const m of mealLogs) {
+    mealTypeCount[m.mealType] = (mealTypeCount[m.mealType] ?? 0) + 1;
+  }
+
+  const nutritionSection = {
+    summary: {
+      daysLogged: loggedDayCount,
+      averageCalories: avgNutritionCalories,
+      averageProtein: avgNutritionProtein,
+      averageCarbs: avgNutritionCarbs,
+      averageFat: avgNutritionFat,
+      macroDistributionPct: macroPct,
+    },
+    goal: nutritionGoal ? {
+      calories: nutritionGoal.calories,
+      protein: nutritionGoal.protein,
+      carbs: nutritionGoal.carbs,
+      fat: nutritionGoal.fat,
+    } : null,
+    goalAdherence,
+    mealTypeDistribution: mealTypeCount,
+    dailyLogs: Object.entries(nutritionByDate)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 14)
+      .map(([date, totals]) => ({
+        date,
+        calories: Math.round(totals.calories),
+        protein: Math.round(totals.protein),
+        carbs: Math.round(totals.carbs),
+        fat: Math.round(totals.fat),
+      })),
+  };
+
+  // ════════════════════════════════════════════════════════
+  //  ORGANIZATION
+  // ════════════════════════════════════════════════════════
+
+  const avgLifeScore =
+    lifeAreasList.length > 0
+      ? Math.round((lifeAreasList.reduce((s, a) => s + a.score, 0) / lifeAreasList.length) * 10) / 10
+      : 0;
+
+  const gapAreas = lifeAreasList.filter((a) => a.score <= 4).map((a) => `${a.emoji} ${a.name} (${a.score}/10)`);
+  const strongAreas = lifeAreasList.filter((a) => a.score >= 8).map((a) => `${a.emoji} ${a.name} (${a.score}/10)`);
+
+  const noteCategoryCount: Record<string, number> = {};
+  for (const n of notesList) {
+    noteCategoryCount[n.category] = (noteCategoryCount[n.category] ?? 0) + 1;
+  }
+
+  const avgReviewRating =
+    weeklyReviewsList.length > 0
+      ? Math.round((weeklyReviewsList.reduce((s, r) => s + r.overallRating, 0) / weeklyReviewsList.length) * 10) / 10
+      : null;
+
+  const organizationSection = {
+    notes: {
+      total: notesList.length,
+      pinned: notesList.filter((n) => n.isPinned).length,
+      byCategory: noteCategoryCount,
+    },
+    lifeAreas: {
+      areas: lifeAreasList,
+      averageScore: avgLifeScore,
+      gapAreas,
+      strongAreas,
+    },
+    weeklyReviews: {
+      lastFour: weeklyReviewsList.map((r) => ({
+        weekStart: r.weekStart,
+        overallRating: r.overallRating,
+        energyLevel: r.energyLevel,
+        productivityScore: r.productivityScore,
+        winsCount: r.wins.length,
+        challengesCount: r.challenges.length,
+      })),
+      averageOverallRating: avgReviewRating,
+    },
+  };
+
+  // ════════════════════════════════════════════════════════
   //  CROSS-MODULE INSIGHTS
   // ════════════════════════════════════════════════════════
 
@@ -998,9 +1143,23 @@ export async function GET(req: NextRequest) {
   };
   const overallLifeScore = lifeScoreFrom(lifeScoreBreakdown);
 
+  // Nutrition vs Fitness correlation
+  const nutritionVsFitness = allDates.map((date) => {
+    const workout = workouts.find((w) => w.date === date);
+    const nutrition = nutritionByDate[date];
+    return {
+      date,
+      workedOut: !!workout,
+      workoutVolume: workout ? Math.round(workout.totalVolume) : 0,
+      caloriesConsumed: nutrition ? Math.round(nutrition.calories) : null,
+      proteinConsumed: nutrition ? Math.round(nutrition.protein) : null,
+    };
+  });
+
   const crossModuleInsights = {
     sleepVsProductivity,
     exerciseVsMood,
+    nutritionVsFitness,
     lifeScore: {
       overall: overallLifeScore,
       breakdown: lifeScoreBreakdown,
@@ -1025,6 +1184,8 @@ export async function GET(req: NextRequest) {
     finance: financeSection,
     wellness: wellnessSection,
     productivity: productivitySection,
+    nutrition: nutritionSection,
+    organization: organizationSection,
     gamification: gamificationSection,
     crossModuleInsights,
   };
@@ -1036,7 +1197,7 @@ export async function GET(req: NextRequest) {
   if (format === "markdown") {
     const userName = user?.name ?? "Usuario";
     const { overall, breakdown } = crossModuleInsights.lifeScore;
-    const { habits: hs, fitness: fs, finance: fn, wellness: ws, productivity: ps } = pkg;
+    const { habits: hs, fitness: fs, finance: fn, wellness: ws, productivity: ps, nutrition: ns, organization: os } = pkg;
 
     const workoutMoodsWithEx = exerciseVsMood.filter((d) => d.workedOut && d.moodScore !== null);
     const workoutMoodsWithout = exerciseVsMood.filter((d) => !d.workedOut && d.moodScore !== null);
@@ -1160,6 +1321,29 @@ ${ps.projects.active.map((p) => `- ${p.name}: ${p.completedTasks}/${p.totalTasks
 
 OKRs:
 ${ps.okr.objectives.map((o) => `- ${o.title}: ${o.progress}%\n${o.keyResults.map((kr) => `  · ${kr.title}: ${kr.current}/${kr.target}${kr.unit ? " " + kr.unit : ""} (${kr.progressPercent}%)`).join("\n")}`).join("\n") || "Sin OKRs activos"}
+
+---
+
+### 🥗 Nutrición
+- Días registrados: ${ns.summary.daysLogged}
+- Calorías promedio: ${ns.summary.averageCalories} kcal/día${ns.goal ? ` (meta: ${ns.goal.calories} kcal, ${ns.goalAdherence?.calories ?? 0}%)` : ""}
+- Proteína promedio: ${ns.summary.averageProtein}g/día${ns.goal ? ` (meta: ${ns.goal.protein}g, ${ns.goalAdherence?.protein ?? 0}%)` : ""}
+- Carbohidratos promedio: ${ns.summary.averageCarbs}g/día
+- Grasa promedio: ${ns.summary.averageFat}g/día
+- Distribución macros: P ${ns.summary.macroDistributionPct.protein}% · C ${ns.summary.macroDistributionPct.carbs}% · G ${ns.summary.macroDistributionPct.fat}%
+
+---
+
+### 📋 Organización
+- Notas totales: ${os.notes.total} (${os.notes.pinned} fijadas)
+- Categorías de notas: ${Object.entries(os.notes.byCategory).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
+- Puntuación promedio Rueda de la Vida: ${os.lifeAreas.averageScore}/10
+- Áreas fuertes (≥8): ${os.lifeAreas.strongAreas.join(", ") || "—"}
+- Áreas de atención (≤4): ${os.lifeAreas.gapAreas.join(", ") || "—"}
+${os.weeklyReviews.averageOverallRating !== null ? `- Rating promedio revisión semanal: ${os.weeklyReviews.averageOverallRating}/10` : ""}
+
+Rueda de la Vida:
+${os.lifeAreas.areas.map((a) => `- ${a.emoji} ${a.name}: ${a.score}/10`).join("\n") || "Sin áreas configuradas"}
 
 ---
 

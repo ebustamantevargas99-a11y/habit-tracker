@@ -54,6 +54,16 @@ model User {
   weightLogs       WeightLog[]
   stepsLogs        StepsLog[]
   weeklyPlan       WeeklyPlan[]
+
+  // ── Nutrition ──────────────────────────────────────────────────────────────
+  foodItems        FoodItem[]
+  mealLogs         MealLog[]
+  nutritionGoal    NutritionGoal?
+
+  // ── Organization ───────────────────────────────────────────────────────────
+  notes            Note[]
+  lifeAreas        LifeArea[]
+  weeklyReviews    WeeklyReview[]
 }
 
 model Account {
@@ -679,4 +689,129 @@ model TimeBlock {
   dailyPlan   DailyPlan @relation(fields: [dailyPlanId], references: [id], onDelete: Cascade)
 
   @@index([dailyPlanId])
+}
+
+// ─── Nutrition ────────────────────────────────────────────────────────────────
+
+model FoodItem {
+  id          String     @id @default(cuid())
+  userId      String
+  name        String
+  brand       String?
+  servingSize Float      @default(100)
+  servingUnit String     @default("g")
+  calories    Float
+  protein     Float      @default(0)
+  carbs       Float      @default(0)
+  fat         Float      @default(0)
+  fiber       Float      @default(0)
+  sugar       Float      @default(0)
+  sodium      Float      @default(0)
+  isCustom    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems   MealItem[]
+
+  @@index([userId])
+  @@index([userId, name])
+}
+
+model MealLog {
+  id        String     @id @default(cuid())
+  userId    String
+  date      String
+  mealType  String     // breakfast | lunch | dinner | snack
+  name      String?
+  notes     String?
+  createdAt DateTime   @default(now())
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     MealItem[]
+
+  @@index([userId, date])
+}
+
+model MealItem {
+  id         String   @id @default(cuid())
+  mealLogId  String
+  foodItemId String
+  quantity   Float    @default(1)
+  unit       String   @default("serving")
+  calories   Float
+  protein    Float    @default(0)
+  carbs      Float    @default(0)
+  fat        Float    @default(0)
+  mealLog    MealLog  @relation(fields: [mealLogId], references: [id], onDelete: Cascade)
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+
+  @@index([mealLogId])
+}
+
+model NutritionGoal {
+  id             String   @id @default(cuid())
+  userId         String   @unique
+  calories       Float    @default(2000)
+  protein        Float    @default(150)
+  carbs          Float    @default(200)
+  fat            Float    @default(65)
+  fiber          Float    @default(25)
+  waterMl        Int      @default(2500)
+  mealsPerDay    Int      @default(3)
+  updatedAt      DateTime @updatedAt
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Organization ─────────────────────────────────────────────────────────────
+
+model Note {
+  id         String   @id @default(cuid())
+  userId     String
+  title      String
+  content    String   @db.Text
+  category   String   @default("general")
+  tags       String[]
+  isPinned   Boolean  @default(false)
+  color      String   @default("#FEFCE8")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, category])
+}
+
+model LifeArea {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  emoji       String   @default("🎯")
+  score       Int      @default(5)   // 1-10
+  description String?
+  color       String   @default("#B8860B")
+  orderIndex  Int      @default(0)
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model WeeklyReview {
+  id              String   @id @default(cuid())
+  userId          String
+  weekStart       String   // ISO date of Monday
+  wins            String[] @default([])
+  challenges      String[] @default([])
+  learnings       String[] @default([])
+  nextWeekGoals   String[] @default([])
+  gratitude       String[] @default([])
+  overallRating   Int      @default(5)  // 1-10
+  energyLevel     Int      @default(5)
+  productivityScore Int    @default(5)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, weekStart])
+  @@index([userId])
 }

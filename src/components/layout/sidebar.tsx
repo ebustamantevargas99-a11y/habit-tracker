@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAppStore, type WellnessTab, type ProductivityTab, type PlanTab } from "@/stores/app-store";
+
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
@@ -32,6 +33,43 @@ const PLAN_SECTION_MAP: Record<string, PlanTab> = {
   "Quarterly Planner": 4,
   "Yearly Planner": 5,
 };
+
+// Map sidebar section label → fitnessTab id
+const FITNESS_SECTION_MAP: Record<string, string> = {
+  "Workout Tracker": "entrenamiento",
+  "Volume Tracker": "volumen",
+  "Workout Plan": "plan",
+  "PR Board": "records",
+  "Body Metrics": "metricas",
+  "Weight Tracker": "peso",
+  "Steps": "pasos",
+  "Fasting": "ayuno",
+};
+
+// Map sidebar section label → financeTab id
+const FINANCE_SECTION_MAP: Record<string, string> = {
+  "Income": "ingresos",
+  "Expenses": "gastos",
+  "Budget Tracker": "presupuesto",
+  "Bills": "facturas",
+  "Subscriptions": "suscripciones",
+  "Wishlist": "deseos",
+};
+
+// Map sidebar section label → nutritionTab id
+const NUTRITION_SECTION_MAP: Record<string, string> = {
+  "Diario": "diario",
+  "Resumen 7d": "resumen",
+  "Mis Alimentos": "alimentos",
+  "Metas": "metas",
+};
+
+// Map sidebar section label → organizationTab id
+const ORGANIZATION_SECTION_MAP: Record<string, string> = {
+  "Notas": "notas",
+  "Áreas de Vida": "areas",
+  "Revisión Semanal": "revision",
+};
 import * as LucideIcons from "lucide-react";
 import React from "react";
 import { signOut } from "next-auth/react";
@@ -41,7 +79,11 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
-  const { activePage, setActivePage, setWellnessSubTab, setProductivitySubTab, setPlanTab } = useAppStore();
+  const {
+    activePage, setActivePage,
+    setWellnessSubTab, setProductivitySubTab, setPlanTab,
+    setFitnessTab, setFinanceTab, setNutritionTab, setOrganizationTab,
+  } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
   const { user } = useUserStore();
   const displayName = user?.name ?? 'Usuario';
@@ -200,6 +242,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         }
                         if (item.key === "plan" && PLAN_SECTION_MAP[section] !== undefined) {
                           setPlanTab(PLAN_SECTION_MAP[section]);
+                        }
+                        if (item.key === "fitness" && FITNESS_SECTION_MAP[section]) {
+                          setFitnessTab(FITNESS_SECTION_MAP[section]);
+                        }
+                        if (item.key === "finance" && FINANCE_SECTION_MAP[section]) {
+                          setFinanceTab(FINANCE_SECTION_MAP[section]);
+                        }
+                        if (item.key === "nutrition" && NUTRITION_SECTION_MAP[section]) {
+                          setNutritionTab(NUTRITION_SECTION_MAP[section]);
+                        }
+                        if (item.key === "organization" && ORGANIZATION_SECTION_MAP[section]) {
+                          setOrganizationTab(ORGANIZATION_SECTION_MAP[section]);
                         }
                       }}
                       style={{

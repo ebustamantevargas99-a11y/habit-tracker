@@ -12,6 +12,8 @@ const VALID_TABS: Record<string, string[]> = {
   plan:         ['calendar', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
   fitness:      ['entrenamiento', 'volumen', 'plan', 'records', 'metricas', 'peso', 'pasos', 'ayuno', 'retos', 'fotos'],
   finance:      ['resumen', 'ingresos', 'gastos', 'presupuesto', 'facturas', 'suscripciones', 'deseos', 'analytics'],
+  nutrition:    ['diario', 'resumen', 'alimentos', 'metas'],
+  organization: ['notas', 'areas', 'revision'],
 };
 
 interface AppState {
@@ -40,6 +42,14 @@ interface AppState {
   // Finance deep-link
   financeTab: string;
   setFinanceTab: (tab: string) => void;
+
+  // Nutrition deep-link
+  nutritionTab: string;
+  setNutritionTab: (tab: string) => void;
+
+  // Organization deep-link
+  organizationTab: string;
+  setOrganizationTab: (tab: string) => void;
 
   // Apply URL state without pushing to history (called by useRouteSync)
   setPageFromURL: (page: PageKey, tab?: string) => void;
@@ -72,6 +82,12 @@ export const useAppStore = create<AppState>((set) => ({
   financeTab: 'resumen',
   setFinanceTab: (tab) => set({ financeTab: tab }),
 
+  nutritionTab: 'diario',
+  setNutritionTab: (tab) => set({ nutritionTab: tab }),
+
+  organizationTab: 'notas',
+  setOrganizationTab: (tab) => set({ organizationTab: tab }),
+
   setPageFromURL: (page, tab) => {
     const update: Partial<AppState> = { activePage: page };
 
@@ -96,6 +112,12 @@ export const useAppStore = create<AppState>((set) => ({
             break;
           case 'finance':
             update.financeTab = tab;
+            break;
+          case 'nutrition':
+            update.nutritionTab = tab;
+            break;
+          case 'organization':
+            update.organizationTab = tab;
             break;
         }
       }

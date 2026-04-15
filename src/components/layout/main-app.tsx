@@ -11,6 +11,7 @@ import BudgetTrackerPage from "@/components/features/finance/budget-tracker-page
 import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
+import OrganizationPage from "@/components/features/organization/organization-page";
 import MonthlySummaryModal from "@/components/features/home/monthly-summary-modal";
 import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal";
 import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
@@ -25,6 +26,8 @@ import { useWellnessStore } from "@/stores/wellness-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { useThemeStore } from "@/stores/theme-store";
+import { useNutritionStore } from "@/stores/nutrition-store";
+import { useOrganizationStore } from "@/stores/organization-store";
 
 // Fires browser notifications at the scheduled time
 function NotificationScheduler() {
@@ -76,6 +79,8 @@ export default function MainApp() {
   const initWellness = useWellnessStore((s) => s.initialize);
   const initGamification = useGamificationStore((s) => s.initialize);
   const initUser = useUserStore((s) => s.initialize);
+  const initNutrition = useNutritionStore((s) => s.initialize);
+  const initOrganization = useOrganizationStore((s) => s.initialize);
 
   useEffect(() => {
     initHabits();
@@ -84,7 +89,9 @@ export default function MainApp() {
     initWellness();
     initGamification();
     initUser();
-  }, [initHabits, initFinance, initFitness, initWellness, initGamification, initUser]);
+    initNutrition();
+    initOrganization();
+  }, [initHabits, initFinance, initFitness, initWellness, initGamification, initUser, initNutrition, initOrganization]);
 
   // Map page names to components
   const renderPage = () => {
@@ -103,6 +110,8 @@ export default function MainApp() {
         return <FitnessPage />;
       case "nutrition":
         return <NutritionPage />;
+      case "organization":
+        return <OrganizationPage />;
       case "settings":
         return <SettingsPage />;
       default:
@@ -119,6 +128,7 @@ export default function MainApp() {
       finance: "Finanzas",
       fitness: "Fitness",
       nutrition: "Nutrición",
+      organization: "Organización",
       wellness: "Bienestar",
       settings: "Configuración",
     };
