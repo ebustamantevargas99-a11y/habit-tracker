@@ -9,6 +9,7 @@ import { useGamificationStore } from '@/stores/gamification-store';
 import { useUserStore } from '@/stores/user-store';
 import { useThemeStore, type ThemeId } from '@/stores/theme-store';
 import { api } from '@/lib/api-client';
+import ExportSection from './export-section';
 
 const C = {
   dark: "#3D2B1F", brown: "#6B4226", medium: "#8B6542", warm: "#A0845C",
@@ -548,10 +549,13 @@ function DataTab() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {/* AI Export Section */}
+      <ExportSection />
+
       {/* Export */}
       <div style={cardStyle}>
         <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Download size={20} color={C.accent} /> Exportar Datos
+          <Download size={20} color={C.accent} /> Exportar Datos (Backup)
         </h3>
         <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 20px 0' }}>
           Descarga una copia de todos tus datos

@@ -7,7 +7,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line
 } from 'recharts';
 import {
-  TrendingUp, Flame, Award, Target, Sun, CloudSun, Sunset, Moon, Trophy
+  TrendingUp, Flame, Award, Target, Sun, CloudSun, Sunset, Moon, Trophy, Clipboard, Check, Loader2
 } from 'lucide-react';
 import { useHabitStore } from '@/stores/habit-store';
 import { useUserStore } from '@/stores/user-store';
@@ -70,6 +70,83 @@ const HabitCard: React.FC<{ emoji: string; name: string; streak: number; complet
     }
   </div>
 );
+
+// ── AI Analysis Card ───────────────────────────────────────────────────────────
+
+function AIAnalysisCard() {
+  const [loading, setLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const handleAnalyze = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/export/ai-context?days=30&format=markdown');
+      if (!res.ok) throw new Error();
+      const text = await res.text();
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setToast('Resumen copiado. Pégalo en tu IA favorita para obtener recomendaciones');
+      setTimeout(() => { setCopied(false); setToast(null); }, 4000);
+    } catch {
+      setToast('No se pudo generar el resumen. Intenta desde Configuración → Datos.');
+      setTimeout(() => setToast(null), 4000);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
+          backgroundColor: C.dark, color: C.paper, padding: '12px 24px', borderRadius: '8px',
+          fontSize: '14px', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+          whiteSpace: 'nowrap',
+        }}>
+          {toast}
+        </div>
+      )}
+      <div style={{
+        background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px',
+        padding: '20px', marginBottom: '32px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px',
+      }}>
+        <div>
+          <div style={{ fontSize: '16px', fontWeight: 'bold', color: C.brown, marginBottom: '4px' }}>
+            🤖 Analizar con IA
+          </div>
+          <div style={{ fontSize: '13px', color: C.warm }}>
+            Copia un resumen completo de tus últimos 30 días para analizarlo con Claude o ChatGPT
+          </div>
+        </div>
+        <button
+          onClick={handleAnalyze}
+          disabled={loading}
+          style={{
+            padding: '12px 24px',
+            backgroundColor: copied ? C.success : loading ? C.lightTan : C.accent,
+            color: C.paper, border: 'none', borderRadius: '8px',
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontWeight: '700', fontSize: '14px',
+            display: 'flex', alignItems: 'center', gap: '8px',
+            transition: 'background 0.3s', flexShrink: 0,
+          }}
+        >
+          {loading ? (
+            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+          ) : copied ? (
+            <Check size={16} />
+          ) : (
+            <Clipboard size={16} />
+          )}
+          {loading ? 'Generando…' : copied ? '¡Copiado!' : 'Copiar Resumen'}
+        </button>
+      </div>
+    </>
+  );
+}
 
 export default function HomeDashboard() {
   const habits = useHabitStore((s) => s.habits.filter(h => h.isActive !== false));
@@ -511,6 +588,9 @@ export default function HomeDashboard() {
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {/* AI Analysis Card */}
+      <AIAnalysisCard />
 
       {/* Motivational Footer */}
       <div style={{
