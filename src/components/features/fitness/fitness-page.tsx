@@ -34,6 +34,7 @@ import { colors } from '@/lib/colors';
 import { VOLUME_LANDMARKS } from '@/lib/constants';
 import { useFitnessExtendedStore } from '@/stores/fitness-extended-store';
 import { useFitnessStore } from '@/stores/fitness-store';
+import { useAppStore } from '@/stores/app-store';
 
 // ============================================================================
 // SAMPLE DATA
@@ -2922,7 +2923,8 @@ function makeDefaultExercises(): EngineExercise[] {
 }
 
 export default function FitnessPage() {
-  const [activeTab, setActiveTab] = useState<string>('entrenamiento');
+  const activeTab = useAppStore((s) => s.fitnessTab);
+  const setActiveTab = useAppStore((s) => s.setFitnessTab);
 
   // ── Store ────────────────────────────────────────────────────────────────────
   const {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useAppStore } from "@/stores/app-store";
 import { colors } from "@/lib/colors";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid,
@@ -958,7 +959,8 @@ const TABS = [
 ];
 
 const BudgetTrackerPage = () => {
-  const [activeTab, setActiveTab] = useState("resumen");
+  const activeTab = useAppStore((s) => s.financeTab);
+  const setActiveTab = useAppStore((s) => s.setFinanceTab);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>

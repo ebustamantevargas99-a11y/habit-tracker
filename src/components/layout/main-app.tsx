@@ -17,6 +17,7 @@ import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
 import SettingsPage from "@/components/features/settings/settings-page";
 import { useState, useEffect } from "react";
 import { Menu, Bell, User } from "lucide-react";
+import { useRouteSync } from "@/lib/use-route-sync";
 import { useHabitStore } from "@/stores/habit-store";
 import { useFinanceStore } from "@/stores/finance-store";
 import { useFitnessStore } from "@/stores/fitness-store";
@@ -64,6 +65,7 @@ function ThemeInitializer() {
 }
 
 export default function MainApp() {
+  useRouteSync();
   const { activePage, showMonthlySummary, showWeeklySummary, toggleSidebar } = useAppStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);

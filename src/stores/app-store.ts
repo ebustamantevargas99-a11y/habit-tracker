@@ -5,6 +5,15 @@ export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'healthlog';
 export type ProductivityTab = 'command' | 'habits' | 'projects' | 'pomodoro' | 'projection';
 export type PlanTab = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
+// Valid tab values per page (used by setPageFromURL for validation)
+const VALID_TABS: Record<string, string[]> = {
+  wellness:     ['sleep', 'hydration', 'medication', 'healthlog'],
+  productivity: ['command', 'habits', 'projects', 'pomodoro', 'projection'],
+  plan:         ['calendar', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+  fitness:      ['entrenamiento', 'volumen', 'plan', 'records', 'metricas', 'peso', 'pasos', 'ayuno', 'retos', 'fotos'],
+  finance:      ['resumen', 'ingresos', 'gastos', 'presupuesto', 'facturas', 'suscripciones', 'deseos', 'analytics'],
+};
+
 interface AppState {
   // Navigation
   activePage: PageKey;
@@ -23,6 +32,17 @@ interface AppState {
   // Plan deep-link
   planTab: PlanTab;
   setPlanTab: (tab: PlanTab) => void;
+
+  // Fitness deep-link
+  fitnessTab: string;
+  setFitnessTab: (tab: string) => void;
+
+  // Finance deep-link
+  financeTab: string;
+  setFinanceTab: (tab: string) => void;
+
+  // Apply URL state without pushing to history (called by useRouteSync)
+  setPageFromURL: (page: PageKey, tab?: string) => void;
 
   // Modals
   showMonthlySummary: boolean;
@@ -45,6 +65,44 @@ export const useAppStore = create<AppState>((set) => ({
 
   planTab: 0,
   setPlanTab: (tab) => set({ planTab: tab }),
+
+  fitnessTab: 'entrenamiento',
+  setFitnessTab: (tab) => set({ fitnessTab: tab }),
+
+  financeTab: 'resumen',
+  setFinanceTab: (tab) => set({ financeTab: tab }),
+
+  setPageFromURL: (page, tab) => {
+    const update: Partial<AppState> = { activePage: page };
+
+    if (tab) {
+      const validTabs = VALID_TABS[page] ?? [];
+      if (validTabs.includes(tab)) {
+        switch (page) {
+          case 'wellness':
+            update.wellnessSubTab = tab as WellnessTab;
+            break;
+          case 'productivity':
+            update.productivitySubTab = tab as ProductivityTab;
+            break;
+          case 'plan': {
+            const PLAN_TABS = VALID_TABS.plan;
+            const idx = PLAN_TABS.indexOf(tab);
+            if (idx >= 0) update.planTab = idx as PlanTab;
+            break;
+          }
+          case 'fitness':
+            update.fitnessTab = tab;
+            break;
+          case 'finance':
+            update.financeTab = tab;
+            break;
+        }
+      }
+    }
+
+    set(update);
+  },
 
   showMonthlySummary: false,
   showWeeklySummary: false,
