@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/habits/completion-rate?days=30
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   const days = parseInt(searchParams.get("days") ?? "30");
@@ -17,7 +14,7 @@ export async function GET(req: NextRequest) {
   const cutoffStr = cutoff.toISOString().split("T")[0];
 
   const logs = await prisma.habitLog.findMany({
-    where: { userId: session.user.id, date: { gte: cutoffStr } },
+    where: { userId: userId, date: { gte: cutoffStr } },
     select: { completed: true },
   });
 
@@ -27,4 +24,5 @@ export async function GET(req: NextRequest) {
   const rate = Math.round((completed / logs.length) * 100);
 
   return NextResponse.json({ rate });
+});
 }

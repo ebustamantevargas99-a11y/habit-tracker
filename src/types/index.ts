@@ -120,17 +120,6 @@ export interface BodyMetric {
   method?: string;
 }
 
-export interface BioimpedanceData {
-  date: string;
-  waterPercent: number;
-  muscleMass: number;
-  boneMass: number;
-  visceralFat: number;
-  bmr: number;
-  metabolicAge: number;
-  proteinPercent?: number;
-}
-
 // ─── Finance ──────────────────────────────────────────────────────────────────
 
 export type TransactionType = "income" | "expense";

@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const inter = Inter({
@@ -9,17 +10,45 @@ const inter = Inter({
   variable: "--font-inter",
 });
 
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-playfair",
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
 export const metadata: Metadata = {
-  title: "Ultimate Habit Tracker",
-  description: "Track your habits, build better routines, and achieve your goals with visual insights and comprehensive dashboards.",
+  title: "Ultimate TRACKER",
+  description:
+    "Trackea toda tu vida en una sola app: hábitos, fitness, nutrición, finanzas, wellness y más. Exporta tu contexto a la IA de tu preferencia para análisis.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Ultimate TRACKER",
+  },
   icons: {
-    icon: "🎯",
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: "/apple-icon.png",
+  },
+  openGraph: {
+    title: "Ultimate TRACKER",
+    description: "La única app que necesitas para trackear tu vida.",
+    type: "website",
   },
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FFFDF9" },
+    { media: "(prefers-color-scheme: dark)", color: "#1A1411" },
+  ],
 };
 
 export default function RootLayout({
@@ -28,12 +57,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
+    <html lang="es" suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans`}
+        className={`${inter.variable} ${playfair.variable} font-sans`}
         style={{ backgroundColor: "var(--color-paper)" }}
       >
         <SessionProvider>{children}</SessionProvider>
+        <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
   );

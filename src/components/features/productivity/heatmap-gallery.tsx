@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { cn } from "@/components/ui";
 import { useHabitStore } from "@/stores/habit-store";
 
 const C = {
@@ -7,7 +8,6 @@ const C = {
   tan: "#C4A882", lightTan: "#D4BEA0", cream: "#EDE0D4", lightCream: "#F5EDE3",
   warmWhite: "#FAF7F3", paper: "#FFFDF9", accent: "#B8860B", accentLight: "#D4A843",
   accentGlow: "#F0D78C", success: "#7A9E3E", successLight: "#D4E6B5",
-  warning: "#D4943A", dangerLight: "#F5D0CE", info: "#5A8FA8",
 };
 
 // Intensity levels: 0=none, 1=low, 2=med, 3=high, 4=max
@@ -16,11 +16,9 @@ const HEAT_COLORS = [C.lightCream, C.cream, C.tan, C.warm, C.brown];
 const MONTHS_SHORT = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct","Nov","Dic"];
 const DAYS_SHORT   = ["D","L","M","X","J","V","S"];
 
-// Build a full 365-day grid aligned to Sunday weeks
 function buildYearGrid(today: Date): { date: string; dayOfWeek: number }[][] {
   const start = new Date(today);
-  start.setDate(start.getDate() - 364); // go back ~52 weeks
-  // align to Sunday
+  start.setDate(start.getDate() - 364);
   const dow = start.getDay();
   start.setDate(start.getDate() - dow);
 
@@ -41,7 +39,6 @@ function buildYearGrid(today: Date): { date: string; dayOfWeek: number }[][] {
   return weeks;
 }
 
-// Compute month labels for the week columns
 function buildMonthLabels(weeks: { date: string }[][]): { col: number; label: string }[] {
   const labels: { col: number; label: string }[] = [];
   let lastMonth = -1;
@@ -70,7 +67,6 @@ function HabitHeatmap({ habitId, habitName, habitIcon, streakCurrent, streakBest
   const weeks = useMemo(() => buildYearGrid(today), [today]);
   const monthLabels = useMemo(() => buildMonthLabels(weeks), [weeks]);
 
-  // Build lookup: date → level
   const levelMap = useMemo(() => {
     const m: Record<string, number> = {};
     logs.filter(l => l.habitId === habitId).forEach(l => {
@@ -86,45 +82,39 @@ function HabitHeatmap({ habitId, habitName, habitIcon, streakCurrent, streakBest
   const GAP  = 2;
 
   return (
-    <div style={{
-      backgroundColor: C.paper,
-      border: `1px solid ${C.lightCream}`,
-      borderRadius: "14px",
-      padding: "20px 24px",
-      boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
-    }}>
+    <div className="bg-brand-paper border border-brand-light-cream rounded-[14px] px-6 py-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
       {/* Header */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+      <div className="flex justify-between items-start mb-4">
         <div>
-          <div style={{ fontSize: "16px", fontWeight: "700", color: C.dark, display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="text-base font-bold text-brand-dark flex items-center gap-2">
             <span>{habitIcon}</span>
-            <span style={{ fontFamily: "Georgia, serif" }}>{habitName}</span>
+            <span className="font-serif">{habitName}</span>
           </div>
-          <div style={{ display: "flex", gap: "16px", marginTop: "6px" }}>
-            <span style={{ fontSize: "12px", color: C.warm }}>{completedDays} días completados</span>
-            <span style={{ fontSize: "12px", color: C.warm }}>Racha actual: <strong style={{ color: streakCurrent > 0 ? C.accent : C.medium }}>{streakCurrent}d</strong></span>
-            <span style={{ fontSize: "12px", color: C.warm }}>Mejor racha: <strong style={{ color: C.brown }}>{streakBest}d</strong></span>
+          <div className="flex gap-4 mt-1.5">
+            <span className="text-xs text-brand-warm">{completedDays} días completados</span>
+            <span className="text-xs text-brand-warm">Racha actual: <strong className={streakCurrent > 0 ? "text-accent" : "text-brand-medium"}>{streakCurrent}d</strong></span>
+            <span className="text-xs text-brand-warm">Mejor racha: <strong className="text-brand-brown">{streakBest}d</strong></span>
           </div>
         </div>
         {/* Legend */}
-        <div style={{ display: "flex", alignItems: "center", gap: "4px" }}>
-          <span style={{ fontSize: "11px", color: C.tan }}>Menos</span>
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] text-brand-tan">Menos</span>
           {HEAT_COLORS.map((col, i) => (
-            <div key={i} style={{ width: CELL, height: CELL, backgroundColor: col, borderRadius: "3px" }} />
+            <div key={i} className="rounded-[3px]" style={{ width: CELL, height: CELL, backgroundColor: col }} />
           ))}
-          <span style={{ fontSize: "11px", color: C.tan }}>Más</span>
+          <span className="text-[11px] text-brand-tan">Más</span>
         </div>
       </div>
 
       {/* Grid */}
-      <div style={{ overflowX: "auto" }}>
-        <div style={{ display: "inline-flex", flexDirection: "column", gap: 0 }}>
+      <div className="overflow-x-auto">
+        <div className="inline-flex flex-col gap-0">
           {/* Month labels */}
-          <div style={{ display: "flex", gap: GAP, marginBottom: "4px", paddingLeft: "28px" }}>
+          <div className="flex mb-1 pl-7 gap-[2px]">
             {weeks.map((_, col) => {
               const label = monthLabels.find(ml => ml.col === col);
               return (
-                <div key={col} style={{ width: CELL, fontSize: "10px", color: C.medium, whiteSpace: "nowrap" }}>
+                <div key={col} className="text-[10px] text-brand-medium whitespace-nowrap w-[13px]">
                   {label ? label.label : ""}
                 </div>
               );
@@ -133,15 +123,15 @@ function HabitHeatmap({ habitId, habitName, habitIcon, streakCurrent, streakBest
 
           {/* Grid rows = days of week */}
           {[0, 1, 2, 3, 4, 5, 6].map(dow => (
-            <div key={dow} style={{ display: "flex", alignItems: "center", gap: GAP, marginBottom: GAP }}>
+            <div key={dow} className="flex items-center gap-[2px] mb-[2px]">
               {/* Day label */}
-              <div style={{ width: "22px", fontSize: "10px", color: C.medium, textAlign: "right", paddingRight: "4px", flexShrink: 0 }}>
+              <div className="text-[10px] text-brand-medium text-right pr-1 shrink-0 w-[22px]">
                 {dow % 2 === 1 ? DAYS_SHORT[dow] : ""}
               </div>
               {/* Cells */}
               {weeks.map((week, col) => {
                 const cell = week[dow];
-                if (!cell) return <div key={col} style={{ width: CELL, height: CELL }} />;
+                if (!cell) return <div key={col} className="w-[13px] h-[13px]" />;
                 const cellDate = new Date(cell.date + "T00:00:00");
                 const isFuture = cellDate > today;
                 const level = isFuture ? -1 : (levelMap[cell.date] ?? 0);
@@ -152,17 +142,11 @@ function HabitHeatmap({ habitId, habitName, habitIcon, streakCurrent, streakBest
                   <div
                     key={col}
                     title={`${cell.date}: ${level > 0 ? "Completado ✓" : isFuture ? "—" : "No completado"}`}
-                    style={{
-                      width: CELL,
-                      height: CELL,
-                      backgroundColor: bg,
-                      borderRadius: "3px",
-                      border: isToday ? `2px solid ${C.accent}` : isFuture ? "none" : `1px solid rgba(0,0,0,0.05)`,
-                      boxSizing: "border-box",
-                      cursor: "default",
-                      transition: "transform 0.1s",
-                      flexShrink: 0,
-                    }}
+                    className={cn(
+                      "rounded-[3px] box-border cursor-default transition-transform duration-100 shrink-0",
+                      isToday ? "border-2 border-accent" : isFuture ? "border-0" : "border border-black/5"
+                    )}
+                    style={{ width: CELL, height: CELL, backgroundColor: bg }}
                     onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1.3)"; }}
                     onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "scale(1)"; }}
                   />
@@ -193,14 +177,17 @@ function MonthlyBar({ habitId }: { habitId: string }) {
   }, [logs, habitId]);
 
   return (
-    <div style={{ display: "flex", gap: "8px", alignItems: "flex-end", height: "48px", marginTop: "12px" }}>
+    <div className="flex gap-2 items-end h-12 mt-3">
       {months.map(m => (
-        <div key={m.label} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
-          <div style={{ fontSize: "10px", color: C.warm, fontWeight: "600" }}>{m.pct}%</div>
-          <div style={{ width: "100%", backgroundColor: C.lightCream, borderRadius: "4px", overflow: "hidden", height: "28px", display: "flex", alignItems: "flex-end" }}>
-            <div style={{ width: "100%", height: `${m.pct}%`, backgroundColor: m.pct >= 80 ? C.success : m.pct >= 50 ? C.accent : C.tan, borderRadius: "4px", transition: "height 0.6s ease" }} />
+        <div key={m.label} className="flex-1 flex flex-col items-center gap-[3px]">
+          <div className="text-[10px] text-brand-warm font-semibold">{m.pct}%</div>
+          <div className="w-full bg-brand-light-cream rounded-[4px] overflow-hidden h-7 flex items-end">
+            <div
+              className={cn("w-full rounded-[4px] transition-[height] duration-[600ms]", m.pct >= 80 ? "bg-success" : m.pct >= 50 ? "bg-accent" : "bg-brand-tan")}
+              style={{ height: `${m.pct}%` }}
+            />
           </div>
-          <div style={{ fontSize: "10px", color: C.medium }}>{m.label}</div>
+          <div className="text-[10px] text-brand-medium">{m.label}</div>
         </div>
       ))}
     </div>
@@ -225,20 +212,19 @@ export default function HeatMapGallery() {
 
   if (!isLoaded) {
     return (
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "300px", gap: "16px" }}>
-        <div style={{ width: "48px", height: "48px", border: `4px solid ${C.cream}`, borderTopColor: C.accent, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
-        <p style={{ color: C.warm, fontSize: "14px" }}>Cargando hábitos...</p>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <div className="flex flex-col items-center justify-center h-[300px] gap-4">
+        <div className="w-12 h-12 border-4 border-brand-cream border-t-accent rounded-full animate-spin" />
+        <p className="text-brand-warm text-sm">Cargando hábitos...</p>
       </div>
     );
   }
 
   if (habits.length === 0) {
     return (
-      <div style={{ textAlign: "center", padding: "60px 20px", color: C.medium }}>
-        <div style={{ fontSize: "48px", marginBottom: "16px" }}>📊</div>
-        <p style={{ fontSize: "16px", fontFamily: "Georgia, serif", color: C.dark }}>Sin hábitos activos</p>
-        <p style={{ fontSize: "13px" }}>Crea hábitos en el Habit Tracker para ver tus heatmaps aquí.</p>
+      <div className="text-center px-5 py-[60px] text-brand-medium">
+        <div className="text-[48px] mb-4">📊</div>
+        <p className="text-base font-serif text-brand-dark">Sin hábitos activos</p>
+        <p className="text-[13px]">Crea hábitos en el Habit Tracker para ver tus heatmaps aquí.</p>
       </div>
     );
   }
@@ -246,19 +232,22 @@ export default function HeatMapGallery() {
   return (
     <div>
       {/* Controls */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
+      <div className="flex justify-between items-center mb-6 flex-wrap gap-3">
         <div>
-          <h2 style={{ margin: 0, fontSize: "22px", fontFamily: "Georgia, serif", color: C.dark }}>Heatmaps por Hábito</h2>
-          <p style={{ margin: "4px 0 0 0", fontSize: "13px", color: C.warm }}>Visualización anual de tu consistencia</p>
+          <h2 className="m-0 text-[22px] font-serif text-brand-dark">Heatmaps por Hábito</h2>
+          <p className="m-0 mt-1 text-[13px] text-brand-warm">Visualización anual de tu consistencia</p>
         </div>
-        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+        <div className="flex gap-2.5 items-center flex-wrap">
           {/* View toggle */}
-          <div style={{ display: "flex", border: `2px solid ${C.tan}`, borderRadius: "8px", overflow: "hidden" }}>
+          <div className="flex border-2 border-brand-tan rounded-lg overflow-hidden">
             {(["annual", "monthly"] as const).map(v => (
               <button
                 key={v}
                 onClick={() => setView(v)}
-                style={{ padding: "7px 14px", backgroundColor: view === v ? C.accent : C.paper, color: view === v ? C.paper : C.dark, border: "none", cursor: "pointer", fontSize: "12px", fontWeight: view === v ? "700" : "400", transition: "background-color 0.2s" }}
+                className={cn(
+                  "px-3.5 py-[7px] border-none cursor-pointer text-xs transition-colors duration-200",
+                  view === v ? "bg-accent text-brand-paper font-bold" : "bg-brand-paper text-brand-dark font-normal"
+                )}
               >
                 {v === "annual" ? "Anual" : "Últimos 6 meses"}
               </button>
@@ -268,7 +257,7 @@ export default function HeatMapGallery() {
           <select
             value={filter}
             onChange={e => setFilter(e.target.value)}
-            style={{ padding: "8px 12px", border: `2px solid ${C.tan}`, borderRadius: "8px", fontSize: "13px", backgroundColor: C.paper, color: C.dark, cursor: "pointer" }}
+            className="px-3 py-2 border-2 border-brand-tan rounded-lg text-[13px] bg-brand-paper text-brand-dark cursor-pointer"
           >
             {categories.map(c => (
               <option key={c} value={c}>{c === "all" ? "Todas las categorías" : c}</option>
@@ -278,7 +267,7 @@ export default function HeatMapGallery() {
       </div>
 
       {/* Heatmaps */}
-      <div style={{ display: "grid", gap: "20px" }}>
+      <div className="grid gap-5">
         {filtered.map(habit => (
           <div key={habit.id}>
             {view === "annual" ? (
@@ -290,12 +279,12 @@ export default function HeatMapGallery() {
                 streakBest={habit.streakBest}
               />
             ) : (
-              <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: "14px", padding: "20px 24px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
-                <div style={{ fontSize: "16px", fontWeight: "700", color: C.dark, display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <div className="bg-brand-paper border border-brand-light-cream rounded-[14px] px-6 py-5 shadow-[0_2px_10px_rgba(0,0,0,0.05)]">
+                <div className="text-base font-bold text-brand-dark flex items-center gap-2 mb-1">
                   <span>{habit.icon}</span>
-                  <span style={{ fontFamily: "Georgia, serif" }}>{habit.name}</span>
-                  <span style={{ marginLeft: "auto", fontSize: "12px", color: C.warm, fontWeight: "400" }}>
-                    Racha: <strong style={{ color: habit.streakCurrent > 0 ? C.accent : C.medium }}>{habit.streakCurrent}d</strong>
+                  <span className="font-serif">{habit.name}</span>
+                  <span className="ml-auto text-xs text-brand-warm font-normal">
+                    Racha: <strong className={habit.streakCurrent > 0 ? "text-accent" : "text-brand-medium"}>{habit.streakCurrent}d</strong>
                   </span>
                 </div>
                 <MonthlyBar habitId={habit.id} />
@@ -306,28 +295,28 @@ export default function HeatMapGallery() {
       </div>
 
       {/* Overall summary */}
-      <div style={{ marginTop: "32px", padding: "20px 24px", backgroundColor: C.lightCream, borderRadius: "14px", display: "flex", gap: "32px", flexWrap: "wrap" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "28px", fontWeight: "800", color: C.dark, fontFamily: "Georgia, serif" }}>{habits.length}</div>
-          <div style={{ fontSize: "12px", color: C.warm }}>Hábitos activos</div>
+      <div className="mt-8 px-6 py-5 bg-brand-light-cream rounded-[14px] flex gap-8 flex-wrap">
+        <div className="text-center">
+          <div className="text-[28px] font-extrabold text-brand-dark font-serif">{habits.length}</div>
+          <div className="text-xs text-brand-warm">Hábitos activos</div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "28px", fontWeight: "800", color: C.accent, fontFamily: "Georgia, serif" }}>
+        <div className="text-center">
+          <div className="text-[28px] font-extrabold text-accent font-serif">
             {habits.reduce((m, h) => Math.max(m, h.streakCurrent), 0)}d
           </div>
-          <div style={{ fontSize: "12px", color: C.warm }}>Mejor racha actual</div>
+          <div className="text-xs text-brand-warm">Mejor racha actual</div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "28px", fontWeight: "800", color: C.brown, fontFamily: "Georgia, serif" }}>
+        <div className="text-center">
+          <div className="text-[28px] font-extrabold text-brand-brown font-serif">
             {habits.reduce((m, h) => Math.max(m, h.streakBest), 0)}d
           </div>
-          <div style={{ fontSize: "12px", color: C.warm }}>Mejor racha histórica</div>
+          <div className="text-xs text-brand-warm">Mejor racha histórica</div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "28px", fontWeight: "800", color: C.success, fontFamily: "Georgia, serif" }}>
+        <div className="text-center">
+          <div className="text-[28px] font-extrabold text-success font-serif">
             {habits.filter(h => h.streakCurrent >= 7).length}
           </div>
-          <div style={{ fontSize: "12px", color: C.warm }}>Hábitos con racha ≥7d</div>
+          <div className="text-xs text-brand-warm">Hábitos con racha ≥7d</div>
         </div>
       </div>
     </div>

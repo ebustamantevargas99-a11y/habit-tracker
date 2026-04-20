@@ -1,53 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, transactionUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const tx = await prisma.transaction.findFirst({
+      where: { id: params.id, userId },
+    });
+    if (!tx)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const tx = await prisma.transaction.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    const parsed = await parseJson(req, transactionUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.transaction.update({
+      where: { id: params.id },
+      data: parsed.data,
+    });
+
+    return NextResponse.json(updated);
   });
-  if (!tx) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  const body = await req.json();
-  const updated = await prisma.transaction.update({
-    where: { id: params.id },
-    data: {
-      ...(body.date !== undefined && { date: body.date }),
-      ...(body.description !== undefined && { description: body.description }),
-      ...(body.amount !== undefined && { amount: parseFloat(body.amount) }),
-      ...(body.type !== undefined && { type: body.type }),
-      ...(body.category !== undefined && { category: body.category }),
-      ...(body.subcategory !== undefined && { subcategory: body.subcategory }),
-      ...(body.paymentMethod !== undefined && { paymentMethod: body.paymentMethod }),
-      ...(body.isRecurring !== undefined && { isRecurring: body.isRecurring }),
-    },
-  });
-
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const tx = await prisma.transaction.findFirst({
+      where: { id: params.id, userId },
+    });
+    if (!tx)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const tx = await prisma.transaction.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    await prisma.transaction.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
   });
-  if (!tx) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  await prisma.transaction.delete({ where: { id: params.id } });
-  return new NextResponse(null, { status: 204 });
 }

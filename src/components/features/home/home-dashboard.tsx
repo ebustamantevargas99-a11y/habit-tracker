@@ -11,7 +11,10 @@ import {
 } from 'lucide-react';
 import { useHabitStore } from '@/stores/habit-store';
 import { useUserStore } from '@/stores/user-store';
+import { cn, ErrorBanner } from '@/components/ui';
+import AIExportButton from '@/components/features/ai-export/ai-export-button';
 
+// Used for recharts/icon color props (not inline styles)
 const C = {
   dark: "#3D2B1F", brown: "#6B4226", medium: "#8B6542", warm: "#A0845C",
   tan: "#C4A882", lightTan: "#D4BEA0", cream: "#EDE0D4", lightCream: "#F5EDE3",
@@ -39,11 +42,11 @@ const CircularGauge: React.FC<{ value: number; maxValue: number }> = ({ value, m
   const circumference = 2 * Math.PI * 45;
   const offset = circumference - (pct / 100) * circumference;
   return (
-    <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
+    <svg width="120" height="120" viewBox="0 0 120 120" className="-rotate-90">
       <circle cx="60" cy="60" r="45" fill="none" stroke={C.lightCream} strokeWidth="3" />
       <circle cx="60" cy="60" r="45" fill="none" stroke={C.accentGlow} strokeWidth="3"
         strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
-        style={{ transition: 'stroke-dashoffset 0.5s ease' }} />
+        className="[transition:stroke-dashoffset_0.5s_ease]" />
       <text x="60" y="60" textAnchor="middle" dy="0.3em" fontSize="28" fontWeight="bold"
         fill={C.accent} style={{ transform: 'rotate(90deg)', transformOrigin: '60px 60px' }}>
         {pct.toFixed(0)}%
@@ -53,20 +56,18 @@ const CircularGauge: React.FC<{ value: number; maxValue: number }> = ({ value, m
 };
 
 const HabitCard: React.FC<{ emoji: string; name: string; streak: number; completed: boolean }> = ({ emoji, name, streak, completed }) => (
-  <div style={{
-    display: 'flex', alignItems: 'center', gap: '12px', padding: '12px',
-    background: completed ? C.successLight : C.paper,
-    border: `1px solid ${completed ? C.success : C.lightCream}`,
-    borderRadius: '8px', cursor: 'default', marginBottom: '8px',
-  }}>
-    <span style={{ fontSize: '20px' }}>{emoji}</span>
-    <span style={{ flex: 1, fontSize: '14px', color: C.brown }}>{name}</span>
-    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: C.warning }}>
+  <div className={cn(
+    "flex items-center gap-3 p-3 border rounded-lg cursor-default mb-2",
+    completed ? "bg-success-light border-success" : "bg-brand-paper border-brand-light-cream"
+  )}>
+    <span className="text-[20px]">{emoji}</span>
+    <span className="flex-1 text-sm text-brand-brown">{name}</span>
+    <div className="flex items-center gap-1 text-xs text-warning">
       <Flame size={14} fill={C.warning} /><span>{streak}</span>
     </div>
     {completed
-      ? <span style={{ fontSize: '11px', fontWeight: '700', color: C.success, backgroundColor: C.successLight, padding: '2px 8px', borderRadius: '10px' }}>Hecho</span>
-      : <span style={{ fontSize: '11px', color: C.warm, backgroundColor: C.lightCream, padding: '2px 8px', borderRadius: '10px' }}>Pendiente</span>
+      ? <span className="text-[11px] font-bold text-success bg-success-light px-2 py-[2px] rounded-[10px]">Hecho</span>
+      : <span className="text-[11px] text-brand-warm bg-brand-light-cream px-2 py-[2px] rounded-[10px]">Pendiente</span>
     }
   </div>
 );
@@ -99,48 +100,28 @@ function AIAnalysisCard() {
   return (
     <>
       {toast && (
-        <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: C.dark, color: C.paper, padding: '12px 24px', borderRadius: '8px',
-          fontSize: '14px', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          whiteSpace: 'nowrap',
-        }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand-dark text-brand-paper px-6 py-3 rounded-lg text-sm z-[9999] shadow-[0_4px_12px_rgba(0,0,0,0.3)] whitespace-nowrap">
           {toast}
         </div>
       )}
-      <div style={{
-        background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px',
-        padding: '20px', marginBottom: '32px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px',
-      }}>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8 flex items-center justify-between flex-wrap gap-4">
         <div>
-          <div style={{ fontSize: '16px', fontWeight: 'bold', color: C.brown, marginBottom: '4px' }}>
+          <div className="text-base font-bold text-brand-brown mb-1">
             🤖 Analizar con IA
           </div>
-          <div style={{ fontSize: '13px', color: C.warm }}>
+          <div className="text-[13px] text-brand-warm">
             Copia un resumen completo de tus últimos 30 días para analizarlo con Claude o ChatGPT
           </div>
         </div>
         <button
           onClick={handleAnalyze}
           disabled={loading}
-          style={{
-            padding: '12px 24px',
-            backgroundColor: copied ? C.success : loading ? C.lightTan : C.accent,
-            color: C.paper, border: 'none', borderRadius: '8px',
-            cursor: loading ? 'not-allowed' : 'pointer',
-            fontWeight: '700', fontSize: '14px',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            transition: 'background 0.3s', flexShrink: 0,
-          }}
-        >
-          {loading ? (
-            <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
-          ) : copied ? (
-            <Check size={16} />
-          ) : (
-            <Clipboard size={16} />
+          className={cn(
+            "px-6 py-3 text-brand-paper border-none rounded-lg font-bold text-sm flex items-center gap-2 transition-[background] duration-300 shrink-0",
+            copied ? "bg-success cursor-pointer" : loading ? "bg-brand-light-tan cursor-not-allowed" : "bg-accent cursor-pointer"
           )}
+        >
+          {loading ? <Loader2 size={16} className="animate-spin" /> : copied ? <Check size={16} /> : <Clipboard size={16} />}
           {loading ? 'Generando…' : copied ? '¡Copiado!' : 'Copiar Resumen'}
         </button>
       </div>
@@ -148,9 +129,22 @@ function AIAnalysisCard() {
   );
 }
 
+// ── Strength helpers ──────────────────────────────────────────────────────────
+const getStrengthLabel = (s: number) => s >= 90 ? 'Arraigado' : s >= 70 ? 'Formándose' : s >= 40 ? 'En progreso' : 'Nuevo';
+const getStrengthClasses = (s: number): { text: string; bg: string } => {
+  if (s >= 90) return { text: 'text-success', bg: 'bg-success' };
+  if (s >= 70) return { text: 'text-accent',  bg: 'bg-accent'  };
+  if (s >= 40) return { text: 'text-warning', bg: 'bg-warning' };
+  return              { text: 'text-danger',  bg: 'bg-danger'  };
+};
+// Keep hex version for recharts/icon color props
+const getStrengthColor = (s: number) => s >= 90 ? C.success : s >= 70 ? C.accent : s >= 40 ? C.warning : C.danger;
+
 export default function HomeDashboard() {
   const habits = useHabitStore((s) => s.habits.filter(h => h.isActive !== false));
   const logs = useHabitStore((s) => s.logs);
+  const error = useHabitStore((s) => s.error);
+  const clearError = useHabitStore((s) => s.clearError);
   const { user } = useUserStore();
   const displayName = user?.name ?? 'Usuario';
 
@@ -175,16 +169,13 @@ export default function HomeDashboard() {
 
   const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
 
-  // ─── Real computed metrics ───────────────────────────────────────────────────
   const completedTodayIds = useMemo(
     () => new Set(logs.filter(l => l.date === todayStr && l.completed).map(l => l.habitId)),
     [logs, todayStr]
   );
 
-  // All active habits for today's view (show everything, like Productividad)
   const todayHabits = useMemo(() => habits, [habits]);
 
-  // Group by time of day
   const habitsByTime = useMemo(() => {
     const morning: typeof habits = [], afternoon: typeof habits = [], night: typeof habits = [], allDay: typeof habits = [];
     todayHabits.forEach(h => {
@@ -196,13 +187,9 @@ export default function HomeDashboard() {
     return { morning, afternoon, allDay, night };
   }, [todayHabits]);
 
-  // Streak total (sum of all streakCurrent)
   const streakTotal = useMemo(() => habits.reduce((s, h) => s + (h.streakCurrent || 0), 0), [habits]);
-
-  // Best streak across all habits
   const bestStreak = useMemo(() => Math.max(0, ...habits.map(h => h.streakCurrent || 0)), [habits]);
 
-  // Average strength (% of last-30-day completion per habit)
   const avgStrength = useMemo(() => {
     if (habits.length === 0) return 0;
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
@@ -215,13 +202,11 @@ export default function HomeDashboard() {
     return Math.round((rates.reduce((a, b) => a + b, 0) / rates.length) * 100);
   }, [habits, logs]);
 
-  // Top streaks (sorted by streakCurrent desc)
   const topStreaks = useMemo(() =>
     [...habits].sort((a, b) => (b.streakCurrent || 0) - (a.streakCurrent || 0)).slice(0, 5),
     [habits]
   );
 
-  // Habit strength data for bar chart
   const habitStrengthData = useMemo(() => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
     const cutoffStr = cutoff.toISOString().split('T')[0];
@@ -232,10 +217,6 @@ export default function HomeDashboard() {
     }).sort((a, b) => b.strength - a.strength);
   }, [habits, logs]);
 
-  const getStrengthLabel = (s: number) => s >= 90 ? 'Arraigado' : s >= 70 ? 'Formándose' : s >= 40 ? 'En progreso' : 'Nuevo';
-  const getStrengthColor = (s: number) => s >= 90 ? C.success : s >= 70 ? C.accent : s >= 40 ? C.warning : C.danger;
-
-  // Last 12 weeks completion rate
   const weeklyData = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate() - i * 7);
@@ -252,7 +233,6 @@ export default function HomeDashboard() {
     }).reverse();
   }, [logs]);
 
-  // 90-day heatmap from real logs
   const heatmapData = useMemo(() => {
     return Array.from({ length: 90 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (89 - i));
@@ -264,7 +244,6 @@ export default function HomeDashboard() {
 
   const maxCount = useMemo(() => Math.max(1, ...heatmapData.map(d => d.count)), [heatmapData]);
 
-  // Compound effect: based on real completion rate
   const completionRate = avgStrength / 100;
   const compoundData = useMemo(() => Array.from({ length: 52 }, (_, i) => ({
     week: i + 1,
@@ -273,7 +252,6 @@ export default function HomeDashboard() {
     decline: +(100 * Math.pow(0.98, (i + 1) * 7)).toFixed(1),
   })), [completionRate]);
 
-  // Radar: category-based completion this week vs last week
   const RADAR_CATEGORIES = ['Bienestar', 'Fitness', 'Nutrición', 'Productividad', 'Aprendizaje', 'Finanzas', 'Creatividad', 'Mindfulness'];
   const radarData = useMemo(() => {
     const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate() - 6);
@@ -282,7 +260,6 @@ export default function HomeDashboard() {
     const twStr = thisWeekStart.toISOString().split('T')[0];
     const lwsStr = lastWeekStart.toISOString().split('T')[0];
     const lweStr = lastWeekEnd.toISOString().split('T')[0];
-
     return RADAR_CATEGORIES.map(cat => {
       const catHabits = habits.filter(h => h.category === cat);
       if (catHabits.length === 0) return { area: cat, thisWeek: 0, lastWeek: 0 };
@@ -295,7 +272,6 @@ export default function HomeDashboard() {
     });
   }, [habits, logs]);
 
-  // vs last week comparison
   const vsLastWeek = useMemo(() => {
     const today = new Date();
     const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - 6);
@@ -311,100 +287,110 @@ export default function HomeDashboard() {
     return +(twRate - lwRate).toFixed(1);
   }, [logs]);
 
-  // Life score = overall completion rate
   const lifeScore = avgStrength;
-
   const medals = ['🥇', '🥈', '🥉', '🏆', '🏆'];
+  const todayPct = todayHabits.length > 0 ? (completedTodayIds.size / todayHabits.length) * 100 : 0;
 
   return (
-    <div style={{ background: C.paper }}>
+    <div className="bg-brand-paper">
+      <ErrorBanner error={error} onDismiss={clearError} />
       {/* Welcome Banner */}
-      <div style={{
-        background: `linear-gradient(135deg, ${C.dark} 0%, ${C.brown} 100%)`,
-        borderRadius: '16px', padding: '32px', color: C.paper,
-        marginBottom: '32px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '24px' }}>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: '14px', color: C.lightTan, marginBottom: '8px' }}>{dateFormatted}</div>
-            <h1 style={{ fontSize: '36px', fontWeight: 'bold', margin: '0 0 16px 0', color: C.accentGlow }}>
+      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-[16px] p-8 text-brand-paper mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+        <div className="flex justify-between items-start gap-6">
+          <div className="flex-1">
+            <div className="text-sm text-brand-light-tan mb-2">{dateFormatted}</div>
+            <h1 className="font-display text-[36px] font-bold m-0 mb-4 text-accent-glow">
               {greeting}, {displayName}
             </h1>
-            <p style={{ fontSize: '14px', color: C.lightCream, margin: 0, fontStyle: 'italic', maxWidth: '400px' }}>
-              "{quote}"
+            <p className="text-sm text-brand-light-cream m-0 italic max-w-[400px] mb-4">
+              &ldquo;{quote}&rdquo;
             </p>
+            <div className="flex flex-wrap gap-2">
+              <AIExportButton
+                scope="daily"
+                label="Cierre del día → IA"
+                title="Cierre del día"
+                variant="primary"
+                size="md"
+              />
+              <AIExportButton
+                scope="weekly"
+                label="Resumen semanal"
+                title="Resumen semanal"
+                variant="outline"
+                size="md"
+                className="!bg-transparent !border-brand-light-tan/40 !text-brand-light-cream hover:!bg-white/10"
+              />
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div className="flex flex-col items-center gap-3">
             <CircularGauge value={lifeScore} maxValue={100} />
-            <div style={{ fontSize: '12px', color: C.lightTan, textAlign: 'center' }}>Puntuación de Vida</div>
+            <div className="text-xs text-brand-light-tan text-center">Puntuación de Vida</div>
           </div>
         </div>
       </div>
 
       {/* Metric Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '32px' }}>
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: C.warm, marginBottom: '8px' }}>vs. Semana Pasada</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 'bold', color: vsLastWeek >= 0 ? C.success : C.danger }}>
+      <div className="grid grid-cols-4 gap-4 mb-8">
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
+          <div className="text-xs text-brand-warm mb-2">vs. Semana Pasada</div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className={cn("text-[24px] font-bold", vsLastWeek >= 0 ? "text-success" : "text-danger")}>
               {vsLastWeek >= 0 ? '+' : ''}{vsLastWeek}%
             </span>
             <TrendingUp size={20} color={vsLastWeek >= 0 ? C.success : C.danger} />
           </div>
-          <div style={{ fontSize: '12px', color: C.tan }}>
+          <div className="text-xs text-brand-tan">
             {habits.length === 0 ? 'Agrega hábitos para comparar' : vsLastWeek >= 0 ? 'Mejora consistente' : 'Sigue adelante'}
           </div>
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: C.warm, marginBottom: '8px' }}>Mejor Racha Activa</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 'bold', color: C.warning }}>{bestStreak}</span>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
+          <div className="text-xs text-brand-warm mb-2">Mejor Racha Activa</div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[24px] font-bold text-warning">{bestStreak}</span>
             <Flame size={20} fill={C.warning} color={C.warning} />
           </div>
-          <div style={{ fontSize: '12px', color: C.tan }}>Días consecutivos</div>
+          <div className="text-xs text-brand-tan">Días consecutivos</div>
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: C.warm, marginBottom: '8px' }}>Tasa de Completación</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 'bold', color: C.info }}>{avgStrength}%</span>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
+          <div className="text-xs text-brand-warm mb-2">Tasa de Completación</div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[24px] font-bold text-info">{avgStrength}%</span>
             <Award size={20} color={C.info} />
           </div>
-          <div style={{ width: '100%', height: '4px', background: C.cream, borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{ width: `${avgStrength}%`, height: '100%', background: C.info, borderRadius: '2px' }} />
+          <div className="w-full h-1 bg-brand-cream rounded-[2px] overflow-hidden">
+            <div className="h-full bg-info rounded-[2px]" style={{ width: `${avgStrength}%` }} />
           </div>
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '16px' }}>
-          <div style={{ fontSize: '12px', color: C.warm, marginBottom: '8px' }}>Progreso de Hoy</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 'bold', color: C.accent }}>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
+          <div className="text-xs text-brand-warm mb-2">Progreso de Hoy</div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-[24px] font-bold text-accent">
               {completedTodayIds.size}/{todayHabits.length}
             </span>
             <Target size={20} color={C.accent} />
           </div>
-          <div style={{ width: '100%', height: '4px', background: C.cream, borderRadius: '2px', overflow: 'hidden' }}>
-            <div style={{
-              width: `${todayHabits.length > 0 ? (completedTodayIds.size / todayHabits.length) * 100 : 0}%`,
-              height: '100%', background: C.accent, borderRadius: '2px',
-            }} />
+          <div className="w-full h-1 bg-brand-cream rounded-[2px] overflow-hidden">
+            <div className="h-full bg-accent rounded-[2px]" style={{ width: `${todayPct}%` }} />
           </div>
         </div>
       </div>
 
       {/* Today's Habits + Radar */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 16px 0' }}>Hábitos de Hoy</h2>
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
+          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Hábitos de Hoy</h2>
           {todayHabits.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '20px', color: C.tan, fontSize: '14px' }}>
+            <div className="text-center p-5 text-brand-tan text-sm">
               No hay hábitos programados para hoy. Agrégalos en Productividad → Hábitos.
             </div>
           )}
           {habitsByTime.morning.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: C.brown, fontWeight: 'bold' }}>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-[10px] text-[13px] text-brand-brown font-bold">
                 <Sun size={16} color={C.warning} /> Mañana
               </div>
               {habitsByTime.morning.map(h => (
@@ -413,8 +399,8 @@ export default function HomeDashboard() {
             </div>
           )}
           {habitsByTime.afternoon.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: C.brown, fontWeight: 'bold' }}>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-[10px] text-[13px] text-brand-brown font-bold">
                 <Sunset size={16} color={C.warning} /> Tarde
               </div>
               {habitsByTime.afternoon.map(h => (
@@ -423,8 +409,8 @@ export default function HomeDashboard() {
             </div>
           )}
           {habitsByTime.allDay.length > 0 && (
-            <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: C.brown, fontWeight: 'bold' }}>
+            <div className="mb-4">
+              <div className="flex items-center gap-2 mb-[10px] text-[13px] text-brand-brown font-bold">
                 <CloudSun size={16} color={C.info} /> Todo el Día
               </div>
               {habitsByTime.allDay.map(h => (
@@ -434,7 +420,7 @@ export default function HomeDashboard() {
           )}
           {habitsByTime.night.length > 0 && (
             <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px', fontSize: '13px', color: C.brown, fontWeight: 'bold' }}>
+              <div className="flex items-center gap-2 mb-[10px] text-[13px] text-brand-brown font-bold">
                 <Moon size={16} color={C.dark} /> Noche
               </div>
               {habitsByTime.night.map(h => (
@@ -444,11 +430,11 @@ export default function HomeDashboard() {
           )}
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 4px 0' }}>Tu Vida en Balance</h2>
-          <p style={{ fontSize: '12px', color: C.tan, margin: '0 0 12px 0' }}>Basado en completación por categoría esta semana</p>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
+          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-1">Tu Vida en Balance</h2>
+          <p className="text-xs text-brand-tan m-0 mb-3">Basado en completación por categoría esta semana</p>
           {habits.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: C.tan, fontSize: '14px' }}>
+            <div className="text-center p-10 text-brand-tan text-sm">
               Agrega hábitos con categorías para ver el radar
             </div>
           ) : (
@@ -467,11 +453,11 @@ export default function HomeDashboard() {
       </div>
 
       {/* 12-Week Evolution */}
-      <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px', marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 4px 0' }}>Evolución de 12 Semanas</h2>
-        <p style={{ fontSize: '12px', color: C.tan, margin: '0 0 16px 0' }}>% de hábitos completados por semana</p>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8">
+        <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-1">Evolución de 12 Semanas</h2>
+        <p className="text-xs text-brand-tan m-0 mb-4">% de hábitos completados por semana</p>
         {logs.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: C.tan }}>Completa hábitos para ver tu evolución</div>
+          <div className="text-center p-10 text-brand-tan">Completa hábitos para ver tu evolución</div>
         ) : (
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={weeklyData}>
@@ -492,76 +478,76 @@ export default function HomeDashboard() {
       </div>
 
       {/* 90-Day Heatmap */}
-      <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px', marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 4px 0' }}>Mapa de Consistencia (90 días)</h2>
-        <p style={{ fontSize: '12px', color: C.tan, margin: '0 0 16px 0' }}>Cada cuadro = 1 día. Oscuro = más hábitos completados.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: '3px', marginBottom: '12px', maxWidth: '320px' }}>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8">
+        <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-1">Mapa de Consistencia (90 días)</h2>
+        <p className="text-xs text-brand-tan m-0 mb-4">Cada cuadro = 1 día. Oscuro = más hábitos completados.</p>
+        <div className="grid [grid-template-columns:repeat(15,1fr)] gap-[3px] mb-3 max-w-[320px]">
           {heatmapData.map((d, i) => {
             const intensity = maxCount > 0 ? d.count / maxCount : 0;
-            const bg = intensity === 0 ? C.cream
-              : intensity < 0.33 ? C.accentLight
-              : intensity < 0.66 ? C.accent
-              : C.brown;
+            const heatBg = intensity === 0 ? 'bg-brand-cream'
+              : intensity < 0.33 ? 'bg-accent-light'
+              : intensity < 0.66 ? 'bg-accent'
+              : 'bg-brand-brown';
             return (
-              <div key={i} title={`${d.dateStr}: ${d.count} completado(s)`} style={{
-                width: '14px', height: '14px', background: bg, borderRadius: '3px', cursor: 'pointer', transition: 'transform 0.1s',
-              }}
+              <div
+                key={i}
+                title={`${d.dateStr}: ${d.count} completado(s)`}
+                className={cn('w-[14px] h-[14px] rounded-[3px] cursor-pointer transition-transform duration-100', heatBg)}
                 onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.3)')}
                 onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
               />
             );
           })}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: C.tan }}>
+        <div className="flex items-center gap-[6px] text-xs text-brand-tan">
           <span>Ninguno</span>
-          {[C.cream, C.accentLight, C.accent, C.brown].map((bg, i) => (
-            <div key={i} style={{ width: '12px', height: '12px', background: bg, borderRadius: '2px' }} />
+          {(['bg-brand-cream', 'bg-accent-light', 'bg-accent', 'bg-brand-brown'] as const).map((bgClass, i) => (
+            <div key={i} className={cn('w-3 h-3 rounded-[2px]', bgClass)} />
           ))}
           <span>Máximo</span>
         </div>
       </div>
 
       {/* Top Streaks + Habit Strength */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 16px 0' }}>Top Streaks</h2>
+      <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
+          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Top Streaks</h2>
           {topStreaks.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px', color: C.tan, fontSize: '14px' }}>Aún no hay rachas. ¡Completa tu primer hábito!</div>
+            <div className="text-center p-5 text-brand-tan text-sm">Aún no hay rachas. ¡Completa tu primer hábito!</div>
           ) : topStreaks.map((h, i) => (
-            <div key={h.id} style={{
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              padding: '12px', background: C.lightCream, borderRadius: '8px', marginBottom: '8px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '22px' }}>{medals[i]}</span>
+            <div key={h.id} className="flex justify-between items-center p-3 bg-brand-light-cream rounded-lg mb-2">
+              <div className="flex items-center gap-3">
+                <span className="text-[22px]">{medals[i]}</span>
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 'bold', color: C.brown }}>{h.name}</div>
-                  <div style={{ fontSize: '12px', color: C.tan }}>{h.icon}</div>
+                  <div className="text-sm font-bold text-brand-brown">{h.name}</div>
+                  <div className="text-xs text-brand-tan">{h.icon}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '14px', fontWeight: 'bold', color: C.accent }}>
+              <div className="flex items-center gap-1 text-sm font-bold text-accent">
                 <Flame size={16} fill={C.accent} />{h.streakCurrent || 0}
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px' }}>
-          <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 4px 0' }}>Fortaleza de Hábitos</h2>
-          <p style={{ fontSize: '12px', color: C.tan, margin: '0 0 16px 0' }}>% completado en los últimos 30 días</p>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
+          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-1">Fortaleza de Hábitos</h2>
+          <p className="text-xs text-brand-tan m-0 mb-4">% completado en los últimos 30 días</p>
           {habitStrengthData.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '20px', color: C.tan, fontSize: '14px' }}>Agrega hábitos para ver su fortaleza</div>
+            <div className="text-center p-5 text-brand-tan text-sm">Agrega hábitos para ver su fortaleza</div>
           ) : habitStrengthData.map((h, i) => {
-            const label = getStrengthLabel(h.strength);
-            const color = getStrengthColor(h.strength);
+            const classes = getStrengthClasses(h.strength);
             return (
-              <div key={i} style={{ marginBottom: '14px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-                  <div style={{ fontSize: '13px', fontWeight: 'bold', color: C.brown }}>{h.icon} {h.name}</div>
-                  <div style={{ fontSize: '11px', color, fontWeight: 'bold' }}>{label}</div>
+              <div key={i} className="mb-[14px]">
+                <div className="flex justify-between items-center mb-[5px]">
+                  <div className="text-[13px] font-bold text-brand-brown">{h.icon} {h.name}</div>
+                  <div className={cn("text-[11px] font-bold", classes.text)}>{getStrengthLabel(h.strength)}</div>
                 </div>
-                <div style={{ width: '100%', height: '6px', background: C.cream, borderRadius: '3px', overflow: 'hidden' }}>
-                  <div style={{ width: `${h.strength}%`, height: '100%', background: color, borderRadius: '3px', transition: 'width 0.5s' }} />
+                <div className="w-full h-[6px] bg-brand-cream rounded-[3px] overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-[3px] transition-[width] duration-500", classes.bg)}
+                    style={{ width: `${h.strength}%` }}
+                  />
                 </div>
               </div>
             );
@@ -570,9 +556,9 @@ export default function HomeDashboard() {
       </div>
 
       {/* Compound Effect */}
-      <div style={{ background: C.paper, border: `1px solid ${C.lightCream}`, borderRadius: '12px', padding: '20px', marginBottom: '32px' }}>
-        <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: C.brown, margin: '0 0 4px 0' }}>Efecto Compuesto</h2>
-        <p style={{ fontSize: '12px', color: C.tan, margin: '0 0 16px 0' }}>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8">
+        <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-1">Efecto Compuesto</h2>
+        <p className="text-xs text-brand-tan m-0 mb-4">
           Con tu tasa actual ({avgStrength}%) vs máximo (+0.5%/día) vs abandono (-2%/semana). Proyección a 52 semanas.
         </p>
         <ResponsiveContainer width="100%" height={230}>
@@ -593,18 +579,14 @@ export default function HomeDashboard() {
       <AIAnalysisCard />
 
       {/* Motivational Footer */}
-      <div style={{
-        background: `linear-gradient(135deg, ${C.dark} 0%, ${C.brown} 100%)`,
-        borderRadius: '16px', padding: '24px', color: C.paper, textAlign: 'center',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-      }}>
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '12px' }}>
+      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-[16px] p-6 text-brand-paper text-center shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+        <div className="flex justify-center mb-3">
           <Trophy size={32} color={C.accentGlow} />
         </div>
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', margin: '0 0 8px 0', color: C.accentGlow }}>
+        <h3 className="text-[18px] font-bold m-0 mb-2 text-accent-glow">
           {streakTotal} días de fuego en total — ¡sigue así!
         </h3>
-        <p style={{ fontSize: '13px', color: C.lightCream, margin: 0 }}>
+        <p className="text-[13px] text-brand-light-cream m-0">
           Tasa de completación: {avgStrength}% · {habits.length} hábito{habits.length !== 1 ? 's' : ''} activo{habits.length !== 1 ? 's' : ''}
         </p>
       </div>

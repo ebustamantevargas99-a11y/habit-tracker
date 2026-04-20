@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { Download, Clipboard, Check, Loader2 } from 'lucide-react';
+import { cn } from '@/components/ui';
 import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { api } from '@/lib/api-client';
 
@@ -11,12 +12,6 @@ const C = {
   warmWhite: "#FAF7F3", paper: "#FFFDF9", accent: "#B8860B", accentLight: "#D4A843",
   accentGlow: "#F0D78C", success: "#7A9E3E", successLight: "#D4E6B5",
   info: "#5A8FA8", infoLight: "#C8E0EC",
-};
-
-const cardStyle: React.CSSProperties = {
-  backgroundColor: C.paper, borderRadius: '12px', padding: '24px',
-  border: `1px solid ${C.tan}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-  marginBottom: '24px',
 };
 
 type LoadingKey =
@@ -41,18 +36,15 @@ function ModuleBtn({
   color?: string;
 }) {
   const isLoading = current === loadingKey;
+  const isDisabled = current !== null;
   return (
     <button
       onClick={onClick}
-      disabled={current !== null}
-      style={{
-        padding: '8px 14px', backgroundColor: current !== null ? C.lightTan : color,
-        color: C.paper, border: 'none', borderRadius: '6px', cursor: current !== null ? 'not-allowed' : 'pointer',
-        fontWeight: '600', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px',
-        transition: 'background 0.2s',
-      }}
+      disabled={isDisabled}
+      className="py-2 px-3.5 text-brand-paper border-none rounded-md font-semibold text-xs flex items-center gap-1.5 transition-colors duration-200 disabled:cursor-not-allowed cursor-pointer"
+      style={{ backgroundColor: isDisabled ? C.lightTan : color }}
     >
-      {isLoading ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={12} />}
+      {isLoading ? <Loader2 size={12} className="animate-spin" /> : <Download size={12} />}
       {label}
     </button>
   );
@@ -76,8 +68,6 @@ export default function ExportSection() {
     try { await fn(); } catch { showToast('Error al exportar. Intenta de nuevo.'); }
     finally { setLoading(null); }
   }
-
-  // ── Module exports ──────────────────────────────────────────────────────────
 
   const exportHabitsCSV = () => withLoading('habits-csv', async () => {
     const data = await api.get<Record<string, unknown>[]>('/habits');
@@ -145,8 +135,6 @@ export default function ExportSection() {
     exportToJSON({ pomodoro, projects, okr }, 'productividad');
   });
 
-  // ── AI exports ──────────────────────────────────────────────────────────────
-
   const downloadAIJson = () => withLoading('ai-json', async () => {
     const res = await fetch(`/api/export/ai-context?days=${days}`);
     if (!res.ok) throw new Error('Error');
@@ -194,24 +182,20 @@ export default function ExportSection() {
     <>
       {/* Toast */}
       {toast && (
-        <div style={{
-          position: 'fixed', bottom: '24px', left: '50%', transform: 'translateX(-50%)',
-          backgroundColor: C.dark, color: C.paper, padding: '12px 24px', borderRadius: '8px',
-          fontSize: '14px', zIndex: 9999, boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-        }}>
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand-dark text-brand-paper px-6 py-3 rounded-lg text-sm z-[9999] shadow-[0_4px_12px_rgba(0,0,0,0.3)]">
           {toast}
         </div>
       )}
 
       {/* Module Exports */}
-      <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="bg-brand-paper rounded-xl p-6 border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] mb-6">
+        <h3 className="font-serif text-brand-dark mb-2 flex items-center gap-2 m-0">
           <Download size={20} color={C.info} /> Exportar por Módulo
         </h3>
-        <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 16px 0' }}>
+        <p className="text-[0.85rem] text-brand-warm mb-4 m-0">
           Descarga tus datos de cada área por separado
         </p>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+        <div className="flex gap-2.5 flex-wrap">
           {MODULES.map((m) => (
             <ModuleBtn
               key={m.key}
@@ -225,30 +209,28 @@ export default function ExportSection() {
       </div>
 
       {/* AI Report */}
-      <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 8px 0', display: 'flex', alignItems: 'center', gap: '8px' }}>
+      <div className="bg-brand-paper rounded-xl p-6 border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] mb-6">
+        <h3 className="font-serif text-brand-dark mb-2 flex items-center gap-2 m-0">
           🤖 Reporte para IA
         </h3>
-        <p style={{ fontSize: '0.85rem', color: C.warm, margin: '0 0 20px 0' }}>
+        <p className="text-[0.85rem] text-brand-warm mb-5 m-0">
           Genera un resumen estructurado de todos tus datos para compartir con un asistente IA
           y obtener recomendaciones personalizadas.
         </p>
 
         {/* Period selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: '600', color: C.dark }}>Período:</span>
+        <div className="flex items-center gap-3 mb-5">
+          <span className="text-[0.85rem] font-semibold text-brand-dark">Período:</span>
           {([7, 30, 90, 365] as const).map((d) => (
             <button
               key={d}
               onClick={() => setDays(d)}
-              style={{
-                padding: '6px 14px', border: `1px solid ${days === d ? C.accent : C.tan}`,
-                borderRadius: '6px', cursor: 'pointer',
-                backgroundColor: days === d ? C.accentGlow : 'transparent',
-                color: days === d ? C.dark : C.warm,
-                fontWeight: days === d ? '700' : '400',
-                fontSize: '13px',
-              }}
+              className={cn(
+                "py-1.5 px-3.5 rounded-md cursor-pointer text-[13px] border transition-colors",
+                days === d
+                  ? "border-accent bg-accent-glow text-brand-dark font-bold"
+                  : "border-brand-tan bg-transparent text-brand-warm font-normal"
+              )}
             >
               {d === 365 ? '1 año' : `${d} días`}
             </button>
@@ -256,49 +238,41 @@ export default function ExportSection() {
         </div>
 
         {/* Action buttons */}
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div className="flex gap-3 flex-wrap mb-4">
           <button
             onClick={downloadAIJson}
             disabled={loading !== null}
-            style={{
-              padding: '12px 20px', backgroundColor: loading !== null ? C.lightTan : C.accent,
-              color: C.paper, border: 'none', borderRadius: '8px',
-              cursor: loading !== null ? 'not-allowed' : 'pointer',
-              fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-            }}
+            className={cn(
+              "py-3 px-5 text-brand-paper border-none rounded-lg font-bold text-sm flex items-center gap-2 transition-colors",
+              loading !== null ? "bg-brand-light-tan cursor-not-allowed" : "bg-accent cursor-pointer"
+            )}
           >
-            {loading === 'ai-json' ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
+            {loading === 'ai-json' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             📊 Contexto IA (JSON)
           </button>
 
           <button
             onClick={downloadAIMarkdown}
             disabled={loading !== null}
-            style={{
-              padding: '12px 20px', backgroundColor: loading !== null ? C.lightTan : C.info,
-              color: C.paper, border: 'none', borderRadius: '8px',
-              cursor: loading !== null ? 'not-allowed' : 'pointer',
-              fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-            }}
+            className={cn(
+              "py-3 px-5 text-brand-paper border-none rounded-lg font-bold text-sm flex items-center gap-2 transition-colors",
+              loading !== null ? "bg-brand-light-tan cursor-not-allowed" : "bg-info cursor-pointer"
+            )}
           >
-            {loading === 'ai-md' ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Download size={16} />}
+            {loading === 'ai-md' ? <Loader2 size={16} className="animate-spin" /> : <Download size={16} />}
             📋 Resumen IA (Texto)
           </button>
 
           <button
             onClick={copyAIMarkdown}
             disabled={loading !== null}
-            style={{
-              padding: '12px 20px',
-              backgroundColor: copied ? C.success : loading !== null ? C.lightTan : C.dark,
-              color: C.paper, border: 'none', borderRadius: '8px',
-              cursor: loading !== null ? 'not-allowed' : 'pointer',
-              fontWeight: '700', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px',
-              transition: 'background 0.3s',
-            }}
+            className={cn(
+              "py-3 px-5 text-brand-paper border-none rounded-lg font-bold text-sm flex items-center gap-2 transition-all duration-300",
+              copied ? "bg-success cursor-pointer" : loading !== null ? "bg-brand-light-tan cursor-not-allowed" : "bg-brand-dark cursor-pointer"
+            )}
           >
             {loading === 'ai-copy' ? (
-              <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} />
+              <Loader2 size={16} className="animate-spin" />
             ) : copied ? (
               <Check size={16} />
             ) : (
@@ -308,10 +282,7 @@ export default function ExportSection() {
           </button>
         </div>
 
-        <div style={{
-          backgroundColor: C.accentGlow, border: `1px solid ${C.accent}`,
-          borderRadius: '8px', padding: '12px 16px', fontSize: '13px', color: C.brown,
-        }}>
+        <div className="bg-accent-glow border border-accent rounded-lg px-4 py-3 text-[13px] text-brand-brown">
           💡 <strong>Tip:</strong> Haz click en "Copiar Resumen" y pégalo directamente en Claude o ChatGPT
           para obtener análisis y recomendaciones personalizadas basadas en todos tus datos.
         </div>

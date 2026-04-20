@@ -1,0 +1,174 @@
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/api-helpers";
+import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
+
+// GET /api/user/export-data — GDPR data portability
+// Returns ALL data belonging to the authenticated user as JSON.
+export async function GET() {
+  return withAuth(async (userId) => {
+    const [
+      user,
+      habits,
+      habitLogs,
+      workouts,
+      personalRecords,
+      bodyMetrics,
+      weightLogs,
+      stepsLogs,
+      fastingLogs,
+      challenges,
+      weeklyPlan,
+      transactions,
+      budgets,
+      bills,
+      subscriptions,
+      wishlistItems,
+      moodLogs,
+      sleepLogs,
+      hydrationLogs,
+      medications,
+      medicationLogs,
+      symptomLogs,
+      appointments,
+      okrObjectives,
+      projectionConfigs,
+      pomodoroSessions,
+      projects,
+      foodItems,
+      mealLogs,
+      nutritionGoal,
+      notes,
+      lifeAreas,
+      weeklyReviews,
+      dailyPlans,
+      badges,
+      gamification,
+    ] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          image: true,
+          emailVerified: true,
+          createdAt: true,
+          updatedAt: true,
+          profile: true,
+        },
+      }),
+      prisma.habit.findMany({ where: { userId } }),
+      prisma.habitLog.findMany({ where: { userId } }),
+      prisma.workout.findMany({
+        where: { userId },
+        include: { exercises: { include: { sets: true } } },
+      }),
+      prisma.personalRecord.findMany({ where: { userId } }),
+      prisma.bodyMetric.findMany({ where: { userId } }),
+      prisma.weightLog.findMany({ where: { userId } }),
+      prisma.stepsLog.findMany({ where: { userId } }),
+      prisma.fastingLog.findMany({ where: { userId } }),
+      prisma.fitnessChallenge.findMany({ where: { userId } }),
+      prisma.weeklyPlan.findMany({ where: { userId } }),
+      prisma.transaction.findMany({ where: { userId } }),
+      prisma.budget.findMany({ where: { userId } }),
+      prisma.bill.findMany({ where: { userId } }),
+      prisma.subscription.findMany({ where: { userId } }),
+      prisma.wishlistItem.findMany({ where: { userId } }),
+      prisma.moodLog.findMany({ where: { userId } }),
+      prisma.sleepLog.findMany({ where: { userId } }),
+      prisma.hydrationLog.findMany({ where: { userId } }),
+      prisma.medication.findMany({
+        where: { userId },
+        include: { supplementFacts: true },
+      }),
+      prisma.medicationLog.findMany({ where: { userId } }),
+      prisma.symptomLog.findMany({ where: { userId } }),
+      prisma.medicalAppointment.findMany({ where: { userId } }),
+      prisma.oKRObjective.findMany({
+        where: { userId },
+        include: { keyResults: true },
+      }),
+      prisma.projectionConfig.findMany({
+        where: { userId },
+        include: { milestones: true },
+      }),
+      prisma.pomodoroSession.findMany({ where: { userId } }),
+      prisma.project.findMany({
+        where: { userId },
+        include: { tasks: true },
+      }),
+      prisma.foodItem.findMany({ where: { userId } }),
+      prisma.mealLog.findMany({
+        where: { userId },
+        include: { items: true },
+      }),
+      prisma.nutritionGoal.findUnique({ where: { userId } }),
+      prisma.note.findMany({ where: { userId } }),
+      prisma.lifeArea.findMany({ where: { userId } }),
+      prisma.weeklyReview.findMany({ where: { userId } }),
+      prisma.dailyPlan.findMany({
+        where: { userId },
+        include: { timeBlocks: true },
+      }),
+      prisma.userBadge.findMany({ where: { userId } }),
+      prisma.gamification.findUnique({ where: { userId } }),
+    ]);
+
+    if (!user)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+    logger.info("export-data:success", { userId });
+
+    const exportedAt = new Date().toISOString();
+    const payload = {
+      exportedAt,
+      version: "1.0",
+      user,
+      gamification,
+      badges,
+      habits,
+      habitLogs,
+      workouts,
+      personalRecords,
+      bodyMetrics,
+      weightLogs,
+      stepsLogs,
+      fastingLogs,
+      challenges,
+      weeklyPlan,
+      transactions,
+      budgets,
+      bills,
+      subscriptions,
+      wishlistItems,
+      moodLogs,
+      sleepLogs,
+      hydrationLogs,
+      medications,
+      medicationLogs,
+      symptomLogs,
+      appointments,
+      okrObjectives,
+      projectionConfigs,
+      pomodoroSessions,
+      projects,
+      foodItems,
+      mealLogs,
+      nutritionGoal,
+      notes,
+      lifeAreas,
+      weeklyReviews,
+      dailyPlans,
+    };
+
+    return new NextResponse(JSON.stringify(payload, null, 2), {
+      status: 200,
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Disposition": `attachment; filename="habit-tracker-export-${exportedAt.slice(0, 10)}.json"`,
+      },
+    });
+  });
+}

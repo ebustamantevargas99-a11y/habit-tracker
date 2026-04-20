@@ -7,6 +7,17 @@ export type ObjType = "yearly" | "quarterly" | "monthly" | "milestone";
 export type MilestoneStatus = "pending" | "hit" | "missed" | "at_risk";
 export type ProjectionType = "logarithmic" | "linear" | "block_periodization";
 
+export interface KeyResult {
+  id: string;
+  objectiveId: string;
+  title: string;
+  targetValue: number;
+  currentValue: number;
+  unit: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Objective {
   id: string;
   title: string;
@@ -20,6 +31,7 @@ export interface Objective {
   color: string;
   emoji: string;
   userId?: string;
+  keyResults?: KeyResult[];
 }
 
 export interface Milestone {
@@ -54,6 +66,8 @@ interface OKRState {
   milestones: Milestone[];
   projectionConfigs: ProjectionConfig[];
   isLoaded: boolean;
+  error: string | null;
+  clearError: () => void;
 
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -63,6 +77,11 @@ interface OKRState {
   deleteObjective: (id: string) => Promise<void>;
 
   recalcObjectiveProgress: (objectiveId: string, cards: { objectiveId: string; weight: number; done: boolean }[]) => Promise<void>;
+
+  // Key Results
+  addKeyResult: (objectiveId: string, data: { title: string; targetValue?: number; unit?: string }) => Promise<KeyResult>;
+  updateKeyResult: (objectiveId: string, krId: string, data: { currentValue?: number; title?: string; targetValue?: number }) => Promise<void>;
+  deleteKeyResult: (objectiveId: string, krId: string) => Promise<void>;
 
   setMilestones: (objectiveId: string, milestones: Milestone[]) => void;
   updateMilestoneActual: (milestoneId: string, actual: number) => void;
@@ -109,6 +128,8 @@ export const useOKRStore = create<OKRState>((set, get) => ({
   milestones: [],
   projectionConfigs: [],
   isLoaded: false,
+  error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;
@@ -198,6 +219,40 @@ export const useOKRStore = create<OKRState>((set, get) => ({
     });
     // Persist to API asynchronously
     api.patch(`/okr/objectives/${objectiveId}`, { progress: newProgress }).catch(() => {});
+  },
+
+  addKeyResult: async (objectiveId, data) => {
+    const kr = await api.post<KeyResult>(`/okr/objectives/${objectiveId}/key-results`, data);
+    set(s => ({
+      objectives: s.objectives.map(o =>
+        o.id !== objectiveId ? o : { ...o, keyResults: [...(o.keyResults ?? []), kr] }
+      ),
+    }));
+    return kr;
+  },
+
+  updateKeyResult: async (objectiveId, krId, data) => {
+    const updated = await api.patch<KeyResult>(`/okr/objectives/${objectiveId}/key-results`, { krId, ...data });
+    set(s => ({
+      objectives: s.objectives.map(o =>
+        o.id !== objectiveId ? o : {
+          ...o,
+          keyResults: (o.keyResults ?? []).map(kr => kr.id === krId ? { ...kr, ...updated } : kr),
+        }
+      ),
+    }));
+  },
+
+  deleteKeyResult: async (objectiveId, krId) => {
+    await api.delete(`/okr/objectives/${objectiveId}/key-results/${krId}`);
+    set(s => ({
+      objectives: s.objectives.map(o =>
+        o.id !== objectiveId ? o : {
+          ...o,
+          keyResults: (o.keyResults ?? []).filter(kr => kr.id !== krId),
+        }
+      ),
+    }));
   },
 
   setMilestones: (objectiveId, milestones) => {

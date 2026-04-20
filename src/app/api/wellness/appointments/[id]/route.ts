@@ -1,34 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, appointmentUpdateSchema } from "@/lib/validation";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(async (userId) => {
+    const existing = await prisma.medicalAppointment.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const body = await req.json();
-  const result = await prisma.medicalAppointment.updateMany({
-    where: { id: params.id, userId: session.user.id },
-    data: {
-      ...(body.doctorName !== undefined && { doctorName: body.doctorName.trim() }),
-      ...(body.specialty !== undefined && { specialty: body.specialty.trim() }),
-      ...(body.location !== undefined && { location: body.location?.trim() ?? null }),
-      ...(body.dateTime !== undefined && { dateTime: body.dateTime }),
-      ...(body.reason !== undefined && { reason: body.reason?.trim() ?? null }),
-      ...(body.status !== undefined && { status: body.status }),
-      ...(body.result !== undefined && { result: body.result?.trim() ?? null }),
-      ...(body.notes !== undefined && { notes: body.notes?.trim() ?? null }),
-    },
+    const parsed = await parseJson(req, appointmentUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.medicalAppointment.update({
+      where: { id: params.id },
+      data: parsed.data,
+    });
+    return NextResponse.json(updated);
   });
-  if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  const updated = await prisma.medicalAppointment.findUnique({ where: { id: params.id } });
-  return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(async (userId) => {
+    const existing = await prisma.medicalAppointment.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  await prisma.medicalAppointment.deleteMany({ where: { id: params.id, userId: session.user.id } });
-  return new NextResponse(null, { status: 204 });
+    await prisma.medicalAppointment.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
+  });
 }

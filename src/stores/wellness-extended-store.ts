@@ -84,6 +84,7 @@ interface WellnessExtendedState {
   isLoaded: boolean;
   isSaving: boolean;
   error: string | null;
+  clearError: () => void;
 
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -157,6 +158,7 @@ export const useWellnessExtendedStore = create<WellnessExtendedState>((set, get)
   isLoaded: false,
   isSaving: false,
   error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;
@@ -168,26 +170,15 @@ export const useWellnessExtendedStore = create<WellnessExtendedState>((set, get)
   refresh: async () => {
     try {
       const today = new Date().toISOString().split("T")[0];
-      const [hydration, medications, symptoms, appointments] = await Promise.all([
+      const [hydration, medications, symptoms, appointments, allMedLogs] = await Promise.all([
         api.get<HydrationLog[]>("/wellness/hydration?days=90"),
         api.get<Medication[]>("/wellness/medications"),
         api.get<SymptomLog[]>("/wellness/symptoms?days=90"),
         api.get<MedicalAppointment[]>("/wellness/appointments"),
+        api.get<MedicationLog[]>("/wellness/medications/logs?days=1"),
       ]);
 
-      // Load today's med logs for all medications
-      let todayMedLogs: MedicationLog[] = [];
-      if ((medications as Medication[]).length > 0) {
-        const logsResults = await Promise.allSettled(
-          (medications as Medication[]).map(m =>
-            api.get<MedicationLog[]>(`/wellness/medications/${m.id}/logs?days=1`)
-          )
-        );
-        todayMedLogs = logsResults
-          .filter(r => r.status === "fulfilled")
-          .flatMap(r => (r as PromiseFulfilledResult<MedicationLog[]>).value)
-          .filter(l => l.date === today);
-      }
+      const todayMedLogs = (allMedLogs as MedicationLog[]).filter(l => l.date === today);
 
       const latestHydration = (hydration as HydrationLog[]).find(h => h.date === today);
       set({

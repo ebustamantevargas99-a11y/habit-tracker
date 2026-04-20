@@ -77,6 +77,8 @@ interface NutritionState {
   dailySummary: DailySummary | null;
   selectedDate: string;
   isLoaded: boolean;
+  error: string | null;
+  clearError: () => void;
 
   initialize: () => Promise<void>;
   setDate: (date: string) => void;
@@ -105,6 +107,8 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   dailySummary: null,
   selectedDate: new Date().toISOString().split("T")[0],
   isLoaded: false,
+  error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;

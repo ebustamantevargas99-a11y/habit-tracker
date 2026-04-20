@@ -97,6 +97,21 @@ export const NAV_ITEMS = [
     ],
   },
   {
+    key: "vision",
+    label: "Visión",
+    icon: "Target",
+    sections: [
+      "Mi Visión",
+      "Mis Metas",
+      "OKR",
+      "Proyecciones",
+      "Vision Board",
+      "Línea de Tiempo",
+      "Afirmaciones",
+      "Lista de Vida",
+    ],
+  },
+  {
     key: "settings",
     label: "Configuración",
     icon: "Settings",

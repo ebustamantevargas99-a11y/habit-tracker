@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/habits/heatmap?days=90
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   const days = parseInt(searchParams.get("days") ?? "90");
@@ -18,11 +15,11 @@ export async function GET(req: NextRequest) {
 
   const [logs, habitCount] = await Promise.all([
     prisma.habitLog.findMany({
-      where: { userId: session.user.id, date: { gte: cutoffStr } },
+      where: { userId: userId, date: { gte: cutoffStr } },
       select: { date: true, completed: true },
     }),
     prisma.habit.count({
-      where: { userId: session.user.id, isActive: true },
+      where: { userId: userId, isActive: true },
     }),
   ]);
 
@@ -51,4 +48,5 @@ export async function GET(req: NextRequest) {
   }
 
   return NextResponse.json(data);
+});
 }

@@ -1,53 +1,48 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, weeklyReviewUpsertSchema } from "@/lib/validation";
 
-export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function GET(req: NextRequest) {
+  return withAuth(async (userId) => {
+    const { searchParams } = new URL(req.url);
+    const limit = Math.min(
+      parseInt(searchParams.get("limit") ?? "10", 10) || 10,
+      200
+    );
 
-  const { searchParams } = new URL(req.url);
-  const limit = parseInt(searchParams.get("limit") ?? "10");
-
-  const reviews = await prisma.weeklyReview.findMany({
-    where: { userId: session.user.id },
-    orderBy: { weekStart: "desc" },
-    take: limit,
+    const reviews = await prisma.weeklyReview.findMany({
+      where: { userId },
+      orderBy: { weekStart: "desc" },
+      take: limit,
+    });
+    return NextResponse.json(reviews);
   });
-  return NextResponse.json(reviews);
 }
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: NextRequest) {
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, weeklyReviewUpsertSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const review = await prisma.weeklyReview.upsert({
-    where: { userId_weekStart: { userId: session.user.id, weekStart: body.weekStart } },
-    update: {
-      wins: body.wins ?? [],
-      challenges: body.challenges ?? [],
-      learnings: body.learnings ?? [],
-      nextWeekGoals: body.nextWeekGoals ?? [],
-      gratitude: body.gratitude ?? [],
-      overallRating: body.overallRating ?? 5,
-      energyLevel: body.energyLevel ?? 5,
-      productivityScore: body.productivityScore ?? 5,
-      notes: body.notes ?? null,
-    },
-    create: {
-      userId: session.user.id,
-      weekStart: body.weekStart,
-      wins: body.wins ?? [],
-      challenges: body.challenges ?? [],
-      learnings: body.learnings ?? [],
-      nextWeekGoals: body.nextWeekGoals ?? [],
-      gratitude: body.gratitude ?? [],
-      overallRating: body.overallRating ?? 5,
-      energyLevel: body.energyLevel ?? 5,
-      productivityScore: body.productivityScore ?? 5,
-      notes: body.notes ?? null,
-    },
+    const d = parsed.data;
+    const data = {
+      wins: d.wins ?? [],
+      challenges: d.challenges ?? [],
+      learnings: d.learnings ?? [],
+      nextWeekGoals: d.nextWeekGoals ?? [],
+      gratitude: d.gratitude ?? [],
+      overallRating: d.overallRating ?? 5,
+      energyLevel: d.energyLevel ?? 5,
+      productivityScore: d.productivityScore ?? 5,
+      notes: d.notes ?? null,
+    };
+
+    const review = await prisma.weeklyReview.upsert({
+      where: { userId_weekStart: { userId, weekStart: d.weekStart } },
+      update: data,
+      create: { userId, weekStart: d.weekStart, ...data },
+    });
+    return NextResponse.json(review, { status: 201 });
   });
-  return NextResponse.json(review, { status: 201 });
 }

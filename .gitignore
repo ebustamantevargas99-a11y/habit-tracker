@@ -25,7 +25,9 @@ yarn-error.log*
 
 # local env files
 .env
-.env*.local
+.env.*
+!.env.local.example
+!.env.example
 
 # vercel
 .vercel
@@ -33,3 +35,22 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+
+# claude
+.claude/settings.local.json
+
+# playwright (futuro)
+/playwright-report/
+/test-results/
+
+# logs
+*.log

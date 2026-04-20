@@ -1,36 +1,47 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, mealItemCreateSchema } from "@/lib/validation";
 
-export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id: mealLogId } = await params;
 
-  const { id: mealLogId } = await params;
+    const meal = await prisma.mealLog.findFirst({
+      where: { id: mealLogId, userId },
+      select: { id: true },
+    });
+    if (!meal)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  // Verify meal belongs to user
-  const meal = await prisma.mealLog.findFirst({ where: { id: mealLogId, userId: session.user.id } });
-  if (!meal) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const parsed = await parseJson(req, mealItemCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
+    const d = parsed.data;
+    const food = await prisma.foodItem.findFirst({
+      where: { id: d.foodItemId, userId },
+    });
+    if (!food)
+      return NextResponse.json({ error: "Alimento no encontrado" }, { status: 404 });
 
-  // Get food item to compute macros
-  const food = await prisma.foodItem.findFirst({ where: { id: body.foodItemId, userId: session.user.id } });
-  if (!food) return NextResponse.json({ error: "Food not found" }, { status: 404 });
-
-  const ratio = (body.quantity ?? 1) / (food.servingSize / 100);
-  const item = await prisma.mealItem.create({
-    data: {
-      mealLogId,
-      foodItemId: body.foodItemId,
-      quantity: body.quantity ?? 1,
-      unit: body.unit ?? "serving",
-      calories: food.calories * ratio,
-      protein: food.protein * ratio,
-      carbs: food.carbs * ratio,
-      fat: food.fat * ratio,
-    },
-    include: { foodItem: true },
+    const quantity = d.quantity ?? 1;
+    const ratio = quantity / (food.servingSize / 100);
+    const item = await prisma.mealItem.create({
+      data: {
+        mealLogId,
+        foodItemId: d.foodItemId,
+        quantity,
+        unit: d.unit ?? "serving",
+        calories: food.calories * ratio,
+        protein: food.protein * ratio,
+        carbs: food.carbs * ratio,
+        fat: food.fat * ratio,
+      },
+      include: { foodItem: true },
+    });
+    return NextResponse.json(item, { status: 201 });
   });
-  return NextResponse.json(item, { status: 201 });
 }

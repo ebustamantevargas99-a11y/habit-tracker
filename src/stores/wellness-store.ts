@@ -27,6 +27,7 @@ interface WellnessState {
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
+  clearError: () => void;
   savingMood: boolean;
   savingSleep: boolean;
 
@@ -49,6 +50,7 @@ export const useWellnessStore = create<WellnessState>((set, get) => ({
   isLoaded: false,
   isLoading: false,
   error: null,
+  clearError: () => set({ error: null }),
   savingMood: false,
   savingSleep: false,
 

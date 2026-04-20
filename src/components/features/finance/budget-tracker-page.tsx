@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useAppStore } from "@/stores/app-store";
-import { colors } from "@/lib/colors";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Cell, Legend,
@@ -12,8 +11,6 @@ import {
   Plus, Trash2, Check, Clock, AlertTriangle, Star, ShoppingBag,
   Repeat, Calendar, ArrowUpRight, ArrowDownRight, Target, BarChart2,
 } from "lucide-react";
-
-const C = colors;
 
 // ============================================================================
 // TYPES
@@ -132,33 +129,6 @@ const MONTHLY_TREND = [
 ];
 
 // ============================================================================
-// SHARED STYLES
-// ============================================================================
-
-const cardStyle: React.CSSProperties = {
-  background: C.warmWhite,
-  border: `1px solid ${C.lightCream}`,
-  borderRadius: "12px",
-  padding: "20px",
-};
-
-const tableHeaderStyle: React.CSSProperties = {
-  padding: "12px",
-  textAlign: "left" as const,
-  fontSize: "12px",
-  fontWeight: "600",
-  color: C.dark,
-  borderBottom: `2px solid ${C.tan}`,
-  textTransform: "uppercase" as const,
-};
-
-const tableCellStyle: React.CSSProperties = {
-  padding: "12px",
-  fontSize: "13px",
-  borderBottom: `1px solid ${C.lightCream}`,
-};
-
-// ============================================================================
 // TAB 1: RESUMEN (Overview)
 // ============================================================================
 
@@ -175,23 +145,23 @@ function OverviewTab() {
   }));
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="flex flex-col gap-6">
       {/* Summary Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "16px" }}>
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Ingresos", value: `$${totalIncome.toLocaleString()}`, icon: ArrowUpRight, color: C.success, bg: C.successLight },
-          { label: "Gastos", value: `$${totalExpenses.toLocaleString()}`, icon: ArrowDownRight, color: C.danger, bg: C.dangerLight },
-          { label: "Ahorro Neto", value: `$${netSavings.toLocaleString()}`, icon: PiggyBank, color: C.accent, bg: C.accentGlow },
-          { label: "Tasa de Ahorro", value: `${savingsRate}%`, icon: Target, color: C.info, bg: C.infoLight },
+          { label: "Ingresos", value: `$${totalIncome.toLocaleString()}`, icon: ArrowUpRight, colorClass: "text-success", bgClass: "bg-success/10 border-2 border-success" },
+          { label: "Gastos", value: `$${totalExpenses.toLocaleString()}`, icon: ArrowDownRight, colorClass: "text-danger", bgClass: "bg-danger/10 border-2 border-danger" },
+          { label: "Ahorro Neto", value: `$${netSavings.toLocaleString()}`, icon: PiggyBank, colorClass: "text-accent", bgClass: "bg-accent/10 border-2 border-accent" },
+          { label: "Tasa de Ahorro", value: `${savingsRate}%`, icon: Target, colorClass: "text-info", bgClass: "bg-info/10 border-2 border-info" },
         ].map((card) => {
           const Icon = card.icon;
           return (
-            <div key={card.label} style={{ ...cardStyle, background: card.bg, border: `2px solid ${card.color}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <Icon size={18} color={card.color} />
-                <span style={{ fontSize: "12px", fontWeight: "600", color: C.dark }}>{card.label}</span>
+            <div key={card.label} className={`${card.bgClass} rounded-xl p-5`}>
+              <div className="flex items-center gap-2 mb-2">
+                <Icon size={18} className={card.colorClass} />
+                <span className="text-xs font-semibold text-brand-dark">{card.label}</span>
               </div>
-              <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Georgia, serif", color: card.color }}>
+              <div className={`text-3xl font-bold font-serif ${card.colorClass}`}>
                 {card.value}
               </div>
             </div>
@@ -200,57 +170,57 @@ function OverviewTab() {
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+      <div className="grid grid-cols-2 gap-5">
         {/* Monthly Trend */}
-        <div style={cardStyle}>
-          <h3 style={{ fontSize: "14px", fontWeight: "600", color: C.dark, marginBottom: "16px" }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-brand-dark mb-4">
             Tendencia Mensual (6 meses)
           </h3>
           <ResponsiveContainer width="100%" height={220}>
             <BarChart data={MONTHLY_TREND}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F5EDE3" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: C.warmWhite, border: `1px solid ${C.tan}`, borderRadius: "8px" }} />
-              <Bar dataKey="income" fill={C.success} name="Ingresos" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expenses" fill={C.danger} name="Gastos" radius={[4, 4, 0, 0]} />
+              <Tooltip contentStyle={{ background: "#FAF7F3", border: "1px solid #C4A882", borderRadius: "8px" }} />
+              <Bar dataKey="income" fill="#7A9E3E" name="Ingresos" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expenses" fill="#C0544F" name="Gastos" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
         {/* Savings Trend */}
-        <div style={cardStyle}>
-          <h3 style={{ fontSize: "14px", fontWeight: "600", color: C.dark, marginBottom: "16px" }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+          <h3 className="text-sm font-semibold text-brand-dark mb-4">
             Evolución del Ahorro
           </h3>
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={MONTHLY_TREND.map((m) => ({ ...m, savings: m.income - m.expenses }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
+              <CartesianGrid strokeDasharray="3 3" stroke="#F5EDE3" />
               <XAxis dataKey="month" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: C.warmWhite, border: `1px solid ${C.tan}`, borderRadius: "8px" }} />
-              <Line type="monotone" dataKey="savings" stroke={C.accent} strokeWidth={3} dot={{ fill: C.accent, r: 5 }} name="Ahorro" />
+              <Tooltip contentStyle={{ background: "#FAF7F3", border: "1px solid #C4A882", borderRadius: "8px" }} />
+              <Line type="monotone" dataKey="savings" stroke="#B8860B" strokeWidth={3} dot={{ fill: "#B8860B", r: 5 }} name="Ahorro" />
             </LineChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* Expense Breakdown */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: "14px", fontWeight: "600", color: C.dark, marginBottom: "16px" }}>
+      <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-brand-dark mb-4">
           Desglose de Gastos por Categoría
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px" }}>
+        <div className="grid grid-cols-4 gap-3">
           {catBreakdown.map((cat) => {
             const pct = Math.round((cat.value / totalExpenses) * 100);
             return (
-              <div key={cat.name} style={{ background: C.lightCream, borderRadius: "10px", padding: "16px", textAlign: "center" }}>
-                <div style={{ fontSize: "24px", marginBottom: "4px" }}>{cat.emoji}</div>
-                <div style={{ fontSize: "12px", fontWeight: "600", color: C.dark }}>{cat.name}</div>
-                <div style={{ fontSize: "20px", fontWeight: "bold", color: C.brown, fontFamily: "Georgia, serif" }}>
+              <div key={cat.name} className="bg-brand-light-cream rounded-xl p-4 text-center">
+                <div className="text-2xl mb-1">{cat.emoji}</div>
+                <div className="text-xs font-semibold text-brand-dark">{cat.name}</div>
+                <div className="text-xl font-bold text-brand-brown font-serif">
                   ${cat.value}
                 </div>
-                <div style={{ fontSize: "11px", color: C.warm }}>{pct}% del total</div>
+                <div className="text-[11px] text-brand-warm">{pct}% del total</div>
               </div>
             );
           })}
@@ -283,71 +253,71 @@ function IncomeTab() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ ...cardStyle, background: C.successLight, border: `2px solid ${C.success}`, padding: "16px 24px" }}>
-          <span style={{ fontSize: "12px", color: C.dark, fontWeight: "600" }}>Total Ingresos</span>
-          <div style={{ fontSize: "28px", fontWeight: "bold", color: C.success, fontFamily: "Georgia, serif" }}>
+    <div className="flex flex-col gap-5">
+      <div className="flex justify-between items-center">
+        <div className="bg-success/10 border-2 border-success rounded-xl px-6 py-4">
+          <span className="text-xs text-brand-dark font-semibold">Total Ingresos</span>
+          <div className="text-3xl font-bold text-success font-serif">
             ${total.toLocaleString()}
           </div>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ padding: "10px 20px", background: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1.5 px-5 py-2.5 bg-accent text-brand-paper rounded-lg font-semibold text-sm cursor-pointer border-none">
           <Plus size={16} /> Agregar Ingreso
         </button>
       </div>
 
       {showForm && (
-        <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "12px", alignItems: "end" }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 grid gap-3 items-end [grid-template-columns:1fr_1fr_1fr_1fr_auto]">
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Descripción</label>
-            <input value={newIncome.description} onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Descripción</label>
+            <input value={newIncome.description} onChange={(e) => setNewIncome({ ...newIncome, description: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Monto ($)</label>
-            <input type="number" value={newIncome.amount} onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Monto ($)</label>
+            <input type="number" value={newIncome.amount} onChange={(e) => setNewIncome({ ...newIncome, amount: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Categoría</label>
-            <select value={newIncome.category} onChange={(e) => setNewIncome({ ...newIncome, category: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }}>
+            <label className="block text-[11px] text-brand-warm mb-1">Categoría</label>
+            <select value={newIncome.category} onChange={(e) => setNewIncome({ ...newIncome, category: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]">
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Fecha</label>
-            <input type="date" value={newIncome.date} onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Fecha</label>
+            <input type="date" value={newIncome.date} onChange={(e) => setNewIncome({ ...newIncome, date: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
-          <button onClick={addIncome} style={{ padding: "8px 16px", background: C.success, color: C.paper, border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}>
+          <button onClick={addIncome} className="px-4 py-2 bg-success text-brand-paper rounded-md cursor-pointer font-semibold border-none">
             <Check size={16} />
           </button>
         </div>
       )}
 
-      <div style={cardStyle}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+        <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th style={tableHeaderStyle}>Fecha</th>
-              <th style={tableHeaderStyle}>Descripción</th>
-              <th style={tableHeaderStyle}>Categoría</th>
-              <th style={{ ...tableHeaderStyle, textAlign: "right" }}>Monto</th>
-              <th style={{ ...tableHeaderStyle, textAlign: "center" }}>Acciones</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Fecha</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Descripción</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Categoría</th>
+              <th className="px-3 py-3 text-right text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Monto</th>
+              <th className="px-3 py-3 text-center text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {incomes.map((tx) => (
               <tr key={tx.id}>
-                <td style={{ ...tableCellStyle, color: C.warm }}>{tx.date}</td>
-                <td style={{ ...tableCellStyle, fontWeight: "500", color: C.dark }}>{tx.description}</td>
-                <td style={tableCellStyle}>
-                  <span style={{ background: C.successLight, color: C.success, padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "600" }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-brand-warm">{tx.date}</td>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream font-medium text-brand-dark">{tx.description}</td>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream">
+                  <span className="bg-success/10 text-success px-2.5 py-1 rounded-xl text-[11px] font-semibold">
                     {tx.category}
                   </span>
                 </td>
-                <td style={{ ...tableCellStyle, textAlign: "right", fontWeight: "600", color: C.success }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-right font-semibold text-success">
                   +${tx.amount.toLocaleString()}
                 </td>
-                <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                  <button onClick={() => setIncomes(incomes.filter((i) => i.id !== tx.id))} style={{ background: "none", border: "none", cursor: "pointer", color: C.danger, opacity: 0.6 }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-center">
+                  <button onClick={() => setIncomes(incomes.filter((i) => i.id !== tx.id))} className="bg-transparent border-none cursor-pointer text-danger opacity-60">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -385,77 +355,77 @@ function ExpensesTab() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-          <div style={{ ...cardStyle, background: C.dangerLight, border: `2px solid ${C.danger}`, padding: "16px 24px" }}>
-            <span style={{ fontSize: "12px", color: C.dark, fontWeight: "600" }}>Total Gastos</span>
-            <div style={{ fontSize: "28px", fontWeight: "bold", color: C.danger, fontFamily: "Georgia, serif" }}>
+    <div className="flex flex-col gap-5">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-3 items-center">
+          <div className="bg-danger/10 border-2 border-danger rounded-xl px-6 py-4">
+            <span className="text-xs text-brand-dark font-semibold">Total Gastos</span>
+            <div className="text-3xl font-bold text-danger font-serif">
               ${total.toLocaleString()}
             </div>
           </div>
-          <select value={filter} onChange={(e) => setFilter(e.target.value)} style={{ padding: "10px 16px", border: `1px solid ${C.tan}`, borderRadius: "8px", fontSize: "13px", background: C.paper }}>
+          <select value={filter} onChange={(e) => setFilter(e.target.value)} className="px-4 py-2.5 border border-brand-tan rounded-lg text-[13px] bg-brand-paper">
             <option value="Todos">Todas las categorías</option>
             {categories.map((c) => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
-        <button onClick={() => setShowForm(!showForm)} style={{ padding: "10px 20px", background: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1.5 px-5 py-2.5 bg-accent text-brand-paper rounded-lg font-semibold text-sm cursor-pointer border-none">
           <Plus size={16} /> Agregar Gasto
         </button>
       </div>
 
       {showForm && (
-        <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "12px", alignItems: "end" }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 grid gap-3 items-end [grid-template-columns:1fr_1fr_1fr_1fr_auto]">
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Descripción</label>
-            <input value={newExp.description} onChange={(e) => setNewExp({ ...newExp, description: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Descripción</label>
+            <input value={newExp.description} onChange={(e) => setNewExp({ ...newExp, description: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Monto ($)</label>
-            <input type="number" value={newExp.amount} onChange={(e) => setNewExp({ ...newExp, amount: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Monto ($)</label>
+            <input type="number" value={newExp.amount} onChange={(e) => setNewExp({ ...newExp, amount: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Categoría</label>
-            <select value={newExp.category} onChange={(e) => setNewExp({ ...newExp, category: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }}>
+            <label className="block text-[11px] text-brand-warm mb-1">Categoría</label>
+            <select value={newExp.category} onChange={(e) => setNewExp({ ...newExp, category: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]">
               {categories.map((c) => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Fecha</label>
-            <input type="date" value={newExp.date} onChange={(e) => setNewExp({ ...newExp, date: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Fecha</label>
+            <input type="date" value={newExp.date} onChange={(e) => setNewExp({ ...newExp, date: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
-          <button onClick={addExpense} style={{ padding: "8px 16px", background: C.danger, color: C.paper, border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}>
+          <button onClick={addExpense} className="px-4 py-2 bg-danger text-brand-paper rounded-md cursor-pointer font-semibold border-none">
             <Check size={16} />
           </button>
         </div>
       )}
 
-      <div style={cardStyle}>
-        <table style={{ width: "100%", borderCollapse: "collapse" }}>
+      <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+        <table className="w-full border-collapse">
           <thead>
             <tr>
-              <th style={tableHeaderStyle}>Fecha</th>
-              <th style={tableHeaderStyle}>Descripción</th>
-              <th style={tableHeaderStyle}>Categoría</th>
-              <th style={{ ...tableHeaderStyle, textAlign: "right" }}>Monto</th>
-              <th style={{ ...tableHeaderStyle, textAlign: "center" }}>Acciones</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Fecha</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Descripción</th>
+              <th className="px-3 py-3 text-left text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Categoría</th>
+              <th className="px-3 py-3 text-right text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Monto</th>
+              <th className="px-3 py-3 text-center text-[12px] font-semibold text-brand-dark border-b-2 border-brand-tan uppercase">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((tx) => (
               <tr key={tx.id}>
-                <td style={{ ...tableCellStyle, color: C.warm }}>{tx.date}</td>
-                <td style={{ ...tableCellStyle, fontWeight: "500", color: C.dark }}>{tx.description}</td>
-                <td style={tableCellStyle}>
-                  <span style={{ background: C.warningLight, color: C.warning, padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "600" }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-brand-warm">{tx.date}</td>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream font-medium text-brand-dark">{tx.description}</td>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream">
+                  <span className="bg-warning/10 text-warning px-2.5 py-1 rounded-xl text-[11px] font-semibold">
                     {tx.category}
                   </span>
                 </td>
-                <td style={{ ...tableCellStyle, textAlign: "right", fontWeight: "600", color: C.danger }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-right font-semibold text-danger">
                   -${tx.amount.toLocaleString()}
                 </td>
-                <td style={{ ...tableCellStyle, textAlign: "center" }}>
-                  <button onClick={() => setExpenses(expenses.filter((e) => e.id !== tx.id))} style={{ background: "none", border: "none", cursor: "pointer", color: C.danger, opacity: 0.6 }}>
+                <td className="px-3 py-3 text-[13px] border-b border-brand-light-cream text-center">
+                  <button onClick={() => setExpenses(expenses.filter((e) => e.id !== tx.id))} className="bg-transparent border-none cursor-pointer text-danger opacity-60">
                     <Trash2 size={14} />
                   </button>
                 </td>
@@ -478,48 +448,48 @@ function BudgetTab() {
   const totalBudget = budgets.reduce((s, b) => s + b.budget, 0);
   const adherence = Math.round((1 - (totalSpent - totalBudget * 0.85) / totalBudget) * 100);
 
-  const getColor = (spent: number, budget: number) => {
+  const getColorClass = (spent: number, budget: number) => {
     const pct = (spent / budget) * 100;
-    if (pct > 90) return C.danger;
-    if (pct > 75) return C.warning;
-    return C.success;
+    if (pct > 90) return "bg-danger";
+    if (pct > 75) return "bg-warning";
+    return "bg-success";
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div className="flex flex-col gap-5">
       {/* Adherence Gauge */}
-      <div style={{ display: "flex", gap: "20px", alignItems: "center" }}>
-        <div style={{ ...cardStyle, textAlign: "center", minWidth: "180px" }}>
-          <div style={{ position: "relative", width: 120, height: 120, margin: "0 auto 12px" }}>
-            <svg width="120" height="120" style={{ transform: "rotate(-90deg)" }}>
-              <circle cx="60" cy="60" r="52" fill="none" stroke={C.lightCream} strokeWidth="8" />
-              <circle cx="60" cy="60" r="52" fill="none" stroke={C.accent} strokeWidth="8" strokeDasharray={2 * Math.PI * 52} strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(adherence, 100) / 100)} strokeLinecap="round" />
+      <div className="flex gap-5 items-center">
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 text-center min-w-[180px]">
+          <div className="relative w-[120px] h-[120px] mx-auto mb-3">
+            <svg width="120" height="120" className="-rotate-90">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#F5EDE3" strokeWidth="8" />
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#B8860B" strokeWidth="8" strokeDasharray={2 * Math.PI * 52} strokeDashoffset={2 * Math.PI * 52 * (1 - Math.min(adherence, 100) / 100)} strokeLinecap="round" />
             </svg>
-            <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)" }}>
-              <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.dark }}>{adherence}%</div>
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div className="text-3xl font-bold font-serif text-brand-dark">{adherence}%</div>
             </div>
           </div>
-          <div style={{ fontSize: "13px", fontWeight: "600", color: C.dark }}>Adherencia</div>
-          <div style={{ fontSize: "11px", color: C.warm }}>al presupuesto</div>
+          <div className="text-[13px] font-semibold text-brand-dark">Adherencia</div>
+          <div className="text-[11px] text-brand-warm">al presupuesto</div>
         </div>
 
-        <div style={{ ...cardStyle, flex: 1 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Presupuesto Total</div>
-              <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.dark }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 flex-1">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-[11px] text-brand-warm mb-1">Presupuesto Total</div>
+              <div className="text-2xl font-bold font-serif text-brand-dark">
                 ${totalBudget.toLocaleString()}
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Gastado</div>
-              <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.danger }}>
+            <div className="text-center">
+              <div className="text-[11px] text-brand-warm mb-1">Gastado</div>
+              <div className="text-2xl font-bold font-serif text-danger">
                 ${totalSpent.toLocaleString()}
               </div>
             </div>
-            <div style={{ textAlign: "center" }}>
-              <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Restante</div>
-              <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.success }}>
+            <div className="text-center">
+              <div className="text-[11px] text-brand-warm mb-1">Restante</div>
+              <div className="text-2xl font-bold font-serif text-success">
                 ${(totalBudget - totalSpent).toLocaleString()}
               </div>
             </div>
@@ -528,25 +498,25 @@ function BudgetTab() {
       </div>
 
       {/* Budget Bars */}
-      <div style={cardStyle}>
-        <h3 style={{ fontSize: "14px", fontWeight: "600", color: C.dark, marginBottom: "20px" }}>Progreso por Categoría</h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+      <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+        <h3 className="text-sm font-semibold text-brand-dark mb-5">Progreso por Categoría</h3>
+        <div className="flex flex-col gap-4">
           {budgets.map((b) => {
             const pct = Math.round((b.spent / b.budget) * 100);
-            const color = getColor(b.spent, b.budget);
+            const colorClass = getColorClass(b.spent, b.budget);
             return (
               <div key={b.category}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "18px" }}>{b.emoji}</span>
-                    <span style={{ fontSize: "13px", fontWeight: "600", color: C.dark }}>{b.category}</span>
+                <div className="flex justify-between mb-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{b.emoji}</span>
+                    <span className="text-[13px] font-semibold text-brand-dark">{b.category}</span>
                   </div>
-                  <span style={{ fontSize: "12px", color: C.warm }}>
+                  <span className="text-xs text-brand-warm">
                     ${b.spent} / ${b.budget} ({pct}%)
                   </span>
                 </div>
-                <div style={{ width: "100%", height: "10px", background: C.lightCream, borderRadius: "5px", overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${Math.min(pct, 100)}%`, background: color, borderRadius: "5px", transition: "width 0.5s ease" }} />
+                <div className="w-full h-2.5 bg-brand-light-cream rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-500 ${colorClass}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
               </div>
             );
@@ -564,12 +534,12 @@ function BudgetTab() {
 function BillsTab() {
   const [bills, setBills] = useState<Bill[]>(SAMPLE_BILLS);
 
-  const getStatusStyle = (status: string): React.CSSProperties => {
+  const getStatusClasses = (status: string) => {
     switch (status) {
-      case "pagado": return { background: C.successLight, color: C.success };
-      case "pendiente": return { background: C.warningLight, color: C.warning };
-      case "vencido": return { background: C.dangerLight, color: C.danger };
-      default: return {};
+      case "pagado": return "bg-success/10 text-success";
+      case "pendiente": return "bg-warning/10 text-warning";
+      case "vencido": return "bg-danger/10 text-danger";
+      default: return "";
     }
   };
 
@@ -587,47 +557,47 @@ function BillsTab() {
   const pending = bills.filter((b) => b.status !== "pagado").reduce((s, b) => s + b.amount, 0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div className="flex flex-col gap-5">
       {/* Summary */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-        <div style={{ ...cardStyle, textAlign: "center" }}>
-          <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Total Mensual</div>
-          <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.dark }}>${totalMonthly.toLocaleString()}</div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 text-center">
+          <div className="text-[11px] text-brand-warm mb-1">Total Mensual</div>
+          <div className="text-2xl font-bold font-serif text-brand-dark">${totalMonthly.toLocaleString()}</div>
         </div>
-        <div style={{ ...cardStyle, textAlign: "center", background: C.successLight }}>
-          <div style={{ fontSize: "11px", color: C.success, marginBottom: "4px" }}>Pagado</div>
-          <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.success }}>${paid.toLocaleString()}</div>
+        <div className="bg-success/10 border border-brand-light-cream rounded-xl p-5 text-center">
+          <div className="text-[11px] text-success mb-1">Pagado</div>
+          <div className="text-2xl font-bold font-serif text-success">${paid.toLocaleString()}</div>
         </div>
-        <div style={{ ...cardStyle, textAlign: "center", background: C.warningLight }}>
-          <div style={{ fontSize: "11px", color: C.warning, marginBottom: "4px" }}>Pendiente</div>
-          <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.warning }}>${pending.toLocaleString()}</div>
+        <div className="bg-warning/10 border border-brand-light-cream rounded-xl p-5 text-center">
+          <div className="text-[11px] text-warning mb-1">Pendiente</div>
+          <div className="text-2xl font-bold font-serif text-warning">${pending.toLocaleString()}</div>
         </div>
       </div>
 
       {/* Bill Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+      <div className="grid grid-cols-3 gap-4">
         {bills.map((bill) => {
-          const statusStyle = getStatusStyle(bill.status);
+          const statusClasses = getStatusClasses(bill.status);
           return (
-            <div key={bill.id} style={{ ...cardStyle, position: "relative" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
+            <div key={bill.id} className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 relative">
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div style={{ fontSize: "15px", fontWeight: "600", color: C.dark }}>{bill.name}</div>
-                  <div style={{ fontSize: "11px", color: C.warm }}>{bill.category}</div>
+                  <div className="text-[15px] font-semibold text-brand-dark">{bill.name}</div>
+                  <div className="text-[11px] text-brand-warm">{bill.category}</div>
                 </div>
-                <span style={{ ...statusStyle, padding: "4px 10px", borderRadius: "12px", fontSize: "11px", fontWeight: "600", display: "flex", alignItems: "center", gap: "4px" }}>
+                <span className={`${statusClasses} px-2.5 py-1 rounded-xl text-[11px] font-semibold flex items-center gap-1`}>
                   {getStatusIcon(bill.status)} {bill.status}
                 </span>
               </div>
-              <div style={{ fontSize: "24px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.brown, marginBottom: "8px" }}>
+              <div className="text-2xl font-bold font-serif text-brand-brown mb-2">
                 ${bill.amount}
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "12px", color: C.warm }}>
+              <div className="flex items-center gap-1.5 text-xs text-brand-warm">
                 <Calendar size={12} />
                 Vence: {bill.dueDate}
               </div>
               {bill.status === "pendiente" && (
-                <button onClick={() => setBills(bills.map((b) => b.id === bill.id ? { ...b, status: "pagado" as const } : b))} style={{ marginTop: "12px", width: "100%", padding: "8px", background: C.success, color: C.paper, border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", fontSize: "12px" }}>
+                <button onClick={() => setBills(bills.map((b) => b.id === bill.id ? { ...b, status: "pagado" as const } : b))} className="mt-3 w-full py-2 bg-success text-brand-paper rounded-md cursor-pointer font-semibold text-xs border-none">
                   Marcar como Pagado
                 </button>
               )}
@@ -651,48 +621,48 @@ function SubscriptionsTab() {
   const totalAnnual = totalMonthly * 12;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+    <div className="flex flex-col gap-5">
       {/* Totals */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
-        <div style={{ ...cardStyle, textAlign: "center" }}>
-          <Repeat size={20} color={C.accent} style={{ margin: "0 auto 8px", display: "block" }} />
-          <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Suscripciones Activas</div>
-          <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.dark }}>{activeSubs.length}</div>
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 text-center">
+          <Repeat size={20} className="text-accent mx-auto mb-2 block" />
+          <div className="text-[11px] text-brand-warm mb-1">Suscripciones Activas</div>
+          <div className="text-3xl font-bold font-serif text-brand-dark">{activeSubs.length}</div>
         </div>
-        <div style={{ ...cardStyle, textAlign: "center", background: C.accentGlow }}>
-          <div style={{ fontSize: "11px", color: C.brown, marginBottom: "4px" }}>Costo Mensual</div>
-          <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.accent }}>
+        <div className="bg-accent/10 border border-brand-light-cream rounded-xl p-5 text-center">
+          <div className="text-[11px] text-brand-brown mb-1">Costo Mensual</div>
+          <div className="text-3xl font-bold font-serif text-accent">
             ${totalMonthly.toFixed(2)}
           </div>
         </div>
-        <div style={{ ...cardStyle, textAlign: "center" }}>
-          <div style={{ fontSize: "11px", color: C.warm, marginBottom: "4px" }}>Costo Anual</div>
-          <div style={{ fontSize: "28px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.danger }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 text-center">
+          <div className="text-[11px] text-brand-warm mb-1">Costo Anual</div>
+          <div className="text-3xl font-bold font-serif text-danger">
             ${totalAnnual.toFixed(2)}
           </div>
         </div>
       </div>
 
       {/* Subscription Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px" }}>
+      <div className="grid grid-cols-3 gap-4">
         {subs.map((sub) => (
-          <div key={sub.id} style={{ ...cardStyle, opacity: sub.active ? 1 : 0.5 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
+          <div key={sub.id} className={`bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 ${sub.active ? "opacity-100" : "opacity-50"}`}>
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <div style={{ fontSize: "16px", fontWeight: "600", color: C.dark }}>{sub.name}</div>
-                <span style={{ fontSize: "11px", color: C.warm, background: C.lightCream, padding: "2px 8px", borderRadius: "8px" }}>
+                <div className="text-base font-semibold text-brand-dark">{sub.name}</div>
+                <span className="text-[11px] text-brand-warm bg-brand-light-cream px-2 py-0.5 rounded-lg">
                   {sub.category}
                 </span>
               </div>
-              <div style={{ fontSize: "22px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.accent }}>
+              <div className="text-[22px] font-bold font-serif text-accent">
                 ${sub.costMonth}
               </div>
             </div>
-            <div style={{ fontSize: "11px", color: C.warm, marginBottom: "12px" }}>
+            <div className="text-[11px] text-brand-warm mb-3">
               /mes · Renueva: {sub.renewalDate}
             </div>
-            <div style={{ display: "flex", gap: "8px" }}>
-              <button onClick={() => setSubs(subs.map((s) => s.id === sub.id ? { ...s, active: !s.active } : s))} style={{ flex: 1, padding: "8px", background: sub.active ? C.dangerLight : C.successLight, color: sub.active ? C.danger : C.success, border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600", fontSize: "11px" }}>
+            <div className="flex gap-2">
+              <button onClick={() => setSubs(subs.map((s) => s.id === sub.id ? { ...s, active: !s.active } : s))} className={`flex-1 py-2 rounded-md cursor-pointer font-semibold text-[11px] border-none ${sub.active ? "bg-danger/10 text-danger" : "bg-success/10 text-success"}`}>
                 {sub.active ? "Cancelar" : "Reactivar"}
               </button>
             </div>
@@ -720,70 +690,70 @@ function WishlistTab() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <button onClick={() => setShowForm(!showForm)} style={{ padding: "10px 20px", background: C.accent, color: C.paper, border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px", display: "flex", alignItems: "center", gap: "6px" }}>
+    <div className="flex flex-col gap-5">
+      <div className="flex justify-end">
+        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-1.5 px-5 py-2.5 bg-accent text-brand-paper rounded-lg font-semibold text-sm cursor-pointer border-none">
           <Plus size={16} /> Agregar Deseo
         </button>
       </div>
 
       {showForm && (
-        <div style={{ ...cardStyle, display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr auto", gap: "12px", alignItems: "end" }}>
+        <div className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5 grid gap-3 items-end [grid-template-columns:1fr_1fr_1fr_1fr_auto]">
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Nombre</label>
-            <input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Nombre</label>
+            <input value={newItem.name} onChange={(e) => setNewItem({ ...newItem, name: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Precio ($)</label>
-            <input type="number" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Precio ($)</label>
+            <input type="number" value={newItem.price} onChange={(e) => setNewItem({ ...newItem, price: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Prioridad</label>
-            <select value={newItem.priority} onChange={(e) => setNewItem({ ...newItem, priority: e.target.value as "Necesito" | "Quiero" })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }}>
+            <label className="block text-[11px] text-brand-warm mb-1">Prioridad</label>
+            <select value={newItem.priority} onChange={(e) => setNewItem({ ...newItem, priority: e.target.value as "Necesito" | "Quiero" })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]">
               <option value="Necesito">Necesito</option>
               <option value="Quiero">Quiero</option>
             </select>
           </div>
           <div>
-            <label style={{ fontSize: "11px", color: C.warm, display: "block", marginBottom: "4px" }}>Ahorrado ($)</label>
-            <input type="number" value={newItem.saved} onChange={(e) => setNewItem({ ...newItem, saved: e.target.value })} style={{ width: "100%", padding: "8px", border: `1px solid ${C.tan}`, borderRadius: "6px", fontSize: "13px" }} />
+            <label className="block text-[11px] text-brand-warm mb-1">Ahorrado ($)</label>
+            <input type="number" value={newItem.saved} onChange={(e) => setNewItem({ ...newItem, saved: e.target.value })} className="w-full px-2 py-2 border border-brand-tan rounded-md text-[13px]" />
           </div>
-          <button onClick={addItem} style={{ padding: "8px 16px", background: C.accent, color: C.paper, border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "600" }}>
+          <button onClick={addItem} className="px-4 py-2 bg-accent text-brand-paper rounded-md cursor-pointer font-semibold border-none">
             <Check size={16} />
           </button>
         </div>
       )}
 
       {/* Wishlist Cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: "16px" }}>
+      <div className="grid grid-cols-2 gap-4">
         {items.map((item) => {
           const pct = Math.round((item.saved / item.price) * 100);
           return (
-            <div key={item.id} style={cardStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "12px" }}>
+            <div key={item.id} className="bg-brand-warm-white border border-brand-light-cream rounded-xl p-5">
+              <div className="flex justify-between items-start mb-3">
                 <div>
-                  <div style={{ fontSize: "16px", fontWeight: "600", color: C.dark }}>{item.name}</div>
-                  <span style={{ fontSize: "11px", fontWeight: "600", padding: "2px 10px", borderRadius: "12px", background: item.priority === "Necesito" ? C.dangerLight : C.infoLight, color: item.priority === "Necesito" ? C.danger : C.info }}>
+                  <div className="text-base font-semibold text-brand-dark">{item.name}</div>
+                  <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-xl ${item.priority === "Necesito" ? "bg-danger/10 text-danger" : "bg-info/10 text-info"}`}>
                     {item.priority}
                   </span>
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "22px", fontWeight: "bold", fontFamily: "Georgia, serif", color: C.accent }}>
+                <div className="text-right">
+                  <div className="text-[22px] font-bold font-serif text-accent">
                     ${item.price.toLocaleString()}
                   </div>
-                  <button onClick={() => setItems(items.filter((i) => i.id !== item.id))} style={{ background: "none", border: "none", cursor: "pointer", color: C.danger, opacity: 0.5 }}>
+                  <button onClick={() => setItems(items.filter((i) => i.id !== item.id))} className="bg-transparent border-none cursor-pointer text-danger opacity-50">
                     <Trash2 size={14} />
                   </button>
                 </div>
               </div>
-              <div style={{ marginBottom: "6px", display: "flex", justifyContent: "space-between", fontSize: "12px" }}>
-                <span style={{ color: C.warm }}>Ahorrado: ${item.saved.toLocaleString()}</span>
-                <span style={{ fontWeight: "600", color: C.accent }}>{pct}%</span>
+              <div className="mb-1.5 flex justify-between text-xs">
+                <span className="text-brand-warm">Ahorrado: ${item.saved.toLocaleString()}</span>
+                <span className="font-semibold text-accent">{pct}%</span>
               </div>
-              <div style={{ width: "100%", height: "10px", background: C.lightCream, borderRadius: "5px", overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg, ${C.accent}, ${C.accentLight})`, borderRadius: "5px", transition: "width 0.5s ease" }} />
+              <div className="w-full h-2.5 bg-brand-light-cream rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-accent to-accent-light" style={{ width: `${pct}%` }} />
               </div>
-              <div style={{ fontSize: "11px", color: C.warm, marginTop: "6px" }}>
+              <div className="text-[11px] text-brand-warm mt-1.5">
                 Faltan: ${(item.price - item.saved).toLocaleString()}
               </div>
             </div>
@@ -831,34 +801,29 @@ function AnalyticsTab() {
   const totalIncome = incomeBySource.reduce((s, c) => s + c.value, 0);
   const savingsRate = Math.round(((totalIncome - totalExpense) / totalIncome) * 100);
 
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: C.paper, borderRadius: '12px', padding: '20px',
-    border: `1px solid ${C.lightCream}`, boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-  };
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="flex flex-col gap-5">
       {/* Summary Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px' }}>
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Ingresos', value: `$${totalIncome.toLocaleString()}`, color: C.success, emoji: '📈' },
-          { label: 'Gastos', value: `$${totalExpense.toLocaleString()}`, color: C.danger, emoji: '📉' },
-          { label: 'Ahorro', value: `$${(totalIncome - totalExpense).toLocaleString()}`, color: C.info, emoji: '💰' },
-          { label: 'Tasa de Ahorro', value: `${savingsRate}%`, color: C.accent, emoji: '🎯' },
+          { label: 'Ingresos', value: `$${totalIncome.toLocaleString()}`, color: 'text-success', emoji: '📈' },
+          { label: 'Gastos', value: `$${totalExpense.toLocaleString()}`, color: 'text-danger', emoji: '📉' },
+          { label: 'Ahorro', value: `$${(totalIncome - totalExpense).toLocaleString()}`, color: 'text-info', emoji: '💰' },
+          { label: 'Tasa de Ahorro', value: `${savingsRate}%`, color: 'text-accent', emoji: '🎯' },
         ].map((s, i) => (
-          <div key={i} style={{ ...cardStyle, textAlign: 'center' }}>
-            <span style={{ fontSize: '1.5rem' }}>{s.emoji}</span>
-            <div style={{ fontSize: '1.4rem', fontWeight: '700', color: s.color, margin: '8px 0 4px 0' }}>{s.value}</div>
-            <div style={{ fontSize: '0.8rem', color: C.warm }}>{s.label}</div>
+          <div key={i} className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 text-center shadow-sm">
+            <span className="text-2xl">{s.emoji}</span>
+            <div className={`text-[1.4rem] font-bold ${s.color} my-2`}>{s.value}</div>
+            <div className="text-[0.8rem] text-brand-warm">{s.label}</div>
           </div>
         ))}
       </div>
 
       {/* Charts Row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div className="grid grid-cols-2 gap-5">
         {/* Expense by Category - Pie */}
-        <div style={cardStyle}>
-          <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', fontSize: '1rem' }}>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 shadow-sm">
+          <h3 className="font-serif text-brand-dark mb-4 text-base">
             💳 Gastos por Categoría
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -873,8 +838,8 @@ function AnalyticsTab() {
         </div>
 
         {/* Income by Source - Pie */}
-        <div style={cardStyle}>
-          <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', fontSize: '1rem' }}>
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 shadow-sm">
+          <h3 className="font-serif text-brand-dark mb-4 text-base">
             📊 Ingresos por Fuente
           </h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -890,34 +855,34 @@ function AnalyticsTab() {
       </div>
 
       {/* Monthly Trend */}
-      <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', fontSize: '1rem' }}>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 shadow-sm">
+        <h3 className="font-serif text-brand-dark mb-4 text-base">
           📈 Tendencia Mensual (6 meses)
         </h3>
         <ResponsiveContainer width="100%" height={280}>
           <BarChart data={monthlyTrend}>
-            <CartesianGrid strokeDasharray="3 3" stroke={C.lightCream} />
-            <XAxis dataKey="mes" tick={{ fill: C.warm, fontSize: 12 }} />
-            <YAxis tick={{ fill: C.warm, fontSize: 12 }} />
-            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ borderRadius: '8px', border: `1px solid ${C.tan}` }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#F5EDE3" />
+            <XAxis dataKey="mes" tick={{ fill: "#A0845C", fontSize: 12 }} />
+            <YAxis tick={{ fill: "#A0845C", fontSize: 12 }} />
+            <Tooltip formatter={(v: number) => `$${v.toLocaleString()}`} contentStyle={{ borderRadius: '8px', border: "1px solid #C4A882" }} />
             <Legend />
-            <Bar dataKey="ingresos" name="Ingresos" fill={C.success} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="gastos" name="Gastos" fill={C.danger} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="ahorro" name="Ahorro" fill={C.info} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="ingresos" name="Ingresos" fill="#7A9E3E" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="gastos" name="Gastos" fill="#C0544F" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="ahorro" name="Ahorro" fill="#5A8FA8" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Expense Breakdown Table */}
-      <div style={cardStyle}>
-        <h3 style={{ fontFamily: 'Georgia, serif', color: C.dark, margin: '0 0 16px 0', fontSize: '1rem' }}>
+      <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 shadow-sm">
+        <h3 className="font-serif text-brand-dark mb-4 text-base">
           📋 Desglose de Gastos
         </h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table className="w-full border-collapse">
           <thead>
-            <tr style={{ backgroundColor: C.cream }}>
+            <tr className="bg-brand-cream">
               {['Categoría', 'Monto', '% del Total', 'Progreso'].map(h => (
-                <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: '0.8rem', color: C.warm, fontWeight: '600' }}>{h}</th>
+                <th key={h} className="px-3.5 py-2.5 text-left text-[0.8rem] text-brand-warm font-semibold">{h}</th>
               ))}
             </tr>
           </thead>
@@ -925,16 +890,16 @@ function AnalyticsTab() {
             {expenseByCategory.sort((a, b) => b.value - a.value).map((cat, i) => {
               const pct = Math.round((cat.value / totalExpense) * 100);
               return (
-                <tr key={i} style={{ borderBottom: `1px solid ${C.lightCream}` }}>
-                  <td style={{ padding: '10px 14px', fontSize: '0.9rem', color: C.dark, fontWeight: '500' }}>
-                    <span style={{ display: 'inline-block', width: '10px', height: '10px', borderRadius: '50%', backgroundColor: cat.color, marginRight: '8px' }} />
+                <tr key={i} className="border-b border-brand-light-cream">
+                  <td className="px-3.5 py-2.5 text-[0.9rem] text-brand-dark font-medium">
+                    <span className="inline-block w-2.5 h-2.5 rounded-full mr-2" style={{ backgroundColor: cat.color }} />
                     {cat.name}
                   </td>
-                  <td style={{ padding: '10px 14px', fontSize: '0.9rem', color: C.dark, fontWeight: '600' }}>${cat.value.toLocaleString()}</td>
-                  <td style={{ padding: '10px 14px', fontSize: '0.85rem', color: C.warm }}>{pct}%</td>
-                  <td style={{ padding: '10px 14px' }}>
-                    <div style={{ width: '100%', height: '8px', backgroundColor: C.lightCream, borderRadius: '4px', overflow: 'hidden' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', backgroundColor: cat.color, borderRadius: '4px' }} />
+                  <td className="px-3.5 py-2.5 text-[0.9rem] text-brand-dark font-semibold">${cat.value.toLocaleString()}</td>
+                  <td className="px-3.5 py-2.5 text-[0.85rem] text-brand-warm">{pct}%</td>
+                  <td className="px-3.5 py-2.5">
+                    <div className="w-full h-2 bg-brand-light-cream rounded overflow-hidden">
+                      <div className="h-full rounded" style={{ width: `${pct}%`, backgroundColor: cat.color }} />
                     </div>
                   </td>
                 </tr>
@@ -963,9 +928,9 @@ const BudgetTrackerPage = () => {
   const setActiveTab = useAppStore((s) => s.setFinanceTab);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
+    <div className="flex flex-col gap-6">
       {/* Tab Navigation */}
-      <div style={{ display: "flex", gap: "8px", borderBottom: `2px solid ${C.lightCream}`, paddingBottom: "0", overflowX: "auto" }}>
+      <div className="flex gap-2 border-b-2 border-brand-light-cream pb-0 overflow-x-auto">
         {TABS.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -973,22 +938,11 @@ const BudgetTrackerPage = () => {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={{
-                padding: "12px 16px",
-                background: isActive ? C.accent : "transparent",
-                color: isActive ? C.paper : C.warm,
-                border: "none",
-                borderBottom: isActive ? `3px solid ${C.accent}` : "3px solid transparent",
-                cursor: "pointer",
-                fontSize: "13px",
-                fontWeight: isActive ? "700" : "500",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                whiteSpace: "nowrap",
-                transition: "all 0.2s",
-                borderRadius: "8px 8px 0 0",
-              }}
+              className={`flex items-center gap-1.5 px-4 py-3 text-[13px] whitespace-nowrap rounded-t-lg border-none cursor-pointer transition-all duration-200 ${
+                isActive
+                  ? "bg-accent text-brand-paper font-bold border-b-[3px] border-b-accent"
+                  : "bg-transparent text-brand-warm font-medium border-b-[3px] border-b-transparent"
+              }`}
             >
               <Icon size={16} />
               {tab.label}

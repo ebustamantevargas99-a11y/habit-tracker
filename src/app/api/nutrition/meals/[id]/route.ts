@@ -1,12 +1,22 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id } = await params;
 
-  const { id } = await params;
-  await prisma.mealLog.deleteMany({ where: { id, userId: session.user.id } });
-  return NextResponse.json({ success: true });
+    const meal = await prisma.mealLog.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!meal)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+    await prisma.mealLog.delete({ where: { id } });
+    return new NextResponse(null, { status: 204 });
+  });
 }

@@ -1,27 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   // Return global exercises + user's custom exercises
   const exercises = await prisma.exercise.findMany({
-    where: { OR: [{ userId: null }, { userId: session.user.id }] },
+    where: { OR: [{ userId: null }, { userId: userId }] },
     orderBy: [{ muscleGroup: "asc" }, { name: "asc" }],
   });
 
   return NextResponse.json(exercises);
+});
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const body = await req.json();
   const { name, muscleGroup, category, equipment } = body;
@@ -32,7 +27,7 @@ export async function POST(req: NextRequest) {
 
   const exercise = await prisma.exercise.create({
     data: {
-      userId: session.user.id,
+      userId: userId,
       name,
       muscleGroup,
       category: category ?? "compound",
@@ -42,4 +37,5 @@ export async function POST(req: NextRequest) {
   });
 
   return NextResponse.json(exercise, { status: 201 });
+});
 }

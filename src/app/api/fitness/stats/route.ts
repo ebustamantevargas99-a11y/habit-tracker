@@ -1,12 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   // Start of current week (Monday)
   const now = new Date();
@@ -17,12 +14,12 @@ export async function GET() {
   const weekStartStr = weekStart.toISOString().split("T")[0];
 
   const [totalWorkouts, currentWeekWorkouts, weekWorkouts] = await Promise.all([
-    prisma.workout.count({ where: { userId: session.user.id } }),
+    prisma.workout.count({ where: { userId: userId } }),
     prisma.workout.count({
-      where: { userId: session.user.id, date: { gte: weekStartStr } },
+      where: { userId: userId, date: { gte: weekStartStr } },
     }),
     prisma.workout.findMany({
-      where: { userId: session.user.id, date: { gte: weekStartStr } },
+      where: { userId: userId, date: { gte: weekStartStr } },
       include: {
         exercises: {
           include: {
@@ -44,4 +41,5 @@ export async function GET() {
   }
 
   return NextResponse.json({ totalWorkouts, currentWeekWorkouts, weeklyVolume });
+});
 }

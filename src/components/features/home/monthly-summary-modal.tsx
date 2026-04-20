@@ -20,6 +20,7 @@ import {
   Line,
   CartesianGrid,
 } from "recharts";
+import { cn } from "@/components/ui";
 
 const C = {
   dark: "#3D2B1F",
@@ -151,88 +152,36 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     { id: "bienestar", label: "Bienestar" },
   ];
 
-  const tabStyle = (tabId: TabType): React.CSSProperties => ({
-    padding: "12px 20px",
-    borderBottom: activeTab === tabId ? `3px solid ${C.accent}` : "none",
-    color: activeTab === tabId ? C.dark : C.warm,
-    fontWeight: activeTab === tabId ? "600" : "500",
-    fontSize: "14px",
-    cursor: "pointer",
-    backgroundColor: "transparent",
-    border: "none",
-    transition: "all 0.2s",
-  });
-
   const renderGeneralTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* Life Score */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px", alignItems: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Inicio del Mes
-          </p>
-          <div
-            style={{
-              width: "140px",
-              height: "140px",
-              borderRadius: "50%",
-              backgroundColor: C.cream,
-              border: `4px solid ${C.tan}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-            }}
-          >
-            <span style={{ fontSize: "48px", fontWeight: "700", color: C.dark }}>67%</span>
+      <div className="grid grid-cols-2 gap-8 items-center">
+        <div className="text-center">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Inicio del Mes</p>
+          <div className="w-[140px] h-[140px] rounded-full bg-brand-cream border-4 border-brand-tan flex items-center justify-center mx-auto">
+            <span className="text-[48px] font-bold text-brand-dark">67%</span>
           </div>
         </div>
-        <div style={{ textAlign: "center" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Fin del Mes
-          </p>
-          <div
-            style={{
-              width: "140px",
-              height: "140px",
-              borderRadius: "50%",
-              backgroundColor: C.successLight,
-              border: `4px solid ${C.success}`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              margin: "0 auto",
-            }}
-          >
-            <span style={{ fontSize: "48px", fontWeight: "700", color: C.success }}>81%</span>
+        <div className="text-center">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Fin del Mes</p>
+          <div className="w-[140px] h-[140px] rounded-full bg-success-light border-4 border-success flex items-center justify-center mx-auto">
+            <span className="text-[48px] font-bold text-success">81%</span>
           </div>
         </div>
       </div>
 
-      <div
-        style={{
-          backgroundColor: C.successLight,
-          border: `1px solid ${C.success}`,
-          borderRadius: "8px",
-          padding: "16px",
-          textAlign: "center",
-        }}
-      >
-        <p style={{ fontSize: "16px", fontWeight: "600", color: C.success, margin: 0 }}>
+      <div className="bg-success-light border border-success rounded-lg p-4 text-center">
+        <p className="text-base font-semibold text-success m-0">
           Eres un 21% mejor que hace un mes
         </p>
       </div>
 
       {/* Radar Charts */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 20px 0" }}>
-          Evolución del Mes
-        </p>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-          <div style={{ backgroundColor: C.warmWhite, padding: "16px", borderRadius: "8px" }}>
-            <p style={{ fontSize: "13px", color: C.warm, fontWeight: "500", margin: "0 0 12px 0" }}>
-              Inicio del Mes
-            </p>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-5">Evolución del Mes</p>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="bg-brand-warm-white p-4 rounded-lg">
+            <p className="text-[13px] text-brand-warm font-medium m-0 mb-3">Inicio del Mes</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarDataStart}>
                 <PolarGrid stroke={C.lightTan} />
@@ -243,10 +192,8 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
             </ResponsiveContainer>
           </div>
 
-          <div style={{ backgroundColor: C.warmWhite, padding: "16px", borderRadius: "8px" }}>
-            <p style={{ fontSize: "13px", color: C.warm, fontWeight: "500", margin: "0 0 12px 0" }}>
-              Fin del Mes
-            </p>
+          <div className="bg-brand-warm-white p-4 rounded-lg">
+            <p className="text-[13px] text-brand-warm font-medium m-0 mb-3">Fin del Mes</p>
             <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarDataEnd}>
                 <PolarGrid stroke={C.lightTan} />
@@ -261,25 +208,10 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
 
       {/* Top Achievements */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>
-          Top 5 Logros
-        </p>
-        <div style={{ display: "grid", gap: "12px" }}>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">Top 5 Logros</p>
+        <div className="grid gap-3">
           {achievements.map((achievement, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: C.paper,
-                border: `1px solid ${C.lightTan}`,
-                borderRadius: "8px",
-                padding: "14px 16px",
-                fontSize: "14px",
-                color: C.dark,
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-              }}
-            >
+            <div key={index} className="bg-brand-paper border border-brand-light-tan rounded-lg px-4 py-[14px] text-sm text-brand-dark flex items-center gap-3">
               <Award size={18} color={C.accent} />
               {achievement}
             </div>
@@ -290,34 +222,17 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
   );
 
   const renderFitnessTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* PRs */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>
-          Personal Records
-        </p>
-        <div style={{ display: "grid", gap: "12px" }}>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">Personal Records</p>
+        <div className="grid gap-3">
           {fitnessData.prs.map((pr, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: C.successLight,
-                border: `1px solid ${C.success}`,
-                borderRadius: "8px",
-                padding: "14px 16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ fontWeight: "500", color: C.dark }}>{pr.exercise}</span>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontSize: "14px", fontWeight: "600", color: C.success }}>
-                  {pr.value}
-                </div>
-                <div style={{ fontSize: "12px", color: C.success }}>
-                  {pr.change}
-                </div>
+            <div key={index} className="bg-success-light border border-success rounded-lg px-4 py-[14px] flex justify-between items-center">
+              <span className="font-medium text-brand-dark">{pr.exercise}</span>
+              <div className="text-right">
+                <div className="text-sm font-semibold text-success">{pr.value}</div>
+                <div className="text-xs text-success">{pr.change}</div>
               </div>
             </div>
           ))}
@@ -326,25 +241,12 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
 
       {/* Plateaus */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>
-          Mesetas Detectadas
-        </p>
-        <div style={{ display: "grid", gap: "12px" }}>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">Mesetas Detectadas</p>
+        <div className="grid gap-3">
           {fitnessData.plateaus.map((plateau, index) => (
-            <div
-              key={index}
-              style={{
-                backgroundColor: C.warningLight,
-                border: `1px solid ${C.warning}`,
-                borderRadius: "8px",
-                padding: "14px 16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ fontWeight: "500", color: C.dark }}>{plateau.exercise}</span>
-              <span style={{ fontSize: "12px", color: C.warning }}>{plateau.note}</span>
+            <div key={index} className="bg-warning-light border border-warning rounded-lg px-4 py-[14px] flex justify-between items-center">
+              <span className="font-medium text-brand-dark">{plateau.exercise}</span>
+              <span className="text-xs text-warning">{plateau.note}</span>
             </div>
           ))}
         </div>
@@ -352,53 +254,36 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
 
       {/* Volume Stats */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>
-          Volumen Semanal
-        </p>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">Volumen Semanal</p>
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={fitnessData.volumeData}>
             <CartesianGrid stroke={C.lightTan} />
             <XAxis dataKey="week" tick={{ fontSize: 12, fill: C.warm }} />
             <YAxis tick={{ fontSize: 12, fill: C.warm }} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: C.paper,
-                border: `1px solid ${C.lightTan}`,
-              }}
-            />
+            <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}` }} />
             <Line type="monotone" dataKey="volume" stroke={C.accent} strokeWidth={3} dot={{ fill: C.accent }} />
           </LineChart>
         </ResponsiveContainer>
       </div>
 
       {/* Training Days & Body Changes */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Días de Entrenamiento
-          </p>
-          <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: "0 0 8px 0" }}>
-            {fitnessData.trainingDays}
-          </p>
-          <p style={{ fontSize: "13px", color: C.warm }}>de 30 días (80%)</p>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Días de Entrenamiento</p>
+          <p className="text-[32px] font-bold text-brand-dark m-0 mb-2">{fitnessData.trainingDays}</p>
+          <p className="text-[13px] text-brand-warm m-0">de 30 días (80%)</p>
         </div>
 
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Cambios Corporales
-          </p>
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Cambios Corporales</p>
           <div>
-            <div style={{ display: "flex", justifyContent: "space-between", margin: "8px 0" }}>
-              <span style={{ fontSize: "13px", color: C.dark }}>Peso:</span>
-              <span style={{ fontSize: "13px", fontWeight: "600", color: C.success }}>
-                {fitnessData.bodyChanges.weight.change}
-              </span>
+            <div className="flex justify-between my-2">
+              <span className="text-[13px] text-brand-dark">Peso:</span>
+              <span className="text-[13px] font-semibold text-success">{fitnessData.bodyChanges.weight.change}</span>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "13px", color: C.dark }}>Grasa corporal:</span>
-              <span style={{ fontSize: "13px", fontWeight: "600", color: C.success }}>
-                {fitnessData.bodyChanges.bodyFat.change}
-              </span>
+            <div className="flex justify-between">
+              <span className="text-[13px] text-brand-dark">Grasa corporal:</span>
+              <span className="text-[13px] font-semibold text-success">{fitnessData.bodyChanges.bodyFat.change}</span>
             </div>
           </div>
         </div>
@@ -407,71 +292,37 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
   );
 
   const renderFinanzasTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* Income */}
-      <div style={{ backgroundColor: C.successLight, border: `1px solid ${C.success}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.success, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Ingresos Totales
-        </p>
-        <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>
-          ${financesData.income.total}
-        </p>
-        <p style={{ fontSize: "13px", color: C.success, marginTop: "8px" }}>
-          {financesData.income.change} respecto al mes anterior
-        </p>
+      <div className="bg-success-light border border-success rounded-lg p-5">
+        <p className="text-xs text-success m-0 mb-3 uppercase font-semibold">Ingresos Totales</p>
+        <p className="text-[32px] font-bold text-brand-dark m-0">${financesData.income.total}</p>
+        <p className="text-[13px] text-success mt-2 m-0">{financesData.income.change} respecto al mes anterior</p>
       </div>
 
       {/* Expenses */}
       <div>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>
-          Desglose de Gastos
-        </p>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">Desglose de Gastos</p>
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={financesData.expenses}>
             <CartesianGrid stroke={C.lightTan} />
             <XAxis dataKey="category" tick={{ fontSize: 12, fill: C.warm }} />
             <YAxis tick={{ fontSize: 12, fill: C.warm }} />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: C.paper,
-                border: `1px solid ${C.lightTan}`,
-              }}
-            />
+            <Tooltip contentStyle={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}` }} />
             <Bar dataKey="amount" fill={C.accent} radius={[8, 8, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Expense Categories */}
-      <div style={{ display: "grid", gap: "12px" }}>
+      <div className="grid gap-3">
         {financesData.expenses.map((expense, index) => (
-          <div
-            key={index}
-            style={{
-              backgroundColor: C.paper,
-              border: `1px solid ${C.lightTan}`,
-              borderRadius: "8px",
-              padding: "14px 16px",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
+          <div key={index} className="bg-brand-paper border border-brand-light-tan rounded-lg px-4 py-[14px] flex justify-between items-center">
             <div>
-              <p style={{ margin: 0, fontSize: "14px", fontWeight: "500", color: C.dark }}>
-                {expense.category}
-              </p>
-              <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: C.warm }}>
-                ${expense.amount}
-              </p>
+              <p className="m-0 text-sm font-medium text-brand-dark">{expense.category}</p>
+              <p className="m-0 mt-1 text-xs text-brand-warm">${expense.amount}</p>
             </div>
-            <span
-              style={{
-                fontSize: "12px",
-                fontWeight: "600",
-                color: expense.change.startsWith("+") ? C.danger : C.success,
-              }}
-            >
+            <span className={cn("text-xs font-semibold", expense.change.startsWith("+") ? "text-danger" : "text-success")}>
               {expense.change}
             </span>
           </div>
@@ -479,74 +330,50 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
       </div>
 
       {/* Net Savings & Budget Adherence */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Ahorro Neto
-          </p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.success, margin: 0 }}>
-            ${financesData.netSavings.amount}
-          </p>
-          <p style={{ fontSize: "12px", color: C.success, marginTop: "6px" }}>
-            {financesData.netSavings.change}
-          </p>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Ahorro Neto</p>
+          <p className="text-[28px] font-bold text-success m-0">${financesData.netSavings.amount}</p>
+          <p className="text-xs text-success mt-[6px] m-0">{financesData.netSavings.change}</p>
         </div>
 
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Adherencia Presupuestaria
-          </p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.accent, margin: 0 }}>
-            {financesData.budgetAdherence}%
-          </p>
-          <p style={{ fontSize: "12px", color: C.warm, marginTop: "6px" }}>Excelente cumplimiento</p>
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Adherencia Presupuestaria</p>
+          <p className="text-[28px] font-bold text-accent m-0">{financesData.budgetAdherence}%</p>
+          <p className="text-xs text-brand-warm mt-[6px] m-0">Excelente cumplimiento</p>
         </div>
       </div>
     </div>
   );
 
   const renderNutricionTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* Meal Plan Adherence */}
-      <div style={{ backgroundColor: C.successLight, border: `1px solid ${C.success}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.success, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Adherencia Plan de Comidas
-        </p>
-        <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>
-          {nutricionData.mealPlanAdherence}%
-        </p>
+      <div className="bg-success-light border border-success rounded-lg p-5">
+        <p className="text-xs text-success m-0 mb-3 uppercase font-semibold">Adherencia Plan de Comidas</p>
+        <p className="text-[32px] font-bold text-brand-dark m-0">{nutricionData.mealPlanAdherence}%</p>
       </div>
 
       {/* Hydration */}
-      <div style={{ backgroundColor: C.infoLight, border: `1px solid ${C.info}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.info, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Hidratación Promedio
-        </p>
-        <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>
+      <div className="bg-info-light border border-info rounded-lg p-5">
+        <p className="text-xs text-info m-0 mb-3 uppercase font-semibold">Hidratación Promedio</p>
+        <p className="text-[32px] font-bold text-brand-dark m-0">
           {nutricionData.hydration.average} {nutricionData.hydration.unit}
         </p>
-        <p style={{ fontSize: "13px", color: C.info, marginTop: "8px" }}>
-          {nutricionData.hydration.change} respecto al mes anterior
-        </p>
+        <p className="text-[13px] text-info mt-2 m-0">{nutricionData.hydration.change} respecto al mes anterior</p>
       </div>
 
       {/* Body Fat Change */}
-      <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Cambio en Grasa Corporal
-        </p>
-        <p style={{ fontSize: "28px", fontWeight: "700", color: C.success, margin: 0 }}>
-          {nutricionData.bodyFatChange}
-        </p>
-        <p style={{ fontSize: "13px", color: C.warm, marginTop: "6px" }}>Disminución saludable</p>
+      <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-5">
+        <p className="text-xs text-brand-warm m-0 mb-3 uppercase font-semibold">Cambio en Grasa Corporal</p>
+        <p className="text-[28px] font-bold text-success m-0">{nutricionData.bodyFatChange}</p>
+        <p className="text-[13px] text-brand-warm mt-[6px] m-0">Disminución saludable</p>
       </div>
 
       {/* Nutrition Insights */}
-      <div style={{ backgroundColor: C.warmWhite, border: `1px solid ${C.cream}`, borderRadius: "8px", padding: "16px" }}>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 12px 0" }}>
-          Insights Nutricionales
-        </p>
-        <ul style={{ margin: 0, paddingLeft: "20px", color: C.dark, fontSize: "13px", lineHeight: "1.8" }}>
+      <div className="bg-brand-warm-white border border-brand-cream rounded-lg p-4">
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-3">Insights Nutricionales</p>
+        <ul className="m-0 pl-5 text-brand-dark text-[13px] leading-[1.8]">
           <li>Aumento de consumo de proteína: +12%</li>
           <li>Hidratación mejorada y consistente</li>
           <li>Reducción de azúcares refinados</li>
@@ -557,64 +384,40 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
   );
 
   const renderProductividadTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* Habit Completion */}
-      <div style={{ backgroundColor: C.successLight, border: `1px solid ${C.success}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.success, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Tasa de Completitud de Hábitos
-        </p>
-        <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>
-          {productivityData.habitCompletion.rate}%
-        </p>
-        <p style={{ fontSize: "13px", color: C.success, marginTop: "8px" }}>
-          {productivityData.habitCompletion.change} vs mes anterior
-        </p>
+      <div className="bg-success-light border border-success rounded-lg p-5">
+        <p className="text-xs text-success m-0 mb-3 uppercase font-semibold">Tasa de Completitud de Hábitos</p>
+        <p className="text-[32px] font-bold text-brand-dark m-0">{productivityData.habitCompletion.rate}%</p>
+        <p className="text-[13px] text-success mt-2 m-0">{productivityData.habitCompletion.change} vs mes anterior</p>
       </div>
 
       {/* Best Streak */}
-      <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>
-          Mejor Racha
-        </p>
-        <p style={{ fontSize: "32px", fontWeight: "700", color: C.accent, margin: 0 }}>
-          {productivityData.bestStreak} días
-        </p>
-        <p style={{ fontSize: "13px", color: C.warm, marginTop: "6px" }}>En meditación</p>
+      <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-5">
+        <p className="text-xs text-brand-warm m-0 mb-3 uppercase font-semibold">Mejor Racha</p>
+        <p className="text-[32px] font-bold text-accent m-0">{productivityData.bestStreak} días</p>
+        <p className="text-[13px] text-brand-warm mt-[6px] m-0">En meditación</p>
       </div>
 
       {/* Pomodoros & Tasks */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Pomodoros
-          </p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.accent, margin: 0 }}>
-            {productivityData.pomodoros.total}
-          </p>
-          <p style={{ fontSize: "12px", color: C.warm, marginTop: "6px" }}>
-            {productivityData.pomodoros.change}
-          </p>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Pomodoros</p>
+          <p className="text-[28px] font-bold text-accent m-0">{productivityData.pomodoros.total}</p>
+          <p className="text-xs text-brand-warm mt-[6px] m-0">{productivityData.pomodoros.change}</p>
         </div>
 
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>
-            Tareas Completadas
-          </p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.success, margin: 0 }}>
-            {productivityData.tasksCompleted.total}
-          </p>
-          <p style={{ fontSize: "12px", color: C.warm, marginTop: "6px" }}>
-            {productivityData.tasksCompleted.change}
-          </p>
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Tareas Completadas</p>
+          <p className="text-[28px] font-bold text-success m-0">{productivityData.tasksCompleted.total}</p>
+          <p className="text-xs text-brand-warm mt-[6px] m-0">{productivityData.tasksCompleted.change}</p>
         </div>
       </div>
 
       {/* Productivity Insights */}
-      <div style={{ backgroundColor: C.warmWhite, border: `1px solid ${C.cream}`, borderRadius: "8px", padding: "16px" }}>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 12px 0" }}>
-          Mejoras de Productividad
-        </p>
-        <ul style={{ margin: 0, paddingLeft: "20px", color: C.dark, fontSize: "13px", lineHeight: "1.8" }}>
+      <div className="bg-brand-warm-white border border-brand-cream rounded-lg p-4">
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-3">Mejoras de Productividad</p>
+        <ul className="m-0 pl-5 text-brand-dark text-[13px] leading-[1.8]">
           <li>Consistencia en hábitos de trabajo</li>
           <li>Aumento en sesiones de enfoque</li>
           <li>Mejor gestión del tiempo</li>
@@ -624,64 +427,47 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     </div>
   );
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "general":
-        return renderGeneralTab();
-      case "fitness":
-        return renderFitnessTab();
-      case "finanzas":
-        return renderFinanzasTab();
-      case "nutricion":
-        return renderNutricionTab();
-      case "productividad":
-        return renderProductividadTab();
-      case "bienestar":
-        return renderBienestarTab();
-    }
-  };
-
   const renderBienestarTab = () => (
-    <div style={{ display: "grid", gap: "32px" }}>
+    <div className="grid gap-8">
       {/* Sleep Quality */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
-        <div style={{ backgroundColor: C.infoLight, border: `1px solid ${C.info}`, borderRadius: "8px", padding: "20px" }}>
-          <p style={{ fontSize: "12px", color: C.info, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>Calidad de Sueño Promedio</p>
-          <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>{bienestarData.sleepQuality.average}/10</p>
-          <p style={{ fontSize: "13px", color: C.info, marginTop: "8px" }}>+{bienestarData.sleepQuality.change} vs mes anterior</p>
+      <div className="grid grid-cols-2 gap-6">
+        <div className="bg-info-light border border-info rounded-lg p-5">
+          <p className="text-xs text-info m-0 mb-3 uppercase font-semibold">Calidad de Sueño Promedio</p>
+          <p className="text-[32px] font-bold text-brand-dark m-0">{bienestarData.sleepQuality.average}/10</p>
+          <p className="text-[13px] text-info mt-2 m-0">+{bienestarData.sleepQuality.change} vs mes anterior</p>
         </div>
-        <div style={{ backgroundColor: C.warningLight, border: `1px solid ${C.warning}`, borderRadius: "8px", padding: "20px" }}>
-          <p style={{ fontSize: "12px", color: C.warning, margin: "0 0 12px 0", textTransform: "uppercase", fontWeight: "600" }}>Estado de Ánimo Promedio</p>
-          <p style={{ fontSize: "32px", fontWeight: "700", color: C.dark, margin: 0 }}>{bienestarData.moodAverage.emoji} {bienestarData.moodAverage.score}/10</p>
-          <p style={{ fontSize: "13px", color: C.warning, marginTop: "8px" }}>+{bienestarData.moodAverage.change} vs mes anterior</p>
+        <div className="bg-warning-light border border-warning rounded-lg p-5">
+          <p className="text-xs text-warning m-0 mb-3 uppercase font-semibold">Estado de Ánimo Promedio</p>
+          <p className="text-[32px] font-bold text-brand-dark m-0">{bienestarData.moodAverage.emoji} {bienestarData.moodAverage.score}/10</p>
+          <p className="text-[13px] text-warning mt-2 m-0">+{bienestarData.moodAverage.change} vs mes anterior</p>
         </div>
       </div>
 
       {/* Hydration & Journal */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "24px" }}>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>Hidratación</p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.info, margin: 0 }}>{bienestarData.hydrationAvg.value} {bienestarData.hydrationAvg.unit}</p>
-          <p style={{ fontSize: "12px", color: C.success, marginTop: "6px" }}>{bienestarData.hydrationAvg.change}</p>
+      <div className="grid grid-cols-3 gap-6">
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Hidratación</p>
+          <p className="text-[28px] font-bold text-info m-0">{bienestarData.hydrationAvg.value} {bienestarData.hydrationAvg.unit}</p>
+          <p className="text-xs text-success mt-[6px] m-0">{bienestarData.hydrationAvg.change}</p>
         </div>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>Días de Journaling</p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.accent, margin: 0 }}>{bienestarData.journalDays.count}/{bienestarData.journalDays.total}</p>
-          <p style={{ fontSize: "12px", color: C.warm, marginTop: "6px" }}>{Math.round((bienestarData.journalDays.count / bienestarData.journalDays.total) * 100)}% del mes</p>
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Días de Journaling</p>
+          <p className="text-[28px] font-bold text-accent m-0">{bienestarData.journalDays.count}/{bienestarData.journalDays.total}</p>
+          <p className="text-xs text-brand-warm mt-[6px] m-0">{Math.round((bienestarData.journalDays.count / bienestarData.journalDays.total) * 100)}% del mes</p>
         </div>
-        <div style={{ backgroundColor: C.paper, border: `1px solid ${C.lightTan}`, borderRadius: "8px", padding: "16px", textAlign: "center" }}>
-          <p style={{ fontSize: "12px", color: C.warm, margin: "0 0 12px 0", textTransform: "uppercase" }}>Medicación</p>
-          <p style={{ fontSize: "28px", fontWeight: "700", color: C.success, margin: 0 }}>{bienestarData.medicationAdherence}%</p>
-          <p style={{ fontSize: "12px", color: C.warm, marginTop: "6px" }}>Adherencia</p>
+        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
+          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Medicación</p>
+          <p className="text-[28px] font-bold text-success m-0">{bienestarData.medicationAdherence}%</p>
+          <p className="text-xs text-brand-warm mt-[6px] m-0">Adherencia</p>
         </div>
       </div>
 
       {/* Correlations */}
-      <div style={{ backgroundColor: C.accentGlow, border: `1px solid ${C.accent}40`, borderRadius: "8px", padding: "20px" }}>
-        <p style={{ fontSize: "14px", fontWeight: "600", color: C.dark, margin: "0 0 16px 0" }}>🔗 Correlaciones Detectadas</p>
-        <div style={{ display: "grid", gap: "12px" }}>
+      <div className="bg-accent-glow border border-brand-tan rounded-lg p-5">
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">🔗 Correlaciones Detectadas</p>
+        <div className="grid gap-3">
           {bienestarData.correlations.map((corr, i) => (
-            <div key={i} style={{ backgroundColor: C.paper, border: `1px solid ${C.cream}`, borderRadius: "8px", padding: "12px 16px", fontSize: "13px", color: C.dark }}>
+            <div key={i} className="bg-brand-paper border border-brand-cream rounded-lg px-4 py-3 text-[13px] text-brand-dark">
               💡 {corr}
             </div>
           ))}
@@ -690,98 +476,49 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     </div>
   );
 
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "general":      return renderGeneralTab();
+      case "fitness":      return renderFitnessTab();
+      case "finanzas":     return renderFinanzasTab();
+      case "nutricion":    return renderNutricionTab();
+      case "productividad": return renderProductividadTab();
+      case "bienestar":    return renderBienestarTab();
+    }
+  };
+
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0, 0, 0, 0.5)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-      }}
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]" onClick={onClose}>
       <div
-        style={{
-          backgroundColor: C.paper,
-          borderRadius: "16px",
-          maxWidth: "900px",
-          width: "90%",
-          maxHeight: "90vh",
-          overflow: "hidden",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
-        }}
+        className="bg-brand-paper rounded-2xl max-w-[900px] w-[90%] max-h-[90vh] overflow-hidden flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "24px 32px",
-            borderBottom: `1px solid ${C.lightTan}`,
-            backgroundColor: C.lightCream,
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+        <div className="flex justify-between items-center px-8 py-6 border-b border-brand-light-tan bg-brand-light-cream">
+          <div className="flex items-center gap-3">
             <Award size={24} color={C.accent} />
-            <h2
-              style={{
-                fontSize: "24px",
-                fontWeight: "700",
-                color: C.dark,
-                margin: 0,
-              }}
-            >
-              Resumen de Marzo 2026
-            </h2>
+            <h2 className="text-2xl font-bold text-brand-dark m-0">Resumen de Marzo 2026</h2>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: C.warm,
-              transition: "color 0.2s",
-            }}
-            onMouseOver={(e) => {
-              e.currentTarget.style.color = C.dark;
-            }}
-            onMouseOut={(e) => {
-              e.currentTarget.style.color = C.warm;
-            }}
+            className="bg-transparent border-none cursor-pointer p-2 flex items-center justify-center text-brand-warm hover:text-brand-dark transition-colors"
           >
             <X size={24} />
           </button>
         </div>
 
         {/* Tabs */}
-        <div
-          style={{
-            display: "flex",
-            borderBottom: `1px solid ${C.lightTan}`,
-            backgroundColor: C.paper,
-            overflowX: "auto",
-          }}
-        >
+        <div className="flex border-b border-brand-light-tan bg-brand-paper overflow-x-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              style={tabStyle(tab.id)}
+              className={cn(
+                "px-5 py-3 bg-transparent cursor-pointer text-sm transition-all border-0 border-b-[3px]",
+                activeTab === tab.id
+                  ? "border-b-accent text-brand-dark font-semibold"
+                  : "border-b-transparent text-brand-warm font-medium"
+              )}
             >
               {tab.label}
             </button>
@@ -789,14 +526,7 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
         </div>
 
         {/* Content */}
-        <div
-          style={{
-            flex: 1,
-            overflow: "auto",
-            padding: "32px",
-            backgroundColor: C.warmWhite,
-          }}
-        >
+        <div className="flex-1 overflow-auto p-8 bg-brand-warm-white">
           {renderTabContent()}
         </div>
       </div>

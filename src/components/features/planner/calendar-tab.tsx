@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronLeft, ChevronRight, Plus, X, Search, Check } from "lucide-react";
+import { cn } from "@/components/ui";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ViewType = "day" | "week" | "month" | "year";
@@ -152,68 +153,71 @@ function EventModal({ event, calendars, onSave, onDelete, onClose }: EventModalP
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.45)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 10000 }}>
-      <div style={{ backgroundColor: "#fff", borderRadius: "14px", width: "420px", maxWidth: "92vw", boxShadow: "0 24px 80px rgba(0,0,0,0.35)", overflow: "hidden" }}>
+    <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-[10000]">
+      <div className="bg-white rounded-[14px] w-[420px] max-w-[92vw] shadow-[0_24px_80px_rgba(0,0,0,0.35)] overflow-hidden">
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 16px 12px", borderBottom: "1px solid #E5E5EA" }}>
-          <span style={{ fontSize: "17px", fontWeight: "600", color: "#1C1C1E" }}>
+        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-[#E5E5EA]">
+          <span className="text-[17px] font-semibold text-[#1C1C1E]">
             {isEditing ? "Editar evento" : "Nuevo evento"}
           </span>
-          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+          <div className="flex gap-2 items-center">
             {isEditing && onDelete && (
-              <button onClick={() => { onDelete(event.id!); onClose(); }} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", backgroundColor: "#FF3B30", color: "#fff", fontSize: "13px", cursor: "pointer", fontWeight: "500" }}>
+              <button onClick={() => { onDelete(event.id!); onClose(); }} className="px-3 py-[5px] rounded-lg border-none bg-[#FF3B30] text-white text-[13px] cursor-pointer font-medium">
                 Eliminar
               </button>
             )}
-            <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", display: "flex" }}>
+            <button onClick={onClose} className="bg-transparent border-none cursor-pointer p-1 flex">
               <X size={20} color="#8E8E93" />
             </button>
           </div>
         </div>
 
         {/* Body */}
-        <div style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "14px" }}>
+        <div className="p-4 flex flex-col gap-[14px]">
           <input
             autoFocus
             value={title}
             onChange={e => setTitle(e.target.value)}
             placeholder="Título"
             onKeyDown={e => e.key === "Enter" && handleSave()}
-            style={{ fontSize: "17px", fontWeight: "500", border: "none", borderBottom: "2px solid #E5E5EA", padding: "4px 0", outline: "none", color: "#1C1C1E", width: "100%", fontFamily: "system-ui" }}
+            className="text-[17px] font-medium border-0 border-b-2 border-[#E5E5EA] py-1 outline-none text-[#1C1C1E] w-full font-sans"
           />
 
           {/* All-day toggle */}
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span style={{ fontSize: "15px", color: "#1C1C1E" }}>Todo el día</span>
-            <div onClick={() => setIsAllDay(!isAllDay)} style={{ width: "51px", height: "31px", borderRadius: "15.5px", backgroundColor: isAllDay ? "#34C759" : "#E5E5EA", cursor: "pointer", position: "relative", transition: "background 0.2s" }}>
-              <div style={{ position: "absolute", top: "2px", left: isAllDay ? "22px" : "2px", width: "27px", height: "27px", borderRadius: "50%", backgroundColor: "#fff", boxShadow: "0 2px 4px rgba(0,0,0,0.25)", transition: "left 0.2s" }} />
+          <div className="flex items-center justify-between">
+            <span className="text-[15px] text-[#1C1C1E]">Todo el día</span>
+            <div
+              onClick={() => setIsAllDay(!isAllDay)}
+              className={cn("w-[51px] h-[31px] rounded-[15.5px] cursor-pointer relative transition-[background] duration-200", isAllDay ? "bg-[#34C759]" : "bg-[#E5E5EA]")}
+            >
+              <div className={cn("absolute top-[2px] w-[27px] h-[27px] rounded-full bg-white shadow-[0_2px_4px_rgba(0,0,0,0.25)] transition-[left] duration-200", isAllDay ? "left-[22px]" : "left-[2px]")} />
             </div>
           </div>
 
           {/* Date */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "15px", color: "#8E8E93", minWidth: "60px" }}>Fecha</span>
-            <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", fontFamily: "system-ui" }} />
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] text-[#8E8E93] min-w-[60px]">Fecha</span>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] font-sans" />
           </div>
 
           {/* Time */}
           {!isAllDay && (
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span style={{ fontSize: "15px", color: "#8E8E93", minWidth: "60px" }}>Hora</span>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", fontFamily: "system-ui" }} />
-                <span style={{ color: "#8E8E93", fontSize: "14px" }}>→</span>
-                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", fontFamily: "system-ui" }} />
+            <div className="flex items-center gap-3">
+              <span className="text-[15px] text-[#8E8E93] min-w-[60px]">Hora</span>
+              <div className="flex items-center gap-2">
+                <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] font-sans" />
+                <span className="text-[#8E8E93] text-sm">→</span>
+                <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] font-sans" />
               </div>
             </div>
           )}
 
           {/* Calendar */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "15px", color: "#8E8E93", minWidth: "60px" }}>Calendario</span>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", flex: 1 }}>
-              {selectedCal && <div style={{ width: "12px", height: "12px", borderRadius: "50%", backgroundColor: selectedCal.color, flexShrink: 0 }} />}
-              <select value={calId} onChange={e => setCalId(e.target.value)} style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", flex: 1, fontFamily: "system-ui" }}>
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] text-[#8E8E93] min-w-[60px]">Calendario</span>
+            <div className="flex items-center gap-2 flex-1">
+              {selectedCal && <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: selectedCal.color }} />}
+              <select value={calId} onChange={e => setCalId(e.target.value)} className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] flex-1 font-sans">
                 {calendars.filter(c => c.id !== "reminders" && c.id !== "birthdays").map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
@@ -222,22 +226,26 @@ function EventModal({ event, calendars, onSave, onDelete, onClose }: EventModalP
           </div>
 
           {/* Location */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <span style={{ fontSize: "15px", color: "#8E8E93", minWidth: "60px" }}>Lugar</span>
-            <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Añadir lugar" style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", flex: 1, outline: "none", fontFamily: "system-ui" }} />
+          <div className="flex items-center gap-3">
+            <span className="text-[15px] text-[#8E8E93] min-w-[60px]">Lugar</span>
+            <input value={location} onChange={e => setLocation(e.target.value)} placeholder="Añadir lugar" className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] flex-1 outline-none font-sans" />
           </div>
 
           {/* Notes */}
-          <div style={{ display: "flex", alignItems: "flex-start", gap: "12px" }}>
-            <span style={{ fontSize: "15px", color: "#8E8E93", minWidth: "60px", paddingTop: "6px" }}>Notas</span>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Añadir notas" rows={3} style={{ fontSize: "15px", border: "1px solid #E5E5EA", borderRadius: "8px", padding: "6px 10px", color: "#1C1C1E", backgroundColor: "#F2F2F7", flex: 1, resize: "vertical", outline: "none", fontFamily: "system-ui" }} />
+          <div className="flex items-start gap-3">
+            <span className="text-[15px] text-[#8E8E93] min-w-[60px] pt-[6px]">Notas</span>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} placeholder="Añadir notas" rows={3} className="text-[15px] border border-[#E5E5EA] rounded-lg px-[10px] py-[6px] text-[#1C1C1E] bg-[#F2F2F7] flex-1 resize-vertical outline-none font-sans" />
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ padding: "12px 16px", borderTop: "1px solid #E5E5EA", display: "flex", justifyContent: "flex-end", gap: "8px" }}>
-          <button onClick={onClose} style={{ padding: "8px 18px", borderRadius: "8px", border: "1px solid #E5E5EA", backgroundColor: "#fff", fontSize: "15px", cursor: "pointer", color: "#1C1C1E", fontFamily: "system-ui" }}>Cancelar</button>
-          <button onClick={handleSave} disabled={!title.trim()} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", backgroundColor: "#007AFF", fontSize: "15px", cursor: "pointer", color: "#fff", fontWeight: "500", opacity: title.trim() ? 1 : 0.5, fontFamily: "system-ui" }}>Guardar</button>
+        <div className="px-4 py-3 border-t border-[#E5E5EA] flex justify-end gap-2">
+          <button onClick={onClose} className="px-[18px] py-2 rounded-lg border border-[#E5E5EA] bg-white text-[15px] cursor-pointer text-[#1C1C1E] font-sans">Cancelar</button>
+          <button
+            onClick={handleSave}
+            disabled={!title.trim()}
+            className={cn("px-[18px] py-2 rounded-lg border-none bg-[#007AFF] text-[15px] cursor-pointer text-white font-medium font-sans", !title.trim() ? "opacity-50" : "opacity-100")}
+          >Guardar</button>
         </div>
       </div>
     </div>
@@ -257,24 +265,24 @@ function MiniCal({ displayMonth, selectedDate, onSelectDate, onChangeMonth }: {
   const todayDate = new Date();
 
   return (
-    <div style={{ padding: "8px 10px 12px" }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
-        <button onClick={() => onChangeMonth(-1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", color: "#8E8E93" }}>
+    <div className="px-[10px] pt-2 pb-3">
+      <div className="flex items-center justify-between mb-2">
+        <button onClick={() => onChangeMonth(-1)} className="bg-transparent border-none cursor-pointer p-[2px] flex text-[#8E8E93]">
           <ChevronLeft size={14} />
         </button>
-        <span style={{ fontSize: "13px", fontWeight: "600", color: "#1C1C1E" }}>
+        <span className="text-[13px] font-semibold text-[#1C1C1E]">
           {MONTH_SHORT[month]} {year}
         </span>
-        <button onClick={() => onChangeMonth(1)} style={{ background: "none", border: "none", cursor: "pointer", padding: "2px", display: "flex", color: "#8E8E93" }}>
+        <button onClick={() => onChangeMonth(1)} className="bg-transparent border-none cursor-pointer p-[2px] flex text-[#8E8E93]">
           <ChevronRight size={14} />
         </button>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "4px" }}>
+      <div className="grid grid-cols-7 text-center mb-1">
         {["D", "L", "M", "X", "J", "V", "S"].map(d => (
-          <span key={d} style={{ fontSize: "10px", color: "#8E8E93", fontWeight: "600" }}>{d}</span>
+          <span key={d} className="text-[10px] text-[#8E8E93] font-semibold">{d}</span>
         ))}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "1px" }}>
+      <div className="grid grid-cols-7 gap-[1px]">
         {grid.map((d, i) => {
           const isCurrentMonth = d.getMonth() === month;
           const isTd = isSameDay(d, todayDate);
@@ -283,16 +291,16 @@ function MiniCal({ displayMonth, selectedDate, onSelectDate, onChangeMonth }: {
             <div
               key={i}
               onClick={() => onSelectDate(d)}
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "center",
-                height: "22px", borderRadius: "50%", cursor: "pointer",
-                fontSize: "11px",
-                backgroundColor: isSel ? "#007AFF" : "transparent",
-                color: isSel ? "#fff" : isTd ? "#FF3B30" : isCurrentMonth ? "#1C1C1E" : "#C7C7CC",
-                fontWeight: isTd || isSel ? "700" : "400",
-                outline: isTd && !isSel ? "1.5px solid #FF3B30" : "none",
-                outlineOffset: "-1px",
-              }}
+              className={cn(
+                "flex items-center justify-center h-[22px] rounded-full cursor-pointer text-[11px]",
+                isSel
+                  ? "bg-[#007AFF] text-white font-bold"
+                  : isTd
+                    ? "text-[#FF3B30] font-bold outline outline-[1.5px] outline-[#FF3B30] -outline-offset-1"
+                    : isCurrentMonth
+                      ? "text-[#1C1C1E]"
+                      : "text-[#C7C7CC]"
+              )}
             >
               {d.getDate()}
             </div>
@@ -342,19 +350,19 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+    <div className="flex flex-col flex-1 overflow-hidden">
       {/* Day headers */}
-      <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: "1px solid #E5E5EA", backgroundColor: "#fff", flexShrink: 0 }}>
+      <div className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-[#E5E5EA] bg-white shrink-0">
         <div />
         {days.map((d, i) => {
           const isTd = isToday(d);
           return (
-            <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "8px 4px 6px", borderLeft: i > 0 ? "1px solid #E5E5EA" : "none" }}>
-              <span style={{ fontSize: "11px", color: isTd ? "#FF3B30" : "#8E8E93", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+            <div key={i} className={cn("flex flex-col items-center px-1 pt-2 pb-[6px]", i > 0 ? "border-l border-[#E5E5EA]" : "")}>
+              <span className={cn("text-[11px] font-semibold uppercase tracking-[0.5px]", isTd ? "text-[#FF3B30]" : "text-[#8E8E93]")}>
                 {DAY_LABELS[d.getDay()]}
               </span>
-              <div style={{ width: "34px", height: "34px", borderRadius: "50%", backgroundColor: isTd ? "#FF3B30" : "transparent", display: "flex", alignItems: "center", justifyContent: "center", marginTop: "2px" }}>
-                <span style={{ fontSize: "22px", fontWeight: isTd ? "700" : "400", color: isTd ? "#fff" : "#1C1C1E" }}>
+              <div className={cn("w-[34px] h-[34px] rounded-full flex items-center justify-center mt-[2px]", isTd ? "bg-[#FF3B30]" : "bg-transparent")}>
+                <span className={cn("text-[22px]", isTd ? "font-bold text-white" : "font-normal text-[#1C1C1E]")}>
                   {d.getDate()}
                 </span>
               </div>
@@ -365,14 +373,14 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
 
       {/* All-day row */}
       {anyAllDay && (
-        <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: "1px solid #E5E5EA", backgroundColor: "#fff", flexShrink: 0 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", paddingRight: "8px", paddingBottom: "4px" }}>
-            <span style={{ fontSize: "10px", color: "#8E8E93", lineHeight: 1.2, textAlign: "right" }}>todo{"\n"}el día</span>
+        <div className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-[#E5E5EA] bg-white shrink-0">
+          <div className="flex items-center justify-end pr-2 pb-1">
+            <span className="text-[10px] text-[#8E8E93] leading-[1.2] text-right">todo{"\n"}el día</span>
           </div>
           {days.map((d, i) => (
-            <div key={i} style={{ borderLeft: i > 0 ? "1px solid #E5E5EA" : "none", minHeight: "26px", padding: "2px 2px" }}>
+            <div key={i} className={cn("min-h-[26px] p-[2px]", i > 0 ? "border-l border-[#E5E5EA]" : "")}>
               {getAllDayEvents(d).map(ev => (
-                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} style={{ backgroundColor: ev.color, color: "#fff", borderRadius: "4px", padding: "2px 6px", fontSize: "12px", fontWeight: "500", cursor: "pointer", marginBottom: "2px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} className="text-white rounded-[4px] px-[6px] py-[2px] text-xs font-medium cursor-pointer mb-[2px] overflow-hidden whitespace-nowrap text-ellipsis" style={{ backgroundColor: ev.color }}>
                   {ev.title}
                 </div>
               ))}
@@ -382,12 +390,12 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
       )}
 
       {/* Scrollable time grid */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto", position: "relative" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", height: `${24 * HOUR_HEIGHT}px`, position: "relative" }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto relative">
+        <div className="grid grid-cols-[52px_repeat(7,1fr)] relative h-[1440px]">
           {/* Time labels */}
-          <div style={{ position: "relative", flexShrink: 0 }}>
+          <div className="relative shrink-0">
             {Array.from({ length: 24 }, (_, h) => (
-              <div key={h} style={{ position: "absolute", top: `${h * HOUR_HEIGHT - 7}px`, right: "8px", fontSize: "10px", color: "#8E8E93", whiteSpace: "nowrap", userSelect: "none" }}>
+              <div key={h} className="absolute right-2 text-[10px] text-[#8E8E93] whitespace-nowrap select-none" style={{ top: `${h * HOUR_HEIGHT - 7}px` }}>
                 {h === 0 ? "" : formatHour(h)}
               </div>
             ))}
@@ -399,16 +407,16 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
             return (
               <div
                 key={colIdx}
-                style={{ borderLeft: colIdx > 0 ? "1px solid #E5E5EA" : "none", position: "relative", cursor: "crosshair" }}
+                className={cn("relative cursor-crosshair", colIdx > 0 ? "border-l border-[#E5E5EA]" : "")}
                 onClick={e => handleColumnClick(e, d)}
               >
                 {/* Hour lines */}
                 {Array.from({ length: 24 }, (_, h) => (
-                  <div key={h} style={{ position: "absolute", top: `${h * HOUR_HEIGHT}px`, left: 0, right: 0, borderTop: h === 0 ? "none" : "1px solid #E5E5EA" }} />
+                  <div key={h} className={cn("absolute left-0 right-0", h === 0 ? "" : "border-t border-[#E5E5EA]")} style={{ top: `${h * HOUR_HEIGHT}px` }} />
                 ))}
                 {/* Half-hour lines */}
                 {Array.from({ length: 24 }, (_, h) => (
-                  <div key={`h${h}`} style={{ position: "absolute", top: `${h * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`, left: 4, right: 0, borderTop: "1px solid #F2F2F7" }} />
+                  <div key={`h${h}`} className="absolute left-1 right-0 border-t border-[#F2F2F7]" style={{ top: `${h * HOUR_HEIGHT + HOUR_HEIGHT / 2}px` }} />
                 ))}
 
                 {/* Events */}
@@ -420,25 +428,14 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
                     <div
                       key={ev.id}
                       onClick={e => { e.stopPropagation(); onEventClick(ev); }}
-                      style={{
-                        position: "absolute",
-                        top: `${(start / 60) * HOUR_HEIGHT + 1}px`,
-                        left: "2px", right: "2px",
-                        height: `${(duration / 60) * HOUR_HEIGHT - 2}px`,
-                        backgroundColor: ev.color,
-                        borderRadius: "6px",
-                        padding: "3px 6px",
-                        cursor: "pointer",
-                        overflow: "hidden",
-                        zIndex: 1,
-                        boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                      }}
+                      className="absolute left-[2px] right-[2px] rounded-md px-[6px] py-[3px] cursor-pointer overflow-hidden z-[1] shadow-[0_1px_3px_rgba(0,0,0,0.15)]"
+                      style={{ top: `${(start / 60) * HOUR_HEIGHT + 1}px`, height: `${(duration / 60) * HOUR_HEIGHT - 2}px`, backgroundColor: ev.color }}
                     >
-                      <div style={{ fontSize: "12px", fontWeight: "600", color: "#fff", lineHeight: 1.3, overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
+                      <div className="text-xs font-semibold text-white leading-[1.3] overflow-hidden whitespace-nowrap text-ellipsis">
                         {ev.title}
                       </div>
                       {(duration / 60) * HOUR_HEIGHT > 34 && (
-                        <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.85)", overflow: "hidden", whiteSpace: "nowrap" }}>
+                        <div className="text-[11px] text-[rgba(255,255,255,0.85)] overflow-hidden whitespace-nowrap">
                           {formatTime(ev.startTime!)} – {formatTime(ev.endTime!)}
                         </div>
                       )}
@@ -448,8 +445,8 @@ function WeekView({ days, events, enabledCalendarIds, onSlotClick, onEventClick 
 
                 {/* Current time indicator */}
                 {isCurrentWeek && isSameDay(d, now) && (
-                  <div style={{ position: "absolute", top: `${(currentMinutes / 60) * HOUR_HEIGHT}px`, left: 0, right: 0, height: "2px", backgroundColor: "#FF3B30", zIndex: 2, pointerEvents: "none" }}>
-                    <div style={{ position: "absolute", left: "-5px", top: "-4px", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#FF3B30" }} />
+                  <div className="absolute left-0 right-0 h-[2px] bg-[#FF3B30] z-[2] pointer-events-none" style={{ top: `${(currentMinutes / 60) * HOUR_HEIGHT}px` }}>
+                    <div className="absolute left-[-5px] top-[-4px] w-[10px] h-[10px] rounded-full bg-[#FF3B30]" />
                   </div>
                 )}
               </div>
@@ -478,15 +475,15 @@ function MonthView({ year, month, events, enabledCalendarIds, selectedDate, onDa
   const getEventsForDay = (d: Date) => visibleEvents.filter(e => e.date === fmt(d));
 
   return (
-    <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+    <div className="flex-1 flex flex-col overflow-hidden">
       {/* Day labels */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: "1px solid #E5E5EA", backgroundColor: "#fff", flexShrink: 0 }}>
+      <div className="grid grid-cols-7 border-b border-[#E5E5EA] bg-white shrink-0">
         {DAY_LABELS.map(d => (
-          <div key={d} style={{ textAlign: "center", padding: "8px 0", fontSize: "12px", color: "#8E8E93", fontWeight: "600", letterSpacing: "0.3px" }}>{d}</div>
+          <div key={d} className="text-center py-2 text-xs text-[#8E8E93] font-semibold tracking-[0.3px]">{d}</div>
         ))}
       </div>
       {/* Grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gridTemplateRows: "repeat(6, 1fr)", flex: 1, overflow: "auto" }}>
+      <div className="grid grid-cols-7 grid-rows-6 flex-1 overflow-auto">
         {grid.map((d, i) => {
           const isCurrentMonth = d.getMonth() === month;
           const isTd = isSameDay(d, todayDate);
@@ -495,23 +492,23 @@ function MonthView({ year, month, events, enabledCalendarIds, selectedDate, onDa
             <div
               key={i}
               onClick={() => { onDateClick(d); if (isCurrentMonth) onSlotClick(fmt(d), "09:00"); }}
-              style={{ border: "1px solid #E5E5EA", borderTop: "none", borderLeft: i % 7 === 0 ? "none" : "1px solid #E5E5EA", padding: "4px", cursor: "pointer", backgroundColor: "#fff", minHeight: "90px" }}
+              className={cn("border border-[#E5E5EA] border-t-0 p-1 cursor-pointer bg-white min-h-[90px]", i % 7 === 0 ? "border-l-0" : "")}
             >
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-start", marginBottom: "2px" }}>
-                <div style={{ width: "26px", height: "26px", borderRadius: "50%", backgroundColor: isTd ? "#FF3B30" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontSize: "13px", color: isTd ? "#fff" : isCurrentMonth ? "#1C1C1E" : "#C7C7CC", fontWeight: isTd ? "700" : "400" }}>
+              <div className="flex items-center justify-start mb-[2px]">
+                <div className={cn("w-[26px] h-[26px] rounded-full flex items-center justify-center", isTd ? "bg-[#FF3B30]" : "bg-transparent")}>
+                  <span className={cn("text-[13px]", isTd ? "font-bold text-white" : isCurrentMonth ? "text-[#1C1C1E]" : "text-[#C7C7CC]", !isTd && "font-normal")}>
                     {d.getDate()}
                   </span>
                 </div>
               </div>
               {dayEvents.slice(0, 3).map(ev => (
-                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} style={{ backgroundColor: ev.color, color: "#fff", borderRadius: "3px", padding: "1px 5px", fontSize: "11px", fontWeight: "500", marginBottom: "2px", overflow: "hidden", whiteSpace: "nowrap", textOverflow: "ellipsis" }}>
-                  {!ev.isAllDay && ev.startTime && <span style={{ opacity: 0.85 }}>{formatTime(ev.startTime)} </span>}
+                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} className="text-white rounded-[3px] px-[5px] py-[1px] text-[11px] font-medium mb-[2px] overflow-hidden whitespace-nowrap text-ellipsis" style={{ backgroundColor: ev.color }}>
+                  {!ev.isAllDay && ev.startTime && <span className="opacity-85">{formatTime(ev.startTime)} </span>}
                   {ev.title}
                 </div>
               ))}
               {dayEvents.length > 3 && (
-                <div style={{ fontSize: "10px", color: "#8E8E93" }}>+{dayEvents.length - 3} más</div>
+                <div className="text-[10px] text-[#8E8E93]">+{dayEvents.length - 3} más</div>
               )}
             </div>
           );
@@ -555,39 +552,39 @@ function DayView({ date, events, enabledCalendarIds, onSlotClick, onEventClick }
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", flex: 1, overflow: "hidden" }}>
+    <div className="flex flex-col flex-1 overflow-hidden">
       {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: "12px", borderBottom: "1px solid #E5E5EA", flexShrink: 0 }}>
-        <span style={{ fontSize: "13px", color: isCurrentDay ? "#FF3B30" : "#8E8E93", marginRight: "8px", fontWeight: "600", textTransform: "uppercase" }}>{DAY_LABELS[date.getDay()]}</span>
-        <div style={{ width: "38px", height: "38px", borderRadius: "50%", backgroundColor: isCurrentDay ? "#FF3B30" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <span style={{ fontSize: "24px", fontWeight: isCurrentDay ? "700" : "400", color: isCurrentDay ? "#fff" : "#1C1C1E" }}>{date.getDate()}</span>
+      <div className="flex items-center justify-center p-3 border-b border-[#E5E5EA] shrink-0">
+        <span className={cn("text-[13px] font-semibold uppercase mr-2", isCurrentDay ? "text-[#FF3B30]" : "text-[#8E8E93]")}>{DAY_LABELS[date.getDay()]}</span>
+        <div className={cn("w-[38px] h-[38px] rounded-full flex items-center justify-center", isCurrentDay ? "bg-[#FF3B30]" : "bg-transparent")}>
+          <span className={cn("text-2xl", isCurrentDay ? "font-bold text-white" : "font-normal text-[#1C1C1E]")}>{date.getDate()}</span>
         </div>
       </div>
 
       {/* All-day */}
       {allDayEvents.length > 0 && (
-        <div style={{ display: "flex", borderBottom: "1px solid #E5E5EA", padding: "4px 8px 4px 64px", gap: "4px", flexShrink: 0 }}>
+        <div className="flex border-b border-[#E5E5EA] px-2 py-1 pl-16 gap-1 shrink-0">
           {allDayEvents.map(ev => (
-            <div key={ev.id} onClick={() => onEventClick(ev)} style={{ backgroundColor: ev.color, color: "#fff", borderRadius: "4px", padding: "2px 10px", fontSize: "13px", cursor: "pointer" }}>{ev.title}</div>
+            <div key={ev.id} onClick={() => onEventClick(ev)} className="text-white rounded-[4px] px-[10px] py-[2px] text-[13px] cursor-pointer" style={{ backgroundColor: ev.color }}>{ev.title}</div>
           ))}
         </div>
       )}
 
       {/* Time grid */}
-      <div ref={scrollRef} style={{ flex: 1, overflowY: "auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "60px 1fr", height: `${24 * HOUR_HEIGHT}px`, position: "relative" }}>
-          <div style={{ position: "relative" }}>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-[60px_1fr] relative h-[1440px]">
+          <div className="relative">
             {Array.from({ length: 24 }, (_, h) => (
-              <div key={h} style={{ position: "absolute", top: `${h * HOUR_HEIGHT - 7}px`, right: "8px", fontSize: "11px", color: "#8E8E93", whiteSpace: "nowrap" }}>
+              <div key={h} className="absolute right-2 text-[11px] text-[#8E8E93] whitespace-nowrap" style={{ top: `${h * HOUR_HEIGHT - 7}px` }}>
                 {h === 0 ? "" : formatHour(h)}
               </div>
             ))}
           </div>
-          <div style={{ position: "relative", borderLeft: "1px solid #E5E5EA", cursor: "crosshair" }} onClick={handleColumnClick}>
+          <div className="relative border-l border-[#E5E5EA] cursor-crosshair" onClick={handleColumnClick}>
             {Array.from({ length: 24 }, (_, h) => (
               <React.Fragment key={h}>
-                <div style={{ position: "absolute", top: `${h * HOUR_HEIGHT}px`, left: 0, right: 0, borderTop: h === 0 ? "none" : "1px solid #E5E5EA" }} />
-                <div style={{ position: "absolute", top: `${h * HOUR_HEIGHT + HOUR_HEIGHT / 2}px`, left: 4, right: 0, borderTop: "1px solid #F2F2F7" }} />
+                <div className={cn("absolute left-0 right-0", h === 0 ? "" : "border-t border-[#E5E5EA]")} style={{ top: `${h * HOUR_HEIGHT}px` }} />
+                <div className="absolute left-1 right-0 border-t border-[#F2F2F7]" style={{ top: `${h * HOUR_HEIGHT + HOUR_HEIGHT / 2}px` }} />
               </React.Fragment>
             ))}
             {visibleEvents.map(ev => {
@@ -595,16 +592,16 @@ function DayView({ date, events, enabledCalendarIds, onSlotClick, onEventClick }
               const end = timeToMin(ev.endTime!);
               const duration = Math.max(end - start, 30);
               return (
-                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} style={{ position: "absolute", top: `${(start / 60) * HOUR_HEIGHT + 1}px`, left: "4px", right: "4px", height: `${(duration / 60) * HOUR_HEIGHT - 2}px`, backgroundColor: ev.color, borderRadius: "6px", padding: "4px 8px", cursor: "pointer", overflow: "hidden", zIndex: 1, boxShadow: "0 1px 3px rgba(0,0,0,0.15)" }}>
-                  <div style={{ fontSize: "13px", fontWeight: "600", color: "#fff" }}>{ev.title}</div>
-                  <div style={{ fontSize: "12px", color: "rgba(255,255,255,0.85)" }}>{formatTime(ev.startTime!)} – {formatTime(ev.endTime!)}</div>
-                  {ev.location && <div style={{ fontSize: "11px", color: "rgba(255,255,255,0.75)" }}>{ev.location}</div>}
+                <div key={ev.id} onClick={e => { e.stopPropagation(); onEventClick(ev); }} className="absolute left-1 right-1 rounded-md px-2 py-1 cursor-pointer overflow-hidden z-[1] shadow-[0_1px_3px_rgba(0,0,0,0.15)]" style={{ top: `${(start / 60) * HOUR_HEIGHT + 1}px`, height: `${(duration / 60) * HOUR_HEIGHT - 2}px`, backgroundColor: ev.color }}>
+                  <div className="text-[13px] font-semibold text-white">{ev.title}</div>
+                  <div className="text-xs text-[rgba(255,255,255,0.85)]">{formatTime(ev.startTime!)} – {formatTime(ev.endTime!)}</div>
+                  {ev.location && <div className="text-[11px] text-[rgba(255,255,255,0.75)]">{ev.location}</div>}
                 </div>
               );
             })}
             {isCurrentDay && (
-              <div style={{ position: "absolute", top: `${(currentMinutes / 60) * HOUR_HEIGHT}px`, left: 0, right: 0, height: "2px", backgroundColor: "#FF3B30", zIndex: 2, pointerEvents: "none" }}>
-                <div style={{ position: "absolute", left: "-5px", top: "-4px", width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#FF3B30" }} />
+              <div className="absolute left-0 right-0 h-[2px] bg-[#FF3B30] z-[2] pointer-events-none" style={{ top: `${(currentMinutes / 60) * HOUR_HEIGHT}px` }}>
+                <div className="absolute left-[-5px] top-[-4px] w-[10px] h-[10px] rounded-full bg-[#FF3B30]" />
               </div>
             )}
           </div>
@@ -632,34 +629,34 @@ function YearView({ year, events, enabledCalendarIds, onMonthClick }: {
   };
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "24px", padding: "24px", overflowY: "auto", flex: 1 }}>
+    <div className="grid grid-cols-4 gap-6 p-6 overflow-y-auto flex-1">
       {Array.from({ length: 12 }, (_, monthIdx) => {
         const grid = getMonthGrid(year, monthIdx);
         const eventDates = getEventDates(monthIdx);
         const isCurrentMonth = monthIdx === todayDate.getMonth() && year === todayDate.getFullYear();
         return (
-          <div key={monthIdx} onClick={() => onMonthClick(monthIdx)} style={{ cursor: "pointer" }}>
-            <div style={{ fontSize: "14px", fontWeight: "600", color: isCurrentMonth ? "#FF3B30" : "#1C1C1E", marginBottom: "8px", textAlign: "center" }}>
+          <div key={monthIdx} onClick={() => onMonthClick(monthIdx)} className="cursor-pointer">
+            <div className={cn("text-sm font-semibold mb-2 text-center", isCurrentMonth ? "text-[#FF3B30]" : "text-[#1C1C1E]")}>
               {MONTH_NAMES[monthIdx]}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", textAlign: "center", marginBottom: "3px" }}>
+            <div className="grid grid-cols-7 text-center mb-[3px]">
               {["D", "L", "M", "X", "J", "V", "S"].map(d => (
-                <span key={d} style={{ fontSize: "9px", color: "#8E8E93", fontWeight: "600" }}>{d}</span>
+                <span key={d} className="text-[9px] text-[#8E8E93] font-semibold">{d}</span>
               ))}
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "1px" }}>
+            <div className="grid grid-cols-7 gap-[1px]">
               {grid.map((d, i) => {
                 const inMonth = d.getMonth() === monthIdx;
                 const isTd = isSameDay(d, todayDate);
                 const hasEv = inMonth && eventDates.has(fmt(d));
                 return (
-                  <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div style={{ width: "16px", height: "16px", borderRadius: "50%", backgroundColor: isTd ? "#FF3B30" : "transparent", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <span style={{ fontSize: "9px", color: isTd ? "#fff" : inMonth ? "#1C1C1E" : "#E5E5EA", fontWeight: isTd ? "700" : "400" }}>
+                  <div key={i} className="flex flex-col items-center">
+                    <div className={cn("w-4 h-4 rounded-full flex items-center justify-center", isTd ? "bg-[#FF3B30]" : "bg-transparent")}>
+                      <span className={cn("text-[9px]", isTd ? "font-bold text-white" : inMonth ? "text-[#1C1C1E]" : "text-[#E5E5EA]", !isTd && "font-normal")}>
                         {d.getDate()}
                       </span>
                     </div>
-                    {hasEv && <div style={{ width: "4px", height: "4px", borderRadius: "50%", backgroundColor: "#007AFF", marginTop: "1px" }} />}
+                    {hasEv && <div className="w-1 h-1 rounded-full bg-[#007AFF] mt-[1px]" />}
                   </div>
                 );
               })}
@@ -767,26 +764,13 @@ export default function CalendarTab() {
   const viewLabels: Record<ViewType, string> = { day: "Día", week: "Semana", month: "Mes", year: "Año" };
 
   return (
-    <div style={{
-      display: "flex", flexDirection: "column",
-      height: "calc(100vh - 195px)",
-      minHeight: "600px",
-      backgroundColor: "#fff",
-      borderRadius: "10px",
-      overflow: "hidden",
-      border: "1px solid #D1D1D6",
-      fontFamily: "system-ui, -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-    }}>
-
+    <div
+      className="flex flex-col h-[calc(100vh-195px)] min-h-[600px] bg-white rounded-[10px] overflow-hidden border border-[#D1D1D6] shadow-[0_2px_12px_rgba(0,0,0,0.08)] font-sans"
+    >
       {/* ── Top Bar ── */}
-      <div style={{
-        display: "flex", alignItems: "center", gap: "10px",
-        padding: "10px 14px", borderBottom: "1px solid #E5E5EA",
-        backgroundColor: "#fff", flexShrink: 0,
-      }}>
+      <div className="flex items-center gap-[10px] px-[14px] py-[10px] border-b border-[#E5E5EA] bg-white shrink-0">
         {/* Sidebar toggle */}
-        <button onClick={() => setSidebarOpen(!sidebarOpen)} title="Mostrar barra lateral" style={{ background: "none", border: "none", cursor: "pointer", fontSize: "18px", color: "#007AFF", padding: "2px 6px", borderRadius: "6px", lineHeight: 1 }}>
+        <button onClick={() => setSidebarOpen(!sidebarOpen)} title="Mostrar barra lateral" className="bg-transparent border-none cursor-pointer text-lg text-[#007AFF] px-[6px] py-[2px] rounded-md leading-none">
           ☰
         </button>
 
@@ -796,50 +780,54 @@ export default function CalendarTab() {
             setModalEvent({ date: fmt(selectedDate), startTime: "09:00", endTime: "10:00", isAllDay: false, calendarId: "calendar", color: "#007AFF" });
             setShowModal(true);
           }}
-          style={{ background: "none", border: "none", cursor: "pointer", color: "#007AFF", display: "flex", alignItems: "center", padding: "2px" }}
+          className="bg-transparent border-none cursor-pointer text-[#007AFF] flex items-center p-[2px]"
         >
           <Plus size={22} />
         </button>
 
         {/* Title */}
-        <h2 style={{ fontSize: "20px", fontWeight: "700", color: "#1C1C1E", margin: 0, flex: 1, letterSpacing: "-0.3px" }}>
+        <h2 className="text-xl font-bold text-[#1C1C1E] m-0 flex-1 tracking-[-0.3px]">
           {getTitle()}
         </h2>
 
         {/* Navigation arrows + Today */}
-        <div style={{ display: "flex", alignItems: "center", gap: "0" }}>
-          <button onClick={() => navigate(-1)} style={{ background: "none", border: "1px solid #D1D1D6", borderRadius: "7px 0 0 7px", cursor: "pointer", padding: "5px 10px", color: "#007AFF", display: "flex", alignItems: "center" }}>
+        <div className="flex items-center">
+          <button onClick={() => navigate(-1)} className="bg-transparent border border-[#D1D1D6] rounded-[7px_0_0_7px] cursor-pointer px-[10px] py-[5px] text-[#007AFF] flex items-center">
             <ChevronLeft size={16} />
           </button>
-          <button onClick={() => navigate(1)} style={{ background: "none", border: "1px solid #D1D1D6", borderLeft: "none", borderRadius: "0 7px 7px 0", cursor: "pointer", padding: "5px 10px", color: "#007AFF", display: "flex", alignItems: "center" }}>
+          <button onClick={() => navigate(1)} className="bg-transparent border border-[#D1D1D6] border-l-0 rounded-[0_7px_7px_0] cursor-pointer px-[10px] py-[5px] text-[#007AFF] flex items-center">
             <ChevronRight size={16} />
           </button>
-          <button onClick={goToToday} style={{ background: "none", border: "1px solid #D1D1D6", borderRadius: "7px", cursor: "pointer", padding: "5px 13px", color: "#007AFF", fontSize: "13px", fontWeight: "500", marginLeft: "6px" }}>
+          <button onClick={goToToday} className="bg-transparent border border-[#D1D1D6] rounded-lg cursor-pointer px-[13px] py-[5px] text-[#007AFF] text-[13px] font-medium ml-[6px]">
             Hoy
           </button>
         </div>
 
         {/* View toggle */}
-        <div style={{ display: "flex", border: "1px solid #D1D1D6", borderRadius: "8px", overflow: "hidden" }}>
+        <div className="flex border border-[#D1D1D6] rounded-lg overflow-hidden">
           {(["day", "week", "month", "year"] as ViewType[]).map((v, i) => (
-            <button key={v} onClick={() => setView(v)} style={{ padding: "5px 12px", border: "none", borderLeft: i > 0 ? "1px solid #D1D1D6" : "none", backgroundColor: view === v ? "#007AFF" : "#fff", color: view === v ? "#fff" : "#1C1C1E", cursor: "pointer", fontSize: "13px", fontWeight: view === v ? "600" : "400" }}>
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn("px-3 py-[5px] border-none cursor-pointer text-[13px]", i > 0 ? "border-l border-[#D1D1D6]" : "", view === v ? "bg-[#007AFF] text-white font-semibold" : "bg-white text-[#1C1C1E] font-normal")}
+            >
               {viewLabels[v]}
             </button>
           ))}
         </div>
 
         {/* Search */}
-        <button style={{ background: "none", border: "none", cursor: "pointer", color: "#8E8E93", padding: "2px", display: "flex" }}>
+        <button className="bg-transparent border-none cursor-pointer text-[#8E8E93] p-[2px] flex">
           <Search size={18} />
         </button>
       </div>
 
       {/* ── Body ── */}
-      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+      <div className="flex flex-1 overflow-hidden">
 
         {/* ── Sidebar ── */}
         {sidebarOpen && (
-          <div style={{ width: "198px", borderRight: "1px solid #E5E5EA", backgroundColor: "#F2F2F7", flexShrink: 0, overflowY: "auto", display: "flex", flexDirection: "column" }}>
+          <div className="w-[198px] border-r border-[#E5E5EA] bg-[#F2F2F7] shrink-0 overflow-y-auto flex flex-col">
             {/* Mini calendar */}
             <MiniCal
               displayMonth={miniCalMonth}
@@ -857,21 +845,24 @@ export default function CalendarTab() {
             />
 
             {/* Divider */}
-            <div style={{ height: "1px", backgroundColor: "#E5E5EA", margin: "0 10px" }} />
+            <div className="h-[1px] bg-[#E5E5EA] mx-[10px]" />
 
             {/* Calendar list */}
-            <div style={{ padding: "10px 12px", flex: 1 }}>
+            <div className="p-[10px_12px] flex-1">
               {calGroups.map(group => (
-                <div key={group} style={{ marginBottom: "14px" }}>
-                  <div style={{ fontSize: "11px", fontWeight: "700", color: "#8E8E93", letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "6px" }}>
+                <div key={group} className="mb-[14px]">
+                  <div className="text-[11px] font-bold text-[#8E8E93] tracking-[0.6px] uppercase mb-[6px]">
                     {group}
                   </div>
                   {calendars.filter(c => c.group === group).map(cal => (
-                    <div key={cal.id} onClick={() => toggleCalendar(cal.id)} style={{ display: "flex", alignItems: "center", gap: "8px", padding: "3px 0", cursor: "pointer" }}>
-                      <div style={{ width: "14px", height: "14px", borderRadius: "3px", backgroundColor: cal.enabled ? cal.color : "transparent", border: `2px solid ${cal.color}`, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <div key={cal.id} onClick={() => toggleCalendar(cal.id)} className="flex items-center gap-2 py-[3px] cursor-pointer">
+                      <div
+                        className="w-[14px] h-[14px] rounded-[3px] shrink-0 flex items-center justify-center"
+                        style={{ backgroundColor: cal.enabled ? cal.color : "transparent", border: `2px solid ${cal.color}` }}
+                      >
                         {cal.enabled && <Check size={9} color="#fff" strokeWidth={3} />}
                       </div>
-                      <span style={{ fontSize: "13px", color: "#1C1C1E", userSelect: "none" }}>{cal.name}</span>
+                      <span className="text-[13px] text-[#1C1C1E] select-none">{cal.name}</span>
                     </div>
                   ))}
                 </div>
@@ -881,7 +872,7 @@ export default function CalendarTab() {
         )}
 
         {/* ── Main area ── */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", backgroundColor: "#fff" }}>
+        <div className="flex-1 flex flex-col overflow-hidden bg-white">
           {view === "week" && (
             <WeekView days={weekDays} events={events} enabledCalendarIds={enabledCalendarIds} onSlotClick={handleSlotClick} onEventClick={handleEventClick} />
           )}

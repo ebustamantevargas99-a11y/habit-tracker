@@ -1,10 +1,9 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   // Default: last 7 days
@@ -16,7 +15,7 @@ export async function GET(req: Request) {
 
   const meals = await prisma.mealLog.findMany({
     where: {
-      userId: session.user.id,
+      userId: userId,
       date: { gte: startDate, lte: endDate },
     },
     include: { items: true },
@@ -63,4 +62,5 @@ export async function GET(req: Request) {
       fat: total.fat / count,
     },
   });
+});
 }

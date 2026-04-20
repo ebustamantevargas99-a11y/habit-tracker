@@ -1,0 +1,28 @@
+{
+  "name": "Ultimate TRACKER",
+  "short_name": "TRACKER",
+  "description": "Trackea toda tu vida en una sola app. Exporta a la IA de tu preferencia para análisis.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FFFDF9",
+  "theme_color": "#3D2B1F",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["lifestyle", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

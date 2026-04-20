@@ -1,52 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, weightCreateSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const { searchParams } = new URL(req.url);
+    const days = Math.min(parseInt(searchParams.get("days") ?? "30", 10) || 30, 730);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
 
-  const { searchParams } = new URL(req.url);
-  const days = parseInt(searchParams.get("days") ?? "30");
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
+    const rows = await prisma.bodyMetric.findMany({
+      where: {
+        userId,
+        type: "weight",
+        date: { gte: cutoff.toISOString().split("T")[0] },
+      },
+      orderBy: { date: "asc" },
+      select: { date: true, value: true },
+    });
 
-  const rows = await prisma.bodyMetric.findMany({
-    where: {
-      userId: session.user.id,
-      type: "weight",
-      date: { gte: cutoff.toISOString().split("T")[0] },
-    },
-    orderBy: { date: "asc" },
-    select: { date: true, value: true },
+    return NextResponse.json(rows.map((r) => ({ date: r.date, weight: r.value })));
   });
-
-  return NextResponse.json(rows.map((r) => ({ date: r.date, weight: r.value })));
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, weightCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const { date, weight } = await req.json();
-
-  if (!date || weight === undefined) {
-    return NextResponse.json({ error: "date y weight son requeridos" }, { status: 400 });
-  }
-
-  const metric = await prisma.bodyMetric.create({
-    data: {
-      userId: session.user.id,
-      date,
-      type: "weight",
-      value: parseFloat(weight),
-      unit: "kg",
-    },
+    const metric = await prisma.bodyMetric.create({
+      data: {
+        userId,
+        date: parsed.data.date,
+        type: "weight",
+        value: parsed.data.weight,
+        unit: "kg",
+      },
+    });
+    return NextResponse.json(
+      { date: metric.date, weight: metric.value },
+      { status: 201 }
+    );
   });
-
-  return NextResponse.json({ date: metric.date, weight: metric.value }, { status: 201 });
 }

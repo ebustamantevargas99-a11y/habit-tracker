@@ -52,6 +52,8 @@ interface OrganizationState {
   activeCategory: string;
   searchQuery: string;
   isLoaded: boolean;
+  error: string | null;
+  clearError: () => void;
 
   initialize: () => Promise<void>;
   setActiveCategory: (cat: string) => void;
@@ -81,6 +83,8 @@ export const useOrganizationStore = create<OrganizationState>((set, get) => ({
   activeCategory: "all",
   searchQuery: "",
   isLoaded: false,
+  error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;
@@ -102,13 +106,18 @@ export const useOrganizationStore = create<OrganizationState>((set, get) => ({
 
   getFilteredNotes: () => {
     const { notes, activeCategory, searchQuery } = get();
-    return notes.filter((n) => {
-      const matchesCat = activeCategory === "all" || n.category === activeCategory;
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
-      return matchesCat && matchesSearch;
-    });
+    return notes
+      .filter((n) => {
+        const matchesCat = activeCategory === "all" || n.category === activeCategory;
+        const q = searchQuery.toLowerCase();
+        const matchesSearch =
+          !q || n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q);
+        return matchesCat && matchesSearch;
+      })
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
+        return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
+      });
   },
 
   addNote: async (note) => {

@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
   _req: NextRequest,
   { params }: { params: { date: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const plan = await prisma.dailyPlan.findUnique({
-    where: { userId_date: { userId: session.user.id, date: params.date } },
+    where: { userId_date: { userId: userId, date: params.date } },
     include: { timeBlocks: { orderBy: { startTime: "asc" } } },
   });
 
@@ -28,6 +25,7 @@ export async function GET(
   }
 
   return NextResponse.json(plan);
+});
 }
 
 // PUT replaces the entire plan (priorities + time blocks)
@@ -35,19 +33,16 @@ export async function PUT(
   req: NextRequest,
   { params }: { params: { date: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const body = await req.json();
   const { topPriorities, timeBlocks, rating, notes } = body;
 
   // Upsert the daily plan, replacing all time blocks
   const plan = await prisma.dailyPlan.upsert({
-    where: { userId_date: { userId: session.user.id, date: params.date } },
+    where: { userId_date: { userId: userId, date: params.date } },
     create: {
-      userId: session.user.id,
+      userId: userId,
       date: params.date,
       topPriorities: topPriorities ?? [],
       rating: rating ?? null,
@@ -85,23 +80,21 @@ export async function PUT(
   });
 
   return NextResponse.json(plan);
+});
 }
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { date: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const body = await req.json();
 
   const plan = await prisma.dailyPlan.upsert({
-    where: { userId_date: { userId: session.user.id, date: params.date } },
+    where: { userId_date: { userId: userId, date: params.date } },
     create: {
-      userId: session.user.id,
+      userId: userId,
       date: params.date,
       topPriorities: [],
       rating: body.rating ?? null,
@@ -115,4 +108,5 @@ export async function PATCH(
   });
 
   return NextResponse.json(plan);
+});
 }

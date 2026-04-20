@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 interface PlanExercise {
@@ -10,26 +10,21 @@ interface PlanExercise {
 }
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const rows = await prisma.weeklyPlan.findMany({
-    where: { userId: session.user.id },
+    where: { userId: userId },
     orderBy: { dayOfWeek: "asc" },
   });
 
   return NextResponse.json(
     rows.map((r) => ({ dayOfWeek: r.dayOfWeek, exercises: r.exercises }))
   );
+});
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const body = await req.json();
   const { dayOfWeek, exercises } = body as {
@@ -42,10 +37,11 @@ export async function PUT(req: NextRequest) {
   }
 
   const row = await prisma.weeklyPlan.upsert({
-    where: { userId_dayOfWeek: { userId: session.user.id, dayOfWeek } },
+    where: { userId_dayOfWeek: { userId: userId, dayOfWeek } },
     update: { exercises: exercises as object[] },
-    create: { userId: session.user.id, dayOfWeek, exercises: exercises as object[] },
+    create: { userId: userId, dayOfWeek, exercises: exercises as object[] },
   });
 
   return NextResponse.json({ dayOfWeek: row.dayOfWeek, exercises: row.exercises });
+});
 }

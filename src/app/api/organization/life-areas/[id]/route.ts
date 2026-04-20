@@ -1,35 +1,48 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, lifeAreaUpdateSchema } from "@/lib/validation";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id } = await params;
 
-  const { id } = await params;
-  const body = await req.json();
+    const existing = await prisma.lifeArea.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const updated = await prisma.lifeArea.updateMany({
-    where: { id, userId: session.user.id },
-    data: {
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.emoji !== undefined && { emoji: body.emoji }),
-      ...(body.score !== undefined && { score: body.score }),
-      ...(body.description !== undefined && { description: body.description }),
-      ...(body.color !== undefined && { color: body.color }),
-    },
+    const parsed = await parseJson(req, lifeAreaUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.lifeArea.update({
+      where: { id },
+      data: parsed.data,
+    });
+    return NextResponse.json(updated);
   });
-
-  if (updated.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const area = await prisma.lifeArea.findUnique({ where: { id } });
-  return NextResponse.json(area);
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function DELETE(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id } = await params;
 
-  const { id } = await params;
-  await prisma.lifeArea.deleteMany({ where: { id, userId: session.user.id } });
-  return NextResponse.json({ success: true });
+    const existing = await prisma.lifeArea.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+
+    await prisma.lifeArea.delete({ where: { id } });
+    return new NextResponse(null, { status: 204 });
+  });
 }

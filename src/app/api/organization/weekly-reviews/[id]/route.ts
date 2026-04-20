@@ -1,40 +1,44 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, weeklyReviewUpdateSchema } from "@/lib/validation";
 
-export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const { id } = await params;
-  const review = await prisma.weeklyReview.findFirst({ where: { id, userId: session.user.id } });
-  if (!review) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(review);
+export async function GET(
+  _req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id } = await params;
+    const review = await prisma.weeklyReview.findFirst({
+      where: { id, userId },
+    });
+    if (!review)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    return NextResponse.json(review);
+  });
 }
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  return withAuth(async (userId) => {
+    const { id } = await params;
 
-  const { id } = await params;
-  const body = await req.json();
+    const existing = await prisma.weeklyReview.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const updated = await prisma.weeklyReview.updateMany({
-    where: { id, userId: session.user.id },
-    data: {
-      ...(body.wins !== undefined && { wins: body.wins }),
-      ...(body.challenges !== undefined && { challenges: body.challenges }),
-      ...(body.learnings !== undefined && { learnings: body.learnings }),
-      ...(body.nextWeekGoals !== undefined && { nextWeekGoals: body.nextWeekGoals }),
-      ...(body.gratitude !== undefined && { gratitude: body.gratitude }),
-      ...(body.overallRating !== undefined && { overallRating: body.overallRating }),
-      ...(body.energyLevel !== undefined && { energyLevel: body.energyLevel }),
-      ...(body.productivityScore !== undefined && { productivityScore: body.productivityScore }),
-      ...(body.notes !== undefined && { notes: body.notes }),
-    },
+    const parsed = await parseJson(req, weeklyReviewUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.weeklyReview.update({
+      where: { id },
+      data: parsed.data,
+    });
+    return NextResponse.json(updated);
   });
-
-  if (updated.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const review = await prisma.weeklyReview.findUnique({ where: { id } });
-  return NextResponse.json(review);
 }

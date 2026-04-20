@@ -1,50 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, billUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const bill = await prisma.bill.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!bill)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const bill = await prisma.bill.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    const parsed = await parseJson(req, billUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.bill.update({
+      where: { id: params.id },
+      data: parsed.data,
+    });
+    return NextResponse.json(updated);
   });
-  if (!bill) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  const body = await req.json();
-  const updated = await prisma.bill.update({
-    where: { id: params.id },
-    data: {
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.amount !== undefined && { amount: parseFloat(body.amount) }),
-      ...(body.dueDate !== undefined && { dueDate: body.dueDate }),
-      ...(body.isPaid !== undefined && { isPaid: body.isPaid }),
-      ...(body.isRecurring !== undefined && { isRecurring: body.isRecurring }),
-    },
-  });
-
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const bill = await prisma.bill.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!bill)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const bill = await prisma.bill.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    await prisma.bill.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
   });
-  if (!bill) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  await prisma.bill.delete({ where: { id: params.id } });
-  return new NextResponse(null, { status: 204 });
 }

@@ -14,6 +14,7 @@ const VALID_TABS: Record<string, string[]> = {
   finance:      ['resumen', 'ingresos', 'gastos', 'presupuesto', 'facturas', 'suscripciones', 'deseos', 'analytics'],
   nutrition:    ['diario', 'resumen', 'alimentos', 'metas'],
   organization: ['notas', 'areas', 'revision'],
+  vision:       ['vision', 'metas', 'okr', 'proyecciones', 'board', 'timeline', 'afirmaciones', 'vida'],
 };
 
 interface AppState {
@@ -50,6 +51,10 @@ interface AppState {
   // Organization deep-link
   organizationTab: string;
   setOrganizationTab: (tab: string) => void;
+
+  // Vision deep-link
+  visionTab: string;
+  setVisionTab: (tab: string) => void;
 
   // Apply URL state without pushing to history (called by useRouteSync)
   setPageFromURL: (page: PageKey, tab?: string) => void;
@@ -88,6 +93,9 @@ export const useAppStore = create<AppState>((set) => ({
   organizationTab: 'notas',
   setOrganizationTab: (tab) => set({ organizationTab: tab }),
 
+  visionTab: 'vision',
+  setVisionTab: (tab) => set({ visionTab: tab }),
+
   setPageFromURL: (page, tab) => {
     const update: Partial<AppState> = { activePage: page };
 
@@ -118,6 +126,9 @@ export const useAppStore = create<AppState>((set) => ({
             break;
           case 'organization':
             update.organizationTab = tab;
+            break;
+          case 'vision':
+            update.visionTab = tab;
             break;
         }
       }

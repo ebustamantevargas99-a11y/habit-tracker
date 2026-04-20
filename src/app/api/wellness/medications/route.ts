@@ -1,43 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, medicationCreateSchema } from "@/lib/validation";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-
-  const meds = await prisma.medication.findMany({
-    where: { userId: session.user.id, isActive: true },
-    include: { supplementFacts: true },
-    orderBy: { createdAt: "asc" },
+  return withAuth(async (userId) => {
+    const meds = await prisma.medication.findMany({
+      where: { userId, isActive: true },
+      include: { supplementFacts: true },
+      orderBy: { createdAt: "asc" },
+    });
+    return NextResponse.json(meds);
   });
-  return NextResponse.json(meds);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, medicationCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const { name, brand, dosage, frequency, timeOfDay, supplementFacts } = await req.json();
-  if (!name?.trim()) return NextResponse.json({ error: "name es requerido" }, { status: 400 });
-
-  const med = await prisma.medication.create({
-    data: {
-      userId: session.user.id,
-      name: name.trim(),
-      brand: brand?.trim() ?? null,
-      dosage: dosage?.trim() ?? null,
-      frequency: frequency ?? "daily",
-      timeOfDay: timeOfDay ?? null,
-      supplementFacts: supplementFacts?.length
-        ? { create: supplementFacts.map((sf: { nutrient: string; amount: string; dailyValuePct?: string }) => ({
-            nutrient: sf.nutrient,
-            amount: sf.amount,
-            dailyValuePct: sf.dailyValuePct ?? null,
-          })) }
-        : undefined,
-    },
-    include: { supplementFacts: true },
+    const d = parsed.data;
+    const med = await prisma.medication.create({
+      data: {
+        userId,
+        name: d.name,
+        brand: d.brand ?? null,
+        dosage: d.dosage ?? null,
+        frequency: d.frequency ?? "daily",
+        timeOfDay: d.timeOfDay ?? null,
+        supplementFacts: d.supplementFacts?.length
+          ? {
+              create: d.supplementFacts.map((sf) => ({
+                nutrient: sf.nutrient,
+                amount: sf.amount,
+                dailyValuePct: sf.dailyValuePct ?? null,
+              })),
+            }
+          : undefined,
+      },
+      include: { supplementFacts: true },
+    });
+    return NextResponse.json(med, { status: 201 });
   });
-  return NextResponse.json(med, { status: 201 });
 }

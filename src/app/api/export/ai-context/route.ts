@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { estimate1RM } from "@/lib/utils";
+import { avg, trend, topN, countBy, lifeScoreFrom } from "@/lib/export-utils";
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function avg(nums: number[]): number {
-  if (nums.length === 0) return 0;
-  return Math.round((nums.reduce((a, b) => a + b, 0) / nums.length) * 10) / 10;
-}
-
-function trend(recent: number[], older: number[]): "improving" | "declining" | "stable" {
-  const r = avg(recent);
-  const o = avg(older);
-  if (o === 0) return "stable";
-  const change = (r - o) / o;
-  if (change > 0.10) return "improving";
-  if (change < -0.10) return "declining";
-  return "stable";
-}
+// ─── Local helpers (not exported) ────────────────────────────────────────────
 
 function dateRange(days: number): { from: string; to: string } {
   const to = new Date();
@@ -35,41 +21,6 @@ function dayOfWeekES(dateStr: string): string {
   return days[new Date(dateStr).getDay()];
 }
 
-function topN<T extends Record<string, unknown>>(
-  arr: T[],
-  key: keyof T,
-  n = 5
-): T[] {
-  return [...arr].sort((a, b) => (b[key] as number) - (a[key] as number)).slice(0, n);
-}
-
-function countBy<T>(arr: T[], fn: (item: T) => string): { key: string; count: number }[] {
-  const map: Record<string, number> = {};
-  arr.forEach((item) => {
-    const k = fn(item);
-    map[k] = (map[k] ?? 0) + 1;
-  });
-  return Object.entries(map)
-    .map(([key, count]) => ({ key, count }))
-    .sort((a, b) => b.count - a.count);
-}
-
-function lifeScoreFrom(parts: {
-  habits: number;
-  fitness: number;
-  finance: number;
-  wellness: number;
-  productivity: number;
-}): number {
-  return Math.round(
-    parts.habits * 0.22 +
-    parts.fitness * 0.22 +
-    parts.finance * 0.18 +
-    parts.wellness * 0.22 +
-    parts.productivity * 0.16
-  );
-}
-
 const LEVELS = [
   "Iniciante", "Aprendiz", "Practicante", "Dedicado", "Comprometido",
   "Experto", "Maestro", "Gran Maestro", "Leyenda", "Inmortal",
@@ -78,11 +29,7 @@ const LEVELS = [
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-  const userId = session.user.id;
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   const days = Math.min(parseInt(searchParams.get("days") ?? "30"), 365);
@@ -1369,4 +1316,5 @@ ${workoutMoodsWithEx.length > 0 || workoutMoodsWithout.length > 0 ? `- Días con
       "Content-Disposition": `attachment; filename="mi-vida-ai-context-${today}.json"`,
     },
   });
+});
 }

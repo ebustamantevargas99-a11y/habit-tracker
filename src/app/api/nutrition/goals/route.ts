@@ -1,41 +1,43 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, nutritionGoalUpsertSchema } from "@/lib/validation";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const goal = await prisma.nutritionGoal.findUnique({ where: { userId: session.user.id } });
-  return NextResponse.json(goal);
+  return withAuth(async (userId) => {
+    const goal = await prisma.nutritionGoal.findUnique({ where: { userId } });
+    return NextResponse.json(goal);
+  });
 }
 
-export async function PUT(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function PUT(req: NextRequest) {
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, nutritionGoalUpsertSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const goal = await prisma.nutritionGoal.upsert({
-    where: { userId: session.user.id },
-    update: {
-      calories: body.calories,
-      protein: body.protein,
-      carbs: body.carbs,
-      fat: body.fat,
-      fiber: body.fiber,
-      waterMl: body.waterMl,
-      mealsPerDay: body.mealsPerDay,
-    },
-    create: {
-      userId: session.user.id,
-      calories: body.calories ?? 2000,
-      protein: body.protein ?? 150,
-      carbs: body.carbs ?? 200,
-      fat: body.fat ?? 65,
-      fiber: body.fiber ?? 25,
-      waterMl: body.waterMl ?? 2500,
-      mealsPerDay: body.mealsPerDay ?? 3,
-    },
+    const d = parsed.data;
+    const goal = await prisma.nutritionGoal.upsert({
+      where: { userId },
+      update: {
+        ...(d.calories !== undefined && { calories: d.calories }),
+        ...(d.protein !== undefined && { protein: d.protein }),
+        ...(d.carbs !== undefined && { carbs: d.carbs }),
+        ...(d.fat !== undefined && { fat: d.fat }),
+        ...(d.fiber !== undefined && { fiber: d.fiber }),
+        ...(d.waterMl !== undefined && { waterMl: d.waterMl }),
+        ...(d.mealsPerDay !== undefined && { mealsPerDay: d.mealsPerDay }),
+      },
+      create: {
+        userId,
+        calories: d.calories ?? 2000,
+        protein: d.protein ?? 150,
+        carbs: d.carbs ?? 200,
+        fat: d.fat ?? 65,
+        fiber: d.fiber ?? 25,
+        waterMl: d.waterMl ?? 2500,
+        mealsPerDay: d.mealsPerDay ?? 3,
+      },
+    });
+    return NextResponse.json(goal);
   });
-  return NextResponse.json(goal);
 }

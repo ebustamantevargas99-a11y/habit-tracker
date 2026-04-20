@@ -1,51 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, wishlistUpdateSchema } from "@/lib/validation";
 
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const item = await prisma.wishlistItem.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!item)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const item = await prisma.wishlistItem.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    const parsed = await parseJson(req, wishlistUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const d = parsed.data;
+    const updated = await prisma.wishlistItem.update({
+      where: { id: params.id },
+      data: {
+        ...(d.name !== undefined && { name: d.name }),
+        ...(d.price !== undefined && { price: d.price }),
+        ...(d.priority !== undefined && { priority: d.priority }),
+        ...(d.url !== undefined && { link: d.url }),
+        ...(d.isPurchased !== undefined && { isPurchased: d.isPurchased }),
+      },
+    });
+    return NextResponse.json(updated);
   });
-  if (!item) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  const body = await req.json();
-  const updated = await prisma.wishlistItem.update({
-    where: { id: params.id },
-    data: {
-      ...(body.name !== undefined && { name: body.name }),
-      ...(body.price !== undefined && { price: parseFloat(body.price) }),
-      ...(body.priority !== undefined && { priority: body.priority }),
-      ...(body.savedAmount !== undefined && { savedAmount: parseFloat(body.savedAmount) }),
-      ...(body.link !== undefined && { link: body.link }),
-      ...(body.isPurchased !== undefined && { isPurchased: body.isPurchased }),
-    },
-  });
-
-  return NextResponse.json(updated);
 }
 
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const item = await prisma.wishlistItem.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!item)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const item = await prisma.wishlistItem.findFirst({
-    where: { id: params.id, userId: session.user.id },
+    await prisma.wishlistItem.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
   });
-  if (!item) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-
-  await prisma.wishlistItem.delete({ where: { id: params.id } });
-  return new NextResponse(null, { status: 204 });
 }

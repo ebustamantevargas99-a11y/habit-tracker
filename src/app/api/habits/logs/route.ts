@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/habits/logs?days=90
 // Returns all logs for all habits of the current user within the date range
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   const days = parseInt(searchParams.get("days") ?? "90");
@@ -19,7 +16,7 @@ export async function GET(req: NextRequest) {
 
   const logs = await prisma.habitLog.findMany({
     where: {
-      userId: session.user.id,
+      userId: userId,
       date: { gte: cutoffStr },
     },
     orderBy: { date: "desc" },
@@ -27,4 +24,5 @@ export async function GET(req: NextRequest) {
   });
 
   return NextResponse.json(logs);
+});
 }

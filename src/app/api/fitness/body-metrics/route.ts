@@ -1,95 +1,95 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, bodyMetricInputSchema } from "@/lib/validation";
 
-// Metric types we store individually, returned as grouped BodyMetric objects
 const BODY_METRIC_FIELDS = [
-  "weight", "bodyFat", "chest", "waist", "hips",
-  "armLeft", "armRight", "thighLeft", "thighRight",
-];
+  "weight",
+  "bodyFat",
+  "chest",
+  "waist",
+  "hips",
+  "armLeft",
+  "armRight",
+  "thighLeft",
+  "thighRight",
+] as const;
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
+    const days = Math.min(parseInt(searchParams.get("days") ?? "90", 10) || 90, 730);
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
 
-  const { searchParams } = new URL(req.url);
-  const type = searchParams.get("type");
-  const days = parseInt(searchParams.get("days") ?? "90");
+    const where: Record<string, unknown> = {
+      userId,
+      date: { gte: cutoff.toISOString().split("T")[0] },
+    };
+    if (type) where.type = type;
 
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
+    const rows = await prisma.bodyMetric.findMany({
+      where,
+      orderBy: { date: "desc" },
+    });
 
-  const where: Record<string, unknown> = {
-    userId: session.user.id,
-    date: { gte: cutoff.toISOString().split("T")[0] },
-  };
-  if (type) where.type = type;
-
-  const rows = await prisma.bodyMetric.findMany({
-    where,
-    orderBy: { date: "desc" },
-  });
-
-  // If fetching all types, group by date into BodyMetric objects
-  if (!type) {
-    const byDate = new Map<string, Record<string, unknown>>();
-    for (const row of rows) {
-      if (!byDate.has(row.date)) byDate.set(row.date, { date: row.date });
-      byDate.get(row.date)![row.type] = row.value;
+    if (!type) {
+      const byDate = new Map<string, Record<string, unknown>>();
+      for (const row of rows) {
+        if (!byDate.has(row.date)) byDate.set(row.date, { date: row.date });
+        byDate.get(row.date)![row.type] = row.value;
+      }
+      return NextResponse.json(
+        Array.from(byDate.values()).sort((a, b) =>
+          String(b.date).localeCompare(String(a.date))
+        )
+      );
     }
-    return NextResponse.json(
-      Array.from(byDate.values()).sort((a, b) =>
-        String(b.date).localeCompare(String(a.date))
-      )
-    );
-  }
 
-  return NextResponse.json(rows);
+    return NextResponse.json(rows);
+  });
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, bodyMetricInputSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const date: string = body.date ?? new Date().toISOString().split("T")[0];
+    const body = parsed.data as Record<string, unknown>;
+    const date: string =
+      (body.date as string) ?? new Date().toISOString().split("T")[0];
 
-  // Accept either a single metric { type, value, unit } or a grouped object
-  if (body.type && body.value !== undefined) {
-    // Single metric
-    const metric = await prisma.bodyMetric.create({
-      data: {
-        userId: session.user.id,
-        date,
-        type: body.type,
-        value: parseFloat(body.value),
-        unit: body.unit ?? "kg",
-        method: body.method ?? null,
-      },
-    });
-    return NextResponse.json(metric, { status: 201 });
-  }
+    if ("type" in body && "value" in body) {
+      const metric = await prisma.bodyMetric.create({
+        data: {
+          userId,
+          date,
+          type: body.type as string,
+          value: body.value as number,
+          unit: (body.unit as string) ?? "kg",
+          method: (body.method as string | null) ?? null,
+        },
+      });
+      return NextResponse.json(metric, { status: 201 });
+    }
 
-  // Grouped object { date, weight, bodyFat, ... }
-  const created = await Promise.all(
-    BODY_METRIC_FIELDS
-      .filter((field) => body[field] !== undefined && body[field] !== null)
-      .map((field) =>
+    const created = await Promise.all(
+      BODY_METRIC_FIELDS.filter(
+        (field) => body[field] !== undefined && body[field] !== null
+      ).map((field) =>
         prisma.bodyMetric.create({
           data: {
-            userId: session.user.id,
+            userId,
             date,
             type: field,
-            value: parseFloat(body[field]),
+            value: body[field] as number,
             unit: field === "bodyFat" ? "%" : "cm",
           },
         })
       )
-  );
+    );
 
-  return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(created, { status: 201 });
+  });
 }

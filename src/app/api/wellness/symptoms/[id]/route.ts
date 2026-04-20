@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(async (userId) => {
+    const existing = await prisma.symptomLog.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  await prisma.symptomLog.deleteMany({ where: { id: params.id, userId: session.user.id } });
-  return new NextResponse(null, { status: 204 });
+    await prisma.symptomLog.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
+  });
 }

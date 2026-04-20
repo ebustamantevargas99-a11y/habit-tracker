@@ -93,14 +93,15 @@ export default function LoginPage() {
           <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
           <h1
             style={{
-              fontFamily: "Georgia, serif",
-              fontSize: 24,
+              fontFamily: "var(--font-playfair), Georgia, serif",
+              fontSize: 30,
               fontWeight: 700,
               color: COLORS.dark,
               margin: 0,
+              letterSpacing: "0.02em",
             }}
           >
-            Ultimate Habit Tracker
+            Ultimate <span style={{ letterSpacing: "0.08em" }}>TRACKER</span>
           </h1>
           <p
             style={{

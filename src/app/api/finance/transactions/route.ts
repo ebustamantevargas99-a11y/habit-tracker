@@ -1,59 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, transactionCreateSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const { searchParams } = new URL(req.url);
+    const month = searchParams.get("month");
+    const type = searchParams.get("type");
+    const take = Math.min(
+      parseInt(searchParams.get("limit") ?? "100", 10) || 100,
+      500
+    );
+    const skip = Math.max(parseInt(searchParams.get("skip") ?? "0", 10) || 0, 0);
 
-  const { searchParams } = new URL(req.url);
-  const month = searchParams.get("month"); // YYYY-MM
-  const type = searchParams.get("type");   // income | expense
+    const where: Record<string, unknown> = { userId };
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      where.date = { gte: `${month}-01`, lte: `${month}-31` };
+    }
+    if (type === "income" || type === "expense") {
+      where.type = type;
+    }
 
-  const where: Record<string, unknown> = { userId: session.user.id };
-  if (month) {
-    where.date = { gte: `${month}-01`, lte: `${month}-31` };
-  }
-  if (type) {
-    where.type = type;
-  }
+    const transactions = await prisma.transaction.findMany({
+      where,
+      orderBy: { date: "desc" },
+      take,
+      skip,
+    });
 
-  const transactions = await prisma.transaction.findMany({
-    where,
-    orderBy: { date: "desc" },
+    return NextResponse.json(transactions);
   });
-
-  return NextResponse.json(transactions);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, transactionCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const { date, description, amount, type, category, subcategory, paymentMethod, isRecurring } = body;
+    const d = parsed.data;
+    const transaction = await prisma.transaction.create({
+      data: {
+        userId,
+        date: d.date,
+        description: d.description,
+        amount: d.amount,
+        type: d.type,
+        category: d.category,
+        subcategory: d.subcategory ?? null,
+        paymentMethod: d.paymentMethod ?? null,
+        isRecurring: d.isRecurring ?? false,
+      },
+    });
 
-  if (!date || !description || amount === undefined || !type || !category) {
-    return NextResponse.json({ error: "Campos requeridos faltantes" }, { status: 400 });
-  }
-
-  const transaction = await prisma.transaction.create({
-    data: {
-      userId: session.user.id,
-      date,
-      description,
-      amount: parseFloat(amount),
-      type,
-      category,
-      subcategory: subcategory ?? null,
-      paymentMethod: paymentMethod ?? null,
-      isRecurring: isRecurring ?? false,
-    },
+    return NextResponse.json(transaction, { status: 201 });
   });
-
-  return NextResponse.json(transaction, { status: 201 });
 }

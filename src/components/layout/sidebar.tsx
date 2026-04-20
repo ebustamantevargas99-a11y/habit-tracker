@@ -2,74 +2,86 @@
 
 import { useState } from "react";
 import { useAppStore, type WellnessTab, type ProductivityTab, type PlanTab } from "@/stores/app-store";
-
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
+import type { ModuleKey } from "@/lib/onboarding-constants";
+import { cn } from "@/components/ui/cn";
 
-// Map sidebar section label → wellnessSubTab id
+const NAV_TO_MODULE: Record<string, ModuleKey> = {
+  home: "home",
+  plan: "planner",
+  productivity: "tasks",
+  finance: "finance",
+  fitness: "fitness",
+  nutrition: "nutrition",
+  organization: "organization",
+  wellness: "mood",
+  vision: "okr",
+  settings: "settings",
+};
+
+// ─── Section → tab ID maps ────────────────────────────────────────────────────
+
 const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
   "Sleep Tracker": "sleep",
-  "Hydration": "hydration",
-  "Medication": "medication",
-  "Health Log": "healthlog",
+  "Hydration":     "hydration",
+  "Medication":    "medication",
+  "Health Log":    "healthlog",
 };
 
-// Map sidebar section label → productivitySubTab id
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Operations Center": "command",
-  "Habit Tracker": "habits",
-  "Project Management": "projects",
-  "Pomodoro": "pomodoro",
-  "Dashboard KPIs": "projection",
+  "Habit Tracker":     "habits",
+  "Project Management":"projects",
+  "Pomodoro":          "pomodoro",
+  "Dashboard KPIs":    "projection",
 };
 
-// Map sidebar section label → planTab index
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {
-  "Calendar": 0,
-  "Daily Planner": 1,
-  "Weekly Planner": 2,
-  "Monthly Planner": 3,
+  "Calendar":          0,
+  "Daily Planner":     1,
+  "Weekly Planner":    2,
+  "Monthly Planner":   3,
   "Quarterly Planner": 4,
-  "Yearly Planner": 5,
+  "Yearly Planner":    5,
 };
 
-// Map sidebar section label → fitnessTab id
 const FITNESS_SECTION_MAP: Record<string, string> = {
   "Workout Tracker": "entrenamiento",
-  "Volume Tracker": "volumen",
-  "Workout Plan": "plan",
-  "PR Board": "records",
-  "Body Metrics": "metricas",
-  "Weight Tracker": "peso",
-  "Steps": "pasos",
-  "Fasting": "ayuno",
+  "Volume Tracker":  "volumen",
+  "Workout Plan":    "plan",
+  "PR Board":        "records",
+  "Body Metrics":    "metricas",
+  "Weight Tracker":  "peso",
+  "Steps":           "pasos",
+  "Fasting":         "ayuno",
 };
 
-// Map sidebar section label → financeTab id
 const FINANCE_SECTION_MAP: Record<string, string> = {
-  "Income": "ingresos",
-  "Expenses": "gastos",
-  "Budget Tracker": "presupuesto",
-  "Bills": "facturas",
-  "Subscriptions": "suscripciones",
-  "Wishlist": "deseos",
+  "Income":          "ingresos",
+  "Expenses":        "gastos",
+  "Budget Tracker":  "presupuesto",
+  "Bills":           "facturas",
+  "Subscriptions":   "suscripciones",
+  "Wishlist":        "deseos",
 };
 
-// Map sidebar section label → nutritionTab id
 const NUTRITION_SECTION_MAP: Record<string, string> = {
-  "Diario": "diario",
-  "Resumen 7d": "resumen",
-  "Mis Alimentos": "alimentos",
-  "Metas": "metas",
+  "Diario":       "diario",
+  "Resumen 7d":   "resumen",
+  "Mis Alimentos":"alimentos",
+  "Metas":        "metas",
 };
 
-// Map sidebar section label → organizationTab id
 const ORGANIZATION_SECTION_MAP: Record<string, string> = {
-  "Notas": "notas",
-  "Áreas de Vida": "areas",
+  "Notas":            "notas",
+  "Áreas de Vida":    "areas",
   "Revisión Semanal": "revision",
 };
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 import * as LucideIcons from "lucide-react";
 import React from "react";
 import { signOut } from "next-auth/react";
@@ -85,212 +97,110 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
     setFitnessTab, setFinanceTab, setNutritionTab, setOrganizationTab,
   } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
-  const { user } = useUserStore();
-  const displayName = user?.name ?? 'Usuario';
+  const { user, isModuleEnabled } = useUserStore();
+  const displayName = user?.name ?? "Usuario";
+  const visibleNav = NAV_ITEMS.filter((item) => {
+    const moduleKey = NAV_TO_MODULE[item.key];
+    if (!moduleKey) return true;
+    return isModuleEnabled(moduleKey);
+  });
   const initials = displayName.charAt(0).toUpperCase();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
 
-  const toggleSection = (sectionId: string) => {
+  const toggleSection = (id: string) => {
     setExpandedSections((prev) =>
-      prev.includes(sectionId)
-        ? prev.filter((id) => id !== sectionId)
-        : [...prev, sectionId]
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
     );
   };
 
-  const getIcon = (iconName: string) => {
-    const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<any>>)[
-      iconName
-    ];
+  const getIcon = (name: string) => {
+    const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[name];
     return Icon ? <Icon size={20} /> : <LucideIcons.Package size={20} />;
   };
 
   return (
-    <div
-      style={{
-        width: isOpen ? "260px" : "68px",
-        minWidth: isOpen ? "260px" : "68px",
-        flexShrink: 0,
-        backgroundColor: "var(--color-dark)",
-        color: "var(--color-cream)",
-        display: "flex",
-        flexDirection: "column",
-        transition: "width 0.3s ease, min-width 0.3s ease",
-        borderRight: "1px solid rgba(212, 190, 160, 0.2)",
-        overflowY: "auto",
-        overflowX: "hidden",
-      }}
+    <aside
+      className={cn(
+        "flex flex-col bg-brand-dark text-brand-cream shrink-0 overflow-y-auto overflow-x-hidden",
+        "border-r border-white/10 transition-[width,min-width] duration-300",
+        isOpen ? "w-[260px] min-w-[260px]" : "w-[68px] min-w-[68px]",
+      )}
     >
-      {/* Logo Section */}
+      {/* Logo */}
       <div
-        style={{
-          padding: "1.5rem 1rem",
-          borderBottom: "1px solid rgba(212, 190, 160, 0.2)",
-          display: "flex",
-          alignItems: "center",
-          gap: "0.75rem",
-          justifyContent: isOpen ? "flex-start" : "center",
-        }}
+        className={cn(
+          "flex items-center gap-3 p-4 border-b border-white/10",
+          !isOpen && "justify-center",
+        )}
       >
-        <div
-          style={{
-            fontSize: "1.5rem",
-            minWidth: "30px",
-          }}
-        >
-          🎯
-        </div>
+        <span className="text-2xl shrink-0">🎯</span>
         {isOpen && (
-          <h2
-            style={{
-              fontSize: "0.875rem",
-              fontWeight: "600",
-              margin: 0,
-              color: "var(--color-accent-light)",
-              whiteSpace: "nowrap",
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-            }}
-          >
-            Ultimate Habit
+          <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
+            Ultimate <span className="text-brand-cream">TRACKER</span>
           </h2>
         )}
       </div>
 
-      {/* Navigation Items */}
-      <nav style={{ flex: 1, padding: "1rem 0", overflowY: "auto" }}>
-        {NAV_ITEMS.map((item) => {
-          const isActive = activePage === item.key;
+      {/* Navigation */}
+      <nav className="flex-1 py-4 overflow-y-auto">
+        {visibleNav.map((item) => {
+          const isActive   = activePage === item.key;
           const isExpanded = expandedSections.includes(item.key);
 
           return (
             <div key={item.key}>
-              {/* Main Navigation Item */}
               <button
                 onClick={() => {
                   setActivePage(item.key);
-                  if (item.sections.length > 0) {
-                    toggleSection(item.key);
-                  }
+                  if (item.sections.length > 0) toggleSection(item.key);
                 }}
-                style={{
-                  width: "100%",
-                  padding: "0.75rem 1rem",
-                  backgroundColor: isActive
-                    ? "rgba(212, 166, 67, 0.15)"
-                    : "transparent",
-                  color: isActive ? "var(--color-accent-light)" : "var(--color-cream)",
-                  border: "none",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.75rem",
-                  transition: "all 0.3s ease",
-                  borderLeft: isActive ? "3px solid var(--color-accent)" : "3px solid transparent",
-                  fontSize: "0.875rem",
-                  fontWeight: isActive ? "600" : "500",
-                  justifyContent: isOpen ? "flex-start" : "center",
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      "rgba(212, 190, 160, 0.1)";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      "transparent";
-                  }
-                }}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium",
+                  "border-l-[3px] transition-all duration-200",
+                  "hover:bg-white/10",
+                  isActive
+                    ? "bg-accent/15 text-accent-light border-l-accent"
+                    : "text-brand-cream border-l-transparent",
+                  !isOpen && "justify-center",
+                )}
               >
-                <span style={{ minWidth: "20px", display: "flex", alignItems: "center" }}>
-                  {getIcon(item.icon)}
-                </span>
+                <span className="shrink-0 flex items-center">{getIcon(item.icon)}</span>
                 {isOpen && (
                   <>
-                    <span style={{ flex: 1, textAlign: "left" }}>{item.label}</span>
+                    <span className="flex-1 text-left">{item.label}</span>
                     {item.sections.length > 0 && (
-                      <span
-                        style={{
-                          transform: isExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                          transition: "transform 0.3s ease",
-                          display: "flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        <LucideIcons.ChevronDown size={16} />
-                      </span>
+                      <LucideIcons.ChevronDown
+                        size={16}
+                        className={cn("transition-transform duration-300", isExpanded && "rotate-180")}
+                      />
                     )}
                   </>
                 )}
               </button>
 
-              {/* Sub Items */}
+              {/* Sub-items */}
               {item.sections.length > 0 && isOpen && isExpanded && (
-                <div style={{ backgroundColor: "rgba(0, 0, 0, 0.2)" }}>
+                <div className="bg-black/20">
                   {item.sections.map((section) => (
                     <button
                       key={section}
                       onClick={() => {
                         setActivePage(item.key);
-                        if (item.key === "wellness" && WELLNESS_SECTION_MAP[section]) {
-                          setWellnessSubTab(WELLNESS_SECTION_MAP[section]);
-                        }
-                        if (item.key === "productivity" && PRODUCTIVITY_SECTION_MAP[section]) {
-                          setProductivitySubTab(PRODUCTIVITY_SECTION_MAP[section]);
-                        }
-                        if (item.key === "plan" && PLAN_SECTION_MAP[section] !== undefined) {
-                          setPlanTab(PLAN_SECTION_MAP[section]);
-                        }
-                        if (item.key === "fitness" && FITNESS_SECTION_MAP[section]) {
-                          setFitnessTab(FITNESS_SECTION_MAP[section]);
-                        }
-                        if (item.key === "finance" && FINANCE_SECTION_MAP[section]) {
-                          setFinanceTab(FINANCE_SECTION_MAP[section]);
-                        }
-                        if (item.key === "nutrition" && NUTRITION_SECTION_MAP[section]) {
-                          setNutritionTab(NUTRITION_SECTION_MAP[section]);
-                        }
-                        if (item.key === "organization" && ORGANIZATION_SECTION_MAP[section]) {
-                          setOrganizationTab(ORGANIZATION_SECTION_MAP[section]);
-                        }
+                        if (item.key === "wellness"      && WELLNESS_SECTION_MAP[section])      setWellnessSubTab(WELLNESS_SECTION_MAP[section]);
+                        if (item.key === "productivity"  && PRODUCTIVITY_SECTION_MAP[section])  setProductivitySubTab(PRODUCTIVITY_SECTION_MAP[section]);
+                        if (item.key === "plan"          && PLAN_SECTION_MAP[section] != null)  setPlanTab(PLAN_SECTION_MAP[section]);
+                        if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);
+                        if (item.key === "finance"       && FINANCE_SECTION_MAP[section])       setFinanceTab(FINANCE_SECTION_MAP[section]);
+                        if (item.key === "nutrition"     && NUTRITION_SECTION_MAP[section])     setNutritionTab(NUTRITION_SECTION_MAP[section]);
+                        if (item.key === "organization"  && ORGANIZATION_SECTION_MAP[section])  setOrganizationTab(ORGANIZATION_SECTION_MAP[section]);
                       }}
-                      style={{
-                        width: "100%",
-                        padding: "0.5rem 1rem 0.5rem 2.5rem",
-                        backgroundColor:
-                          activePage === item.key
-                            ? "rgba(212, 166, 67, 0.25)"
-                            : "transparent",
-                        color:
-                          activePage === item.key
-                            ? "var(--color-accent-light)"
-                            : "var(--color-light-tan)",
-                        border: "none",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        fontSize: "0.8125rem",
-                        transition: "all 0.3s ease",
-                        borderLeft:
-                          activePage === item.key
-                            ? "3px solid var(--color-accent)"
-                            : "3px solid transparent",
-                        fontWeight: activePage === item.key ? "500" : "400",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (activePage !== item.key) {
-                          (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                            "rgba(212, 190, 160, 0.05)";
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (activePage !== item.key) {
-                          (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                            "transparent";
-                        }
-                      }}
+                      className={cn(
+                        "w-full pl-10 pr-4 py-2 text-[0.8125rem] flex items-center",
+                        "border-l-[3px] transition-all duration-200",
+                        isActive
+                          ? "bg-accent/25 text-accent-light border-l-accent font-medium"
+                          : "text-brand-light-tan border-l-transparent hover:bg-white/5",
+                      )}
                     >
                       {section}
                     </button>
@@ -302,182 +212,81 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
         })}
       </nav>
 
-      {/* User Profile + Gamification Section */}
-      <div
-        style={{
-          padding: "1rem",
-          borderTop: "1px solid rgba(212, 190, 160, 0.2)",
-        }}
-      >
-        {/* Avatar + Name + Level */}
+      {/* Footer — User + Gamification */}
+      <div className="p-4 border-t border-white/10">
+        {/* Avatar + name */}
         <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "0.75rem",
-            justifyContent: isOpen ? "flex-start" : "center",
-            marginBottom: isOpen ? "12px" : "0",
-          }}
+          className={cn(
+            "flex items-center gap-3",
+            !isOpen && "justify-center",
+            isOpen && "mb-3",
+          )}
         >
-          <div
-            style={{
-              width: "40px",
-              height: "40px",
-              borderRadius: "50%",
-              backgroundColor: "var(--color-accent)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "var(--color-dark)",
-              fontWeight: "600",
-              fontSize: "1rem",
-              minWidth: "40px",
-            }}
-          >
+          <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center
+                          text-brand-dark font-semibold text-base shrink-0">
             {initials}
           </div>
           {isOpen && (
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div
-                style={{
-                  fontSize: "0.875rem",
-                  fontWeight: "600",
-                  color: "var(--color-cream)",
-                  whiteSpace: "nowrap",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                }}
-              >
-                {displayName}
-              </div>
-              <div
-                style={{
-                  fontSize: "0.6875rem",
-                  color: "#D4A843",
-                  fontWeight: "600",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                }}
-              >
-                <span style={{ fontSize: "12px" }}>⭐</span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-brand-cream truncate">{displayName}</p>
+              <p className="text-[0.6875rem] text-accent-light font-semibold flex items-center gap-1">
+                <span>⭐</span>
                 Nivel {currentLevel} — {levelName}
-              </div>
+              </p>
             </div>
           )}
         </div>
 
-        {/* XP Progress Bar */}
+        {/* XP bar */}
         {isOpen && (
-          <div style={{ marginTop: "4px" }}>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: "0.625rem",
-                color: "rgba(212, 190, 160, 0.7)",
-                marginBottom: "4px",
-              }}
-            >
+          <div className="mt-1">
+            <div className="flex justify-between text-[0.625rem] text-brand-light-tan/70 mb-1">
               <span>{totalXP.toLocaleString()} XP</span>
               <span>{xpForNextLevel.toLocaleString()} XP</span>
             </div>
-            <div
-              style={{
-                width: "100%",
-                height: "6px",
-                backgroundColor: "rgba(212, 190, 160, 0.2)",
-                borderRadius: "3px",
-                overflow: "hidden",
-              }}
-            >
+            <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
+              {/* Dynamic width — must stay inline */}
               <div
-                style={{
-                  width: `${xpProgress}%`,
-                  height: "100%",
-                  background: "linear-gradient(90deg, #B8860B, #D4A843)",
-                  borderRadius: "3px",
-                  transition: "width 0.5s ease",
-                }}
+                className="h-full rounded-full transition-[width] duration-500"
+                style={{ width: `${xpProgress}%`, background: "linear-gradient(90deg, #B8860B, #D4A843)" }}
               />
             </div>
-            <div
-              style={{
-                fontSize: "0.625rem",
-                color: "rgba(212, 190, 160, 0.5)",
-                marginTop: "4px",
-                textAlign: "center",
-              }}
-            >
+            <p className="text-[0.625rem] text-brand-light-tan/50 mt-1 text-center">
               {(xpForNextLevel - totalXP).toLocaleString()} XP para Nivel {currentLevel + 1}
-            </div>
+            </p>
 
-            {/* Badges Row */}
-            <div
-              style={{
-                display: "flex",
-                gap: "6px",
-                marginTop: "10px",
-                justifyContent: "center",
-                flexWrap: "wrap",
-              }}
-            >
-              {badges.filter(b => b.isEarned).slice(0, 5).map((badge) => (
-                <div
-                  key={badge.id}
-                  title={badge.name}
-                  style={{
-                    width: "28px",
-                    height: "28px",
-                    borderRadius: "6px",
-                    backgroundColor: "rgba(184, 134, 11, 0.2)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: "14px",
-                    cursor: "default",
-                  }}
-                >
-                  {badge.emoji}
-                </div>
-              ))}
-            </div>
+            {/* Badges */}
+            {badges.filter((b) => b.isEarned).length > 0 && (
+              <div className="flex gap-1.5 mt-2.5 justify-center flex-wrap">
+                {badges.filter((b) => b.isEarned).slice(0, 5).map((badge) => (
+                  <div
+                    key={badge.id}
+                    title={badge.name}
+                    className="w-7 h-7 rounded-md bg-accent/20 flex items-center justify-center text-sm"
+                  >
+                    {badge.emoji}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {/* Logout */}
         <button
           onClick={() => signOut({ callbackUrl: "/login" })}
-          style={{
-            marginTop: "12px",
-            width: "100%",
-            padding: "8px",
-            backgroundColor: "transparent",
-            color: "rgba(212, 190, 160, 0.6)",
-            border: "1px solid rgba(212, 190, 160, 0.2)",
-            borderRadius: "6px",
-            cursor: "pointer",
-            fontSize: "0.75rem",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: isOpen ? "flex-start" : "center",
-            gap: "6px",
-            transition: "all 0.2s",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "var(--color-cream)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(212, 190, 160, 0.5)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLButtonElement).style.color = "rgba(212, 190, 160, 0.6)";
-            (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(212, 190, 160, 0.2)";
-          }}
+          className={cn(
+            "mt-3 w-full py-2 px-3 flex items-center gap-1.5 text-xs",
+            "text-brand-light-tan/60 border border-white/20 rounded-md",
+            "hover:text-brand-cream hover:border-white/50 transition-all duration-200 bg-transparent",
+            !isOpen && "justify-center",
+          )}
         >
           <LucideIcons.LogOut size={14} />
           {isOpen && <span>Cerrar sesión</span>}
         </button>
       </div>
-    </div>
+    </aside>
   );
 };
 

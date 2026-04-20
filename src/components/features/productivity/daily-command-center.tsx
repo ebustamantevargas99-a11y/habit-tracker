@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useMemo } from "react";
+import { cn } from "@/components/ui";
 import { useHabitStore } from "@/stores/habit-store";
-import { useLocalStorage } from "@/lib/use-local-storage";
+import { useProductivityStore } from "@/stores/productivity-store";
 import { useOKRStore } from "@/stores/okr-store";
 import type { Habit, HabitLog } from "@/types";
-import { Check, Zap, Target, TrendingUp, AlertTriangle, ChevronRight, Star, Flame } from "lucide-react";
+import { Check, Zap, Target, AlertTriangle, Flame } from "lucide-react";
 
 const C = {
   dark: "#3D2B1F", brown: "#6B4226", medium: "#8B6542", warm: "#A0845C",
@@ -21,11 +22,6 @@ const TIME_OF_DAY_CONFIG = {
   evening:   { label: "Noche",     emoji: "🌙", color: C.info },
   all:       { label: "Todo el día", emoji: "📅", color: C.medium },
 };
-
-interface KanbanCard {
-  id: string; title: string; priority: "Alta" | "Media" | "Baja";
-  dueDate?: string; category: string; objectiveId?: string; weight: number;
-}
 
 // ─── Insight Engine ───────────────────────────────────────────────────────────
 function useDailyInsight(habits: Habit[], logs: HabitLog[], completedIds: Set<string>) {
@@ -50,11 +46,11 @@ function ScoreRing({ pct, size = 96 }: { pct: number; size?: number }) {
   const circ = 2 * Math.PI * r;
   const color = pct >= 80 ? C.success : pct >= 50 ? C.warning : C.danger;
   return (
-    <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+    <svg width={size} height={size} className="-rotate-90">
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={C.lightCream} strokeWidth={10} />
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={10}
         strokeDasharray={circ} strokeDashoffset={circ * (1 - pct / 100)}
-        strokeLinecap="round" style={{ transition: "stroke-dashoffset 0.6s ease" }} />
+        strokeLinecap="round" className="[transition:stroke-dashoffset_0.6s_ease]" />
       <text x="50%" y="50%" textAnchor="middle" dominantBaseline="middle"
         style={{ transform: "rotate(90deg)", transformOrigin: "50% 50%", fontSize: size * 0.22, fontWeight: 700, fill: color, fontFamily: "Georgia, serif" }}>
         {pct}%
@@ -67,12 +63,17 @@ function ScoreRing({ pct, size = 96 }: { pct: number; size?: number }) {
 export default function DailyCommandCenter() {
   const { habits, logs, toggleHabitToday } = useHabitStore();
   const { objectives } = useOKRStore();
-  const [kanban, setKanban] = useLocalStorage<{ [col: string]: KanbanCard[] }>("productivity_kanban", { todo: [], inProgress: [], done: [] });
+  const { projects, moveTaskStatus } = useProductivityStore();
   const [toggling, setToggling] = useState<Set<string>>(new Set());
 
   const todayStr = new Date().toISOString().split("T")[0];
   const todayLogs = logs.filter(l => l.date === todayStr && l.completed);
   const completedIds = new Set(todayLogs.map(l => l.habitId));
+
+  const allTasks = useMemo(
+    () => projects.flatMap(p => p.tasks.map(t => ({ ...t, projectName: p.name }))),
+    [projects]
+  );
 
   const activeHabits = useMemo(() => {
     const dow = new Date().getDay();
@@ -96,12 +97,13 @@ export default function DailyCommandCenter() {
 
   const insight = useDailyInsight(activeHabits, logs, completedIds);
 
-  // Today's kanban cards (due today or in progress)
   const todayCards = useMemo(() => {
-    const inProg = kanban.inProgress ?? [];
-    const todo = (kanban.todo ?? []).filter(c => c.dueDate === todayStr);
+    const inProg = allTasks.filter(t => t.status === "inProgress");
+    const todo = allTasks.filter(t => t.status === "todo" && t.dueDate === todayStr);
     return [...inProg, ...todo];
-  }, [kanban, todayStr]);
+  }, [allTasks, todayStr]);
+
+  const doneTasks = useMemo(() => allTasks.filter(t => t.status === "done"), [allTasks]);
 
   const handleHabitToggle = async (habitId: string) => {
     if (toggling.has(habitId)) return;
@@ -110,68 +112,67 @@ export default function DailyCommandCenter() {
     finally { setToggling(prev => { const n = new Set(prev); n.delete(habitId); return n; }); }
   };
 
-  const moveCardDone = (cardId: string) => {
-    setKanban(prev => {
-      const card = [...(prev.inProgress ?? []), ...(prev.todo ?? [])].find(c => c.id === cardId);
-      if (!card) return prev;
-      return {
-        ...prev,
-        todo: (prev.todo ?? []).filter(c => c.id !== cardId),
-        inProgress: (prev.inProgress ?? []).filter(c => c.id !== cardId),
-        done: [...(prev.done ?? []), { ...card }],
-      };
-    });
+  const moveCardDone = async (taskId: string) => {
+    const task = allTasks.find(t => t.id === taskId);
+    if (!task) return;
+    await moveTaskStatus(task.projectId, taskId, "done");
   };
 
   const dateLabel = new Date().toLocaleDateString("es-ES", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
   const atRiskObjectives = objectives.filter(o => o.progress < 30 && o.type !== "yearly");
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "24px", alignItems: "start" }}>
+    <div className="grid gap-6 items-start [grid-template-columns:1fr_340px]">
 
       {/* ── Left column ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+      <div className="flex flex-col gap-5">
 
         {/* Header */}
-        <div style={{ background: `linear-gradient(135deg, ${C.dark}, ${C.brown})`, borderRadius: "16px", padding: "24px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div className="rounded-2xl px-7 py-6 flex items-center justify-between bg-[linear-gradient(135deg,#3D2B1F,#6B4226)]">
           <div>
-            <p style={{ margin: "0 0 4px 0", fontSize: "13px", color: C.lightTan, textTransform: "capitalize", letterSpacing: "0.5px" }}>{dateLabel}</p>
-            <h1 style={{ margin: 0, fontSize: "26px", fontFamily: "Georgia, serif", color: C.accentGlow, fontWeight: "normal" }}>Centro de Comando</h1>
-            <p style={{ margin: "6px 0 0 0", fontSize: "13px", color: C.tan }}>Tu día completo en un vistazo</p>
+            <p className="mb-1 text-[13px] capitalize tracking-[0.5px] text-brand-light-tan">{dateLabel}</p>
+            <h1 className="m-0 text-[26px] font-normal font-serif text-accent-glow">Centro de Comando</h1>
+            <p className="mt-1.5 mb-0 text-[13px] text-brand-tan">Tu día completo en un vistazo</p>
           </div>
           <ScoreRing pct={donePct} size={88} />
         </div>
 
         {/* Insight banner */}
-        <div style={{ backgroundColor: insight.color + "18", border: `1.5px solid ${insight.color}40`, borderRadius: "12px", padding: "14px 18px", display: "flex", alignItems: "center", gap: "12px" }}>
-          <span style={{ fontSize: "22px", flexShrink: 0 }}>{insight.icon}</span>
-          <p style={{ margin: 0, fontSize: "14px", color: C.dark, lineHeight: 1.5 }}>{insight.text}</p>
+        <div
+          className="rounded-xl py-3.5 px-[18px] flex items-center gap-3"
+          style={{ backgroundColor: insight.color + "18", border: `1.5px solid ${insight.color}40` }}
+        >
+          <span className="text-[22px] shrink-0">{insight.icon}</span>
+          <p className="m-0 text-sm leading-[1.5] text-brand-dark">{insight.text}</p>
         </div>
 
         {/* Habits by time-of-day */}
         {groupedHabits.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "40px", color: C.warm, backgroundColor: C.warmWhite, borderRadius: "12px", border: `2px dashed ${C.tan}` }}>
-            <p style={{ fontSize: "32px", margin: "0 0 8px 0" }}>🌱</p>
-            <p style={{ margin: 0, fontSize: "14px" }}>No tienes hábitos aún. Agrégalos en Habit Tracker.</p>
+          <div className="text-center p-10 rounded-xl border-2 border-dashed border-brand-tan text-brand-warm bg-brand-warm-white">
+            <p className="text-[32px] mb-2">🌱</p>
+            <p className="m-0 text-sm">No tienes hábitos aún. Agrégalos en Habit Tracker.</p>
           </div>
         ) : (
           groupedHabits.map(({ tod, items }) => {
             const cfg = TIME_OF_DAY_CONFIG[tod];
             const groupDone = items.filter(h => completedIds.has(h.id)).length;
             return (
-              <div key={tod} style={{ backgroundColor: C.paper, border: `1.5px solid ${C.lightCream}`, borderRadius: "14px", overflow: "hidden" }}>
+              <div key={tod} className="rounded-[14px] overflow-hidden bg-brand-paper border-[1.5px] border-brand-light-cream">
                 {/* Group header */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px 12px", borderBottom: `1px solid ${C.lightCream}` }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "18px" }}>{cfg.emoji}</span>
-                    <span style={{ fontSize: "15px", fontWeight: "700", color: C.dark, fontFamily: "Georgia, serif" }}>{cfg.label}</span>
+                <div className="flex items-center justify-between px-[18px] pt-3.5 pb-3 border-b border-brand-light-cream">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[18px]">{cfg.emoji}</span>
+                    <span className="text-[15px] font-bold text-brand-dark font-serif">{cfg.label}</span>
                   </div>
-                  <span style={{ fontSize: "12px", color: groupDone === items.length ? C.success : C.warm, fontWeight: "600", backgroundColor: groupDone === items.length ? C.successLight : C.lightCream, padding: "3px 10px", borderRadius: "20px" }}>
+                  <span className={cn(
+                    "text-xs font-semibold px-2.5 py-[3px] rounded-[20px]",
+                    groupDone === items.length ? "text-success bg-success-light" : "text-brand-warm bg-brand-light-cream"
+                  )}>
                     {groupDone}/{items.length}
                   </span>
                 </div>
                 {/* Habit rows */}
-                <div style={{ padding: "8px 0" }}>
+                <div className="py-2">
                   {items.map(habit => {
                     const done = completedIds.has(habit.id);
                     const isToggling = toggling.has(habit.id);
@@ -180,37 +181,32 @@ export default function DailyCommandCenter() {
                         key={habit.id}
                         onClick={() => handleHabitToggle(habit.id)}
                         disabled={isToggling}
-                        style={{
-                          width: "100%", display: "flex", alignItems: "center", gap: "14px",
-                          padding: "12px 18px", border: "none", cursor: isToggling ? "wait" : "pointer",
-                          backgroundColor: done ? C.successLight + "60" : "transparent",
-                          transition: "background 0.2s",
-                          textAlign: "left",
-                        }}
+                        className={cn(
+                          "w-full flex items-center gap-3.5 px-[18px] py-3 border-none text-left transition-[background] duration-200",
+                          isToggling ? "cursor-wait" : "cursor-pointer",
+                          done ? "bg-[#D4E6B560]" : "bg-transparent"
+                        )}
                       >
                         {/* Checkbox */}
-                        <div style={{
-                          width: "26px", height: "26px", borderRadius: "50%", flexShrink: 0,
-                          border: `2.5px solid ${done ? C.success : C.tan}`,
-                          backgroundColor: done ? C.success : "transparent",
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          transition: "all 0.2s",
-                        }}>
+                        <div className={cn(
+                          "w-[26px] h-[26px] rounded-full shrink-0 flex items-center justify-center transition-all duration-200 border-[2.5px]",
+                          done ? "border-success bg-success" : "border-brand-tan bg-transparent"
+                        )}>
                           {done && <Check size={14} color={C.paper} strokeWidth={3} />}
                         </div>
                         {/* Icon + name */}
-                        <span style={{ fontSize: "22px", flexShrink: 0 }}>{habit.icon || "⭐"}</span>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <p style={{ margin: 0, fontSize: "14px", fontWeight: "600", color: done ? C.medium : C.dark, textDecoration: done ? "line-through" : "none" }}>
+                        <span className="text-[22px] shrink-0">{habit.icon || "⭐"}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className={cn("m-0 text-sm font-semibold", done ? "text-brand-medium line-through" : "text-brand-dark")}>
                             {habit.name}
                           </p>
-                          <p style={{ margin: "2px 0 0 0", fontSize: "11px", color: C.warm }}>{habit.category}</p>
+                          <p className="mt-0.5 mb-0 text-[11px] text-brand-warm">{habit.category}</p>
                         </div>
                         {/* Streak */}
                         {habit.streakCurrent > 0 && (
-                          <div style={{ display: "flex", alignItems: "center", gap: "3px", flexShrink: 0 }}>
+                          <div className="flex items-center gap-[3px] shrink-0">
                             <Flame size={13} color={habit.streakCurrent >= 7 ? C.danger : C.warning} />
-                            <span style={{ fontSize: "12px", fontWeight: "700", color: habit.streakCurrent >= 7 ? C.danger : C.warning }}>{habit.streakCurrent}</span>
+                            <span className={cn("text-xs font-bold", habit.streakCurrent >= 7 ? "text-danger" : "text-warning")}>{habit.streakCurrent}</span>
                           </div>
                         )}
                       </button>
@@ -224,38 +220,43 @@ export default function DailyCommandCenter() {
 
         {/* Today's tasks */}
         {todayCards.length > 0 && (
-          <div style={{ backgroundColor: C.paper, border: `1.5px solid ${C.lightCream}`, borderRadius: "14px", overflow: "hidden" }}>
-            <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid ${C.lightCream}`, display: "flex", alignItems: "center", gap: "8px" }}>
-              <span style={{ fontSize: "18px" }}>📋</span>
-              <span style={{ fontSize: "15px", fontWeight: "700", color: C.dark, fontFamily: "Georgia, serif" }}>Tareas de Hoy</span>
-              <span style={{ fontSize: "12px", color: C.warm, backgroundColor: C.lightCream, padding: "2px 8px", borderRadius: "12px", marginLeft: "auto" }}>{todayCards.length}</span>
+          <div className="rounded-[14px] overflow-hidden bg-brand-paper border-[1.5px] border-brand-light-cream">
+            <div className="px-[18px] pt-3.5 pb-3 flex items-center gap-2 border-b border-brand-light-cream">
+              <span className="text-[18px]">📋</span>
+              <span className="text-[15px] font-bold text-brand-dark font-serif">Tareas de Hoy</span>
+              <span className="text-xs ml-auto px-2 py-0.5 rounded-xl text-brand-warm bg-brand-light-cream">{todayCards.length}</span>
             </div>
-            <div style={{ padding: "8px 0" }}>
+            <div className="py-2">
               {todayCards.map(card => {
-                const isDone = (kanban.done ?? []).some(c => c.id === card.id);
+                const isDone = card.status === "done";
                 const linkedObj = card.objectiveId ? objectives.find(o => o.id === card.objectiveId) : null;
                 return (
-                  <div key={card.id} style={{ display: "flex", alignItems: "center", gap: "12px", padding: "11px 18px" }}>
+                  <div key={card.id} className="flex items-center gap-3 px-[18px] py-[11px]">
                     <button
                       onClick={() => moveCardDone(card.id)}
-                      style={{
-                        width: "24px", height: "24px", borderRadius: "6px", border: `2px solid ${isDone ? C.success : C.tan}`,
-                        backgroundColor: isDone ? C.success : "transparent", cursor: "pointer", flexShrink: 0,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                      }}>
+                      className={cn(
+                        "w-6 h-6 rounded-md shrink-0 flex items-center justify-center cursor-pointer border-2",
+                        isDone ? "border-success bg-success" : "border-brand-tan bg-transparent"
+                      )}>
                       {isDone && <Check size={13} color={C.paper} strokeWidth={3} />}
                     </button>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ margin: 0, fontSize: "14px", color: isDone ? C.medium : C.dark, textDecoration: isDone ? "line-through" : "none", fontWeight: "500" }}>{card.title}</p>
-                      <div style={{ display: "flex", gap: "6px", marginTop: "3px" }}>
-                        <span style={{ fontSize: "11px", color: C.warm }}>{card.category}</span>
-                        {linkedObj && <span style={{ fontSize: "11px", color: linkedObj.color, backgroundColor: linkedObj.color + "20", padding: "1px 6px", borderRadius: "8px" }}>→ {linkedObj.emoji} {linkedObj.title.slice(0, 24)}</span>}
+                    <div className="flex-1 min-w-0">
+                      <p className={cn("m-0 text-sm font-medium", isDone ? "text-brand-medium line-through" : "text-brand-dark")}>{card.title}</p>
+                      <div className="flex gap-1.5 mt-[3px]">
+                        <span className="text-[11px] text-brand-warm">{card.projectName}</span>
+                        {linkedObj && (
+                          <span
+                            className="text-[11px] px-1.5 py-px rounded-lg"
+                            style={{ color: linkedObj.color, backgroundColor: linkedObj.color + "20" }}
+                          >→ {linkedObj.emoji} {linkedObj.title.slice(0, 24)}</span>
+                        )}
                       </div>
                     </div>
-                    <span style={{ fontSize: "11px", fontWeight: "700", padding: "2px 8px", borderRadius: "8px", flexShrink: 0,
-                      backgroundColor: card.priority === "Alta" ? C.dangerLight : card.priority === "Media" ? C.warningLight : C.successLight,
-                      color: card.priority === "Alta" ? C.danger : card.priority === "Media" ? C.warning : C.success,
-                    }}>{card.priority}</span>
+                    <span className={cn(
+                      "text-[11px] font-bold px-2 py-0.5 rounded-lg shrink-0",
+                      card.priority === "Alta" ? "bg-danger-light text-danger" :
+                      card.priority === "Media" ? "bg-warning-light text-warning" : "bg-success-light text-success"
+                    )}>{card.priority}</span>
                   </div>
                 );
               })}
@@ -265,59 +266,59 @@ export default function DailyCommandCenter() {
       </div>
 
       {/* ── Right sidebar ── */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "18px", position: "sticky", top: "20px" }}>
+      <div className="flex flex-col gap-[18px] sticky top-5">
 
         {/* Progress summary */}
-        <div style={{ backgroundColor: C.paper, border: `1.5px solid ${C.lightCream}`, borderRadius: "14px", padding: "20px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: C.dark, display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="rounded-[14px] p-5 bg-brand-paper border-[1.5px] border-brand-light-cream">
+          <h3 className="mb-4 text-sm font-bold flex items-center gap-2 text-brand-dark">
             <Zap size={16} color={C.accent} /> Resumen del Día
           </h3>
           {[
-            { label: "Hábitos completados", value: `${activeHabits.filter(h => completedIds.has(h.id)).length}/${activeHabits.length}`, color: C.success },
-            { label: "Racha más larga", value: `${Math.max(0, ...habits.map(h => h.streakCurrent))}d`, color: C.warning },
-            { label: "Tareas de hoy", value: `${(kanban.done ?? []).length + todayCards.length}`, color: C.info },
-            { label: "Score del día", value: `${donePct}%`, color: donePct >= 80 ? C.success : donePct >= 50 ? C.warning : C.danger },
+            { label: "Hábitos completados", value: `${activeHabits.filter(h => completedIds.has(h.id)).length}/${activeHabits.length}`, colorClass: "text-success" },
+            { label: "Racha más larga", value: `${Math.max(0, ...habits.map(h => h.streakCurrent))}d`, colorClass: "text-warning" },
+            { label: "Tareas de hoy", value: `${doneTasks.length + todayCards.length}`, colorClass: "text-info" },
+            { label: "Score del día", value: `${donePct}%`, colorClass: donePct >= 80 ? "text-success" : donePct >= 50 ? "text-warning" : "text-danger" },
           ].map(item => (
-            <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 0", borderBottom: `1px solid ${C.lightCream}` }}>
-              <span style={{ fontSize: "13px", color: C.warm }}>{item.label}</span>
-              <span style={{ fontSize: "14px", fontWeight: "700", color: item.color }}>{item.value}</span>
+            <div key={item.label} className="flex justify-between items-center py-2 border-b border-brand-light-cream">
+              <span className="text-[13px] text-brand-warm">{item.label}</span>
+              <span className={cn("text-sm font-bold", item.colorClass)}>{item.value}</span>
             </div>
           ))}
         </div>
 
         {/* OKR snapshot */}
-        <div style={{ backgroundColor: C.paper, border: `1.5px solid ${C.lightCream}`, borderRadius: "14px", padding: "20px" }}>
-          <h3 style={{ margin: "0 0 16px 0", fontSize: "14px", fontWeight: "700", color: C.dark, display: "flex", alignItems: "center", gap: "8px" }}>
+        <div className="rounded-[14px] p-5 bg-brand-paper border-[1.5px] border-brand-light-cream">
+          <h3 className="mb-4 text-sm font-bold flex items-center gap-2 text-brand-dark">
             <Target size={16} color={C.accent} /> Objetivos Activos
           </h3>
           {objectives.filter(o => o.type !== "yearly").slice(0, 4).map(obj => (
-            <div key={obj.id} style={{ marginBottom: "14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "5px" }}>
-                <span style={{ fontSize: "12px", color: C.dark, fontWeight: "600", display: "flex", alignItems: "center", gap: "5px" }}>
+            <div key={obj.id} className="mb-3.5">
+              <div className="flex justify-between mb-[5px]">
+                <span className="text-xs font-semibold flex items-center gap-[5px] text-brand-dark">
                   <span>{obj.emoji}</span> {obj.title.slice(0, 28)}{obj.title.length > 28 ? "…" : ""}
                 </span>
-                <span style={{ fontSize: "12px", fontWeight: "700", color: obj.color }}>{obj.progress}%</span>
+                <span className="text-xs font-bold" style={{ color: obj.color }}>{obj.progress}%</span>
               </div>
-              <div style={{ height: "6px", backgroundColor: C.lightCream, borderRadius: "3px", overflow: "hidden" }}>
+              <div className="h-1.5 rounded-[3px] overflow-hidden bg-brand-light-cream">
                 <div style={{ height: "100%", width: `${obj.progress}%`, backgroundColor: obj.color, borderRadius: "3px", transition: "width 0.4s ease" }} />
               </div>
             </div>
           ))}
-          {objectives.length === 0 && <p style={{ fontSize: "13px", color: C.warm, margin: 0, textAlign: "center" }}>Sin objetivos aún</p>}
+          {objectives.length === 0 && <p className="text-[13px] m-0 text-center text-brand-warm">Sin objetivos aún</p>}
         </div>
 
         {/* At-risk alerts */}
         {atRiskObjectives.length > 0 && (
-          <div style={{ backgroundColor: C.dangerLight, border: `1.5px solid ${C.danger}40`, borderRadius: "14px", padding: "16px" }}>
-            <h3 style={{ margin: "0 0 12px 0", fontSize: "13px", fontWeight: "700", color: C.danger, display: "flex", alignItems: "center", gap: "6px" }}>
+          <div className="rounded-[14px] p-4 bg-danger-light border-[1.5px] border-[#C0544F40]">
+            <h3 className="mb-3 text-[13px] font-bold flex items-center gap-1.5 text-danger">
               <AlertTriangle size={14} /> Objetivos en Riesgo
             </h3>
             {atRiskObjectives.map(obj => (
-              <div key={obj.id} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                <span style={{ fontSize: "14px" }}>{obj.emoji}</span>
+              <div key={obj.id} className="flex items-center gap-2 mb-2">
+                <span className="text-sm">{obj.emoji}</span>
                 <div>
-                  <p style={{ margin: 0, fontSize: "12px", color: C.dark, fontWeight: "600" }}>{obj.title.slice(0, 32)}</p>
-                  <p style={{ margin: 0, fontSize: "11px", color: C.danger }}>Solo {obj.progress}% completado</p>
+                  <p className="m-0 text-xs font-semibold text-brand-dark">{obj.title.slice(0, 32)}</p>
+                  <p className="m-0 text-[11px] text-danger">Solo {obj.progress}% completado</p>
                 </div>
               </div>
             ))}
@@ -326,12 +327,12 @@ export default function DailyCommandCenter() {
 
         {/* Motivational streak */}
         {habits.some(h => h.streakCurrent >= 7) && (
-          <div style={{ background: `linear-gradient(135deg, ${C.accent}20, ${C.accentGlow}40)`, border: `1.5px solid ${C.accent}50`, borderRadius: "14px", padding: "16px", textAlign: "center" }}>
-            <span style={{ fontSize: "28px" }}>🔥</span>
-            <p style={{ margin: "8px 0 4px", fontSize: "13px", fontWeight: "700", color: C.dark }}>
+          <div className="rounded-[14px] p-4 text-center bg-[linear-gradient(135deg,#B8860B20,#F0D78C40)] border-[1.5px] border-[#B8860B50]">
+            <span className="text-[28px]">🔥</span>
+            <p className="mb-1 mt-2 text-[13px] font-bold text-brand-dark">
               {Math.max(...habits.map(h => h.streakCurrent))} días de racha
             </p>
-            <p style={{ margin: 0, fontSize: "11px", color: C.warm }}>
+            <p className="m-0 text-[11px] text-brand-warm">
               {habits.find(h => h.streakCurrent === Math.max(...habits.map(h2 => h2.streakCurrent)))?.name}
             </p>
           </div>

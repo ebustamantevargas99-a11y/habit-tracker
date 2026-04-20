@@ -1,39 +1,42 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { parseJson, foodCreateSchema } from "@/lib/validation";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const foods = await prisma.foodItem.findMany({
-    where: { userId: session.user.id },
-    orderBy: { name: "asc" },
+  return withAuth(async (userId) => {
+    const foods = await prisma.foodItem.findMany({
+      where: { userId },
+      orderBy: { name: "asc" },
+      take: 500,
+    });
+    return NextResponse.json(foods);
   });
-  return NextResponse.json(foods);
 }
 
-export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+export async function POST(req: NextRequest) {
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, foodCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const food = await prisma.foodItem.create({
-    data: {
-      userId: session.user.id,
-      name: body.name,
-      brand: body.brand ?? null,
-      servingSize: body.servingSize ?? 100,
-      servingUnit: body.servingUnit ?? "g",
-      calories: body.calories,
-      protein: body.protein ?? 0,
-      carbs: body.carbs ?? 0,
-      fat: body.fat ?? 0,
-      fiber: body.fiber ?? 0,
-      sugar: body.sugar ?? 0,
-      sodium: body.sodium ?? 0,
-      isCustom: true,
-    },
+    const d = parsed.data;
+    const food = await prisma.foodItem.create({
+      data: {
+        userId,
+        name: d.name,
+        brand: d.brand ?? null,
+        servingSize: d.servingSize ?? 100,
+        servingUnit: d.servingUnit ?? "g",
+        calories: d.calories,
+        protein: d.protein ?? 0,
+        carbs: d.carbs ?? 0,
+        fat: d.fat ?? 0,
+        fiber: d.fiber ?? 0,
+        sugar: d.sugar ?? 0,
+        sodium: d.sodium ?? 0,
+        isCustom: true,
+      },
+    });
+    return NextResponse.json(food, { status: 201 });
   });
-  return NextResponse.json(food, { status: 201 });
 }

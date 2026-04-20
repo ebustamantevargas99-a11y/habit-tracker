@@ -1,52 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, stepsCreateSchema } from "@/lib/validation";
 
 export async function GET(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const { searchParams } = new URL(req.url);
+    const days = Math.min(
+      parseInt(searchParams.get("days") ?? "7", 10) || 7,
+      730
+    );
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
 
-  const { searchParams } = new URL(req.url);
-  const days = parseInt(searchParams.get("days") ?? "7");
-  const cutoff = new Date();
-  cutoff.setDate(cutoff.getDate() - days);
+    const rows = await prisma.bodyMetric.findMany({
+      where: {
+        userId,
+        type: "steps",
+        date: { gte: cutoff.toISOString().split("T")[0] },
+      },
+      orderBy: { date: "asc" },
+      select: { date: true, value: true },
+    });
 
-  const rows = await prisma.bodyMetric.findMany({
-    where: {
-      userId: session.user.id,
-      type: "steps",
-      date: { gte: cutoff.toISOString().split("T")[0] },
-    },
-    orderBy: { date: "asc" },
-    select: { date: true, value: true },
+    return NextResponse.json(
+      rows.map((r) => ({ date: r.date, steps: Math.round(r.value) }))
+    );
   });
-
-  return NextResponse.json(rows.map((r) => ({ date: r.date, steps: Math.round(r.value) })));
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, stepsCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const { date, steps } = await req.json();
+    const metric = await prisma.bodyMetric.create({
+      data: {
+        userId,
+        date: parsed.data.date,
+        type: "steps",
+        value: parsed.data.steps,
+        unit: "steps",
+      },
+    });
 
-  if (!date || steps === undefined) {
-    return NextResponse.json({ error: "date y steps son requeridos" }, { status: 400 });
-  }
-
-  const metric = await prisma.bodyMetric.create({
-    data: {
-      userId: session.user.id,
-      date,
-      type: "steps",
-      value: parseInt(steps),
-      unit: "steps",
-    },
+    return NextResponse.json(
+      { date: metric.date, steps: Math.round(metric.value) },
+      { status: 201 }
+    );
   });
-
-  return NextResponse.json({ date: metric.date, steps: Math.round(metric.value) }, { status: 201 });
 }

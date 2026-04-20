@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/components/ui";
 import { X, TrendingUp, CheckCircle, Flame, Target, Zap } from "lucide-react";
 import {
   BarChart,
@@ -95,14 +96,6 @@ export default function WeeklySummaryModal({ onClose }: Props) {
   const circumference = 2 * Math.PI * 60;
   const strokeDashoffset = circumference - (overallPct / 100) * circumference;
 
-  const cardStyle: React.CSSProperties = {
-    backgroundColor: C.paper,
-    borderRadius: "12px",
-    padding: "20px",
-    border: `1px solid ${C.tan}`,
-    boxShadow: "0 2px 4px rgba(0,0,0,0.05)",
-  };
-
   const getBarColor = (pct: number) => {
     if (pct >= 90) return C.success;
     if (pct >= 70) return C.accent;
@@ -112,150 +105,85 @@ export default function WeeklySummaryModal({ onClose }: Props) {
 
   return (
     <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(0,0,0,0.6)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1000,
-        padding: "20px",
-      }}
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[1000] p-5"
       onClick={onClose}
     >
       <div
-        style={{
-          backgroundColor: C.warmWhite,
-          borderRadius: "16px",
-          width: "100%",
-          maxWidth: "900px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-        }}
+        className="bg-brand-warm-white rounded-2xl w-full max-w-[900px] max-h-[90vh] overflow-y-auto shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div
-          style={{
-            background: `linear-gradient(135deg, ${C.brown}, ${C.accent})`,
-            padding: "24px 30px",
-            borderRadius: "16px 16px 0 0",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
+          className="bg-gradient-to-br from-brand-brown to-accent px-[30px] py-6 rounded-t-2xl flex justify-between items-center"
         >
           <div>
-            <h2
-              style={{
-                margin: 0,
-                color: C.paper,
-                fontFamily: "Georgia, serif",
-                fontSize: "1.6rem",
-              }}
-            >
+            <h2 className="m-0 text-brand-paper font-serif text-[1.6rem]">
               Resumen Semanal
             </h2>
-            <p style={{ margin: "4px 0 0 0", color: C.accentGlow, fontSize: "0.9rem" }}>
+            <p className="mt-1 mb-0 text-[#F0D78C] text-[0.9rem]">
               30 Mar — 5 Abr, 2026
             </p>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: "rgba(255,255,255,0.2)",
-              border: "none",
-              borderRadius: "8px",
-              padding: "8px",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-            }}
+            className="bg-white/20 border-none rounded-lg p-2 cursor-pointer flex items-center"
           >
             <X size={20} color={C.paper} />
           </button>
         </div>
 
         {/* Content */}
-        <div style={{ padding: "24px 30px", display: "flex", flexDirection: "column", gap: "20px" }}>
+        <div className="px-[30px] py-6 flex flex-col gap-5">
           {/* Top Stats Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "16px" }}>
+          <div className="grid grid-cols-4 gap-4">
             {[
               {
                 icon: <CheckCircle size={22} color={C.success} />,
                 value: `${weeklyStats.totalHabitsCompleted}/${weeklyStats.totalHabits}`,
                 label: "Hábitos Completados",
-                bg: C.successLight,
+                bgClass: "bg-success-light",
               },
               {
                 icon: <Flame size={22} color={C.danger} />,
                 value: `${weeklyStats.currentStreak} días`,
                 label: "Racha Actual",
-                bg: C.dangerLight,
+                bgClass: "bg-danger-light",
               },
               {
                 icon: <Zap size={22} color={C.accent} />,
                 value: `+${weeklyStats.xpEarned} XP`,
                 label: "XP Ganados",
-                bg: C.accentGlow,
+                bgClass: "bg-accent-glow",
               },
               {
                 icon: <Target size={22} color={C.info} />,
                 value: weeklyStats.bestDay,
                 label: "Mejor Día",
-                bg: C.infoLight,
+                bgClass: "bg-info-light",
               },
             ].map((stat, i) => (
               <div
                 key={i}
-                style={{
-                  ...cardStyle,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  textAlign: "center",
-                  gap: "8px",
-                  padding: "16px",
-                }}
+                className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] flex flex-col items-center text-center gap-2 p-4"
               >
                 <div
-                  style={{
-                    width: "44px",
-                    height: "44px",
-                    borderRadius: "50%",
-                    backgroundColor: stat.bg,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                  }}
+                  className={cn("w-11 h-11 rounded-full flex items-center justify-center", stat.bgClass)}
                 >
                   {stat.icon}
                 </div>
-                <div style={{ fontSize: "1.3rem", fontWeight: "700", color: C.dark }}>
+                <div className="text-[1.3rem] font-bold text-brand-dark">
                   {stat.value}
                 </div>
-                <div style={{ fontSize: "0.75rem", color: C.warm }}>{stat.label}</div>
+                <div className="text-[0.75rem] text-brand-warm">{stat.label}</div>
               </div>
             ))}
           </div>
 
           {/* Charts Row */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+          <div className="grid grid-cols-2 gap-5">
             {/* Daily Completion Bar Chart */}
-            <div style={cardStyle}>
-              <h3
-                style={{
-                  margin: "0 0 16px 0",
-                  fontFamily: "Georgia, serif",
-                  color: C.dark,
-                  fontSize: "1rem",
-                }}
-              >
+            <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="mt-0 mb-4 font-serif text-brand-dark text-base">
                 📊 Completado por Día
               </h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -280,15 +208,8 @@ export default function WeeklySummaryModal({ onClose }: Props) {
             </div>
 
             {/* Radar Chart - Area Scores */}
-            <div style={cardStyle}>
-              <h3
-                style={{
-                  margin: "0 0 16px 0",
-                  fontFamily: "Georgia, serif",
-                  color: C.dark,
-                  fontSize: "1rem",
-                }}
-              >
+            <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="mt-0 mb-4 font-serif text-brand-dark text-base">
                 🎯 Puntuación por Área
               </h3>
               <ResponsiveContainer width="100%" height={200}>
@@ -309,10 +230,10 @@ export default function WeeklySummaryModal({ onClose }: Props) {
           </div>
 
           {/* Middle Row: Progress Ring + Top Habits */}
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: "20px" }}>
+          <div className="grid gap-5 [grid-template-columns:1fr_2fr]">
             {/* Overall Progress Ring */}
-            <div style={{ ...cardStyle, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-              <svg width="150" height="150" style={{ transform: "rotate(-90deg)" }}>
+            <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5 flex flex-col items-center justify-center">
+              <svg width="150" height="150" className="-rotate-90">
                 <circle cx="75" cy="75" r="60" fill="none" stroke={C.lightCream} strokeWidth="10" />
                 <circle
                   cx="75"
@@ -324,74 +245,49 @@ export default function WeeklySummaryModal({ onClose }: Props) {
                   strokeDasharray={circumference}
                   strokeDashoffset={strokeDashoffset}
                   strokeLinecap="round"
-                  style={{ transition: "stroke-dashoffset 0.5s ease" }}
+                  className="[transition:stroke-dashoffset_0.5s_ease]"
                 />
               </svg>
-              <div style={{ textAlign: "center", marginTop: "12px" }}>
-                <div style={{ fontSize: "2rem", fontWeight: "700", color: C.accent }}>
+              <div className="text-center mt-3">
+                <div className="text-[2rem] font-bold text-accent">
                   {overallPct}%
                 </div>
-                <div style={{ fontSize: "0.85rem", color: C.warm }}>Cumplimiento Semanal</div>
+                <div className="text-[0.85rem] text-brand-warm">Cumplimiento Semanal</div>
               </div>
             </div>
 
             {/* Top Habits */}
-            <div style={cardStyle}>
-              <h3
-                style={{
-                  margin: "0 0 16px 0",
-                  fontFamily: "Georgia, serif",
-                  color: C.dark,
-                  fontSize: "1rem",
-                }}
-              >
+            <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5">
+              <h3 className="mt-0 mb-4 font-serif text-brand-dark text-base">
                 🏆 Top Hábitos de la Semana
               </h3>
-              <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              <div className="flex flex-col gap-[10px]">
                 {topHabits.map((h, i) => (
                   <div
                     key={i}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "12px",
-                      padding: "10px 14px",
-                      backgroundColor: i === 0 ? C.accentGlow : C.lightCream,
-                      borderRadius: "8px",
-                      border: i === 0 ? `1px solid ${C.accent}` : `1px solid transparent`,
-                    }}
+                    className={cn(
+                      "flex items-center gap-3 px-[14px] py-[10px] rounded-lg border",
+                      i === 0 ? "bg-accent-glow border-accent" : "bg-brand-light-cream border-transparent"
+                    )}
                   >
-                    <span style={{ fontSize: "1.3rem" }}>{h.icon}</span>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "600", color: C.dark, fontSize: "0.9rem" }}>
+                    <span className="text-[1.3rem]">{h.icon}</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-brand-dark text-[0.9rem]">
                         {h.name}
                       </div>
-                      <div style={{ fontSize: "0.75rem", color: C.warm }}>
+                      <div className="text-[0.75rem] text-brand-warm">
                         Racha: {h.streak} días
                       </div>
                     </div>
-                    <div style={{ display: "flex", gap: "3px" }}>
+                    <div className="flex gap-[3px]">
                       {weekDays.map((_, di) => (
                         <div
                           key={di}
-                          style={{
-                            width: "16px",
-                            height: "16px",
-                            borderRadius: "4px",
-                            backgroundColor: di < h.completions ? C.success : C.lightTan,
-                          }}
+                          className={cn("w-4 h-4 rounded-[4px]", di < h.completions ? "bg-success" : "bg-brand-light-tan")}
                         />
                       ))}
                     </div>
-                    <div
-                      style={{
-                        fontSize: "0.85rem",
-                        fontWeight: "700",
-                        color: C.accent,
-                        minWidth: "30px",
-                        textAlign: "right",
-                      }}
-                    >
+                    <div className="text-[0.85rem] font-bold text-accent min-w-[30px] text-right">
                       {h.completions}/7
                     </div>
                   </div>
@@ -401,65 +297,46 @@ export default function WeeklySummaryModal({ onClose }: Props) {
           </div>
 
           {/* Weekly Insights */}
-          <div style={cardStyle}>
-            <h3
-              style={{
-                margin: "0 0 16px 0",
-                fontFamily: "Georgia, serif",
-                color: C.dark,
-                fontSize: "1rem",
-              }}
-            >
+          <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5">
+            <h3 className="mt-0 mb-4 font-serif text-brand-dark text-base">
               💡 Insights de la Semana
             </h3>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+            <div className="grid grid-cols-3 gap-3">
               {[
                 {
                   emoji: "😊",
                   title: "Estado de Ánimo",
                   value: `${weeklyStats.avgMood}/10`,
                   detail: "Promedio semanal",
-                  color: C.success,
+                  colorClass: "text-success",
                 },
                 {
                   emoji: "🏋️",
                   title: "Entrenamientos",
                   value: `${weeklyStats.workoutsCompleted}/5`,
                   detail: "Meta semanal alcanzada",
-                  color: C.info,
+                  colorClass: "text-info",
                 },
                 {
                   emoji: "🍽️",
                   title: "Nutrición",
                   value: `${weeklyStats.caloriesTracked}/7`,
                   detail: "Días registrados",
-                  color: C.warning,
+                  colorClass: "text-warning",
                 },
               ].map((insight, i) => (
                 <div
                   key={i}
-                  style={{
-                    padding: "16px",
-                    backgroundColor: C.lightCream,
-                    borderRadius: "10px",
-                    textAlign: "center",
-                  }}
+                  className="p-4 bg-brand-light-cream rounded-[10px] text-center"
                 >
-                  <span style={{ fontSize: "1.5rem" }}>{insight.emoji}</span>
-                  <div
-                    style={{
-                      fontSize: "0.8rem",
-                      color: C.warm,
-                      margin: "6px 0 4px 0",
-                      fontWeight: "600",
-                    }}
-                  >
+                  <span className="text-[1.5rem]">{insight.emoji}</span>
+                  <div className="text-[0.8rem] text-brand-warm mt-1.5 mb-1 font-semibold">
                     {insight.title}
                   </div>
-                  <div style={{ fontSize: "1.4rem", fontWeight: "700", color: insight.color }}>
+                  <div className={cn("text-[1.4rem] font-bold", insight.colorClass)}>
                     {insight.value}
                   </div>
-                  <div style={{ fontSize: "0.7rem", color: C.medium, marginTop: "4px" }}>
+                  <div className="text-[0.7rem] text-brand-medium mt-1">
                     {insight.detail}
                   </div>
                 </div>
@@ -468,26 +345,11 @@ export default function WeeklySummaryModal({ onClose }: Props) {
           </div>
 
           {/* Motivational Footer */}
-          <div
-            style={{
-              background: `linear-gradient(135deg, ${C.accentGlow}, ${C.cream})`,
-              borderRadius: "12px",
-              padding: "20px",
-              textAlign: "center",
-            }}
-          >
-            <p
-              style={{
-                fontSize: "1.1rem",
-                fontFamily: "Georgia, serif",
-                color: C.dark,
-                fontStyle: "italic",
-                margin: "0 0 8px 0",
-              }}
-            >
+          <div className="bg-gradient-to-br from-[#F0D78C] to-brand-cream rounded-xl p-5 text-center">
+            <p className="text-[1.1rem] font-serif text-brand-dark italic mb-2 mt-0">
               &ldquo;La consistencia es más importante que la perfección.&rdquo;
             </p>
-            <p style={{ fontSize: "0.85rem", color: C.warm, margin: 0 }}>
+            <p className="text-[0.85rem] text-brand-warm m-0">
               Completaste el {overallPct}% de tus hábitos esta semana. ¡Sigue así!
             </p>
           </div>

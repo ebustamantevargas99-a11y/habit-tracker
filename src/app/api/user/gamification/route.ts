@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 
 // Static badge definitions — the source of truth for badge metadata
@@ -17,20 +17,17 @@ const BADGE_DEFINITIONS = [
 ];
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   // Upsert gamification record so it always exists
   const gamification = await prisma.gamification.upsert({
-    where: { userId: session.user.id },
-    create: { userId: session.user.id, totalXP: 0 },
+    where: { userId: userId },
+    create: { userId: userId, totalXP: 0 },
     update: {},
   });
 
   const earnedBadges = await prisma.userBadge.findMany({
-    where: { userId: session.user.id },
+    where: { userId: userId },
   });
   const earnedMap = new Map(earnedBadges.map((b) => [b.badgeId, b.earnedDate.toISOString().split("T")[0]]));
 
@@ -46,24 +43,23 @@ export async function GET() {
     streakInsuranceDays: gamification.streakInsuranceDays,
     badges,
   });
+});
 }
 
 export async function PATCH(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
 
   const body = await req.json();
   const { streakInsuranceDays } = body;
 
   if (streakInsuranceDays !== undefined) {
     await prisma.gamification.upsert({
-      where: { userId: session.user.id },
-      create: { userId: session.user.id, totalXP: 0, streakInsuranceDays },
+      where: { userId: userId },
+      create: { userId: userId, totalXP: 0, streakInsuranceDays },
       update: { streakInsuranceDays },
     });
   }
 
   return NextResponse.json({ ok: true });
+});
 }

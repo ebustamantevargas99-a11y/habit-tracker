@@ -22,6 +22,7 @@ interface PlannerState {
   plans: Record<string, DailyPlanAPI>; // keyed by date string
   isSaving: boolean;
   error: string | null;
+  clearError: () => void;
 
   loadPlan: (date: string) => Promise<DailyPlanAPI>;
   savePlan: (plan: DailyPlanAPI) => Promise<void>;
@@ -38,6 +39,7 @@ export const usePlannerStore = create<PlannerState>((set, get) => ({
   plans: {},
   isSaving: false,
   error: null,
+  clearError: () => set({ error: null }),
 
   loadPlan: async (date) => {
     const cached = get().plans[date];

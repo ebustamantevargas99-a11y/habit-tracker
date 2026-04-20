@@ -1,0 +1,29 @@
+{
+  "extends": ["next/core-web-vitals"],
+  "rules": {
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    "react/no-unescaped-entities": "off",
+    "no-restricted-syntax": [
+      "error",
+      {
+        "selector": "CallExpression[callee.property.name='$queryRawUnsafe']",
+        "message": "Nunca uses $queryRawUnsafe. Usa $queryRaw con template literals para parametrización segura."
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/lib/logger.ts"],
+      "rules": { "no-console": "off" }
+    }
+  ],
+  "ignorePatterns": [
+    ".next",
+    "node_modules",
+    "coverage",
+    "prisma/migrations",
+    "e2e",
+    "playwright-report",
+    "test-results"
+  ]
+}

@@ -11,6 +11,7 @@ import {
 import { colors } from "@/lib/colors";
 import { useNutritionStore, MealLog, FoodItem } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
+import { cn, ErrorBanner } from "@/components/ui";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -21,13 +22,15 @@ const MEAL_LABELS: Record<string, string> = {
   snack: "Snack",
 };
 
-const MEAL_COLORS: Record<string, string> = {
-  breakfast: colors.accentLight,
-  lunch: colors.success,
-  dinner: colors.medium,
-  snack: colors.info,
+// Static known colors → Tailwind border-l classes
+const MEAL_BORDER: Record<string, string> = {
+  breakfast: "border-l-accent-light",
+  lunch:     "border-l-success",
+  dinner:    "border-l-brand-medium",
+  snack:     "border-l-info",
 };
 
+// Used for recharts/icon color props (not inline styles)
 const MACRO_COLORS = [colors.success, colors.accentLight, colors.medium];
 
 function todayStr() {
@@ -39,10 +42,12 @@ function macroRing(protein: number, carbs: number, fat: number) {
   if (total === 0) return [];
   return [
     { name: "Proteína", value: protein * 4, pct: Math.round((protein * 4 / total) * 100) },
-    { name: "Carbs", value: carbs * 4, pct: Math.round((carbs * 4 / total) * 100) },
-    { name: "Grasa", value: fat * 9, pct: Math.round((fat * 9 / total) * 100) },
+    { name: "Carbs",    value: carbs * 4,   pct: Math.round((carbs * 4 / total) * 100) },
+    { name: "Grasa",    value: fat * 9,     pct: Math.round((fat * 9 / total) * 100) },
   ];
 }
+
+const INP = "w-full px-2 py-2 border border-brand-light-tan rounded-md text-sm text-brand-dark box-border";
 
 // ─── Tab Components ───────────────────────────────────────────────────────────
 
@@ -53,7 +58,7 @@ function DiaryTab() {
   } = useNutritionStore();
 
   const [expandedMeal, setExpandedMeal] = useState<string | null>(null);
-  const [showAddFood, setShowAddFood] = useState<string | null>(null); // mealId
+  const [showAddFood, setShowAddFood] = useState<string | null>(null);
   const [searchFood, setSearchFood] = useState("");
   const [selectedFood, setSelectedFood] = useState<FoodItem | null>(null);
   const [quantity, setQuantity] = useState("100");
@@ -83,61 +88,54 @@ function DiaryTab() {
   const macros = macroRing(totals.protein, totals.carbs, totals.fat);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div className="flex flex-col gap-6">
       {/* Date Picker + Summary */}
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", alignItems: "flex-start" }}>
+      <div className="flex gap-4 flex-wrap items-start">
         {/* Date */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-          <label style={{ fontSize: "0.75rem", color: colors.medium }}>Fecha</label>
+        <div className="flex flex-col gap-1">
+          <label className="text-xs text-brand-medium">Fecha</label>
           <input
             type="date"
             value={selectedDate}
             onChange={(e) => setDate(e.target.value)}
-            style={{
-              padding: "0.5rem 0.75rem", border: `1px solid ${colors.lightTan}`,
-              borderRadius: "6px", backgroundColor: colors.paper, color: colors.dark,
-              fontSize: "0.875rem",
-            }}
+            className="px-3 py-2 border border-brand-light-tan rounded-md bg-brand-paper text-brand-dark text-sm"
           />
         </div>
 
         {/* Calorie ring summary */}
-        <div
-          style={{
-            flex: 1, minWidth: "280px",
-            backgroundColor: colors.warmWhite, borderRadius: "12px",
-            padding: "1rem", border: `1px solid ${colors.cream}`,
-            display: "flex", gap: "1.5rem", alignItems: "center",
-          }}
-        >
-          <div style={{ width: 80, height: 80 }}>
+        <div className="flex-1 min-w-[280px] bg-brand-warm-white rounded-xl p-4 border border-brand-cream flex gap-6 items-center">
+          <div className="w-20 h-20 shrink-0">
             <PieChart width={80} height={80}>
-              <Pie data={macros.length ? macros : [{ name: "Vacío", value: 1 }]}
-                cx={35} cy={35} innerRadius={25} outerRadius={38} dataKey="value" startAngle={90} endAngle={-270}>
+              <Pie
+                data={macros.length ? macros : [{ name: "Vacío", value: 1 }]}
+                cx={35} cy={35} innerRadius={25} outerRadius={38}
+                dataKey="value" startAngle={90} endAngle={-270}
+              >
                 {macros.length
                   ? macros.map((_, i) => <Cell key={i} fill={MACRO_COLORS[i]} />)
                   : [<Cell key={0} fill={colors.cream} />]}
               </Pie>
             </PieChart>
           </div>
-          <div style={{ flex: 1 }}>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color: colors.dark }}>
-              {Math.round(totals.calories)} <span style={{ fontSize: "0.875rem", fontWeight: 400, color: colors.medium }}>kcal</span>
+          <div className="flex-1">
+            <div className="text-[1.5rem] font-bold text-brand-dark">
+              {Math.round(totals.calories)}{" "}
+              <span className="text-sm font-normal text-brand-medium">kcal</span>
             </div>
             {goal && (
-              <div style={{ fontSize: "0.75rem", color: colors.medium, marginBottom: "0.5rem" }}>
+              <div className="text-xs text-brand-medium mb-2">
                 Meta: {goal.calories} kcal ({Math.round((totals.calories / goal.calories) * 100)}%)
               </div>
             )}
-            <div style={{ display: "flex", gap: "1rem" }}>
+            <div className="flex gap-4">
               {[
-                { label: "P", value: totals.protein, color: colors.success },
-                { label: "C", value: totals.carbs, color: colors.accentLight },
-                { label: "G", value: totals.fat, color: colors.medium },
-              ].map(({ label, value, color }) => (
-                <div key={label} style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: "0.75rem", color }}>{label}</div>
-                  <div style={{ fontSize: "0.875rem", fontWeight: 600, color: colors.dark }}>{Math.round(value)}g</div>
+                { label: "P", value: totals.protein, cls: "text-success" },
+                { label: "C", value: totals.carbs,   cls: "text-accent-light" },
+                { label: "G", value: totals.fat,     cls: "text-brand-medium" },
+              ].map(({ label, value, cls }) => (
+                <div key={label} className="text-center">
+                  <div className={cn("text-xs", cls)}>{label}</div>
+                  <div className="text-sm font-semibold text-brand-dark">{Math.round(value)}g</div>
                 </div>
               ))}
             </div>
@@ -153,39 +151,31 @@ function DiaryTab() {
         return (
           <div
             key={mealType}
-            style={{
-              backgroundColor: colors.warmWhite, borderRadius: "12px",
-              border: `1px solid ${colors.cream}`, overflow: "hidden",
-            }}
+            className="bg-brand-warm-white rounded-xl border border-brand-cream overflow-hidden"
           >
             {/* Header */}
             <div
-              style={{
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                padding: "0.875rem 1.25rem",
-                borderLeft: `4px solid ${MEAL_COLORS[mealType]}`,
-                cursor: meal ? "pointer" : "default",
-              }}
+              className={cn(
+                "flex items-center justify-between px-5 py-[14px] border-l-4",
+                MEAL_BORDER[mealType],
+                meal ? "cursor-pointer" : "cursor-default"
+              )}
               onClick={() => meal && setExpandedMeal(expandedMeal === meal.id ? null : meal.id)}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                <span style={{ fontWeight: 600, color: colors.dark }}>{MEAL_LABELS[mealType]}</span>
+              <div className="flex items-center gap-3">
+                <span className="font-semibold text-brand-dark">{MEAL_LABELS[mealType]}</span>
                 {meal && (
-                  <span style={{ fontSize: "0.75rem", color: colors.medium, backgroundColor: colors.cream, padding: "0.125rem 0.5rem", borderRadius: "4px" }}>
+                  <span className="text-xs text-brand-medium bg-brand-cream px-2 py-[2px] rounded-[4px]">
                     {Math.round(mealCalories)} kcal
                   </span>
                 )}
               </div>
-              <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+              <div className="flex gap-2 items-center">
                 {!meal ? (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleAddMeal(mealType); }}
                     disabled={addingMeal === mealType}
-                    style={{
-                      display: "flex", alignItems: "center", gap: "0.375rem",
-                      padding: "0.375rem 0.75rem", backgroundColor: colors.accent, color: "#fff",
-                      border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem",
-                    }}
+                    className="flex items-center gap-[6px] px-3 py-[6px] bg-accent text-white border-none rounded-md cursor-pointer text-[0.8rem]"
                   >
                     <Plus size={14} /> Agregar
                   </button>
@@ -193,21 +183,20 @@ function DiaryTab() {
                   <>
                     <button
                       onClick={(e) => { e.stopPropagation(); setShowAddFood(meal.id); }}
-                      style={{
-                        display: "flex", alignItems: "center", gap: "0.375rem",
-                        padding: "0.375rem 0.75rem", backgroundColor: colors.accent, color: "#fff",
-                        border: "none", borderRadius: "6px", cursor: "pointer", fontSize: "0.8rem",
-                      }}
+                      className="flex items-center gap-[6px] px-3 py-[6px] bg-accent text-white border-none rounded-md cursor-pointer text-[0.8rem]"
                     >
                       <Plus size={14} /> Alimento
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); deleteMeal(meal.id); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.375rem" }}
+                      className="bg-transparent border-none cursor-pointer text-danger p-[6px]"
                     >
                       <Trash2 size={16} />
                     </button>
-                    {expandedMeal === meal.id ? <ChevronUp size={16} color={colors.medium} /> : <ChevronDown size={16} color={colors.medium} />}
+                    {expandedMeal === meal.id
+                      ? <ChevronUp size={16} color={colors.medium} />
+                      : <ChevronDown size={16} color={colors.medium} />
+                    }
                   </>
                 )}
               </div>
@@ -215,30 +204,25 @@ function DiaryTab() {
 
             {/* Items */}
             {meal && expandedMeal === meal.id && (
-              <div style={{ borderTop: `1px solid ${colors.cream}`, padding: "0.5rem 1.25rem" }}>
+              <div className="border-t border-brand-cream px-5 py-2">
                 {meal.items.length === 0 ? (
-                  <p style={{ fontSize: "0.8rem", color: colors.medium, textAlign: "center", padding: "0.75rem 0" }}>
+                  <p className="text-[0.8rem] text-brand-medium text-center py-3">
                     Sin alimentos. Agrega uno con el botón de arriba.
                   </p>
                 ) : (
                   meal.items.map((item) => (
-                    <div key={item.id} style={{
-                      display: "flex", alignItems: "center", justifyContent: "space-between",
-                      padding: "0.5rem 0", borderBottom: `1px solid ${colors.lightCream}`,
-                    }}>
+                    <div key={item.id} className="flex items-center justify-between py-2 border-b border-brand-light-cream">
                       <div>
-                        <span style={{ fontSize: "0.875rem", color: colors.dark }}>{item.foodItem.name}</span>
-                        <span style={{ fontSize: "0.75rem", color: colors.medium, marginLeft: "0.5rem" }}>
-                          {item.quantity}g
-                        </span>
+                        <span className="text-sm text-brand-dark">{item.foodItem.name}</span>
+                        <span className="text-xs text-brand-medium ml-2">{item.quantity}g</span>
                       </div>
-                      <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                        <span style={{ fontSize: "0.75rem", color: colors.medium }}>
+                      <div className="flex gap-3 items-center">
+                        <span className="text-xs text-brand-medium">
                           {Math.round(item.calories)} kcal · {Math.round(item.protein)}P · {Math.round(item.carbs)}C · {Math.round(item.fat)}G
                         </span>
                         <button
                           onClick={() => removeItemFromMeal(item.id, meal.id)}
-                          style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.25rem" }}
+                          className="bg-transparent border-none cursor-pointer text-danger p-1"
                         >
                           <X size={14} />
                         </button>
@@ -254,55 +238,45 @@ function DiaryTab() {
 
       {/* Add Food Modal */}
       {showAddFood && (
-        <div style={{
-          position: "fixed", inset: 0, backgroundColor: "rgba(0,0,0,0.5)", display: "flex",
-          alignItems: "center", justifyContent: "center", zIndex: 1000,
-        }}>
-          <div style={{
-            backgroundColor: colors.paper, borderRadius: "16px", padding: "1.5rem",
-            width: "min(480px, 90vw)", maxHeight: "80vh", display: "flex", flexDirection: "column", gap: "1rem",
-          }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h3 style={{ margin: 0, color: colors.dark }}>Agregar alimento</h3>
-              <button onClick={() => setShowAddFood(null)} style={{ background: "none", border: "none", cursor: "pointer" }}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[1000]">
+          <div className="bg-brand-paper rounded-[16px] p-6 w-[min(480px,90vw)] max-h-[80vh] flex flex-col gap-4">
+            <div className="flex justify-between items-center">
+              <h3 className="m-0 text-brand-dark">Agregar alimento</h3>
+              <button onClick={() => setShowAddFood(null)} className="bg-transparent border-none cursor-pointer">
                 <X size={20} color={colors.medium} />
               </button>
             </div>
 
-            <div style={{ position: "relative" }}>
-              <Search size={16} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: colors.medium }} />
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium" />
               <input
                 value={searchFood}
                 onChange={(e) => setSearchFood(e.target.value)}
                 placeholder="Buscar alimento..."
-                style={{
-                  width: "100%", padding: "0.5rem 0.5rem 0.5rem 2.25rem",
-                  border: `1px solid ${colors.lightTan}`, borderRadius: "8px",
-                  fontSize: "0.875rem", color: colors.dark, backgroundColor: colors.warmWhite,
-                  boxSizing: "border-box",
-                }}
+                className="w-full py-2 pr-2 pl-9 border border-brand-light-tan rounded-lg text-sm text-brand-dark bg-brand-warm-white box-border"
               />
             </div>
 
             {/* Food list */}
-            <div style={{ flex: 1, overflowY: "auto", maxHeight: "250px", display: "flex", flexDirection: "column", gap: "0.25rem" }}>
+            <div className="flex-1 overflow-y-auto max-h-[250px] flex flex-col gap-1">
               {filteredFoods.length === 0 ? (
-                <p style={{ fontSize: "0.8rem", color: colors.medium, textAlign: "center", padding: "1rem" }}>
-                  No hay alimentos. Agrégalos en la pestaña "Mis Alimentos".
+                <p className="text-[0.8rem] text-brand-medium text-center p-4">
+                  No hay alimentos. Agrégalos en la pestaña &ldquo;Mis Alimentos&rdquo;.
                 </p>
               ) : (
                 filteredFoods.map((food) => (
                   <div
                     key={food.id}
                     onClick={() => setSelectedFood(food)}
-                    style={{
-                      padding: "0.625rem 0.75rem", borderRadius: "8px", cursor: "pointer",
-                      backgroundColor: selectedFood?.id === food.id ? colors.accentGlow : "transparent",
-                      border: `1px solid ${selectedFood?.id === food.id ? colors.accent : "transparent"}`,
-                    }}
+                    className={cn(
+                      "px-3 py-[10px] rounded-lg cursor-pointer border",
+                      selectedFood?.id === food.id
+                        ? "bg-accent-glow border-accent"
+                        : "border-transparent"
+                    )}
                   >
-                    <div style={{ fontWeight: 500, fontSize: "0.875rem", color: colors.dark }}>{food.name}</div>
-                    <div style={{ fontSize: "0.75rem", color: colors.medium }}>
+                    <div className="font-medium text-sm text-brand-dark">{food.name}</div>
+                    <div className="text-xs text-brand-medium">
                       {food.calories} kcal / {food.servingSize}{food.servingUnit} · {food.protein}P {food.carbs}C {food.fat}G
                     </div>
                   </div>
@@ -311,34 +285,31 @@ function DiaryTab() {
             </div>
 
             {selectedFood && (
-              <div style={{ display: "flex", gap: "0.75rem", alignItems: "center" }}>
-                <label style={{ fontSize: "0.8rem", color: colors.medium, whiteSpace: "nowrap" }}>Cantidad (g):</label>
+              <div className="flex gap-3 items-center">
+                <label className="text-[0.8rem] text-brand-medium whitespace-nowrap">Cantidad (g):</label>
                 <input
                   type="number"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  style={{
-                    flex: 1, padding: "0.5rem", border: `1px solid ${colors.lightTan}`,
-                    borderRadius: "6px", fontSize: "0.875rem", color: colors.dark,
-                  }}
+                  className="flex-1 px-2 py-2 border border-brand-light-tan rounded-md text-sm text-brand-dark"
                 />
               </div>
             )}
 
-            <div style={{ display: "flex", gap: "0.75rem", justifyContent: "flex-end" }}>
+            <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setShowAddFood(null)}
-                style={{ padding: "0.5rem 1rem", border: `1px solid ${colors.lightTan}`, borderRadius: "8px", background: "none", cursor: "pointer", color: colors.medium }}
+                className="px-4 py-2 border border-brand-light-tan rounded-lg bg-transparent cursor-pointer text-brand-medium"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleAddItem}
                 disabled={!selectedFood}
-                style={{
-                  padding: "0.5rem 1.25rem", backgroundColor: selectedFood ? colors.accent : colors.lightTan,
-                  color: "#fff", border: "none", borderRadius: "8px", cursor: selectedFood ? "pointer" : "default",
-                }}
+                className={cn(
+                  "px-5 py-2 text-white border-none rounded-lg",
+                  selectedFood ? "bg-accent cursor-pointer" : "bg-brand-light-tan cursor-default"
+                )}
               >
                 Agregar
               </button>
@@ -374,26 +345,31 @@ function SummaryTab() {
 
   const avgs = weeklyData?.averages;
 
+  const AVG_CARDS = [
+    { label: "Calorías promedio", value: Math.round(avgs?.calories ?? 0), unit: "kcal",  textCls: "text-accent",        bgCls: "bg-accent",        goal: goals?.calories },
+    { label: "Proteína promedio", value: Math.round(avgs?.protein ?? 0),  unit: "g/día", textCls: "text-success",       bgCls: "bg-success",       goal: goals?.protein  },
+    { label: "Carbs promedio",    value: Math.round(avgs?.carbs ?? 0),    unit: "g/día", textCls: "text-accent-light",  bgCls: "bg-accent-light",  goal: goals?.carbs    },
+    { label: "Grasa promedio",    value: Math.round(avgs?.fat ?? 0),      unit: "g/día", textCls: "text-brand-medium",  bgCls: "bg-brand-medium",  goal: goals?.fat      },
+  ];
+
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div className="flex flex-col gap-6">
       {/* Average cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))", gap: "1rem" }}>
-        {[
-          { label: "Calorías promedio", value: Math.round(avgs?.calories ?? 0), unit: "kcal", color: colors.accent, goal: goals?.calories },
-          { label: "Proteína promedio", value: Math.round(avgs?.protein ?? 0), unit: "g/día", color: colors.success, goal: goals?.protein },
-          { label: "Carbs promedio", value: Math.round(avgs?.carbs ?? 0), unit: "g/día", color: colors.accentLight, goal: goals?.carbs },
-          { label: "Grasa promedio", value: Math.round(avgs?.fat ?? 0), unit: "g/día", color: colors.medium, goal: goals?.fat },
-        ].map(({ label, value, unit, color, goal: g }) => (
-          <div key={label} style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1rem", border: `1px solid ${colors.cream}` }}>
-            <div style={{ fontSize: "0.75rem", color: colors.medium, marginBottom: "0.5rem" }}>{label}</div>
-            <div style={{ fontSize: "1.5rem", fontWeight: 700, color }}>{value}</div>
-            <div style={{ fontSize: "0.75rem", color: colors.medium }}>{unit}</div>
+      <div className="grid [grid-template-columns:repeat(auto-fit,minmax(140px,1fr))] gap-4">
+        {AVG_CARDS.map(({ label, value, unit, textCls, bgCls, goal: g }) => (
+          <div key={label} className="bg-brand-warm-white rounded-xl p-4 border border-brand-cream">
+            <div className="text-xs text-brand-medium mb-2">{label}</div>
+            <div className={cn("text-[1.5rem] font-bold", textCls)}>{value}</div>
+            <div className="text-xs text-brand-medium">{unit}</div>
             {g && (
-              <div style={{ marginTop: "0.5rem" }}>
-                <div style={{ height: "4px", backgroundColor: colors.cream, borderRadius: "2px" }}>
-                  <div style={{ height: "4px", backgroundColor: color, borderRadius: "2px", width: `${Math.min(100, (value / g) * 100)}%` }} />
+              <div className="mt-2">
+                <div className="h-1 bg-brand-cream rounded-[2px] overflow-hidden">
+                  <div
+                    className={cn("h-full rounded-[2px]", bgCls)}
+                    style={{ width: `${Math.min(100, (value / g) * 100)}%` }}
+                  />
                 </div>
-                <div style={{ fontSize: "0.7rem", color: colors.medium, marginTop: "0.25rem" }}>{Math.round((value / g) * 100)}% meta</div>
+                <div className="text-[0.7rem] text-brand-medium mt-1">{Math.round((value / g) * 100)}% meta</div>
               </div>
             )}
           </div>
@@ -401,8 +377,8 @@ function SummaryTab() {
       </div>
 
       {/* Calorie chart */}
-      <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
-        <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", color: colors.dark }}>Calorías (7 días)</h3>
+      <div className="bg-brand-warm-white rounded-xl p-5 border border-brand-cream">
+        <h3 className="m-0 mb-4 text-base text-brand-dark">Calorías (7 días)</h3>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.cream} />
@@ -416,17 +392,17 @@ function SummaryTab() {
       </div>
 
       {/* Macro breakdown chart */}
-      <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
-        <h3 style={{ margin: "0 0 1rem", fontSize: "1rem", color: colors.dark }}>Macros (7 días)</h3>
+      <div className="bg-brand-warm-white rounded-xl p-5 border border-brand-cream">
+        <h3 className="m-0 mb-4 text-base text-brand-dark">Macros (7 días)</h3>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" stroke={colors.cream} />
             <XAxis dataKey="date" tick={{ fontSize: 12, fill: colors.medium }} />
             <YAxis tick={{ fontSize: 12, fill: colors.medium }} />
             <Tooltip contentStyle={{ backgroundColor: colors.paper, border: `1px solid ${colors.lightTan}` }} />
-            <Line type="monotone" dataKey="protein" stroke={colors.success} dot={false} name="Proteína" />
-            <Line type="monotone" dataKey="carbs" stroke={colors.accentLight} dot={false} name="Carbs" />
-            <Line type="monotone" dataKey="fat" stroke={colors.medium} dot={false} name="Grasa" />
+            <Line type="monotone" dataKey="protein" stroke={colors.success}    dot={false} name="Proteína" />
+            <Line type="monotone" dataKey="carbs"   stroke={colors.accentLight} dot={false} name="Carbs"   />
+            <Line type="monotone" dataKey="fat"     stroke={colors.medium}     dot={false} name="Grasa"   />
           </LineChart>
         </ResponsiveContainer>
       </div>
@@ -458,30 +434,21 @@ function FoodsTab() {
   };
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <div className="flex flex-col gap-4">
       {/* Controls */}
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        <div style={{ flex: 1, position: "relative" }}>
-          <Search size={16} style={{ position: "absolute", left: "0.75rem", top: "50%", transform: "translateY(-50%)", color: colors.medium }} />
+      <div className="flex gap-3">
+        <div className="flex-1 relative">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar alimentos..."
-            style={{
-              width: "100%", padding: "0.5rem 0.5rem 0.5rem 2.25rem",
-              border: `1px solid ${colors.lightTan}`, borderRadius: "8px",
-              fontSize: "0.875rem", color: colors.dark, backgroundColor: colors.warmWhite,
-              boxSizing: "border-box",
-            }}
+            className="w-full py-2 pr-2 pl-9 border border-brand-light-tan rounded-lg text-sm text-brand-dark bg-brand-warm-white box-border"
           />
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
-          style={{
-            display: "flex", alignItems: "center", gap: "0.5rem",
-            padding: "0.5rem 1rem", backgroundColor: colors.accent, color: "#fff",
-            border: "none", borderRadius: "8px", cursor: "pointer",
-          }}
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-white border-none rounded-lg cursor-pointer"
         >
           <Plus size={16} /> Nuevo alimento
         </button>
@@ -489,44 +456,41 @@ function FoodsTab() {
 
       {/* Form */}
       {showForm && (
-        <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.25rem", border: `1px solid ${colors.cream}` }}>
-          <h4 style={{ margin: "0 0 1rem", color: colors.dark }}>Nuevo alimento</h4>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "0.75rem" }}>
+        <div className="bg-brand-warm-white rounded-xl p-5 border border-brand-cream">
+          <h4 className="m-0 mb-4 text-brand-dark">Nuevo alimento</h4>
+          <div className="grid [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))] gap-3">
             {[
-              { key: "name", label: "Nombre *", type: "text" },
-              { key: "brand", label: "Marca", type: "text" },
-              { key: "servingSize", label: "Porción", type: "number" },
-              { key: "servingUnit", label: "Unidad", type: "text" },
-              { key: "calories", label: "Calorías *", type: "number" },
-              { key: "protein", label: "Proteína (g)", type: "number" },
-              { key: "carbs", label: "Carbs (g)", type: "number" },
-              { key: "fat", label: "Grasa (g)", type: "number" },
-              { key: "fiber", label: "Fibra (g)", type: "number" },
+              { key: "name",        label: "Nombre *",       type: "text"   },
+              { key: "brand",       label: "Marca",          type: "text"   },
+              { key: "servingSize", label: "Porción",        type: "number" },
+              { key: "servingUnit", label: "Unidad",         type: "text"   },
+              { key: "calories",    label: "Calorías *",     type: "number" },
+              { key: "protein",     label: "Proteína (g)",   type: "number" },
+              { key: "carbs",       label: "Carbs (g)",      type: "number" },
+              { key: "fat",         label: "Grasa (g)",      type: "number" },
+              { key: "fiber",       label: "Fibra (g)",      type: "number" },
             ].map(({ key, label, type }) => (
               <div key={key}>
-                <label style={{ fontSize: "0.75rem", color: colors.medium, display: "block", marginBottom: "0.25rem" }}>{label}</label>
+                <label className="text-xs text-brand-medium block mb-1">{label}</label>
                 <input
                   type={type}
                   value={form[key as keyof typeof form]}
                   onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  style={{
-                    width: "100%", padding: "0.5rem", border: `1px solid ${colors.lightTan}`,
-                    borderRadius: "6px", fontSize: "0.875rem", color: colors.dark, boxSizing: "border-box",
-                  }}
+                  className={INP}
                 />
               </div>
             ))}
           </div>
-          <div style={{ display: "flex", gap: "0.75rem", marginTop: "1rem", justifyContent: "flex-end" }}>
+          <div className="flex gap-3 mt-4 justify-end">
             <button
               onClick={() => setShowForm(false)}
-              style={{ padding: "0.5rem 1rem", border: `1px solid ${colors.lightTan}`, borderRadius: "8px", background: "none", cursor: "pointer", color: colors.medium }}
+              className="px-4 py-2 border border-brand-light-tan rounded-lg bg-transparent cursor-pointer text-brand-medium"
             >
               Cancelar
             </button>
             <button
               onClick={handleSubmit}
-              style={{ padding: "0.5rem 1.25rem", backgroundColor: colors.accent, color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer" }}
+              className="px-5 py-2 bg-accent text-white border-none rounded-lg cursor-pointer"
             >
               Guardar
             </button>
@@ -535,41 +499,38 @@ function FoodsTab() {
       )}
 
       {/* Food list */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "0.75rem" }}>
+      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))] gap-3">
         {filtered.length === 0 ? (
-          <div style={{ gridColumn: "1/-1", textAlign: "center", padding: "3rem", color: colors.medium }}>
-            <Apple size={40} style={{ marginBottom: "0.75rem", opacity: 0.4 }} />
-            <p>No hay alimentos. Agrega uno con el botón "Nuevo alimento".</p>
+          <div className="col-span-full text-center p-12 text-brand-medium">
+            <Apple size={40} className="mb-3 opacity-40 mx-auto" />
+            <p>No hay alimentos. Agrega uno con el botón &ldquo;Nuevo alimento&rdquo;.</p>
           </div>
         ) : (
           filtered.map((food) => (
             <div
               key={food.id}
-              style={{
-                backgroundColor: colors.warmWhite, borderRadius: "10px", padding: "1rem",
-                border: `1px solid ${colors.cream}`, display: "flex", flexDirection: "column", gap: "0.5rem",
-              }}
+              className="bg-brand-warm-white rounded-[10px] p-4 border border-brand-cream flex flex-col gap-2"
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div className="flex justify-between items-start">
                 <div>
-                  <div style={{ fontWeight: 600, color: colors.dark }}>{food.name}</div>
-                  {food.brand && <div style={{ fontSize: "0.75rem", color: colors.medium }}>{food.brand}</div>}
+                  <div className="font-semibold text-brand-dark">{food.name}</div>
+                  {food.brand && <div className="text-xs text-brand-medium">{food.brand}</div>}
                 </div>
                 <button
                   onClick={() => deleteFoodItem(food.id)}
-                  style={{ background: "none", border: "none", cursor: "pointer", color: colors.danger, padding: "0.25rem" }}
+                  className="bg-transparent border-none cursor-pointer text-danger p-1"
                 >
                   <Trash2 size={15} />
                 </button>
               </div>
-              <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.75rem" }}>
-                <span style={{ fontWeight: 700, color: colors.accent }}>{food.calories} kcal</span>
-                <span style={{ color: colors.medium }}>por {food.servingSize}{food.servingUnit}</span>
+              <div className="flex gap-3 text-xs">
+                <span className="font-bold text-accent">{food.calories} kcal</span>
+                <span className="text-brand-medium">por {food.servingSize}{food.servingUnit}</span>
               </div>
-              <div style={{ display: "flex", gap: "0.75rem", fontSize: "0.75rem", color: colors.medium }}>
-                <span style={{ color: colors.success }}>P {food.protein}g</span>
-                <span style={{ color: colors.accentLight }}>C {food.carbs}g</span>
-                <span style={{ color: colors.medium }}>G {food.fat}g</span>
+              <div className="flex gap-3 text-xs">
+                <span className="text-success">P {food.protein}g</span>
+                <span className="text-accent-light">C {food.carbs}g</span>
+                <span className="text-brand-medium">G {food.fat}g</span>
               </div>
             </div>
           ))
@@ -593,7 +554,10 @@ function GoalsTab() {
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (goals) setForm({ calories: goals.calories, protein: goals.protein, carbs: goals.carbs, fat: goals.fat, fiber: goals.fiber, waterMl: goals.waterMl, mealsPerDay: goals.mealsPerDay });
+    if (goals) setForm({
+      calories: goals.calories, protein: goals.protein, carbs: goals.carbs,
+      fat: goals.fat, fiber: goals.fiber, waterMl: goals.waterMl, mealsPerDay: goals.mealsPerDay,
+    });
   }, [goals]);
 
   const handleSave = async () => {
@@ -605,46 +569,42 @@ function GoalsTab() {
   const totalCalFromMacros = form.protein * 4 + form.carbs * 4 + form.fat * 9;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem", maxWidth: "600px" }}>
-      <div style={{ backgroundColor: colors.warmWhite, borderRadius: "12px", padding: "1.5rem", border: `1px solid ${colors.cream}` }}>
-        <h3 style={{ margin: "0 0 1.25rem", color: colors.dark }}>Metas Nutricionales</h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+    <div className="flex flex-col gap-6 max-w-[600px]">
+      <div className="bg-brand-warm-white rounded-xl p-6 border border-brand-cream">
+        <h3 className="m-0 mb-5 text-brand-dark">Metas Nutricionales</h3>
+        <div className="grid grid-cols-2 gap-4">
           {[
-            { key: "calories", label: "Calorías (kcal/día)", min: 1000, max: 5000 },
-            { key: "protein", label: "Proteína (g/día)", min: 0, max: 400 },
-            { key: "carbs", label: "Carbohidratos (g/día)", min: 0, max: 600 },
-            { key: "fat", label: "Grasas (g/día)", min: 0, max: 200 },
-            { key: "fiber", label: "Fibra (g/día)", min: 0, max: 100 },
-            { key: "waterMl", label: "Agua (ml/día)", min: 500, max: 6000 },
-            { key: "mealsPerDay", label: "Comidas/día", min: 1, max: 8 },
+            { key: "calories",    label: "Calorías (kcal/día)",    min: 1000, max: 5000 },
+            { key: "protein",     label: "Proteína (g/día)",       min: 0,    max: 400  },
+            { key: "carbs",       label: "Carbohidratos (g/día)",  min: 0,    max: 600  },
+            { key: "fat",         label: "Grasas (g/día)",         min: 0,    max: 200  },
+            { key: "fiber",       label: "Fibra (g/día)",          min: 0,    max: 100  },
+            { key: "waterMl",     label: "Agua (ml/día)",          min: 500,  max: 6000 },
+            { key: "mealsPerDay", label: "Comidas/día",            min: 1,    max: 8    },
           ].map(({ key, label, min, max }) => (
             <div key={key}>
-              <label style={{ fontSize: "0.75rem", color: colors.medium, display: "block", marginBottom: "0.25rem" }}>{label}</label>
+              <label className="text-xs text-brand-medium block mb-1">{label}</label>
               <input
                 type="number"
                 min={min}
                 max={max}
                 value={form[key as keyof typeof form]}
                 onChange={(e) => setForm((f) => ({ ...f, [key]: parseFloat(e.target.value) || 0 }))}
-                style={{
-                  width: "100%", padding: "0.5rem 0.75rem",
-                  border: `1px solid ${colors.lightTan}`, borderRadius: "8px",
-                  fontSize: "0.875rem", color: colors.dark, boxSizing: "border-box",
-                }}
+                className="w-full px-3 py-2 border border-brand-light-tan rounded-lg text-sm text-brand-dark box-border"
               />
             </div>
           ))}
         </div>
 
         {/* Macro distribution preview */}
-        <div style={{ marginTop: "1.25rem", padding: "0.875rem", backgroundColor: colors.cream, borderRadius: "8px" }}>
-          <div style={{ fontSize: "0.75rem", color: colors.medium, marginBottom: "0.5rem" }}>Distribución de calorías desde macros</div>
-          <div style={{ fontSize: "0.875rem", color: colors.dark }}>
+        <div className="mt-5 p-[14px] bg-brand-cream rounded-lg">
+          <div className="text-xs text-brand-medium mb-2">Distribución de calorías desde macros</div>
+          <div className="text-sm text-brand-dark">
             P: {Math.round((form.protein * 4 / totalCalFromMacros) * 100)}% · C: {Math.round((form.carbs * 4 / totalCalFromMacros) * 100)}% · G: {Math.round((form.fat * 9 / totalCalFromMacros) * 100)}%
             {" "}= {totalCalFromMacros} kcal totales
           </div>
           {Math.abs(totalCalFromMacros - form.calories) > 50 && (
-            <div style={{ fontSize: "0.75rem", color: colors.warning, marginTop: "0.25rem" }}>
+            <div className="text-xs text-warning mt-1">
               Los macros suman {totalCalFromMacros} kcal, diferente a tu meta de {form.calories} kcal.
             </div>
           )}
@@ -652,12 +612,10 @@ function GoalsTab() {
 
         <button
           onClick={handleSave}
-          style={{
-            marginTop: "1.25rem", padding: "0.625rem 1.5rem",
-            backgroundColor: saved ? colors.success : colors.accent,
-            color: "#fff", border: "none", borderRadius: "8px", cursor: "pointer",
-            transition: "background-color 0.3s",
-          }}
+          className={cn(
+            "mt-5 px-6 py-[10px] text-white border-none rounded-lg cursor-pointer transition-[background-color] duration-300",
+            saved ? "bg-success" : "bg-accent"
+          )}
         >
           {saved ? "¡Guardado!" : "Guardar metas"}
         </button>
@@ -669,39 +627,36 @@ function GoalsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TABS = [
-  { id: "diario", label: "Diario", icon: UtensilsCrossed },
-  { id: "resumen", label: "Resumen 7d", icon: BarChart },
-  { id: "alimentos", label: "Mis Alimentos", icon: Apple },
-  { id: "metas", label: "Metas", icon: Target },
+  { id: "diario",    label: "Diario",         icon: UtensilsCrossed },
+  { id: "resumen",   label: "Resumen 7d",     icon: BarChart        },
+  { id: "alimentos", label: "Mis Alimentos",  icon: Apple           },
+  { id: "metas",     label: "Metas",          icon: Target          },
 ] as const;
 
 export default function NutritionPage() {
   const activeTab = useAppStore((s) => s.nutritionTab);
   const setActiveTab = useAppStore((s) => s.setNutritionTab);
-  const { initialize, isLoaded } = useNutritionStore();
+  const { initialize, isLoaded, error, clearError } = useNutritionStore();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+    <div className="flex flex-col gap-6">
+      <ErrorBanner error={error} onDismiss={clearError} />
       {/* Tabs */}
-      <div style={{ display: "flex", gap: "0.5rem", borderBottom: `2px solid ${colors.cream}`, paddingBottom: "0" }}>
+      <div className="flex gap-2 border-b-2 border-brand-cream pb-0">
         {TABS.map(({ id, label, icon: Icon }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            style={{
-              display: "flex", alignItems: "center", gap: "0.5rem",
-              padding: "0.625rem 1.25rem",
-              backgroundColor: "transparent", border: "none",
-              borderBottom: activeTab === id ? `2px solid ${colors.accent}` : "2px solid transparent",
-              marginBottom: "-2px", cursor: "pointer",
-              color: activeTab === id ? colors.accent : colors.medium,
-              fontWeight: activeTab === id ? 600 : 400,
-              fontSize: "0.875rem", transition: "color 0.2s",
-            }}
+            className={cn(
+              "flex items-center gap-2 px-5 py-[10px] bg-transparent border-none border-b-2 -mb-[2px] cursor-pointer text-sm transition-colors duration-200",
+              activeTab === id
+                ? "border-b-accent text-accent font-semibold"
+                : "border-b-transparent text-brand-medium font-normal"
+            )}
           >
             <Icon size={16} /> {label}
           </button>
@@ -710,13 +665,13 @@ export default function NutritionPage() {
 
       {/* Content */}
       {!isLoaded ? (
-        <div style={{ textAlign: "center", padding: "3rem", color: colors.medium }}>Cargando datos...</div>
+        <div className="text-center p-12 text-brand-medium">Cargando datos...</div>
       ) : (
         <>
-          {activeTab === "diario" && <DiaryTab />}
-          {activeTab === "resumen" && <SummaryTab />}
+          {activeTab === "diario"    && <DiaryTab />}
+          {activeTab === "resumen"   && <SummaryTab />}
           {activeTab === "alimentos" && <FoodsTab />}
-          {activeTab === "metas" && <GoalsTab />}
+          {activeTab === "metas"     && <GoalsTab />}
         </>
       )}
     </div>

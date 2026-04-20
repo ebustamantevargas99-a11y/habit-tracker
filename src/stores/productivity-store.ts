@@ -47,6 +47,8 @@ interface ProductivityState {
   projects: Project[];
   activeProjectId: string;
   isLoaded: boolean;
+  error: string | null;
+  clearError: () => void;
 
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
@@ -154,6 +156,8 @@ export const useProductivityStore = create<ProductivityState>((set, get) => ({
   projects: [],
   activeProjectId: "",
   isLoaded: false,
+  error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;

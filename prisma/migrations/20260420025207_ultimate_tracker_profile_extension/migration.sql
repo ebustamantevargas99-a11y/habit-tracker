@@ -1,0 +1,15 @@
+-- AlterTable
+ALTER TABLE "UserProfile" ADD COLUMN     "activityLevel" TEXT,
+ADD COLUMN     "biologicalSex" TEXT,
+ADD COLUMN     "birthDate" TIMESTAMP(3),
+ADD COLUMN     "conditions" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "darkMode" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "enabledModules" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "fitnessLevel" TEXT,
+ADD COLUMN     "gender" TEXT,
+ADD COLUMN     "heightCm" DOUBLE PRECISION,
+ADD COLUMN     "interests" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "onboardingCompleted" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN     "primaryGoals" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "pronouns" TEXT,
+ADD COLUMN     "weightKg" DOUBLE PRECISION;

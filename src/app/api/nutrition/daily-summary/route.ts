@@ -1,20 +1,19 @@
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  return withAuth(async (userId) => {
 
   const { searchParams } = new URL(req.url);
   const date = searchParams.get("date") ?? new Date().toISOString().split("T")[0];
 
   const [meals, goal] = await Promise.all([
     prisma.mealLog.findMany({
-      where: { userId: session.user.id, date },
+      where: { userId: userId, date },
       include: { items: true },
     }),
-    prisma.nutritionGoal.findUnique({ where: { userId: session.user.id } }),
+    prisma.nutritionGoal.findUnique({ where: { userId: userId } }),
   ]);
 
   const totals = meals.reduce(
@@ -43,4 +42,5 @@ export async function GET(req: Request) {
         }
       : null,
   });
+});
 }

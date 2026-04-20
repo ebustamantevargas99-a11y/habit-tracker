@@ -1,31 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, projectUpdateSchema } from "@/lib/validation";
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(async (userId) => {
+    const existing = await prisma.project.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  const body = await req.json();
-  const result = await prisma.project.updateMany({
-    where: { id: params.id, userId: session.user.id },
-    data: {
-      ...(body.name !== undefined && { name: body.name.trim() }),
-      ...(body.description !== undefined && { description: body.description?.trim() ?? null }),
-      ...(body.color !== undefined && { color: body.color }),
-      ...(body.emoji !== undefined && { emoji: body.emoji }),
-      ...(body.status !== undefined && { status: body.status }),
-    },
+    const parsed = await parseJson(req, projectUpdateSchema);
+    if (!parsed.ok) return parsed.response;
+
+    const updated = await prisma.project.update({
+      where: { id: params.id },
+      data: parsed.data,
+      include: { tasks: { orderBy: { orderIndex: "asc" } } },
+    });
+    return NextResponse.json(updated);
   });
-  if (result.count === 0) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
-  const updated = await prisma.project.findUnique({ where: { id: params.id }, include: { tasks: { orderBy: { orderIndex: "asc" } } } });
-  return NextResponse.json(updated);
 }
 
-export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {
-  const session = await auth();
-  if (!session?.user?.id) return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return withAuth(async (userId) => {
+    const existing = await prisma.project.findFirst({
+      where: { id: params.id, userId },
+      select: { id: true },
+    });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-  await prisma.project.deleteMany({ where: { id: params.id, userId: session.user.id } });
-  return new NextResponse(null, { status: 204 });
+    await prisma.project.delete({ where: { id: params.id } });
+    return new NextResponse(null, { status: 204 });
+  });
 }

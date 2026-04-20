@@ -8,7 +8,7 @@ import type { PageKey } from "@/lib/constants";
 
 const VALID_PAGES: string[] = [
   "home", "plan", "productivity", "finance",
-  "fitness", "nutrition", "wellness", "settings", "organization",
+  "fitness", "nutrition", "wellness", "settings", "organization", "vision",
 ];
 
 const PLAN_TABS = ["calendar", "daily", "weekly", "monthly", "quarterly", "yearly"];
@@ -45,6 +45,7 @@ function tabForPage(
     financeTab: string;
     nutritionTab: string;
     organizationTab: string;
+    visionTab: string;
   }
 ): string | undefined {
   switch (page) {
@@ -55,6 +56,7 @@ function tabForPage(
     case "finance":       return state.financeTab;
     case "nutrition":     return state.nutritionTab;
     case "organization":  return state.organizationTab;
+    case "vision":        return state.visionTab;
     default:              return undefined;
   }
 }
@@ -70,6 +72,7 @@ export function useRouteSync() {
   const financeTab       = useAppStore((s) => s.financeTab);
   const nutritionTab     = useAppStore((s) => s.nutritionTab);
   const organizationTab  = useAppStore((s) => s.organizationTab);
+  const visionTab        = useAppStore((s) => s.visionTab);
   const setPageFromURL   = useAppStore((s) => s.setPageFromURL);
 
   /**
@@ -131,6 +134,7 @@ export function useRouteSync() {
       financeTab,
       nutritionTab,
       organizationTab,
+      visionTab,
     });
 
     const url = buildURL(activePage, tab);
@@ -139,5 +143,5 @@ export function useRouteSync() {
     if (url !== currentURL()) {
       window.history.pushState(null, "", url);
     }
-  }, [activePage, wellnessSubTab, productivitySubTab, planTab, fitnessTab, financeTab, nutritionTab, organizationTab]);
+  }, [activePage, wellnessSubTab, productivitySubTab, planTab, fitnessTab, financeTab, nutritionTab, organizationTab, visionTab]);
 }

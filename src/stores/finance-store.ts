@@ -61,6 +61,7 @@ interface FinanceState {
   isLoaded: boolean;
   isLoading: boolean;
   error: string | null;
+  clearError: () => void;
 
   // Lifecycle
   initialize: () => Promise<void>;
@@ -104,6 +105,7 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   isLoaded: false,
   isLoading: false,
   error: null,
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     if (get().isLoaded) return;

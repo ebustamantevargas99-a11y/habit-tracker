@@ -1,44 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { parseJson, billCreateSchema } from "@/lib/validation";
 
 export async function GET() {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
-
-  const bills = await prisma.bill.findMany({
-    where: { userId: session.user.id },
-    orderBy: { dueDate: "asc" },
+  return withAuth(async (userId) => {
+    const bills = await prisma.bill.findMany({
+      where: { userId },
+      orderBy: { dueDate: "asc" },
+    });
+    return NextResponse.json(bills);
   });
-
-  return NextResponse.json(bills);
 }
 
 export async function POST(req: NextRequest) {
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  return withAuth(async (userId) => {
+    const parsed = await parseJson(req, billCreateSchema);
+    if (!parsed.ok) return parsed.response;
 
-  const body = await req.json();
-  const { name, amount, dueDate, isPaid, isRecurring } = body;
-
-  if (!name || amount === undefined || !dueDate) {
-    return NextResponse.json({ error: "name, amount y dueDate son requeridos" }, { status: 400 });
-  }
-
-  const bill = await prisma.bill.create({
-    data: {
-      userId: session.user.id,
-      name,
-      amount: parseFloat(amount),
-      dueDate,
-      isPaid: isPaid ?? false,
-      isRecurring: isRecurring ?? false,
-    },
+    const bill = await prisma.bill.create({
+      data: { userId, ...parsed.data, isPaid: parsed.data.isPaid ?? false },
+    });
+    return NextResponse.json(bill, { status: 201 });
   });
-
-  return NextResponse.json(bill, { status: 201 });
 }
