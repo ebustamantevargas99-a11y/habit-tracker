@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { User, Trophy, Zap, Shield, Download, Trash2, Bell, Palette, Globe, Lock, Check, LayoutGrid, Sun } from 'lucide-react';
+import { User, Trophy, Zap, Shield, Download, Trash2, Bell, Palette, Globe, Lock, Check, LayoutGrid, Sun, ShieldCheck } from 'lucide-react';
 import { LEVELS, XP_REWARDS } from '@/lib/constants';
 import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { useGamificationStore } from '@/stores/gamification-store';
@@ -13,6 +13,7 @@ import { cn } from '@/components/ui';
 import ExportSection from './export-section';
 import ModulesTab from './modules-tab';
 import AppearanceTab from './appearance-tab';
+import SecurityTab from './security-tab';
 
 // Used for recharts/icon color props only
 const C = {
@@ -611,12 +612,13 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
 
   const tabs = [
-    { id: 'profile',       label: 'Perfil',        icon: User       },
-    { id: 'modules',       label: 'Módulos',       icon: LayoutGrid },
-    { id: 'appearance',    label: 'Apariencia',    icon: Sun        },
-    { id: 'gamification',  label: 'Gamificación',  icon: Trophy     },
-    { id: 'preferences',   label: 'Preferencias',  icon: Palette    },
-    { id: 'data',          label: 'Datos',         icon: Download   },
+    { id: 'profile',       label: 'Perfil',        icon: User        },
+    { id: 'security',      label: 'Seguridad',     icon: ShieldCheck },
+    { id: 'modules',       label: 'Módulos',       icon: LayoutGrid  },
+    { id: 'appearance',    label: 'Apariencia',    icon: Sun         },
+    { id: 'gamification',  label: 'Gamificación',  icon: Trophy      },
+    { id: 'preferences',   label: 'Preferencias',  icon: Palette     },
+    { id: 'data',          label: 'Datos',         icon: Download    },
   ];
 
   return (
@@ -649,6 +651,7 @@ export default function SettingsPage() {
       {/* Content */}
       <div>
         {activeTab === 'profile'      && <ProfileTab />}
+        {activeTab === 'security'     && <SecurityTab />}
         {activeTab === 'modules'      && <ModulesTab />}
         {activeTab === 'appearance'   && <AppearanceTab />}
         {activeTab === 'gamification' && <GamificationTab />}
