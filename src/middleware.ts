@@ -22,13 +22,13 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
+  // Let NextAuth auto-detect the secure cookie name based on the actual request
+  // protocol. Hard-coding salt against NODE_ENV can misalign with how auth()
+  // signed the cookie on /api/auth/callback/credentials.
   const token = await getToken({
     req: request,
     secret: AUTH_SECRET,
-    salt:
-      process.env.NODE_ENV === "production"
-        ? "__Secure-authjs.session-token"
-        : "authjs.session-token",
+    secureCookie: request.nextUrl.protocol === "https:",
   });
 
   if (!token) {
@@ -41,5 +41,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|icon.svg|manifest.json|apple-icon.png|.*\\..*).*)"],
+  matcher: [
+    "/((?!api|_next/static|_next/image|favicon.ico|icon.svg|manifest.json|apple-icon.png|.*\\..*).*)",
+  ],
 };
