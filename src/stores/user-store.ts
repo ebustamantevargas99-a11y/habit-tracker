@@ -100,7 +100,11 @@ export const useUserStore = create<UserState>((set, get) => ({
 
   isModuleEnabled: (key) => {
     if (CORE_MODULES.includes(key)) return true;
-    const modules = get().user?.profile?.enabledModules ?? [];
+    const state = get();
+    // Optimistic UI: mientras el perfil no se carga, mostrar todo.
+    // Previene flash de sidebar vacío después del login.
+    if (!state.isLoaded) return true;
+    const modules = state.user?.profile?.enabledModules ?? [];
     return modules.includes(key);
   },
 
