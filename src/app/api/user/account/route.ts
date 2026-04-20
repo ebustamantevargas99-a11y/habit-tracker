@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { parseJson } from "@/lib/validation";
 import { logger } from "@/lib/logger";
 import { checkRateLimit, rateLimits } from "@/lib/rate-limit";
+import { logSecurityEvent } from "@/lib/security-log";
 import { z } from "zod";
 
 const deleteAccountSchema = z.object({
@@ -24,7 +25,7 @@ export async function DELETE(req: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { passwordHash: true },
+      select: { passwordHash: true, email: true },
     });
 
     if (!user?.passwordHash) {
@@ -36,12 +37,28 @@ export async function DELETE(req: NextRequest) {
 
     const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
     if (!valid) {
+      await logSecurityEvent({
+        eventType: "suspicious_activity",
+        userId,
+        email: user.email,
+        request: req,
+        metadata: { context: "delete_account_wrong_password" },
+      });
       logger.warn("delete-account:wrong-password", { userId });
       return NextResponse.json(
         { error: "Contraseña incorrecta" },
         { status: 403 }
       );
     }
+
+    // Log ANTES del delete (cascade borra los SecurityEvent del user)
+    await logSecurityEvent({
+      eventType: "account_deleted",
+      userId: null, // ya no va a existir
+      email: user.email,
+      request: req,
+      metadata: { deletedUserId: userId },
+    });
 
     await prisma.user.delete({ where: { id: userId } });
 

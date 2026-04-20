@@ -1,12 +1,18 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { logSecurityEvent } from "@/lib/security-log";
 
 // GET /api/user/export-data — GDPR data portability
 // Returns ALL data belonging to the authenticated user as JSON.
-export async function GET() {
+export async function GET(req: NextRequest) {
   return withAuth(async (userId) => {
+    void logSecurityEvent({
+      eventType: "data_exported",
+      userId,
+      request: req,
+    });
     const [
       user,
       habits,

@@ -236,6 +236,22 @@ export default function LoginPage() {
               ? "Iniciar sesión"
               : "Crear cuenta"}
           </button>
+
+          {mode === "login" && (
+            <div style={{ textAlign: "center", marginTop: 16 }}>
+              <a
+                href="/forgot-password"
+                style={{
+                  color: COLORS.warm,
+                  fontSize: 13,
+                  textDecoration: "none",
+                  fontWeight: 500,
+                }}
+              >
+                ¿Olvidaste tu contraseña?
+              </a>
+            </div>
+          )}
         </form>
       </div>
     </div>

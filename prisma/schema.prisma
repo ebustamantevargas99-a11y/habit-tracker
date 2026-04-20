@@ -17,12 +17,20 @@ model User {
   emailVerified DateTime?
   image         String?
   passwordHash  String?
+  // Security timestamps — Fase A seguridad (2026-04-20)
+  passwordChangedAt   DateTime?
+  lastLoginAt         DateTime?
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
   accounts        Account[]
   sessions        Session[]
   profile         UserProfile?
+  passwordResetTokens PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  securityEvents  SecurityEvent[]
   habits          Habit[]
   habitLogs       HabitLog[]
   workouts        Workout[]
@@ -99,6 +107,52 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ─── Security — Fase A (2026-04-20) ───────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique  // nunca guardar el token plain, solo hash
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SecurityEvent {
+  id        String   @id @default(cuid())
+  userId    String?  // nullable porque puede ser un intento de login con email inexistente
+  email     String?  // email con el que se intentó (si falla lookup)
+  eventType String   // "login_success","login_failed","register","password_reset_requested","password_reset_completed","email_verified","account_deleted","data_exported","2fa_enabled","2fa_disabled"
+  ipAddress String?
+  userAgent String?
+  metadata  Json?    // detalles específicos del evento
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([eventType, createdAt])
+  @@index([email, createdAt])
 }
 
 // ─── User Profile & Settings ──────────────────────────────────────────────────
