@@ -19,10 +19,31 @@ import StepsTab from './steps-tab';
 import FastingTab from './fasting-tab';
 import ChallengesTab from './challenges-tab';
 import PhotosTab from './photos-tab';
+import WorkoutLoggerV2 from '@/components/features/fitness-v2/workout-logger';
+import VolumeDashboard from '@/components/features/fitness-v2/volume-dashboard';
 
 const DRAFT_KEY = 'fitness_draft_exercises';
 
+// Mapea nombres de grupo muscular en español (existente) al slug en inglés que usan
+// las nuevas calculaciones (VOLUME_LANDMARKS en calculations.ts).
+function mapMuscleToEn(muscleEs: string): string {
+  const m = muscleEs.toLowerCase();
+  if (m.includes('pecho') || m.includes('chest')) return 'chest';
+  if (m.includes('espalda') || m.includes('back')) return 'back';
+  if (m.includes('hombro') || m.includes('shoulder')) return 'shoulders';
+  if (m.includes('bíceps') || m.includes('biceps')) return 'biceps';
+  if (m.includes('tríceps') || m.includes('triceps')) return 'triceps';
+  if (m.includes('cuád') || m.includes('quad')) return 'quads';
+  if (m.includes('isquio') || m.includes('hamstring')) return 'hamstrings';
+  if (m.includes('glúteo') || m.includes('glute')) return 'glutes';
+  if (m.includes('core') || m.includes('abdom')) return 'core';
+  if (m.includes('pantorr') || m.includes('calve')) return 'calves';
+  return muscleEs;
+}
+
 const TABS = [
+  { id: 'nuevo',         label: '🏋️ Nueva Sesión (Pro)' },
+  { id: 'volumen-pro',   label: '📊 Volumen Pro'        },
   { id: 'entrenamiento', label: 'Entrenamiento Activo' },
   { id: 'volumen',       label: 'Volumen Muscular'     },
   { id: 'plan',          label: 'Plan Semanal'         },
@@ -181,6 +202,27 @@ export default function FitnessPage() {
       <Tabs tabs={TABS} activeTab={activeTab ?? 'entrenamiento'} onChange={(id) => setActiveTab(id as Parameters<typeof setActiveTab>[0])} className="mb-8 flex-wrap border-brand-light-tan" />
 
       <div>
+        {activeTab === 'nuevo' && <WorkoutLoggerV2 />}
+        {activeTab === 'volumen-pro' && (
+          <VolumeDashboard
+            weekSets={workouts
+              .filter((w) => {
+                const d = new Date(w.date);
+                const weekAgo = new Date();
+                weekAgo.setDate(weekAgo.getDate() - 7);
+                return d >= weekAgo;
+              })
+              .flatMap((w) =>
+                (w.exercises ?? []).flatMap((e) =>
+                  (e.sets ?? []).map((s) => ({
+                    muscleGroup: mapMuscleToEn(e.muscleGroup ?? ''),
+                    reps: s.reps,
+                    rpe: s.rpe ?? null,
+                  }))
+                )
+              )}
+          />
+        )}
         {activeTab === 'entrenamiento' && (
           <WorkoutTab
             exercises={sessionExercises}
