@@ -16,10 +16,16 @@ export default defineConfig({
     {
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
+      testIgnore: /mobile-responsive\.spec\.ts/,
     },
     {
       name: "mobile",
-      use: { ...devices["iPhone 14"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        deviceScaleFactor: 2,
+        hasTouch: true,
+      },
       testMatch: /mobile-responsive\.spec\.ts/,
     },
   ],

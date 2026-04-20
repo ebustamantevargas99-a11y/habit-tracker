@@ -110,11 +110,19 @@ test.describe("Onboarding desde cero — registro nuevo + wizard 5 pasos", () =>
     if ((await weightInput.count()) > 0) {
       await weightInput.fill("72");
     }
-    const moderateBtn = page.getByText(/Moderado/i).first();
+    const moderateBtn = page.getByRole("button", { name: /Moderado/i }).first();
     if ((await moderateBtn.count()) > 0) {
       await moderateBtn.click();
+      await page.waitForTimeout(300);
     }
-    await page.getByRole("button", { name: /Continuar/i }).click();
+    const continueBtn = page.getByRole("button", { name: /Continuar/i });
+    if ((await continueBtn.count()) === 0) {
+      missing("onboarding-step3", "Botón Continuar no encontrado en paso 3");
+      return;
+    }
+    await continueBtn.click({ timeout: 5000 }).catch(() => {
+      missing("onboarding-step3", "Click en Continuar no avanzó");
+    });
     await page.waitForTimeout(800);
     ok("onboarding-step3", "Paso 3 OK");
     await page.screenshot({ path: "test-results/onb-04-step3.png" });

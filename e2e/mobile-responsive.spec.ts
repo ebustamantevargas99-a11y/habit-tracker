@@ -1,7 +1,7 @@
-import { test, devices } from "@playwright/test";
+import { test } from "@playwright/test";
 import { BASE, TEST_EMAIL, TEST_PASSWORD, track, bug, ok, missing } from "./helpers";
 
-test.use({ ...devices["iPhone 14"] });
+test.use({ viewport: { width: 390, height: 844 }, hasTouch: true });
 
 test.describe("Mobile responsive — viewport 390x844", () => {
   test("login renderiza bien en mobile", async ({ page }) => {

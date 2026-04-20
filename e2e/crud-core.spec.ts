@@ -108,18 +108,16 @@ test.describe("CRUD — Wellness / Mood", () => {
     await clickSidebar(page, "Bienestar");
     await page.waitForTimeout(1500);
 
-    // Buscar botón o slider de mood
-    const moodBtns = await page.getByRole("button").filter({ hasText: /^[😀-🙏]$/u }).count();
-    if (moodBtns === 0) {
-      // Probar sliders o números 1-10
-      const scoreBtn = page.getByRole("button", { name: /^[5-9]$/ }).first();
-      if ((await scoreBtn.count()) === 0) {
-        missing("wellness-mood", "Controles de mood no encontrados");
-        return;
-      }
+    // Buscar controles de mood (emoji buttons o score 1-10)
+    const scoreBtn = page.getByRole("button", { name: /^[5-9]$/ }).first();
+    const emojiBtn = page.getByText(/😊|🙂|😐|😔|😢/).first();
+    if ((await scoreBtn.count()) > 0) {
       await scoreBtn.click();
+    } else if ((await emojiBtn.count()) > 0) {
+      await emojiBtn.click();
     } else {
-      await page.getByRole("button").filter({ hasText: /^[😀-🙏]$/u }).first().click();
+      missing("wellness-mood", "Controles de mood no encontrados");
+      return;
     }
     await page.waitForTimeout(600);
 
