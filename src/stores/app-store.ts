@@ -10,7 +10,7 @@ const VALID_TABS: Record<string, string[]> = {
   wellness:     ['sleep', 'hydration', 'medication', 'healthlog'],
   productivity: ['command', 'habits', 'projects', 'pomodoro', 'projection'],
   plan:         ['today', 'week', 'month'],
-  fitness:      ['entrenamiento', 'volumen', 'plan', 'records', 'metricas', 'peso', 'pasos', 'ayuno', 'retos', 'fotos'],
+  fitness:      ['gym', 'cardio', 'cuerpo', 'programas', 'analisis'],
   finance:      ['panel', 'flow', 'goals', 'investments', 'analysis'],
   nutrition:    ['pro', 'diario', 'resumen', 'alimentos', 'metas'],
   reading:      ['reading', 'want', 'finished', 'paused'],
@@ -86,7 +86,7 @@ export const useAppStore = create<AppState>((set) => ({
   planTab: "today",
   setPlanTab: (tab) => set({ planTab: tab }),
 
-  fitnessTab: 'entrenamiento',
+  fitnessTab: 'gym',
   setFitnessTab: (tab) => set({ fitnessTab: tab }),
 
   financeTab: 'panel',

@@ -60,9 +60,10 @@ describe('useAppStore — toggleSidebar()', () => {
 
 describe('useAppStore — setPageFromURL()', () => {
   it('sets page correctly with a valid tab', () => {
-    useAppStore.getState().setPageFromURL('fitness', 'volumen');
+    // Fitness redesign (Fase 9): hubs son 'gym' | 'cardio' | 'cuerpo' | 'programas' | 'analisis'
+    useAppStore.getState().setPageFromURL('fitness', 'cardio');
     expect(useAppStore.getState().activePage).toBe('fitness');
-    expect(useAppStore.getState().fitnessTab).toBe('volumen');
+    expect(useAppStore.getState().fitnessTab).toBe('cardio');
   });
 
   it('sets page but ignores invalid tab', () => {

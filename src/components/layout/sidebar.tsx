@@ -43,14 +43,11 @@ const PLAN_SECTION_MAP: Record<string, PlanTab> = {
 };
 
 const FITNESS_SECTION_MAP: Record<string, string> = {
-  "Workout Tracker": "entrenamiento",
-  "Volume Tracker":  "volumen",
-  "Workout Plan":    "plan",
-  "PR Board":        "records",
-  "Body Metrics":    "metricas",
-  "Weight Tracker":  "peso",
-  "Steps":           "pasos",
-  "Fasting":         "ayuno",
+  "Gym":       "gym",
+  "Cardio":    "cardio",
+  "Cuerpo":    "cuerpo",
+  "Programas": "programas",
+  "Análisis":  "analisis",
 };
 
 const FINANCE_SECTION_MAP: Record<string, string> = {
