@@ -10,6 +10,8 @@ export const habitCreateSchema = z.object({
   timeOfDay: z.enum(["morning", "afternoon", "evening", "night", "all"]).optional(),
   frequency: z.enum(["daily", "weekly", "custom"]).optional(),
   targetDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  estimatedMinutes: z.number().int().min(1).max(1440).optional().nullable(),
+  difficulty: z.enum(["tiny", "small", "medium", "large"]).optional(),
 });
 
 export const habitUpdateSchema = z.object({
@@ -19,6 +21,8 @@ export const habitUpdateSchema = z.object({
   timeOfDay: z.enum(["morning", "afternoon", "evening", "night", "all"]).optional(),
   frequency: z.enum(["daily", "weekly", "custom"]).optional(),
   targetDays: z.array(z.number().int().min(0).max(6)).max(7).optional(),
+  estimatedMinutes: z.number().int().min(1).max(1440).optional().nullable(),
+  difficulty: z.enum(["tiny", "small", "medium", "large"]).optional(),
 });
 
 export const habitLogCreateSchema = z.object({

@@ -27,6 +27,14 @@ export interface LifeAreaScore {
 
 // ─── Habits ───────────────────────────────────────────────────────────────────
 
+export type HabitPhase =
+  | "not_started"
+  | "starting"
+  | "forming"
+  | "strengthening"
+  | "near_rooted"
+  | "rooted";
+
 export interface Habit {
   id: string;
   name: string;
@@ -34,12 +42,22 @@ export interface Habit {
   category: string;
   timeOfDay: TimeOfDay;
   frequency: "daily" | "weekly" | "custom";
-  targetDays: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
+  targetDays: number[]; // 0=Sun..6=Sat
   streakCurrent: number;
   streakBest: number;
   strength: number; // 0-100
   isActive: boolean;
   createdAt: string;
+
+  // Sistema de arraigo
+  phase?: HabitPhase;
+  rootedAt?: string | null;
+  rootedStreak?: number;
+  graceDaysAvailable?: number;
+  graceWeekStart?: string | null;
+  lastCompletedDate?: string | null;
+  estimatedMinutes?: number | null;
+  difficulty?: "tiny" | "small" | "medium" | "large";
 }
 
 export interface HabitLog {

@@ -28,6 +28,8 @@ export async function POST(req: NextRequest) {
         timeOfDay: d.timeOfDay ?? "all",
         frequency: d.frequency ?? "daily",
         targetDays: d.targetDays ?? [0, 1, 2, 3, 4, 5, 6],
+        estimatedMinutes: d.estimatedMinutes ?? null,
+        difficulty: d.difficulty ?? "medium",
       },
     });
     return NextResponse.json(habit, { status: 201 });

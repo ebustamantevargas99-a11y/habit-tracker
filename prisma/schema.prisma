@@ -264,7 +264,15 @@ model Habit {
   streakBest    Int        @default(0)
   strength      Float      @default(0)
   isActive      Boolean    @default(true)
-  difficulty    String     @default("medium")  // tiny | small | medium | large
+  difficulty    String     @default("medium")        // tiny | small | medium | large
+  // ── Sistema de arraigo ────────────────────────────────────────────────────
+  phase              String    @default("not_started") // not_started | starting | forming | strengthening | near_rooted | rooted
+  rootedAt           DateTime?                         // primera vez que cruzó día 92 (fase rooted)
+  rootedStreak       Int       @default(0)             // días arraigado contador (cuando phase=rooted)
+  graceDaysAvailable Int       @default(1)             // días de gracia en la semana actual
+  graceWeekStart     String?                           // fecha del lunes de esta semana (YYYY-MM-DD)
+  lastCompletedDate  String?                           // último día marcado como completado
+  estimatedMinutes   Int?                              // tiempo estimado por sesión (para alerta de pérdida)
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -764,9 +772,22 @@ model ProjectTask {
   orderIndex  Int       @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  subtasks    ProjectSubtask[]
 
   @@index([projectId, status])
+}
+
+model ProjectSubtask {
+  id         String      @id @default(cuid())
+  taskId     String
+  title      String
+  completed  Boolean     @default(false)
+  orderIndex Int         @default(0)
+  createdAt  DateTime    @default(now())
+  task       ProjectTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 // ─── Planner ──────────────────────────────────────────────────────────────────
