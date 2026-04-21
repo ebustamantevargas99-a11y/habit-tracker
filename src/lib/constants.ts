@@ -108,6 +108,18 @@ export const NAV_ITEMS = [
     ],
   },
   {
+    key: "meditation",
+    label: "Meditación",
+    icon: "Wind",
+    sections: [],
+  },
+  {
+    key: "menstrualCycle",
+    label: "Ciclo",
+    icon: "Droplet",
+    sections: [],
+  },
+  {
     key: "vision",
     label: "Visión",
     icon: "Target",

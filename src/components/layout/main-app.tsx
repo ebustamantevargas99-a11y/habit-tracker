@@ -11,6 +11,8 @@ import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
 import ReadingPage from "@/components/features/reading/reading-page";
+import MeditationPage from "@/components/features/meditation/meditation-page";
+import CyclePage from "@/components/features/cycle/cycle-page";
 import OrganizationPage from "@/components/features/organization/organization-page";
 import VisionPage from "@/components/features/vision/vision-page";
 import RewindModal from "@/components/features/rewind/rewind-modal";
@@ -114,6 +116,8 @@ export default function MainApp() {
       case "fitness":      return <FitnessPage />;
       case "nutrition":    return <NutritionPage />;
       case "reading":      return <ReadingPage />;
+      case "meditation":   return <MeditationPage />;
+      case "menstrualCycle": return <CyclePage />;
       case "organization": return <OrganizationPage />;
       case "vision":       return <VisionPage />;
       case "settings":     return <SettingsPage />;
@@ -129,6 +133,8 @@ export default function MainApp() {
     fitness:      "Fitness",
     nutrition:    "Nutrición",
     reading:      "Lectura",
+    meditation:   "Meditación",
+    menstrualCycle: "Ciclo menstrual",
     organization: "Organización",
     vision:       "Visión & OKR",
     wellness:     "Bienestar",
