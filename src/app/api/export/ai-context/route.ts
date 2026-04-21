@@ -51,9 +51,9 @@ export async function GET(req: NextRequest) {
     fastingLogs,
     transactions,
     budgets,
-    bills,
-    subscriptions,
-    wishlist,
+    recurringTxns,
+    savingsGoals,
+    debts,
     moodLogs,
     sleepLogs,
     hydrationLogs,
@@ -131,17 +131,17 @@ export async function GET(req: NextRequest) {
       where: { userId },
       select: { category: true, limit: true, month: true },
     }),
-    prisma.bill.findMany({
-      where: { userId },
-      select: { name: true, amount: true, dueDate: true, isPaid: true },
+    prisma.recurringTransaction.findMany({
+      where: { userId, active: true },
+      select: { name: true, amount: true, frequency: true, category: true, nextDate: true, type: true },
     }),
-    prisma.subscription.findMany({
-      where: { userId, isActive: true },
-      select: { name: true, amount: true, billingCycle: true, category: true },
+    prisma.savingsGoal.findMany({
+      where: { userId, achieved: false },
+      select: { name: true, targetAmount: true, currentAmount: true, priority: true, targetDate: true },
     }),
-    prisma.wishlistItem.findMany({
-      where: { userId, isPurchased: false },
-      select: { name: true, price: true, priority: true, savedAmount: true },
+    prisma.debt.findMany({
+      where: { userId, active: true },
+      select: { name: true, balance: true, interestRate: true, minPayment: true },
     }),
     prisma.moodLog.findMany({
       where: { userId, date: { gte: from } },
@@ -553,11 +553,9 @@ export async function GET(req: NextRequest) {
       };
     });
 
-  const totalMonthlyRecurring =
-    bills.filter((b) => !b.isPaid).reduce((s, b) => s + b.amount, 0) +
-    subscriptions
-      .filter((s) => s.billingCycle === "monthly")
-      .reduce((s, sub) => s + sub.amount, 0);
+  const totalMonthlyRecurring = recurringTxns
+    .filter((r) => r.type === "expense" && r.frequency === "monthly")
+    .reduce((s, r) => s + r.amount, 0);
 
   const financeSection = {
     summary: {
@@ -572,32 +570,31 @@ export async function GET(req: NextRequest) {
     topExpenseCategories,
     budgetStatus,
     recurringExpenses: {
-      bills: bills.map((b) => ({
-        name: b.name,
-        amount: Math.round(b.amount),
-        dueDate: b.dueDate,
-        isPaid: b.isPaid,
-      })),
-      subscriptions: subscriptions.map((s) => ({
-        name: s.name,
-        amount: Math.round(s.amount),
-        billingCycle: s.billingCycle,
-        category: s.category,
+      items: recurringTxns.map((r) => ({
+        name: r.name,
+        amount: Math.round(r.amount),
+        frequency: r.frequency,
+        type: r.type,
+        category: r.category,
+        nextDate: r.nextDate,
       })),
       totalMonthlyRecurring: Math.round(totalMonthlyRecurring),
     },
-    wishlist: {
-      items: wishlist.map((w) => ({
-        name: w.name,
-        price: w.price,
-        priority: w.priority,
-        savedAmount: w.savedAmount,
-        progressPercent:
-          w.price > 0 ? Math.round((w.savedAmount / w.price) * 100) : 0,
-      })),
-      totalNeeded: Math.round(wishlist.reduce((s, w) => s + w.price, 0)),
-      totalSaved: Math.round(wishlist.reduce((s, w) => s + w.savedAmount, 0)),
-    },
+    savingsGoals: savingsGoals.map((g) => ({
+      name: g.name,
+      target: g.targetAmount,
+      current: g.currentAmount,
+      priority: g.priority,
+      targetDate: g.targetDate,
+      progressPercent:
+        g.targetAmount > 0 ? Math.round((g.currentAmount / g.targetAmount) * 100) : 0,
+    })),
+    debts: debts.map((d) => ({
+      name: d.name,
+      balance: d.balance,
+      interestRate: d.interestRate,
+      minPayment: d.minPayment,
+    })),
     recentTransactions: transactions.slice(0, 20).map((t) => ({
       date: t.date,
       description: t.description,

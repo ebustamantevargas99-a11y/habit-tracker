@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { parseJson, budgetCreateSchema } from "@/lib/validation";
+import { parseJson, budgetUpsertSchema } from "@/lib/validation";
 
 // GET /api/finance/budgets?month=YYYY-MM
 // Returns budgets with `spent` computed from transactions
@@ -42,11 +42,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   return withAuth(async (userId) => {
-    const parsed = await parseJson(req, budgetCreateSchema);
+    const parsed = await parseJson(req, budgetUpsertSchema);
     if (!parsed.ok) return parsed.response;
 
     const { category, limit, month } = parsed.data;
-    const targetMonth = month ?? new Date().toISOString().slice(0, 7);
+    const targetMonth = month;
 
     const budget = await prisma.budget.upsert({
       where: {

@@ -160,7 +160,17 @@ async function main() {
     });
   }
 
-  console.log("[seed] Sembrando transacciones finanzas…");
+  console.log("[seed] Sembrando cuenta + transacciones finanzas…");
+  const account = await prisma.financialAccount.create({
+    data: {
+      userId: user.id,
+      name: "Cuenta principal",
+      type: "checking",
+      currency: "MXN",
+      balance: 12000,
+      icon: "💳",
+    },
+  });
   const txs = [
     { description: "Sueldo mensual", amount: 2500, type: "income", category: "Salario" },
     { description: "Supermercado", amount: 180, type: "expense", category: "Alimentación" },
@@ -170,7 +180,7 @@ async function main() {
   ];
   for (const tx of txs) {
     await prisma.transaction.create({
-      data: { ...tx, userId: user.id, date: today },
+      data: { ...tx, userId: user.id, accountId: account.id, date: today },
     });
   }
   await prisma.budget.create({

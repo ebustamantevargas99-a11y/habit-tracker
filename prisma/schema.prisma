@@ -41,11 +41,14 @@ model User {
   exercises       Exercise[]
   personalRecords PersonalRecord[]
   bodyMetrics     BodyMetric[]
-  transactions    Transaction[]
-  budgets         Budget[]
-  bills           Bill[]
-  subscriptions   Subscription[]
-  wishlistItems   WishlistItem[]
+  transactions       Transaction[]
+  budgets            Budget[]
+  financialAccounts  FinancialAccount[]
+  recurringTxns      RecurringTransaction[]
+  savingsGoals       SavingsGoal[]
+  debts              Debt[]
+  investments        Investment[]
+  netWorthSnapshots  NetWorthSnapshot[]
   moodLogs        MoodLog[]
   sleepLogs       SleepLog[]
   dailyPlans      DailyPlan[]
@@ -197,6 +200,7 @@ model UserProfile {
   avatar           String?
   timezone         String @default("America/Mexico_City")
   units            String @default("metric")  // "metric" | "imperial"
+  primaryCurrency  String @default("MXN")     // ISO 4217 — moneda principal del user
   language         String @default("es")
   theme            String @default("warm")    // "warm" | "ocean" | "forest" | "rose"
   darkMode         Boolean @default(false)
@@ -460,24 +464,90 @@ model WeeklyPlan {
   @@index([userId])
 }
 
-// ─── Finance ──────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// Finance (redesign 2026-04-21) — nivel pro
+// Bill, Subscription y WishlistItem fueron reemplazados por
+// RecurringTransaction y SavingsGoal respectivamente.
+// ═══════════════════════════════════════════════════════════════════════════
 
-model Transaction {
+model FinancialAccount {
   id            String   @id @default(cuid())
   userId        String
-  date          String
-  description   String
-  amount        Float
-  type          String
-  category      String
-  subcategory   String?
-  paymentMethod String?
-  isRecurring   Boolean  @default(false)
+  name          String
+  type          String                  // checking | savings | credit | investment | loan | crypto | cash
+  currency      String   @default("MXN")
+  balance       Float    @default(0)
+  creditLimit   Float?
+  interestRate  Float?
+  institution   String?
+  color         String?
+  icon          String?
+  archived      Boolean  @default(false)
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[] @relation("TransactionAccount")
+  transfersFrom Transaction[] @relation("TransferFrom")
+  recurrents    RecurringTransaction[]
+  investments   Investment[]
+
+  @@index([userId])
+  @@index([userId, archived])
+}
+
+model Transaction {
+  id                   String   @id @default(cuid())
+  userId               String
+  accountId            String
+  date                 String
+  amount               Float                      // siempre positivo; el type da el signo
+  type                 String                      // income | expense | transfer
+  category             String
+  subcategory          String?
+  merchant             String?
+  description          String?
+  notes                String?
+  tags                 String[] @default([])
+  photoData            String?  @db.Text           // base64 receipt
+  recurringId          String?
+  transferToAccountId  String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account              FinancialAccount  @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  transferTo           FinancialAccount? @relation("TransferFrom", fields: [transferToAccountId], references: [id])
 
   @@index([userId, date])
-  @@index([userId, type])
+  @@index([userId, category])
+  @@index([userId, merchant])
+  @@index([accountId, date])
+}
+
+model RecurringTransaction {
+  id              String   @id @default(cuid())
+  userId          String
+  accountId       String
+  name            String
+  amount          Float
+  type            String                    // income | expense
+  category        String
+  subcategory     String?
+  merchant        String?
+  frequency       String                    // weekly | biweekly | monthly | quarterly | annual
+  dayOfMonth      Int?
+  nextDate        String                    // próxima fecha programada
+  endDate         String?
+  active          Boolean  @default(true)
+  autoLog         Boolean  @default(true)   // si genera transacción auto al llegar nextDate
+  linkedEventId   String?                   // CalendarEvent vinculado
+  lastLoggedDate  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+  @@index([userId, nextDate])
 }
 
 model Budget {
@@ -492,48 +562,82 @@ model Budget {
   @@index([userId, month])
 }
 
-model Bill {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  amount      Float
-  dueDate     String
-  isPaid      Boolean  @default(false)
-  isRecurring Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+model SavingsGoal {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  emoji           String?
+  targetAmount    Float
+  currentAmount   Float    @default(0)
+  targetDate      String?
+  priority        String?                   // low | medium | high
+  linkedAccountId String?
+  category        String?                   // travel | home | emergency | car | wedding | education | other
+  notes           String?
+  achieved        Boolean  @default(false)
+  achievedAt      DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-model Subscription {
+model Debt {
+  id              String   @id @default(cuid())
+  userId          String
+  name            String
+  type            String                    // credit_card | loan | mortgage | student | personal | other
+  balance         Float
+  originalAmount  Float?
+  interestRate    Float                     // anual %
+  minPayment      Float
+  dueDay          Int?
+  linkedAccountId String?
+  active          Boolean  @default(true)
+  paidOffAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, active])
+}
+
+model Investment {
+  id              String   @id @default(cuid())
+  userId          String
+  symbol          String
+  name            String
+  type            String                    // crypto | stock | etf | bond | real_estate | other
+  quantity        Float
+  averageCost     Float
+  currency        String   @default("USD")
+  linkedAccountId String?
+  lastPrice       Float?
+  lastPriceAt     DateTime?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account         FinancialAccount? @relation(fields: [linkedAccountId], references: [id])
+
+  @@index([userId])
+  @@index([userId, type])
+}
+
+model NetWorthSnapshot {
   id           String   @id @default(cuid())
   userId       String
-  name         String
-  amount       Float
-  billingCycle String
-  renewalDate  String
-  category     String
-  isActive     Boolean  @default(true)
+  date         String
+  assets       Float
+  liabilities  Float
+  netWorth     Float
+  breakdown    Json
   createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-}
-
-model WishlistItem {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  price       Float
-  priority    String
-  savedAmount Float    @default(0)
-  link        String?
-  isPurchased Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 // ─── Wellness ─────────────────────────────────────────────────────────────────

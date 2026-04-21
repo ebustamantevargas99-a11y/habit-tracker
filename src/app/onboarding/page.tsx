@@ -26,11 +26,26 @@ type FormState = {
   heightCm: string;
   weightKg: string;
   units: Units;
+  primaryCurrency: string;
   activityLevel: ActivityLevel | "";
   fitnessLevel: FitnessLevel | "";
   interests: InterestKey[];
   primaryGoals: string;
 };
+
+const CURRENCIES = [
+  { code: "MXN", label: "MXN · Peso mexicano", symbol: "$" },
+  { code: "USD", label: "USD · Dólar estadounidense", symbol: "$" },
+  { code: "EUR", label: "EUR · Euro", symbol: "€" },
+  { code: "GBP", label: "GBP · Libra esterlina", symbol: "£" },
+  { code: "CAD", label: "CAD · Dólar canadiense", symbol: "C$" },
+  { code: "ARS", label: "ARS · Peso argentino", symbol: "$" },
+  { code: "COP", label: "COP · Peso colombiano", symbol: "$" },
+  { code: "CLP", label: "CLP · Peso chileno", symbol: "$" },
+  { code: "PEN", label: "PEN · Sol peruano", symbol: "S/" },
+  { code: "BRL", label: "BRL · Real brasileño", symbol: "R$" },
+  { code: "JPY", label: "JPY · Yen japonés", symbol: "¥" },
+];
 
 const STEP_TITLES = [
   "Bienvenido",
@@ -53,6 +68,7 @@ export default function OnboardingPage() {
     heightCm: "",
     weightKg: "",
     units: "metric",
+    primaryCurrency: "MXN",
     activityLevel: "",
     fitnessLevel: "",
     interests: [],
@@ -107,6 +123,7 @@ export default function OnboardingPage() {
         activityLevel: form.activityLevel || null,
         fitnessLevel: form.fitnessLevel || null,
         units: form.units,
+        primaryCurrency: form.primaryCurrency,
         language: "es",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         darkMode: false,
@@ -346,6 +363,26 @@ function StepBody({
             </button>
           ))}
         </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-brand-dark mb-2">
+          Moneda principal
+          <span className="ml-2 text-xs text-brand-warm font-normal">
+            (tus Finanzas se mostrarán en esta moneda por default)
+          </span>
+        </label>
+        <select
+          value={form.primaryCurrency}
+          onChange={(e) => update("primaryCurrency", e.target.value)}
+          className="w-full px-3 py-2.5 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm focus:outline-none focus:border-accent"
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c.code} value={c.code}>
+              {c.label}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
