@@ -13,6 +13,23 @@ import { useHabitStore } from '@/stores/habit-store';
 import { useUserStore } from '@/stores/user-store';
 import { cn, ErrorBanner } from '@/components/ui';
 import AIExportButton from '@/components/features/ai-export/ai-export-button';
+import { api } from '@/lib/api-client';
+
+type LifeScoreApi = {
+  overall: number;
+  breakdown: Record<string, { score: number | null; reason?: string; samples: number }>;
+  activeModules: string[];
+  date: string;
+  windowDays: number;
+};
+
+const LIFE_DIM_LABELS: Record<string, { label: string; icon: string }> = {
+  habits:       { label: 'Hábitos',      icon: '✨' },
+  fitness:      { label: 'Fitness',      icon: '💪' },
+  nutrition:    { label: 'Nutrición',    icon: '🥗' },
+  wellness:     { label: 'Bienestar',    icon: '🧘' },
+  productivity: { label: 'Productividad', icon: '⚡' },
+};
 
 // Used for recharts/icon color props (not inline styles)
 const C = {
@@ -154,6 +171,22 @@ export default function HomeDashboard() {
     return () => clearInterval(t);
   }, []);
 
+  const [lifeScoreApi, setLifeScoreApi] = useState<LifeScoreApi | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .get<LifeScoreApi>('/user/life-score')
+      .then((data) => {
+        if (!cancelled) setLifeScoreApi(data);
+      })
+      .catch(() => {
+        // Fallback al avgStrength si el endpoint falla
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const greeting = useMemo(() => {
     const h = currentTime.getHours();
     return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
@@ -287,7 +320,8 @@ export default function HomeDashboard() {
     return +(twRate - lwRate).toFixed(1);
   }, [logs]);
 
-  const lifeScore = avgStrength;
+  const lifeScore = lifeScoreApi?.overall ?? avgStrength;
+  const lifeScoreBreakdown = lifeScoreApi?.breakdown ?? null;
   const medals = ['🥇', '🥈', '🥉', '🏆', '🏆'];
   const todayPct = todayHabits.length > 0 ? (completedTodayIds.size / todayHabits.length) * 100 : 0;
 
@@ -378,6 +412,73 @@ export default function HomeDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Life Score Breakdown */}
+      {lifeScoreBreakdown && (
+        <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-[18px] font-bold text-brand-brown m-0">
+                Life Score — desglose 7d
+              </h2>
+              <p className="text-xs text-brand-warm mt-0.5">
+                Promedio ponderado de dimensiones activas. Rojo &lt;40 · Ámbar 40-70 · Verde ≥70.
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-[32px] font-bold text-accent leading-none">{lifeScore}</div>
+              <div className="text-[10px] uppercase tracking-widest text-brand-warm">de 100</div>
+            </div>
+          </div>
+          <div className="grid grid-cols-5 gap-3">
+            {(Object.entries(LIFE_DIM_LABELS) as [string, { label: string; icon: string }][]).map(
+              ([key, meta]) => {
+                const dim = lifeScoreBreakdown[key];
+                const score = dim?.score;
+                const colorClass =
+                  score === null || score === undefined
+                    ? 'text-brand-tan'
+                    : score >= 70
+                    ? 'text-success'
+                    : score >= 40
+                    ? 'text-warning'
+                    : 'text-danger';
+                const barColor =
+                  score === null || score === undefined
+                    ? 'bg-brand-cream'
+                    : score >= 70
+                    ? 'bg-success'
+                    : score >= 40
+                    ? 'bg-warning'
+                    : 'bg-danger';
+                return (
+                  <div
+                    key={key}
+                    className="bg-brand-warm-white border border-brand-cream rounded-lg p-3"
+                    title={dim?.reason ?? 'Módulo desactivado'}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-base">{meta.icon}</span>
+                      <span className="text-[11px] uppercase tracking-wider text-brand-medium font-semibold">
+                        {meta.label}
+                      </span>
+                    </div>
+                    <div className={cn('text-xl font-bold leading-none mb-2', colorClass)}>
+                      {score === null || score === undefined ? '—' : Math.round(score)}
+                    </div>
+                    <div className="w-full h-1 bg-brand-cream rounded-[2px] overflow-hidden">
+                      <div
+                        className={cn('h-full rounded-[2px] transition-all', barColor)}
+                        style={{ width: `${score ?? 0}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              }
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Today's Habits + Radar */}
       <div className="grid grid-cols-2 gap-6 mb-8">
