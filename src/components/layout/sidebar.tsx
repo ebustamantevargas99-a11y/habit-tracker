@@ -39,12 +39,9 @@ const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
 };
 
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {
-  "Calendar":          0,
-  "Daily Planner":     1,
-  "Weekly Planner":    2,
-  "Monthly Planner":   3,
-  "Quarterly Planner": 4,
-  "Yearly Planner":    5,
+  "Hoy":    "today",
+  "Semana": "week",
+  "Mes":    "month",
 };
 
 const FITNESS_SECTION_MAP: Record<string, string> = {

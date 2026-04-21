@@ -102,6 +102,10 @@ model User {
   recipes             Recipe[]
   bodyPhotos          BodyPhoto[]
   milestones          Milestone[]
+
+  // ── Calendar redesign ──────────────────────────────────────────────────────
+  calendarEvents      CalendarEvent[]
+  dayTemplates        DayTemplate[]
 }
 
 model Account {
@@ -1242,4 +1246,58 @@ model Milestone {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
+}
+
+// ─── Calendar (redesign) ──────────────────────────────────────────────────────
+
+model CalendarEvent {
+  id              String    @id @default(cuid())
+  userId          String
+
+  title           String
+  description     String?   @db.Text
+
+  // Temporal
+  startAt         DateTime
+  endAt           DateTime?
+  allDay          Boolean   @default(false)
+
+  // Categorización
+  type            String    @default("custom")  // custom | meeting | appointment | personal | health | travel | social
+  category        String?
+  color           String?   // hex del user
+  icon            String?   // emoji
+  location        String?
+
+  // Recurrencia simplificada estilo RRULE: FREQ=DAILY|WEEKLY|MONTHLY;BYDAY=MO,WE,FR;COUNT=10
+  recurrence      String?
+  recurrenceEnd   DateTime?
+
+  // Recordatorio
+  reminderMinutes Int?
+
+  // Link a otros módulos (opcional, si es evento "virtual" de otro recurso)
+  sourceModule    String?   // workout | meal | focus | meditation | cycle | habit | fasting
+  sourceId        String?
+
+  completed       Boolean   @default(false)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, startAt])
+  @@index([userId, type])
+}
+
+model DayTemplate {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String           // "Mi lunes de productividad"
+  blocks    Json             // [{startHour: 7, durHours: 1, title: "Ritual mañana", icon: "🌅"}, ...]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

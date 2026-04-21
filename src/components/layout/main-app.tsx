@@ -5,7 +5,7 @@ import Sidebar from "./sidebar";
 import PlaceholderPage from "./placeholder-page";
 import HomeDashboard from "@/components/features/home/home-dashboard";
 import ProductivityPage from "@/components/features/productivity/productivity-page";
-import DailyPlannerPage from "@/components/features/planner/daily-planner-page";
+import CalendarPage from "@/components/features/calendar/calendar-page";
 import BudgetTrackerPage from "@/components/features/finance/budget-tracker-page";
 import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
@@ -112,7 +112,7 @@ export default function MainApp() {
     switch (activePage) {
       case "home":         return <HomeDashboard />;
       case "productivity": return <ProductivityPage />;
-      case "plan":         return <DailyPlannerPage />;
+      case "plan":         return <CalendarPage />;
       case "finance":      return <BudgetTrackerPage />;
       case "wellness":     return <MoodTrackerPage />;
       case "fitness":      return <FitnessPage />;

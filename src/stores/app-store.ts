@@ -3,13 +3,13 @@ import type { PageKey } from "@/lib/constants";
 
 export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'healthlog';
 export type ProductivityTab = 'command' | 'habits' | 'projects' | 'pomodoro' | 'projection';
-export type PlanTab = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+export type PlanTab = "today" | "week" | "month";
 
 // Valid tab values per page (used by setPageFromURL for validation)
 const VALID_TABS: Record<string, string[]> = {
   wellness:     ['sleep', 'hydration', 'medication', 'healthlog'],
   productivity: ['command', 'habits', 'projects', 'pomodoro', 'projection'],
-  plan:         ['calendar', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
+  plan:         ['today', 'week', 'month'],
   fitness:      ['entrenamiento', 'volumen', 'plan', 'records', 'metricas', 'peso', 'pasos', 'ayuno', 'retos', 'fotos'],
   finance:      ['resumen', 'ingresos', 'gastos', 'presupuesto', 'facturas', 'suscripciones', 'deseos', 'analytics'],
   nutrition:    ['pro', 'diario', 'resumen', 'alimentos', 'metas'],
@@ -83,7 +83,7 @@ export const useAppStore = create<AppState>((set) => ({
   productivitySubTab: 'habits',
   setProductivitySubTab: (tab) => set({ productivitySubTab: tab }),
 
-  planTab: 0,
+  planTab: "today",
   setPlanTab: (tab) => set({ planTab: tab }),
 
   fitnessTab: 'entrenamiento',
@@ -117,12 +117,9 @@ export const useAppStore = create<AppState>((set) => ({
           case 'productivity':
             update.productivitySubTab = tab as ProductivityTab;
             break;
-          case 'plan': {
-            const PLAN_TABS = VALID_TABS.plan;
-            const idx = PLAN_TABS.indexOf(tab);
-            if (idx >= 0) update.planTab = idx as PlanTab;
+          case 'plan':
+            update.planTab = tab as PlanTab;
             break;
-          }
           case 'fitness':
             update.fitnessTab = tab;
             break;

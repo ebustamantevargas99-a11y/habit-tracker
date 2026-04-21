@@ -15,12 +15,9 @@ export const NAV_ITEMS = [
     label: "Calendar",
     icon: "Calendar",
     sections: [
-      "Calendar",
-      "Daily Planner",
-      "Weekly Planner",
-      "Monthly Planner",
-      "Quarterly Planner",
-      "Yearly Planner",
+      "Hoy",
+      "Semana",
+      "Mes",
     ],
   },
   {

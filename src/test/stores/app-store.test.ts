@@ -12,7 +12,7 @@ beforeEach(() => {
     organizationTab: 'notas',
     wellnessSubTab: 'sleep',
     productivitySubTab: 'habits',
-    planTab: 0,
+    planTab: 'today',
     showMonthlySummary: false,
     showWeeklySummary: false,
   });
@@ -87,9 +87,9 @@ describe('useAppStore — setPageFromURL()', () => {
     expect(useAppStore.getState().productivitySubTab).toBe('pomodoro');
   });
 
-  it('sets plan tab index for valid value', () => {
-    useAppStore.getState().setPageFromURL('plan', 'monthly');
-    expect(useAppStore.getState().planTab).toBe(3); // index in VALID_TABS.plan
+  it('sets plan tab string for valid value', () => {
+    useAppStore.getState().setPageFromURL('plan', 'week');
+    expect(useAppStore.getState().planTab).toBe('week');
   });
 });
 

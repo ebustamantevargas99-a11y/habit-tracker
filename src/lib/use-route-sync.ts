@@ -11,7 +11,7 @@ const VALID_PAGES: string[] = [
   "fitness", "nutrition", "wellness", "settings", "organization", "vision",
 ];
 
-const PLAN_TABS = ["calendar", "daily", "weekly", "monthly", "quarterly", "yearly"];
+// (PLAN_TABS legacy removido — ahora planTab es string "today"|"week"|"month")
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -40,7 +40,7 @@ function tabForPage(
   state: {
     wellnessSubTab: string;
     productivitySubTab: string;
-    planTab: number;
+    planTab: string;
     fitnessTab: string;
     financeTab: string;
     nutritionTab: string;
@@ -51,7 +51,7 @@ function tabForPage(
   switch (page) {
     case "wellness":      return state.wellnessSubTab;
     case "productivity":  return state.productivitySubTab;
-    case "plan":          return PLAN_TABS[state.planTab];
+    case "plan":          return state.planTab;
     case "fitness":       return state.fitnessTab;
     case "finance":       return state.financeTab;
     case "nutrition":     return state.nutritionTab;
