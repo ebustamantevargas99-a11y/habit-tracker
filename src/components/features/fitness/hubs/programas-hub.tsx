@@ -1,7 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Tabs, Card } from "@/components/ui";
+import { Tabs } from "@/components/ui";
+import ActivePlan from "../programas/active-plan";
+import TemplateLibrary from "../programas/template-library";
+import ProgramBuilder from "../programas/program-builder";
 import ChallengesTab from "../challenges-tab";
 
 const PROGRAMAS_SUBTABS = [
@@ -13,6 +16,9 @@ const PROGRAMAS_SUBTABS = [
 
 export default function ProgramasHub() {
   const [subTab, setSubTab] = useState<string>("activo");
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const bumpReload = () => setReloadKey((k) => k + 1);
 
   return (
     <section>
@@ -32,75 +38,24 @@ export default function ProgramasHub() {
         className="mb-6 flex-wrap border-brand-light-tan"
       />
 
-      {subTab === "activo" && <ActivePlanPlaceholder />}
-      {subTab === "biblioteca" && <LibraryPlaceholder />}
-      {subTab === "builder" && <BuilderPlaceholder />}
+      {subTab === "activo" && <ActivePlan reloadKey={reloadKey} />}
+      {subTab === "biblioteca" && (
+        <TemplateLibrary
+          onActivated={() => {
+            bumpReload();
+            setSubTab("activo");
+          }}
+        />
+      )}
+      {subTab === "builder" && (
+        <ProgramBuilder
+          onCreated={() => {
+            bumpReload();
+            setSubTab("activo");
+          }}
+        />
+      )}
       {subTab === "retos" && <ChallengesTab />}
     </section>
-  );
-}
-
-function ActivePlanPlaceholder() {
-  return (
-    <Card variant="default" padding="md" className="border-brand-light-tan">
-      <h3 className="font-serif text-lg text-brand-dark m-0 mb-2">
-        Plan activo · próximamente
-      </h3>
-      <p className="text-brand-warm text-sm m-0 mb-3">
-        Cuando actives un programa, aquí verás:
-      </p>
-      <ul className="text-brand-warm text-sm list-disc pl-5 m-0">
-        <li>Timeline de mesociclos con fase actual destacada</li>
-        <li>Semana del programa (ej: "Semana 4 de 12 · Intensificación")</li>
-        <li>Día del programa → rutina específica para hoy</li>
-        <li>Progreso: sets completados vs planeados, peso progresando</li>
-        <li>Sugerencia automática de deload si la fatiga acumulada lo pide</li>
-      </ul>
-    </Card>
-  );
-}
-
-function LibraryPlaceholder() {
-  return (
-    <Card variant="default" padding="md" className="border-brand-light-tan">
-      <h3 className="font-serif text-lg text-brand-dark m-0 mb-2">
-        Biblioteca de programas · próximamente
-      </h3>
-      <p className="text-brand-warm text-sm m-0 mb-3">
-        Plantillas validadas por la comunidad y la literatura:
-      </p>
-      <ul className="text-brand-warm text-sm list-disc pl-5 m-0">
-        <li>
-          <strong>Hipertrofia</strong>: PPL 6 días, Upper/Lower 4 días,
-          Arnold split
-        </li>
-        <li>
-          <strong>Fuerza</strong>: 5/3/1 (Wendler), StrongLifts 5×5, Madcow,
-          Texas Method
-        </li>
-        <li>
-          <strong>Powerbuilding</strong>: nSuns, PHAT, PHUL
-        </li>
-        <li>
-          <strong>Peaking</strong>: Sheiko, Smolov, bloques cortos para
-          competencia
-        </li>
-      </ul>
-    </Card>
-  );
-}
-
-function BuilderPlaceholder() {
-  return (
-    <Card variant="default" padding="md" className="border-brand-light-tan">
-      <h3 className="font-serif text-lg text-brand-dark m-0 mb-2">
-        Builder custom · próximamente
-      </h3>
-      <p className="text-brand-warm text-sm m-0">
-        Crea tu propio programa: semanas, mesociclos, rango RPE por fase,
-        ejercicios, sets y repeticiones. La app valida que el volumen esté
-        entre MEV y MRV por grupo muscular y sugiere ajustes.
-      </p>
-    </Card>
   );
 }
