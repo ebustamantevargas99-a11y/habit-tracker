@@ -53,3 +53,4 @@ export * from "./schemas/reading";
 export * from "./schemas/fasting";
 export * from "./schemas/meditation";
 export * from "./schemas/cycle";
+export * from "./schemas/lifeos";

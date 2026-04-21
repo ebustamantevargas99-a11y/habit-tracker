@@ -13,6 +13,7 @@ import NutritionPage from "@/components/features/nutrition/nutrition-page";
 import ReadingPage from "@/components/features/reading/reading-page";
 import MeditationPage from "@/components/features/meditation/meditation-page";
 import CyclePage from "@/components/features/cycle/cycle-page";
+import LifeOSPage from "@/components/features/lifeos/lifeos-page";
 import OrganizationPage from "@/components/features/organization/organization-page";
 import VisionPage from "@/components/features/vision/vision-page";
 import RewindModal from "@/components/features/rewind/rewind-modal";
@@ -118,6 +119,7 @@ export default function MainApp() {
       case "reading":      return <ReadingPage />;
       case "meditation":   return <MeditationPage />;
       case "menstrualCycle": return <CyclePage />;
+      case "lifeos":       return <LifeOSPage />;
       case "organization": return <OrganizationPage />;
       case "vision":       return <VisionPage />;
       case "settings":     return <SettingsPage />;
@@ -135,6 +137,7 @@ export default function MainApp() {
     reading:      "Lectura",
     meditation:   "Meditación",
     menstrualCycle: "Ciclo menstrual",
+    lifeos:       "Life OS",
     organization: "Organización",
     vision:       "Visión & OKR",
     wellness:     "Bienestar",

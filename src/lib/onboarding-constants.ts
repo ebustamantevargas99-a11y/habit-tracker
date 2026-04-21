@@ -24,7 +24,8 @@ export type ModuleKey =
   | "organization"
   | "gamification"
   | "journal"
-  | "visionBoard";
+  | "visionBoard"
+  | "lifeos";
 
 export type InterestKey =
   | "training"
@@ -67,6 +68,7 @@ export const CORE_MODULES: ModuleKey[] = [
   "tasks",
   "settings",
   "gamification",
+  "lifeos",
 ];
 
 // Módulo → se auto-activa si alguno de estos intereses está marcado
@@ -91,6 +93,7 @@ export const MODULE_ACTIVATION: Record<
   organization: [],
   journal: ["mindfulness"],
   visionBoard: [],
+  lifeos: [],
 };
 
 // Módulos con restricción por sexo biológico

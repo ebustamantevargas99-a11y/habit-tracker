@@ -120,6 +120,19 @@ export const NAV_ITEMS = [
     sections: [],
   },
   {
+    key: "lifeos",
+    label: "Life OS",
+    icon: "Sparkles",
+    sections: [
+      "Mañana",
+      "Noche",
+      "Deep Work",
+      "Journal",
+      "Cápsula",
+      "Emergencia",
+    ],
+  },
+  {
     key: "vision",
     label: "Visión",
     icon: "Target",
