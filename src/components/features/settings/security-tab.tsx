@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Shield, Key, Activity, AlertTriangle, Check, Loader2 } from "lucide-react";
 import { api } from "@/lib/api-client";
+import TwoFactorSection from "./two-factor-section";
 
 type SecurityEvent = {
   id: string;
@@ -95,6 +96,9 @@ export default function SecurityTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* 2FA */}
+      <TwoFactorSection />
+
       {/* Change Password */}
       <div className="bg-brand-paper rounded-xl p-6 border border-brand-tan">
         <div className="flex items-center gap-2 mb-4">
@@ -244,9 +248,9 @@ export default function SecurityTab() {
             <Check size={14} className="text-success shrink-0" />
             Audit log de eventos sensibles (esta página)
           </li>
-          <li className="flex items-center gap-2 text-brand-warm">
-            <AlertTriangle size={14} className="text-warning shrink-0" />
-            2FA (autenticación de dos factores) — próximamente
+          <li className="flex items-center gap-2">
+            <Check size={14} className="text-success shrink-0" />
+            2FA TOTP con códigos de respaldo (opcional, desde esta página)
           </li>
         </ul>
       </div>

@@ -24,6 +24,8 @@ export default function LoginPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [twoFactorToken, setTwoFactorToken] = useState("");
+  const [twoFactorRequired, setTwoFactorRequired] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -50,11 +52,22 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
+        twoFactorToken: twoFactorRequired ? twoFactorToken : "",
         redirect: false,
       });
 
       if (result?.error) {
-        setError("Email o contraseña incorrectos");
+        const code = String(result.error);
+        if (code.includes("TwoFactorRequired")) {
+          setTwoFactorRequired(true);
+          setError("");
+        } else if (code.includes("TwoFactorInvalid")) {
+          setError("Código 2FA inválido. Intenta de nuevo.");
+        } else if (code.includes("AccountLocked")) {
+          setError("Cuenta bloqueada temporalmente por demasiados intentos fallidos. Intenta en 30 min.");
+        } else {
+          setError("Email o contraseña incorrectos");
+        }
       } else {
         router.push("/");
         router.refresh();
@@ -196,6 +209,27 @@ export default function LoginPage() {
               style={inputStyle}
             />
           </div>
+
+          {twoFactorRequired && mode === "login" && (
+            <div style={{ marginBottom: 24 }}>
+              <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>
+                Código de verificación (2FA)
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={twoFactorToken}
+                onChange={(e) => setTwoFactorToken(e.target.value)}
+                placeholder="6 dígitos o código de respaldo XXXX-XXXX"
+                required
+                autoFocus
+                style={{ ...inputStyle, fontFamily: "monospace", letterSpacing: "0.1em" }}
+              />
+              <p style={{ fontSize: 12, color: COLORS.warm, marginTop: 6 }}>
+                Abre tu app autenticadora (Google Authenticator, Authy, 1Password) e ingresa el código.
+              </p>
+            </div>
+          )}
 
           {error && (
             <div
