@@ -10,6 +10,7 @@ import BudgetTrackerPage from "@/components/features/finance/budget-tracker-page
 import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
+import ReadingPage from "@/components/features/reading/reading-page";
 import OrganizationPage from "@/components/features/organization/organization-page";
 import VisionPage from "@/components/features/vision/vision-page";
 import MonthlySummaryModal from "@/components/features/home/monthly-summary-modal";
@@ -112,6 +113,7 @@ export default function MainApp() {
       case "wellness":     return <MoodTrackerPage />;
       case "fitness":      return <FitnessPage />;
       case "nutrition":    return <NutritionPage />;
+      case "reading":      return <ReadingPage />;
       case "organization": return <OrganizationPage />;
       case "vision":       return <VisionPage />;
       case "settings":     return <SettingsPage />;
@@ -126,6 +128,7 @@ export default function MainApp() {
     finance:      "Finanzas",
     fitness:      "Fitness",
     nutrition:    "Nutrición",
+    reading:      "Lectura",
     organization: "Organización",
     vision:       "Visión & OKR",
     wellness:     "Bienestar",

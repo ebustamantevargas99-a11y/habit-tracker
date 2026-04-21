@@ -75,6 +75,17 @@ export const NAV_ITEMS = [
     ],
   },
   {
+    key: "reading",
+    label: "Lectura",
+    icon: "BookOpen",
+    sections: [
+      "Leyendo",
+      "Quiero leer",
+      "Terminados",
+      "En pausa",
+    ],
+  },
+  {
     key: "organization",
     label: "Organización",
     icon: "BookOpen",

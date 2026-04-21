@@ -80,6 +80,10 @@ model User {
 
   // ── Scoring ────────────────────────────────────────────────────────────────
   lifeScoreSnapshots LifeScoreSnapshot[]
+
+  // ── Reading ────────────────────────────────────────────────────────────────
+  books            Book[]
+  readingSessions  ReadingSession[]
 }
 
 model Account {
@@ -909,4 +913,44 @@ model LifeScoreSnapshot {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+// ─── Reading (libros + sesiones de lectura) ───────────────────────────────────
+
+model Book {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  author      String?
+  totalPages  Int?
+  currentPage Int      @default(0)
+  status      String   @default("reading")   // reading | finished | want | paused
+  rating      Int?     // 1-5
+  coverUrl    String?
+  genre       String?
+  notes       String?  @db.Text
+  startedAt   String?  // YYYY-MM-DD
+  finishedAt  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sessions    ReadingSession[]
+
+  @@index([userId, status])
+}
+
+model ReadingSession {
+  id        String   @id @default(cuid())
+  userId    String
+  bookId    String
+  date      String   // YYYY-MM-DD
+  pagesRead Int      @default(0)
+  minutes   Int?
+  notes     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+  @@index([bookId, date])
 }

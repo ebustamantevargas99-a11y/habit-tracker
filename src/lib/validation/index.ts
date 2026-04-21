@@ -49,3 +49,4 @@ export * from "./schemas/organization";
 export * from "./schemas/nutrition";
 export * from "./schemas/habits";
 export * from "./schemas/user";
+export * from "./schemas/reading";

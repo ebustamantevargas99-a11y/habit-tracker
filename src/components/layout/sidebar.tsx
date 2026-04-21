@@ -74,6 +74,13 @@ const NUTRITION_SECTION_MAP: Record<string, string> = {
   "Metas":        "metas",
 };
 
+const READING_SECTION_MAP: Record<string, string> = {
+  "Leyendo":      "reading",
+  "Quiero leer":  "want",
+  "Terminados":   "finished",
+  "En pausa":     "paused",
+};
+
 const ORGANIZATION_SECTION_MAP: Record<string, string> = {
   "Notas":            "notas",
   "Áreas de Vida":    "areas",
@@ -94,7 +101,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const {
     activePage, setActivePage,
     setWellnessSubTab, setProductivitySubTab, setPlanTab,
-    setFitnessTab, setFinanceTab, setNutritionTab, setOrganizationTab,
+    setFitnessTab, setFinanceTab, setNutritionTab, setReadingTab, setOrganizationTab,
   } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
   const { user, isModuleEnabled } = useUserStore();
@@ -192,6 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);
                         if (item.key === "finance"       && FINANCE_SECTION_MAP[section])       setFinanceTab(FINANCE_SECTION_MAP[section]);
                         if (item.key === "nutrition"     && NUTRITION_SECTION_MAP[section])     setNutritionTab(NUTRITION_SECTION_MAP[section]);
+                        if (item.key === "reading"       && READING_SECTION_MAP[section])       setReadingTab(READING_SECTION_MAP[section]);
                         if (item.key === "organization"  && ORGANIZATION_SECTION_MAP[section])  setOrganizationTab(ORGANIZATION_SECTION_MAP[section]);
                       }}
                       className={cn(

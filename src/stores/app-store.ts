@@ -12,7 +12,8 @@ const VALID_TABS: Record<string, string[]> = {
   plan:         ['calendar', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'],
   fitness:      ['entrenamiento', 'volumen', 'plan', 'records', 'metricas', 'peso', 'pasos', 'ayuno', 'retos', 'fotos'],
   finance:      ['resumen', 'ingresos', 'gastos', 'presupuesto', 'facturas', 'suscripciones', 'deseos', 'analytics'],
-  nutrition:    ['diario', 'resumen', 'alimentos', 'metas'],
+  nutrition:    ['pro', 'diario', 'resumen', 'alimentos', 'metas'],
+  reading:      ['reading', 'want', 'finished', 'paused'],
   organization: ['notas', 'areas', 'revision'],
   vision:       ['vision', 'metas', 'okr', 'proyecciones', 'board', 'timeline', 'afirmaciones', 'vida'],
 };
@@ -47,6 +48,10 @@ interface AppState {
   // Nutrition deep-link
   nutritionTab: string;
   setNutritionTab: (tab: string) => void;
+
+  // Reading deep-link
+  readingTab: string;
+  setReadingTab: (tab: string) => void;
 
   // Organization deep-link
   organizationTab: string;
@@ -90,6 +95,9 @@ export const useAppStore = create<AppState>((set) => ({
   nutritionTab: 'diario',
   setNutritionTab: (tab) => set({ nutritionTab: tab }),
 
+  readingTab: 'reading',
+  setReadingTab: (tab) => set({ readingTab: tab }),
+
   organizationTab: 'notas',
   setOrganizationTab: (tab) => set({ organizationTab: tab }),
 
@@ -123,6 +131,9 @@ export const useAppStore = create<AppState>((set) => ({
             break;
           case 'nutrition':
             update.nutritionTab = tab;
+            break;
+          case 'reading':
+            update.readingTab = tab;
             break;
           case 'organization':
             update.organizationTab = tab;
