@@ -8,12 +8,14 @@ import {
   Download,
   Bell,
   BellOff,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/components/ui";
 import TodayView from "./today-view";
 import WeekView from "./week-view";
 import MonthView from "./month-view";
+import YearReviewModal from "./year-review-modal";
 import { useAppStore, type PlanTab } from "@/stores/app-store";
 
 const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
@@ -31,6 +33,7 @@ export default function CalendarPage() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">(
     "default"
   );
+  const [showYearReview, setShowYearReview] = useState(false);
 
   useEffect(() => {
     if (typeof Notification === "undefined") {
@@ -116,6 +119,13 @@ export default function CalendarPage() {
           >
             <Download size={12} /> Export
           </button>
+          <button
+            onClick={() => setShowYearReview(true)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-button bg-accent text-white text-xs font-semibold hover:bg-brand-brown"
+            title="Revisión anual con análisis IA"
+          >
+            <Sparkles size={12} /> Revisión anual
+          </button>
         </div>
       </div>
 
@@ -131,6 +141,8 @@ export default function CalendarPage() {
           }}
         />
       )}
+
+      {showYearReview && <YearReviewModal onClose={() => setShowYearReview(false)} />}
     </div>
   );
 }
