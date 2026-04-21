@@ -1,9 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { Calendar as CalendarIcon, CalendarDays, CalendarRange } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Calendar as CalendarIcon,
+  CalendarDays,
+  CalendarRange,
+  Download,
+  Bell,
+  BellOff,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/components/ui";
 import TodayView from "./today-view";
+import WeekView from "./week-view";
+import MonthView from "./month-view";
 import { useAppStore, type PlanTab } from "@/stores/app-store";
 
 const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
@@ -18,67 +28,108 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(
     new Date().toISOString().split("T")[0]
   );
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">(
+    "default"
+  );
+
+  useEffect(() => {
+    if (typeof Notification === "undefined") {
+      setNotifPermission("unsupported");
+    } else {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
+
+  async function requestNotifPermission() {
+    if (typeof Notification === "undefined") return;
+    try {
+      const perm = await Notification.requestPermission();
+      setNotifPermission(perm);
+      if (perm === "granted") {
+        toast.success("Recordatorios activados ✨");
+        new Notification("Ultimate TRACKER", {
+          body: "Los recordatorios están activados. Te avisaremos antes de cada evento.",
+          icon: "/favicon.ico",
+        });
+      } else {
+        toast.info("Permiso denegado");
+      }
+    } catch {
+      toast.error("Error pidiendo permiso");
+    }
+  }
+
+  function exportICal() {
+    const link = document.createElement("a");
+    link.href = "/api/calendar/export";
+    link.download = `ultimate-tracker-${new Date().toISOString().slice(0, 10)}.ics`;
+    link.click();
+    toast.success("Descargando .ics · impórtalo en Google Calendar o Apple Calendar");
+  }
 
   return (
     <div className="space-y-5">
-      {/* View switcher */}
-      <div className="flex gap-1 border-b-2 border-brand-cream">
-        {VIEWS.map((v) => {
-          const Icon = v.icon;
-          return (
+      {/* View switcher + actions */}
+      <div className="flex items-center justify-between gap-2 border-b-2 border-brand-cream">
+        <div className="flex gap-1">
+          {VIEWS.map((v) => {
+            const Icon = v.icon;
+            return (
+              <button
+                key={v.id}
+                onClick={() => setView(v.id)}
+                className={cn(
+                  "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
+                  view === v.id
+                    ? "border-b-accent text-accent font-semibold"
+                    : "border-b-transparent text-brand-medium hover:text-brand-dark"
+                )}
+              >
+                <Icon size={15} />
+                {v.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex gap-2 pb-1.5">
+          {notifPermission !== "unsupported" && notifPermission !== "granted" && (
             <button
-              key={v.id}
-              onClick={() => setView(v.id)}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-                view === v.id
-                  ? "border-b-accent text-accent font-semibold"
-                  : "border-b-transparent text-brand-medium hover:text-brand-dark"
-              )}
+              onClick={requestNotifPermission}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
+              title="Activar recordatorios push del navegador"
             >
-              <Icon size={15} />
-              {v.label}
+              <BellOff size={12} /> Activar recordatorios
             </button>
-          );
-        })}
+          )}
+          {notifPermission === "granted" && (
+            <span
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-button text-xs text-success"
+              title="Recordatorios activos"
+            >
+              <Bell size={12} /> Recordatorios ✓
+            </span>
+          )}
+          <button
+            onClick={exportICal}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
+            title="Descargar .ics para Google/Apple Calendar"
+          >
+            <Download size={12} /> Export
+          </button>
+        </div>
       </div>
 
       {view === "today" && (
         <TodayView selectedDate={selectedDate} onDateChange={setSelectedDate} />
       )}
-      {view === "week" && (
-        <div className="bg-brand-paper border border-dashed border-brand-cream rounded-xl p-16 text-center">
-          <CalendarDays size={32} className="inline text-brand-warm mb-3" />
-          <h3 className="font-serif text-lg text-brand-dark m-0 mb-1">
-            Vista Semana — próximamente
-          </h3>
-          <p className="text-sm text-brand-warm">
-            Grid 7 días × 24 horas con drag-and-drop. Llegará en Fase 2.
-          </p>
-          <button
-            onClick={() => setView("today")}
-            className="mt-4 px-4 py-2 rounded-button bg-accent text-white text-sm hover:bg-brand-brown"
-          >
-            Volver a Hoy
-          </button>
-        </div>
-      )}
+      {view === "week" && <WeekView />}
       {view === "month" && (
-        <div className="bg-brand-paper border border-dashed border-brand-cream rounded-xl p-16 text-center">
-          <CalendarRange size={32} className="inline text-brand-warm mb-3" />
-          <h3 className="font-serif text-lg text-brand-dark m-0 mb-1">
-            Vista Mes — próximamente
-          </h3>
-          <p className="text-sm text-brand-warm">
-            Calendario mensual con heatmap de densidad. Llegará en Fase 3.
-          </p>
-          <button
-            onClick={() => setView("today")}
-            className="mt-4 px-4 py-2 rounded-button bg-accent text-white text-sm hover:bg-brand-brown"
-          >
-            Volver a Hoy
-          </button>
-        </div>
+        <MonthView
+          onDrillDown={(date) => {
+            setSelectedDate(date);
+            setView("today");
+          }}
+        />
       )}
     </div>
   );
