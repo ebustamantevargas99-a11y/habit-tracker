@@ -28,6 +28,8 @@ export default function LoginPage() {
   const [twoFactorRequired, setTwoFactorRequired] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [website, setWebsite] = useState(""); // honeypot
+  const [formLoadedAt] = useState(() => Date.now());
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,7 +41,13 @@ export default function LoginPage() {
         const res = await fetch("/api/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password }),
+          body: JSON.stringify({
+            name,
+            email,
+            password,
+            website,
+            formFilledIn: Date.now() - formLoadedAt,
+          }),
         });
         const data = await res.json();
         if (!res.ok) {
@@ -167,6 +175,31 @@ export default function LoginPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit}>
+          {/* Honeypot anti-bot (oculto visualmente pero presente para bots) */}
+          {mode === "register" && (
+            <div
+              aria-hidden="true"
+              style={{
+                position: "absolute",
+                left: "-9999px",
+                width: 1,
+                height: 1,
+                overflow: "hidden",
+              }}
+            >
+              <label htmlFor="website_url">Website (déjalo vacío)</label>
+              <input
+                type="text"
+                id="website_url"
+                name="website"
+                tabIndex={-1}
+                autoComplete="off"
+                value={website}
+                onChange={(e) => setWebsite(e.target.value)}
+              />
+            </div>
+          )}
+
           {mode === "register" && (
             <div style={{ marginBottom: 16 }}>
               <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>

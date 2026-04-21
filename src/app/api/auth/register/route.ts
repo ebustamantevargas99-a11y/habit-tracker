@@ -18,6 +18,30 @@ export async function POST(req: NextRequest) {
     const parsed = await parseJson(req, registerSchema);
     if (!parsed.ok) return parsed.response;
 
+    // Bot protection: honeypot + time-to-fill
+    if (parsed.data.website && parsed.data.website.length > 0) {
+      await logSecurityEvent({
+        eventType: "suspicious_activity",
+        email: parsed.data.email,
+        request: req,
+        metadata: { context: "register_honeypot" },
+      });
+      // Respuesta idéntica a la exitosa para no revelar el trap
+      return NextResponse.json({ id: "pending" }, { status: 201 });
+    }
+    if (
+      typeof parsed.data.formFilledIn === "number" &&
+      parsed.data.formFilledIn < 1500
+    ) {
+      await logSecurityEvent({
+        eventType: "suspicious_activity",
+        email: parsed.data.email,
+        request: req,
+        metadata: { context: "register_too_fast", ms: parsed.data.formFilledIn },
+      });
+      return NextResponse.json({ id: "pending" }, { status: 201 });
+    }
+
     const { name, email, password } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });

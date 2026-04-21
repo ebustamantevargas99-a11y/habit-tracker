@@ -21,6 +21,7 @@ import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal"
 import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
 import SettingsPage from "@/components/features/settings/settings-page";
 import FloatingAIButton from "@/components/features/ai-export/floating-ai-button";
+import PWAInstallPrompt from "@/components/pwa/install-prompt";
 import { useState, useEffect } from "react";
 import { Menu, Bell } from "lucide-react";
 import { useRouteSync } from "@/lib/use-route-sync";
@@ -208,6 +209,7 @@ export default function MainApp() {
       </div>
 
       <FloatingAIButton />
+      <PWAInstallPrompt />
 
       {showMonthlySummary && (
         <RewindModal onClose={() => useAppStore.setState({ showMonthlySummary: false })} />
