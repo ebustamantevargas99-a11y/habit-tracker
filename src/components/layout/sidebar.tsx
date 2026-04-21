@@ -54,12 +54,11 @@ const FITNESS_SECTION_MAP: Record<string, string> = {
 };
 
 const FINANCE_SECTION_MAP: Record<string, string> = {
-  "Income":          "ingresos",
-  "Expenses":        "gastos",
-  "Budget Tracker":  "presupuesto",
-  "Bills":           "facturas",
-  "Subscriptions":   "suscripciones",
-  "Wishlist":        "deseos",
+  "Panel":          "panel",
+  "Flujo":          "flow",
+  "Metas & Deudas": "goals",
+  "Inversiones":    "investments",
+  "Análisis":       "analysis",
 };
 
 const NUTRITION_SECTION_MAP: Record<string, string> = {

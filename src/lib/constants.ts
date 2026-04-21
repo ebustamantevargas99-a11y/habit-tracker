@@ -35,12 +35,11 @@ export const NAV_ITEMS = [
     label: "Finanzas",
     icon: "DollarSign",
     sections: [
-      "Income",
-      "Expenses",
-      "Budget Tracker",
-      "Bills",
-      "Subscriptions",
-      "Wishlist",
+      "Panel",
+      "Flujo",
+      "Metas & Deudas",
+      "Inversiones",
+      "Análisis",
     ],
   },
   {

@@ -6,7 +6,7 @@ import PlaceholderPage from "./placeholder-page";
 import HomeDashboard from "@/components/features/home/home-dashboard";
 import ProductivityPage from "@/components/features/productivity/productivity-page";
 import CalendarPage from "@/components/features/calendar/calendar-page";
-import BudgetTrackerPage from "@/components/features/finance/budget-tracker-page";
+import FinancePage from "@/components/features/finance/finance-page";
 import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
@@ -114,7 +114,7 @@ export default function MainApp() {
       case "home":         return <HomeDashboard />;
       case "productivity": return <ProductivityPage />;
       case "plan":         return <CalendarPage />;
-      case "finance":      return <BudgetTrackerPage />;
+      case "finance":      return <FinancePage />;
       case "wellness":     return <MoodTrackerPage />;
       case "fitness":      return <FitnessPage />;
       case "nutrition":    return <NutritionPage />;
