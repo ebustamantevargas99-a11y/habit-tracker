@@ -90,6 +90,8 @@ export const useHabitStore = create<HabitState>((set, get) => ({
     }
 
     try {
+      const prevStreak = get().habits.find((h) => h.id === habitId)?.streakCurrent ?? 0;
+
       const result = await api.post<{ log: HabitLog; habit: Habit }>(
         `/habits/${habitId}/logs`,
         { date: today, completed: newCompleted }
@@ -105,6 +107,27 @@ export const useHabitStore = create<HabitState>((set, get) => ({
           h.id === habitId ? { ...h, ...result.habit } : h
         ),
       }));
+
+      // Celebrate streak milestones (7, 30, 100, 365)
+      const newStreak = result.habit.streakCurrent ?? 0;
+      const milestones = [7, 30, 100, 365];
+      for (const m of milestones) {
+        if (prevStreak < m && newStreak >= m) {
+          const { fireConfettiStreak } = await import("@/lib/celebrations/confetti");
+          fireConfettiStreak(m);
+          const { toast } = await import("sonner");
+          toast.success(
+            m === 365
+              ? `🏆 ¡Un año completo! Racha de ${m} días`
+              : m >= 100
+              ? `💎 ¡${m} días consecutivos! Leyenda.`
+              : m >= 30
+              ? `🔥 ¡${m} días! Hábito arraigado.`
+              : `✨ ¡${m} días seguidos! Buen ritmo.`
+          );
+          break;
+        }
+      }
     } catch (e) {
       // Rollback optimistic update
       if (existingLog) {

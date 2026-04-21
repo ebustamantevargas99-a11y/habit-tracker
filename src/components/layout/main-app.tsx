@@ -13,7 +13,7 @@ import NutritionPage from "@/components/features/nutrition/nutrition-page";
 import ReadingPage from "@/components/features/reading/reading-page";
 import OrganizationPage from "@/components/features/organization/organization-page";
 import VisionPage from "@/components/features/vision/vision-page";
-import MonthlySummaryModal from "@/components/features/home/monthly-summary-modal";
+import RewindModal from "@/components/features/rewind/rewind-modal";
 import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal";
 import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
 import SettingsPage from "@/components/features/settings/settings-page";
@@ -167,13 +167,13 @@ export default function MainApp() {
                   className="btn-primary text-sm"
                   onClick={() => useAppStore.setState({ showMonthlySummary: true })}
                 >
-                  Ver Resumen Mensual
+                  🎬 Rewind del mes
                 </button>
                 <button
                   className="btn btn-md bg-brand-brown text-white hover:bg-brand-medium"
                   onClick={() => useAppStore.setState({ showWeeklySummary: true })}
                 >
-                  Ver Resumen Semanal
+                  Resumen semanal
                 </button>
               </>
             )}
@@ -201,7 +201,7 @@ export default function MainApp() {
       <FloatingAIButton />
 
       {showMonthlySummary && (
-        <MonthlySummaryModal onClose={() => useAppStore.setState({ showMonthlySummary: false })} />
+        <RewindModal onClose={() => useAppStore.setState({ showMonthlySummary: false })} />
       )}
       {showWeeklySummary && (
         <WeeklySummaryModal onClose={() => useAppStore.setState({ showWeeklySummary: false })} />

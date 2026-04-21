@@ -213,12 +213,21 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
   },
 
   updatePR: async (pr) => {
+    const prev = get().personalRecords.find((p) => p.exercise === pr.exercise);
     const updated = await api.put<PersonalRecord>("/fitness/personal-records", pr);
     set((state) => ({
       personalRecords: state.personalRecords.some((p) => p.exercise === pr.exercise)
         ? state.personalRecords.map((p) => (p.exercise === pr.exercise ? updated : p))
         : [...state.personalRecords, updated],
     }));
+    // Celebrate if 1RM improved
+    const prev1RM = prev?.oneRM ?? 0;
+    if ((updated.oneRM ?? 0) > prev1RM) {
+      const { fireConfettiPR } = await import("@/lib/celebrations/confetti");
+      fireConfettiPR();
+      const { toast } = await import("sonner");
+      toast.success(`🏋️ ¡Nuevo PR en ${pr.exercise}! 1RM estimado: ${Math.round(updated.oneRM)}kg`);
+    }
   },
 
   addBodyMetric: async (metric) => {
