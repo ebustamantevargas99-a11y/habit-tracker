@@ -21,6 +21,7 @@ type LifeScoreApi = {
   activeModules: string[];
   date: string;
   windowDays: number;
+  history?: { date: string; overall: number }[];
 };
 
 const LIFE_DIM_LABELS: Record<string, { label: string; icon: string }> = {
@@ -175,7 +176,7 @@ export default function HomeDashboard() {
   useEffect(() => {
     let cancelled = false;
     api
-      .get<LifeScoreApi>('/user/life-score')
+      .get<LifeScoreApi>('/user/life-score?history=30')
       .then((data) => {
         if (!cancelled) setLifeScoreApi(data);
       })
@@ -430,6 +431,62 @@ export default function HomeDashboard() {
               <div className="text-[10px] uppercase tracking-widest text-brand-warm">de 100</div>
             </div>
           </div>
+
+          {lifeScoreApi?.history && lifeScoreApi.history.length >= 2 && (
+            <div className="mb-5 bg-brand-warm-white rounded-lg p-3 border border-brand-cream">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold uppercase tracking-widest text-brand-warm">
+                  Evolución últimos 30 días
+                </span>
+                <span className="text-[11px] text-brand-tan">
+                  {lifeScoreApi.history.length} snapshot{lifeScoreApi.history.length === 1 ? '' : 's'}
+                </span>
+              </div>
+              <ResponsiveContainer width="100%" height={90}>
+                <AreaChart data={lifeScoreApi.history} margin={{ top: 5, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="lifeScoreFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={C.accent} stopOpacity={0.4} />
+                      <stop offset="100%" stopColor={C.accent} stopOpacity={0.05} />
+                    </linearGradient>
+                  </defs>
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={(v: string) => v.slice(5)}
+                    tick={{ fontSize: 10, fill: C.warm }}
+                    axisLine={false}
+                    tickLine={false}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis
+                    domain={[0, 100]}
+                    tick={{ fontSize: 10, fill: C.warm }}
+                    axisLine={false}
+                    tickLine={false}
+                    ticks={[0, 50, 100]}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: C.paper,
+                      border: `1px solid ${C.cream}`,
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                    labelFormatter={(v: string) => v}
+                    formatter={(v: number) => [`${v} / 100`, 'Life Score']}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="overall"
+                    stroke={C.accent}
+                    strokeWidth={2}
+                    fill="url(#lifeScoreFill)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
           <div className="grid grid-cols-5 gap-3">
             {(Object.entries(LIFE_DIM_LABELS) as [string, { label: string; icon: string }][]).map(
               ([key, meta]) => {

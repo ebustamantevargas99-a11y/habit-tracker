@@ -199,7 +199,7 @@ async function scoreProductivity(userId: string, dates: string[]): Promise<Dimen
 
 export async function computeLifeScore(
   userId: string,
-  options?: { date?: string; windowDays?: number }
+  options?: { date?: string; windowDays?: number; persistSnapshot?: boolean }
 ): Promise<LifeScoreResult> {
   const windowDays = options?.windowDays ?? 7;
   const endDate = options?.date
@@ -268,7 +268,7 @@ export async function computeLifeScore(
     overall = Math.round(weightedSum / totalWeight);
   }
 
-  return {
+  const result: LifeScoreResult = {
     overall: clamp(overall),
     breakdown,
     weightsApplied,
@@ -277,6 +277,55 @@ export async function computeLifeScore(
     windowDays,
     generatedAt: new Date().toISOString(),
   };
+
+  // Persistir snapshot (lazy). Ignora el error — snapshot es best-effort.
+  if (options?.persistSnapshot !== false) {
+    try {
+      await prisma.lifeScoreSnapshot.upsert({
+        where: { userId_date: { userId, date: endISO } },
+        create: {
+          userId,
+          date: endISO,
+          overall: result.overall,
+          breakdown: breakdown as unknown as object,
+        },
+        update: {
+          overall: result.overall,
+          breakdown: breakdown as unknown as object,
+        },
+      });
+    } catch (err) {
+      console.error("[life-score] snapshot upsert failed:", err);
+    }
+  }
+
+  return result;
+}
+
+// ─── Histórico ────────────────────────────────────────────────────────────────
+
+export type LifeScorePoint = {
+  date: string;
+  overall: number;
+};
+
+export async function getLifeScoreHistory(
+  userId: string,
+  days: number
+): Promise<LifeScorePoint[]> {
+  const end = new Date();
+  const start = new Date(end);
+  start.setUTCDate(start.getUTCDate() - (days - 1));
+  const startISO = start.toISOString().split("T")[0];
+  const endISO = end.toISOString().split("T")[0];
+
+  const rows = await prisma.lifeScoreSnapshot.findMany({
+    where: { userId, date: { gte: startISO, lte: endISO } },
+    select: { date: true, overall: true },
+    orderBy: { date: "asc" },
+  });
+
+  return rows.map((r) => ({ date: r.date, overall: r.overall }));
 }
 
 // ─── Helpers puros para tests ─────────────────────────────────────────────────
