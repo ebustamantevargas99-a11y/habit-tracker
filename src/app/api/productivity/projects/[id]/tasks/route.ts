@@ -18,6 +18,7 @@ export async function GET(
     const tasks = await prisma.projectTask.findMany({
       where: { projectId: params.id },
       orderBy: [{ status: "asc" }, { orderIndex: "asc" }],
+      include: { subtasks: { orderBy: { orderIndex: "asc" } } },
     });
     return NextResponse.json(tasks);
   });

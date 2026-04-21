@@ -31,11 +31,9 @@ const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
 };
 
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
-  "Operations Center": "command",
-  "Habit Tracker":     "habits",
-  "Project Management":"projects",
-  "Pomodoro":          "pomodoro",
-  "Dashboard KPIs":    "projection",
+  "Hábitos":    "habits",
+  "Proyectos":  "projects",
+  "Deep Work":  "pomodoro",
 };
 
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {

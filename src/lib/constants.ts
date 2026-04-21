@@ -25,11 +25,9 @@ export const NAV_ITEMS = [
     label: "Productividad",
     icon: "Zap",
     sections: [
-      "Operations Center",
-      "Habit Tracker",
-      "Project Management",
-      "Pomodoro",
-      "Dashboard KPIs",
+      "Hábitos",
+      "Proyectos",
+      "Deep Work",
     ],
   },
   {
