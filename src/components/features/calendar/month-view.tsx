@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, Target, Trophy, Sparkles } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronLeft, ChevronRight, Loader2, ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import QuickAddBar from "./quick-add-bar";
+import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
 import type { CalendarEvent } from "./types";
 import { TYPE_META } from "./types";
 
@@ -18,7 +19,15 @@ type MonthData = {
   density: Record<string, number>;
 };
 
+type Editing =
+  | { mode: "create"; dateStr: string; hour: number; anchor: AnchorRect }
+  | { mode: "edit"; event: CalendarEvent; anchor: AnchorRect };
+
 const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
+// Hora default para eventos creados desde vista Mes (cuando el user no
+// indica hora específica, arrancamos en 9:00am).
+const DEFAULT_CREATE_HOUR = 9;
 
 function toDateStr(d: Date): string {
   return d.toISOString().split("T")[0];
@@ -64,6 +73,7 @@ export default function MonthView({
   const [cursor, setCursor] = useState<Date>(new Date());
   const [data, setData] = useState<MonthData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<Editing | null>(null);
 
   const grid = useMemo(() => buildGrid(cursor), [cursor]);
   const month = cursor.getMonth();
@@ -144,6 +154,14 @@ export default function MonthView({
 
   const maxDensity = Math.max(1, ...Object.values(data?.density ?? {}));
 
+  function openCreate(dateStr: string, anchor: AnchorRect) {
+    setEditing({ mode: "create", dateStr, hour: DEFAULT_CREATE_HOUR, anchor });
+  }
+
+  function openEdit(event: CalendarEvent, anchor: AnchorRect) {
+    setEditing({ mode: "edit", event, anchor });
+  }
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -215,82 +233,196 @@ export default function MonthView({
             const bgOpacity = densityIntensity === 0 ? 0 : 0.15 + densityIntensity * 0.5;
 
             return (
-              <button
+              <MonthCell
                 key={k}
-                onClick={() => onDrillDown(k)}
-                className={cn(
-                  "relative min-h-[100px] border-b border-r border-brand-cream p-1.5 text-left transition hover:bg-accent/10",
-                  isOtherMonth && "opacity-35",
-                  isToday && "ring-2 ring-accent ring-inset z-10"
-                )}
-                style={{
-                  backgroundColor: dens > 0 ? `rgba(184, 134, 11, ${bgOpacity})` : undefined,
-                }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span
-                    className={cn(
-                      "text-xs font-semibold",
-                      isToday ? "text-accent" : "text-brand-dark"
-                    )}
-                  >
-                    {d.getDate()}
-                  </span>
-                  {entry && entry.habitsTotal > 0 && (
-                    <span className="text-[9px] text-brand-warm font-mono">
-                      {entry.habitsDone}/{entry.habitsTotal}
-                    </span>
-                  )}
-                </div>
-                {/* Events preview */}
-                <div className="space-y-0.5">
-                  {entry?.events.slice(0, 3).map((ev) => {
-                    const meta = TYPE_META[ev.type] ?? TYPE_META.custom;
-                    return (
-                      <div
-                        key={ev.id}
-                        className={cn(
-                          "text-[9px] px-1 py-[1px] rounded truncate",
-                          meta.bgClass
-                        )}
-                      >
-                        {ev.icon ?? meta.emoji} {ev.title}
-                      </div>
-                    );
-                  })}
-                  {entry && entry.events.length > 3 && (
-                    <div className="text-[9px] text-brand-warm pl-1">
-                      +{entry.events.length - 3} más
-                    </div>
-                  )}
-                </div>
-                {/* Badges: workouts + milestones */}
-                <div className="absolute bottom-1 right-1 flex gap-0.5">
-                  {entry && entry.workouts.length > 0 && (
-                    <span className="text-[10px]" title="Workout">
-                      💪
-                    </span>
-                  )}
-                  {entry?.workouts.some((w) => w.prsHit > 0) && (
-                    <span className="text-[10px]" title="PR nuevo">
-                      🏆
-                    </span>
-                  )}
-                  {entry && entry.milestones.length > 0 && (
-                    <span className="text-[10px]" title="Milestone">
-                      ✨
-                    </span>
-                  )}
-                </div>
-              </button>
+                dateStr={k}
+                date={d}
+                isOtherMonth={isOtherMonth}
+                isToday={isToday}
+                bgOpacity={bgOpacity}
+                entry={entry}
+                onOpenCreate={openCreate}
+                onOpenEdit={openEdit}
+                onDrillDown={onDrillDown}
+              />
             );
           })}
         </div>
       </div>
 
+      {/* Popover inline */}
+      {editing && (
+        <QuickEventPopover
+          mode={
+            editing.mode === "create"
+              ? { kind: "create", dateStr: editing.dateStr, hour: editing.hour }
+              : { kind: "edit", event: editing.event }
+          }
+          anchor={editing.anchor}
+          onClose={() => setEditing(null)}
+          onSaved={(saved) => {
+            setData((prev) => {
+              if (!prev) return prev;
+              const exists = prev.events.some((e) => e.id === saved.id);
+              return {
+                ...prev,
+                events: exists
+                  ? prev.events.map((e) => (e.id === saved.id ? saved : e))
+                  : [...prev.events, saved],
+              };
+            });
+          }}
+          onDeleted={(id) => {
+            setData((prev) =>
+              prev ? { ...prev, events: prev.events.filter((e) => e.id !== id) } : prev,
+            );
+          }}
+        />
+      )}
+
       <p className="text-[11px] text-brand-tan text-center">
-        💡 Click un día para abrir la vista Hoy de esa fecha
+        💡 Click en un día para crear · click en un evento para editar · click en la flecha ↗ para ver el día completo
       </p>
+    </div>
+  );
+}
+
+// ─── MonthCell ───────────────────────────────────────────────────────
+
+function MonthCell({
+  dateStr,
+  date,
+  isOtherMonth,
+  isToday,
+  bgOpacity,
+  entry,
+  onOpenCreate,
+  onOpenEdit,
+  onDrillDown,
+}: {
+  dateStr: string;
+  date: Date;
+  isOtherMonth: boolean;
+  isToday: boolean;
+  bgOpacity: number;
+  entry:
+    | {
+        events: CalendarEvent[];
+        workouts: MonthData["workouts"];
+        habitsDone: number;
+        habitsTotal: number;
+        milestones: MonthData["milestones"];
+        density: number;
+      }
+    | undefined;
+  onOpenCreate: (dateStr: string, anchor: AnchorRect) => void;
+  onOpenEdit: (event: CalendarEvent, anchor: AnchorRect) => void;
+  onDrillDown: (date: string) => void;
+}) {
+  const cellRef = useRef<HTMLDivElement>(null);
+
+  function handleCellClick() {
+    const el = cellRef.current;
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    onOpenCreate(dateStr, { left: r.left, top: r.top, width: r.width, height: r.height });
+  }
+
+  function handleEventClick(ev: CalendarEvent, e: React.MouseEvent<HTMLDivElement>) {
+    e.stopPropagation();
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    onOpenEdit(ev, { left: r.left, top: r.top, width: r.width, height: r.height });
+  }
+
+  return (
+    <div
+      ref={cellRef}
+      onClick={handleCellClick}
+      className={cn(
+        "group relative min-h-[100px] border-b border-r border-brand-cream p-1.5 text-left transition cursor-pointer hover:bg-accent/10",
+        isOtherMonth && "opacity-35",
+        isToday && "ring-2 ring-accent ring-inset z-10",
+      )}
+      style={{
+        backgroundColor: entry && entry.density > 0 ? `rgba(184, 134, 11, ${bgOpacity})` : undefined,
+      }}
+    >
+      <div className="flex items-center justify-between mb-1">
+        <span
+          className={cn(
+            "text-xs font-semibold",
+            isToday ? "text-accent" : "text-brand-dark",
+          )}
+        >
+          {date.getDate()}
+        </span>
+        <div className="flex items-center gap-1">
+          {entry && entry.habitsTotal > 0 && (
+            <span className="text-[9px] text-brand-warm font-mono">
+              {entry.habitsDone}/{entry.habitsTotal}
+            </span>
+          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDrillDown(dateStr);
+            }}
+            className="opacity-0 group-hover:opacity-100 transition p-0.5 rounded hover:bg-brand-cream text-brand-warm"
+            title="Ver día completo"
+            aria-label="Ver día completo"
+          >
+            <ArrowUpRight size={11} />
+          </button>
+        </div>
+      </div>
+      {/* Events preview */}
+      <div className="space-y-0.5">
+        {entry?.events.slice(0, 3).map((ev) => {
+          const meta = TYPE_META[ev.type] ?? TYPE_META.custom;
+          return (
+            <div
+              key={ev.id}
+              onClick={(e) => handleEventClick(ev, e)}
+              className={cn(
+                "text-[9px] px-1 py-[1px] rounded truncate cursor-pointer",
+                meta.bgClass,
+              )}
+              title="Click para editar"
+            >
+              {ev.icon ?? meta.emoji} {ev.title}
+            </div>
+          );
+        })}
+        {entry && entry.events.length > 3 && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDrillDown(dateStr);
+            }}
+            className="text-[9px] text-brand-warm pl-1 hover:text-accent cursor-pointer"
+          >
+            +{entry.events.length - 3} más →
+          </button>
+        )}
+      </div>
+      {/* Badges: workouts + milestones */}
+      <div className="absolute bottom-1 right-1 flex gap-0.5 pointer-events-none">
+        {entry && entry.workouts.length > 0 && (
+          <span className="text-[10px]" title="Workout">
+            💪
+          </span>
+        )}
+        {entry?.workouts.some((w) => w.prsHit > 0) && (
+          <span className="text-[10px]" title="PR nuevo">
+            🏆
+          </span>
+        )}
+        {entry && entry.milestones.length > 0 && (
+          <span className="text-[10px]" title="Milestone">
+            ✨
+          </span>
+        )}
+      </div>
     </div>
   );
 }

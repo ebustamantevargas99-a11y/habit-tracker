@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   PointerSensor,
@@ -10,11 +10,12 @@ import {
   useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight, Loader2, Plus, Trash2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import QuickAddBar from "./quick-add-bar";
+import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
 import type { CalendarEvent } from "./types";
 import { TYPE_META } from "./types";
 
@@ -32,6 +33,10 @@ type WeekData = {
   milestones: Array<{ id: string; date: string; type: string; title: string; icon: string | null }>;
   density: Record<string, number>;
 };
+
+type Editing =
+  | { mode: "create"; dateStr: string; hour: number; anchor: AnchorRect }
+  | { mode: "edit"; event: CalendarEvent; anchor: AnchorRect };
 
 function startOfWeek(date: Date): Date {
   const d = new Date(date);
@@ -71,7 +76,7 @@ export default function WeekView() {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [data, setData] = useState<WeekData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -146,20 +151,6 @@ export default function WeekView() {
     } catch {
       toast.error("Error moviendo evento");
       await refresh();
-    }
-  }
-
-  async function deleteEvent(id: string) {
-    if (!confirm("¿Borrar evento?")) return;
-    try {
-      await api.delete(`/calendar/events/${id}`);
-      setData((prev) =>
-        prev ? { ...prev, events: prev.events.filter((e) => e.id !== id) } : prev
-      );
-      setSelectedEvent(null);
-      toast.success("Borrado");
-    } catch {
-      toast.error("Error");
     }
   }
 
@@ -290,7 +281,12 @@ export default function WeekView() {
                   dateStr={dateStr}
                   events={dayEvents}
                   workouts={dayWorkouts}
-                  onEventClick={setSelectedEvent}
+                  onCellClick={(hour, anchor) =>
+                    setEditing({ mode: "create", dateStr, hour, anchor })
+                  }
+                  onEventClick={(ev, anchor) =>
+                    setEditing({ mode: "edit", event: ev, anchor })
+                  }
                 />
               );
             })}
@@ -298,28 +294,38 @@ export default function WeekView() {
         </DndContext>
       </div>
 
-      {/* Detalle de evento seleccionado */}
-      {selectedEvent && (
-        <EventDetailPanel
-          event={selectedEvent}
-          onClose={() => setSelectedEvent(null)}
-          onDelete={() => deleteEvent(selectedEvent.id)}
-          onUpdate={(updated) => {
+      {/* Popover inline para crear / editar */}
+      {editing && (
+        <QuickEventPopover
+          mode={
+            editing.mode === "create"
+              ? { kind: "create", dateStr: editing.dateStr, hour: editing.hour }
+              : { kind: "edit", event: editing.event }
+          }
+          anchor={editing.anchor}
+          onClose={() => setEditing(null)}
+          onSaved={(saved) => {
+            setData((prev) => {
+              if (!prev) return prev;
+              const exists = prev.events.some((e) => e.id === saved.id);
+              return {
+                ...prev,
+                events: exists
+                  ? prev.events.map((e) => (e.id === saved.id ? saved : e))
+                  : [...prev.events, saved],
+              };
+            });
+          }}
+          onDeleted={(id) => {
             setData((prev) =>
-              prev
-                ? {
-                    ...prev,
-                    events: prev.events.map((e) => (e.id === updated.id ? updated : e)),
-                  }
-                : prev
+              prev ? { ...prev, events: prev.events.filter((e) => e.id !== id) } : prev,
             );
-            setSelectedEvent(updated);
           }}
         />
       )}
 
       <p className="text-[11px] text-brand-tan text-center">
-        💡 Arrastra eventos para moverlos · Click en uno para editarlo
+        💡 Click en una celda vacía para crear · click en un evento para editarlo · arrástralos para moverlos
       </p>
     </div>
   );
@@ -331,12 +337,14 @@ function DayColumn({
   dateStr,
   events,
   workouts,
+  onCellClick,
   onEventClick,
 }: {
   dateStr: string;
   events: CalendarEvent[];
   workouts: Array<{ id: string; name: string; durationMinutes: number; completed: boolean }>;
-  onEventClick: (ev: CalendarEvent) => void;
+  onCellClick: (hour: number, anchor: AnchorRect) => void;
+  onEventClick: (ev: CalendarEvent, anchor: AnchorRect) => void;
 }) {
   const isToday = dateStr === toDateStr(new Date());
 
@@ -348,14 +356,23 @@ function DayColumn({
       )}
       style={{ height: (TOTAL_HOURS + 1) * HOUR_HEIGHT }}
     >
-      {/* Cells droppable por hora */}
+      {/* Cells droppable + clickable por hora */}
       {Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => (
-        <DropCell key={i} dateStr={dateStr} hour={HOUR_START + i} />
+        <DropCell
+          key={i}
+          dateStr={dateStr}
+          hour={HOUR_START + i}
+          onCellClick={onCellClick}
+        />
       ))}
 
       {/* Eventos custom (draggable) */}
       {events.map((ev) => (
-        <EventBlock key={ev.id} event={ev} onClick={() => onEventClick(ev)} />
+        <EventBlock
+          key={ev.id}
+          event={ev}
+          onClick={(anchor) => onEventClick(ev, anchor)}
+        />
       ))}
 
       {/* Workouts (read-only) */}
@@ -366,15 +383,51 @@ function DayColumn({
   );
 }
 
-function DropCell({ dateStr, hour }: { dateStr: string; hour: number }) {
+function DropCell({
+  dateStr,
+  hour,
+  onCellClick,
+}: {
+  dateStr: string;
+  hour: number;
+  onCellClick: (hour: number, anchor: AnchorRect) => void;
+}) {
   const { setNodeRef, isOver } = useDroppable({ id: `cell-${dateStr}-${hour}` });
+  const cellRef = useRef<HTMLDivElement | null>(null);
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      cellRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef],
+  );
+
+  function handleClick(e: React.MouseEvent<HTMLDivElement>) {
+    // Ignorar si el click vino desde un drag
+    if (!cellRef.current) return;
+    const r = cellRef.current.getBoundingClientRect();
+    // Calcular la hora exacta del click basado en la posición vertical dentro de la celda.
+    // Cada celda ocupa HOUR_HEIGHT px y representa 1h; offsetY / HOUR_HEIGHT = fracción.
+    const fraction = (e.clientY - r.top) / r.height;
+    const preciseHour =
+      hour + Math.max(0, Math.min(0.75, Math.floor(fraction * 4) / 4));
+    onCellClick(preciseHour, {
+      left: r.left,
+      top: r.top,
+      width: r.width,
+      height: r.height,
+    });
+  }
+
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
+      onClick={handleClick}
       style={{ height: HOUR_HEIGHT }}
       className={cn(
-        "border-t border-brand-cream transition",
-        isOver && "bg-accent/20"
+        "border-t border-brand-cream transition cursor-pointer hover:bg-accent/5",
+        isOver && "bg-accent/20",
       )}
     />
   );
@@ -385,11 +438,20 @@ function EventBlock({
   onClick,
 }: {
   event: CalendarEvent;
-  onClick: () => void;
+  onClick: (anchor: AnchorRect) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: event.id,
   });
+  const elRef = useRef<HTMLDivElement | null>(null);
+
+  const combinedRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      elRef.current = node;
+      setNodeRef(node);
+    },
+    [setNodeRef],
+  );
 
   const hourStart = hourFromDate(event.startAt);
   const dur = durationHours(event);
@@ -411,13 +473,15 @@ function EventBlock({
 
   return (
     <div
-      ref={setNodeRef}
+      ref={combinedRef}
       style={style}
       {...attributes}
       {...listeners}
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        if (!elRef.current) return;
+        const r = elRef.current.getBoundingClientRect();
+        onClick({ left: r.left, top: r.top, width: r.width, height: r.height });
       }}
       className={cn(
         "rounded-md border-l-4 px-1.5 py-1 cursor-grab active:cursor-grabbing text-[10px] leading-tight overflow-hidden",
@@ -462,156 +526,6 @@ function WorkoutBlock({
     >
       <div className="font-semibold text-danger truncate">💪 {workout.name}</div>
       <div className="text-[9px] text-danger/70">{workout.durationMinutes}min</div>
-    </div>
-  );
-}
-
-function EventDetailPanel({
-  event,
-  onClose,
-  onDelete,
-  onUpdate,
-}: {
-  event: CalendarEvent;
-  onClose: () => void;
-  onDelete: () => void;
-  onUpdate: (ev: CalendarEvent) => void;
-}) {
-  const [title, setTitle] = useState(event.title);
-  const [description, setDescription] = useState(event.description ?? "");
-  const [location, setLocation] = useState(event.location ?? "");
-  const [reminderMinutes, setReminderMinutes] = useState<number | null>(event.reminderMinutes);
-  const [recurrence, setRecurrence] = useState<string | null>(event.recurrence);
-  const [saving, setSaving] = useState(false);
-
-  async function save() {
-    setSaving(true);
-    try {
-      const updated = await api.patch<CalendarEvent>(`/calendar/events/${event.id}`, {
-        title,
-        description: description || null,
-        location: location || null,
-        reminderMinutes,
-        recurrence,
-      });
-      onUpdate(updated);
-      toast.success("Guardado");
-    } catch {
-      toast.error("Error");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-brand-paper rounded-2xl w-full max-w-md shadow-warm-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <header className="px-6 py-4 border-b border-brand-cream">
-          <h3 className="font-display text-lg font-bold text-brand-dark m-0">Editar evento</h3>
-          <p className="text-xs text-brand-warm">
-            {new Date(event.startAt).toLocaleString("es-MX", {
-              weekday: "short",
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </p>
-        </header>
-        <div className="px-6 py-4 space-y-3">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm focus:outline-none focus:border-accent"
-          />
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={2}
-            placeholder="Descripción"
-            className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm focus:outline-none focus:border-accent resize-none"
-          />
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="Ubicación"
-            className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm focus:outline-none focus:border-accent"
-          />
-          <div>
-            <label className="text-xs text-brand-warm block mb-1.5">Recordatorio</label>
-            <div className="flex gap-1.5 flex-wrap">
-              {[null, 5, 15, 30, 60].map((m) => (
-                <button
-                  key={m ?? "none"}
-                  onClick={() => setReminderMinutes(m)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs transition",
-                    reminderMinutes === m
-                      ? "bg-accent text-white"
-                      : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan"
-                  )}
-                >
-                  {m === null ? "Sin" : `${m}min antes`}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="text-xs text-brand-warm block mb-1.5">Se repite</label>
-            <div className="flex gap-1.5 flex-wrap">
-              {[
-                { val: null, label: "Una vez" },
-                { val: "daily", label: "Diario" },
-                { val: "weekdays", label: "L-V" },
-                { val: "weekly", label: "Semanal" },
-                { val: "monthly", label: "Mensual" },
-              ].map((opt) => (
-                <button
-                  key={opt.val ?? "once"}
-                  onClick={() => setRecurrence(opt.val)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs transition",
-                    recurrence === opt.val
-                      ? "bg-accent text-white"
-                      : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan"
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-        <footer className="px-6 py-3 border-t border-brand-cream flex gap-2 justify-between">
-          <button
-            onClick={onDelete}
-            className="px-3 py-2 rounded-button text-xs text-danger hover:bg-danger-light/30 flex items-center gap-1.5"
-          >
-            <Trash2 size={12} /> Borrar
-          </button>
-          <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 rounded-button text-sm text-brand-warm hover:bg-brand-cream"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={save}
-              disabled={saving}
-              className="px-5 py-2 rounded-button text-sm font-semibold bg-accent text-white hover:bg-brand-brown disabled:opacity-40"
-            >
-              {saving ? "…" : "Guardar"}
-            </button>
-          </div>
-        </footer>
-      </div>
     </div>
   );
 }
