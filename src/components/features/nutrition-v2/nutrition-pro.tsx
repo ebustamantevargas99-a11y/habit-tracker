@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Copy, Loader2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Copy, Loader2, Sparkles, Droplet } from "lucide-react";
 import { api } from "@/lib/api-client";
 import FoodSearchModal, { type CatalogFood } from "./food-search-modal";
 import MacrosRing from "./macros-ring";
@@ -53,11 +53,17 @@ const DEFAULT_GOAL: NutritionGoal = {
   waterMl: 2500,
 };
 
+type HydrationLog = {
+  amountMl: number;
+  goalMl: number;
+};
+
 export default function NutritionPro() {
   const [meals, setMeals] = useState<MealLog[]>([]);
   const [goal, setGoal] = useState<NutritionGoal>(DEFAULT_GOAL);
   const [loading, setLoading] = useState(true);
   const [selectorOpenFor, setSelectorOpenFor] = useState<MealType | null>(null);
+  const [hydration, setHydration] = useState<HydrationLog>({ amountMl: 0, goalMl: 2500 });
 
   useEffect(() => {
     void loadData();
@@ -67,16 +73,49 @@ export default function NutritionPro() {
     setLoading(true);
     try {
       const today = new Date().toISOString().split("T")[0];
-      const [mealsRes, goalRes] = await Promise.all([
+      const [mealsRes, goalRes, hydrationRes] = await Promise.all([
         api.get<MealLog[]>(`/nutrition/meals?date=${today}`),
         api.get<NutritionGoal | null>("/nutrition/goals").catch(() => null),
+        api
+          .get<HydrationLog[]>(`/wellness/hydration?days=1`)
+          .catch(() => [] as HydrationLog[]),
       ]);
       setMeals(mealsRes);
       if (goalRes) setGoal({ ...DEFAULT_GOAL, ...goalRes });
+      if (hydrationRes.length > 0) {
+        setHydration({
+          amountMl: hydrationRes[0].amountMl ?? 0,
+          goalMl: hydrationRes[0].goalMl ?? goalRes?.waterMl ?? 2500,
+        });
+      } else if (goalRes?.waterMl) {
+        setHydration({ amountMl: 0, goalMl: goalRes.waterMl });
+      }
     } catch {
       toast.error("Error cargando datos");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function addWater(deltaMl: number) {
+    // Optimistic
+    setHydration((prev) => ({
+      ...prev,
+      amountMl: Math.max(0, prev.amountMl + deltaMl),
+    }));
+    try {
+      const updated = await api.patch<HydrationLog>("/wellness/hydration", { deltaMl });
+      setHydration({ amountMl: updated.amountMl, goalMl: updated.goalMl });
+      if (deltaMl > 0) {
+        toast.success(`+${deltaMl}ml · ${updated.amountMl}ml / ${updated.goalMl}ml`);
+      }
+    } catch {
+      // Rollback
+      setHydration((prev) => ({
+        ...prev,
+        amountMl: Math.max(0, prev.amountMl - deltaMl),
+      }));
+      toast.error("Error guardando");
     }
   }
 
@@ -244,6 +283,50 @@ export default function NutritionPro() {
             value={totals.fat}
             goal={goal.fat}
             color="#B8860B"
+          />
+        </div>
+      </div>
+
+      {/* Hydration quick-add */}
+      <div className="bg-brand-paper rounded-xl p-5 border border-brand-cream">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <Droplet size={20} className="text-info" />
+            <div>
+              <h3 className="font-serif text-base font-semibold text-brand-dark m-0">
+                Hidratación
+              </h3>
+              <p className="text-xs text-brand-warm">
+                {hydration.amountMl}ml / {hydration.goalMl}ml ·{" "}
+                {Math.round((hydration.amountMl / hydration.goalMl) * 100)}%
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-1.5">
+            {[250, 500, 750].map((ml) => (
+              <button
+                key={ml}
+                onClick={() => void addWater(ml)}
+                className="px-3 py-1.5 rounded-button bg-info/10 text-info text-xs font-semibold hover:bg-info/20 flex items-center gap-1"
+              >
+                +{ml}ml
+              </button>
+            ))}
+            <button
+              onClick={() => void addWater(-250)}
+              className="px-2.5 py-1.5 rounded-button border border-brand-cream text-brand-warm text-xs hover:bg-brand-cream"
+              title="Restar 250ml"
+            >
+              −
+            </button>
+          </div>
+        </div>
+        <div className="w-full h-2 bg-brand-cream rounded-full overflow-hidden">
+          <div
+            className="h-full bg-info rounded-full transition-all"
+            style={{
+              width: `${Math.min(100, (hydration.amountMl / hydration.goalMl) * 100)}%`,
+            }}
           />
         </div>
       </div>
