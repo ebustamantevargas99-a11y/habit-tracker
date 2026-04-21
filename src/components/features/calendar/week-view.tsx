@@ -459,6 +459,7 @@ function EventBlock({
   const height = Math.max(20, dur * HOUR_HEIGHT);
 
   const meta = TYPE_META[event.type] ?? TYPE_META.custom;
+  const hasCustomColor = event.type === "custom" && event.color;
 
   const style: React.CSSProperties = {
     position: "absolute",
@@ -470,6 +471,15 @@ function EventBlock({
     transform: transform ? `translate3d(${transform.x}px, ${transform.y}px, 0)` : undefined,
     zIndex: isDragging ? 50 : 10,
   };
+
+  // Si el user eligió color custom, lo aplicamos inline (override de meta.bgClass).
+  if (hasCustomColor) {
+    style.backgroundColor = `${event.color}22`;
+    style.borderLeftColor = event.color!;
+    style.color = event.color!;
+  }
+
+  const label = event.type === "custom" && event.category?.trim() ? event.category : null;
 
   return (
     <div
@@ -485,7 +495,7 @@ function EventBlock({
       }}
       className={cn(
         "rounded-md border-l-4 px-1.5 py-1 cursor-grab active:cursor-grabbing text-[10px] leading-tight overflow-hidden",
-        meta.bgClass,
+        !hasCustomColor && meta.bgClass,
         event.completed && "line-through opacity-60"
       )}
     >
@@ -493,6 +503,11 @@ function EventBlock({
         {event.icon && <span>{event.icon}</span>}
         <span className="font-semibold truncate">{event.title}</span>
       </div>
+      {label && (
+        <div className="text-[9px] uppercase tracking-widest opacity-70 truncate">
+          {label}
+        </div>
+      )}
       {height > 30 && (
         <div className="text-[9px] opacity-70 font-mono">
           {new Date(event.startAt).toLocaleTimeString("es-MX", {

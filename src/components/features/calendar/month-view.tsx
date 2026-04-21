@@ -379,15 +379,25 @@ function MonthCell({
       <div className="space-y-0.5">
         {entry?.events.slice(0, 3).map((ev) => {
           const meta = TYPE_META[ev.type] ?? TYPE_META.custom;
+          const hasCustomColor = ev.type === "custom" && ev.color;
           return (
             <div
               key={ev.id}
               onClick={(e) => handleEventClick(ev, e)}
+              style={
+                hasCustomColor
+                  ? { backgroundColor: `${ev.color}22`, color: ev.color!, borderLeft: `3px solid ${ev.color}` }
+                  : undefined
+              }
               className={cn(
                 "text-[9px] px-1 py-[1px] rounded truncate cursor-pointer",
-                meta.bgClass,
+                !hasCustomColor && meta.bgClass,
               )}
-              title="Click para editar"
+              title={
+                ev.type === "custom" && ev.category?.trim()
+                  ? `${ev.category} · Click para editar`
+                  : "Click para editar"
+              }
             >
               {ev.icon ?? meta.emoji} {ev.title}
             </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Trash2, X, MapPin, FileText, Bell, Repeat } from "lucide-react";
+import { Trash2, X, MapPin, FileText, Bell, Repeat, Palette, Check } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import type { CalendarEvent } from "./types";
 import { TYPE_META } from "./types";
+import { parseRecurrence, formatRecurrence } from "@/lib/calendar/recurrence";
 
 type Mode =
   | { kind: "create"; dateStr: string; hour: number }
@@ -28,50 +29,58 @@ interface Props {
   onDeleted?: (id: string) => void;
 }
 
-const POPOVER_WIDTH = 360;
+const POPOVER_WIDTH = 380;
 const POPOVER_MARGIN = 8;
 
-/**
- * Decide posición fixed del popover en viewport, eligiendo si debe abrirse
- * a la derecha o izquierda del anchor y ajustando si se sale de la pantalla.
- */
+// Paleta custom — colores utilizables para eventos
+const CUSTOM_COLORS: Array<{ hex: string; label: string }> = [
+  { hex: "#b8860b", label: "Gold" },
+  { hex: "#dc2626", label: "Red" },
+  { hex: "#ea580c", label: "Orange" },
+  { hex: "#ca8a04", label: "Yellow" },
+  { hex: "#16a34a", label: "Green" },
+  { hex: "#0891b2", label: "Cyan" },
+  { hex: "#2563eb", label: "Blue" },
+  { hex: "#7c3aed", label: "Violet" },
+  { hex: "#db2777", label: "Pink" },
+  { hex: "#6b7280", label: "Gray" },
+];
+
+const DAYS_MO_TO_SU = [
+  { dow: 1, label: "L" },
+  { dow: 2, label: "M" },
+  { dow: 3, label: "M" },
+  { dow: 4, label: "J" },
+  { dow: 5, label: "V" },
+  { dow: 6, label: "S" },
+  { dow: 0, label: "D" },
+];
+
+// Presets que NO se consideran "custom" para UI. Los demás ("FREQ=...") abren editor.
+const PRESET_VALUES = ["daily", "weekdays", "weekly", "monthly"];
+
 function computePosition(anchor: AnchorRect, popoverHeight: number): {
   left: number;
   top: number;
-  side: "right" | "left";
 } {
   const vw = typeof window !== "undefined" ? window.innerWidth : 1440;
   const vh = typeof window !== "undefined" ? window.innerHeight : 900;
 
-  // Preferir derecha, caer a izquierda si no cabe
-  let side: "right" | "left" = "right";
   let left = anchor.left + anchor.width + POPOVER_MARGIN;
   if (left + POPOVER_WIDTH + 12 > vw) {
-    side = "left";
     left = anchor.left - POPOVER_WIDTH - POPOVER_MARGIN;
   }
-  // Si tampoco cabe a la izquierda (columna estrecha + popover grande), recurre a centrarlo
   if (left < 12) {
     left = Math.max(12, Math.min(vw - POPOVER_WIDTH - 12, anchor.left));
   }
 
-  // Vertical: alinea por top del anchor, ajusta si desborda abajo
   let top = anchor.top;
   if (top + popoverHeight + 12 > vh) {
     top = Math.max(12, vh - popoverHeight - 12);
   }
   if (top < 12) top = 12;
 
-  return { left, top, side };
-}
-
-function isoOfDateHour(dateStr: string, hour: number): string {
-  const h = Math.floor(hour);
-  const m = Math.round((hour - h) * 60);
-  // Construir localmente para que el offset sea el del navegador (México).
-  const d = new Date(`${dateStr}T00:00:00`);
-  d.setHours(h, m, 0, 0);
-  return d.toISOString();
+  return { left, top };
 }
 
 function hhmm(iso: string): string {
@@ -110,13 +119,14 @@ export default function QuickEventPopover({
 }: Props) {
   const isEdit = mode.kind === "edit";
 
-  // Estado inicial según modo
   const initial = useMemo(() => {
     if (mode.kind === "edit") {
       const e = mode.event;
       return {
         title: e.title,
         type: e.type,
+        category: e.category ?? "",
+        color: e.color ?? "",
         dateStr: yyyymmdd(e.startAt),
         startTime: hhmm(e.startAt),
         endTime: e.endAt ? hhmm(e.endAt) : hhmm(new Date(new Date(e.startAt).getTime() + 3600000).toISOString()),
@@ -126,11 +136,12 @@ export default function QuickEventPopover({
         recurrence: e.recurrence,
       };
     }
-    // create
     const defaultEndHour = mode.hour + 1;
     return {
       title: "",
       type: "custom",
+      category: "",
+      color: "",
       dateStr: mode.dateStr,
       startTime: `${String(Math.floor(mode.hour)).padStart(2, "0")}:${String(Math.round((mode.hour - Math.floor(mode.hour)) * 60)).padStart(2, "0")}`,
       endTime: `${String(Math.floor(defaultEndHour)).padStart(2, "0")}:${String(Math.round((defaultEndHour - Math.floor(defaultEndHour)) * 60)).padStart(2, "0")}`,
@@ -143,6 +154,8 @@ export default function QuickEventPopover({
 
   const [title, setTitle] = useState(initial.title);
   const [type, setType] = useState<string>(initial.type);
+  const [category, setCategory] = useState(initial.category);
+  const [color, setColor] = useState(initial.color);
   const [dateStr, setDateStr] = useState(initial.dateStr);
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endTime, setEndTime] = useState(initial.endTime);
@@ -151,28 +164,54 @@ export default function QuickEventPopover({
   const [reminderMinutes, setReminderMinutes] = useState<number | null>(initial.reminderMinutes);
   const [recurrence, setRecurrence] = useState<string | null>(initial.recurrence);
   const [saving, setSaving] = useState(false);
-  const [showMore, setShowMore] = useState(false);
+  const [showMore, setShowMore] = useState(!!initial.recurrence || initial.reminderMinutes !== null);
   const [typeMenuOpen, setTypeMenuOpen] = useState(false);
+
+  // Custom recurrence editor state (solo se muestra si recurrence no es preset)
+  const [customRecOpen, setCustomRecOpen] = useState(
+    !!initial.recurrence && !PRESET_VALUES.includes(initial.recurrence),
+  );
+  const existingRule = useMemo(
+    () => parseRecurrence(initial.recurrence ?? null),
+    [initial.recurrence],
+  );
+  const [recFreq, setRecFreq] = useState<"DAILY" | "WEEKLY" | "MONTHLY">(
+    existingRule?.freq ?? "WEEKLY",
+  );
+  const [recInterval, setRecInterval] = useState<number>(existingRule?.interval ?? 1);
+  const [recByDay, setRecByDay] = useState<number[]>(
+    existingRule?.byDay ?? [new Date(dateStr + "T00:00:00").getDay()],
+  );
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [pos, setPos] = useState<{ left: number; top: number } | null>(null);
 
-  // Focus al input de título al abrir (create) o al título existente (edit)
+  // Si el user abre el editor custom, reemplaza el recurrence actual con la regla custom
+  useEffect(() => {
+    if (!customRecOpen) return;
+    const rule = {
+      freq: recFreq,
+      byDay: recFreq === "WEEKLY" ? recByDay : undefined,
+      interval: recInterval > 1 ? recInterval : undefined,
+    };
+    const out = formatRecurrence(rule);
+    setRecurrence(out);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customRecOpen, recFreq, recInterval, recByDay]);
+
   useEffect(() => {
     titleInputRef.current?.focus();
     if (!isEdit) titleInputRef.current?.select();
   }, [isEdit]);
 
-  // Calcular posición después del primer render (necesitamos saber la altura real)
   useLayoutEffect(() => {
     if (!popoverRef.current) return;
     const h = popoverRef.current.offsetHeight;
     const p = computePosition(anchor, h);
     setPos({ left: p.left, top: p.top });
-  }, [anchor, showMore]);
+  }, [anchor, showMore, customRecOpen, type]);
 
-  // Cerrar con Escape
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -187,16 +226,14 @@ export default function QuickEventPopover({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, type, dateStr, startTime, endTime, description, location, reminderMinutes, recurrence]);
+  }, [title, type, category, color, dateStr, startTime, endTime, description, location, reminderMinutes, recurrence]);
 
-  // Cerrar al click fuera
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
       if (!popoverRef.current) return;
       if (popoverRef.current.contains(e.target as Node)) return;
       onClose();
     }
-    // Delay para que el click que abre no lo cierre inmediatamente
     const t = setTimeout(() => {
       document.addEventListener("mousedown", onClickOutside);
     }, 0);
@@ -222,6 +259,8 @@ export default function QuickEventPopover({
         startAt,
         endAt,
         type,
+        category: type === "custom" ? (category.trim() || null) : null,
+        color: type === "custom" ? (color || null) : null,
         location: location.trim() || null,
         reminderMinutes,
         recurrence,
@@ -254,8 +293,19 @@ export default function QuickEventPopover({
   }
 
   const typeMeta = TYPE_META[type] ?? TYPE_META.custom;
+  const isCustom = type === "custom";
 
-  // Render en portal-like fixed position
+  function toggleByDay(dow: number) {
+    setRecByDay((prev) =>
+      prev.includes(dow) ? prev.filter((d) => d !== dow) : [...prev, dow].sort(),
+    );
+  }
+
+  function selectPreset(val: string | null) {
+    setRecurrence(val);
+    setCustomRecOpen(false);
+  }
+
   return (
     <div
       ref={popoverRef}
@@ -269,7 +319,7 @@ export default function QuickEventPopover({
         visibility: pos ? "visible" : "hidden",
       }}
     >
-      {/* Header: color/type picker + close */}
+      {/* Header: tipo + close */}
       <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-brand-light-cream">
         <div className="relative">
           <button
@@ -278,10 +328,13 @@ export default function QuickEventPopover({
               "flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold border",
               typeMeta.bgClass,
             )}
+            style={isCustom && color ? { backgroundColor: `${color}22`, borderColor: `${color}80` } : undefined}
             title="Tipo de evento"
           >
             <span>{typeMeta.emoji}</span>
-            <span>{typeMeta.label}</span>
+            <span>
+              {isCustom && category.trim() ? category : typeMeta.label}
+            </span>
             <span className="text-[10px] opacity-60">▾</span>
           </button>
           {typeMenuOpen && (
@@ -317,6 +370,56 @@ export default function QuickEventPopover({
 
       {/* Body */}
       <div className="px-4 py-3 flex flex-col gap-3">
+        {/* Custom name + color (solo si type=custom) */}
+        {isCustom && (
+          <div className="flex flex-col gap-2 bg-brand-warm-white rounded-lg p-2.5 border border-brand-light-cream">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold w-16 shrink-0">
+                Etiqueta
+              </span>
+              <input
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="ej. Cumpleaños, Doctor…"
+                maxLength={40}
+                className="flex-1 px-2 py-1 rounded border border-brand-cream bg-brand-paper text-xs text-brand-dark focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold w-16 shrink-0 flex items-center gap-1">
+                <Palette size={11} /> Color
+              </span>
+              <div className="flex gap-1.5 flex-wrap">
+                {CUSTOM_COLORS.map((c) => (
+                  <button
+                    key={c.hex}
+                    onClick={() => setColor(c.hex)}
+                    className={cn(
+                      "w-5 h-5 rounded-full border-2 transition flex items-center justify-center",
+                      color === c.hex ? "border-brand-dark scale-110" : "border-transparent hover:scale-110",
+                    )}
+                    style={{ backgroundColor: c.hex }}
+                    title={c.label}
+                    aria-label={`Color ${c.label}`}
+                  >
+                    {color === c.hex && <Check size={12} className="text-white" />}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setColor("")}
+                  className={cn(
+                    "px-1.5 h-5 rounded text-[10px] text-brand-warm border transition",
+                    color === "" ? "border-brand-dark bg-brand-cream" : "border-brand-cream hover:bg-brand-cream",
+                  )}
+                  title="Sin color personalizado"
+                >
+                  auto
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         <input
           ref={titleInputRef}
           value={title}
@@ -433,10 +536,10 @@ export default function QuickEventPopover({
                 ].map((opt) => (
                   <button
                     key={opt.val ?? "once"}
-                    onClick={() => setRecurrence(opt.val)}
+                    onClick={() => selectPreset(opt.val)}
                     className={cn(
                       "px-2 py-0.5 rounded-full text-[11px] transition",
-                      recurrence === opt.val
+                      !customRecOpen && recurrence === opt.val
                         ? "bg-accent text-white"
                         : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan",
                     )}
@@ -444,7 +547,97 @@ export default function QuickEventPopover({
                     {opt.label}
                   </button>
                 ))}
+                <button
+                  onClick={() => setCustomRecOpen((v) => !v)}
+                  className={cn(
+                    "px-2 py-0.5 rounded-full text-[11px] transition",
+                    customRecOpen
+                      ? "bg-accent text-white"
+                      : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan",
+                  )}
+                >
+                  Personalizada…
+                </button>
               </div>
+
+              {customRecOpen && (
+                <div className="mt-2 bg-brand-warm-white rounded-lg p-3 border border-brand-light-cream flex flex-col gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold w-20 shrink-0">
+                      Frecuencia
+                    </span>
+                    <select
+                      value={recFreq}
+                      onChange={(e) =>
+                        setRecFreq(e.target.value as "DAILY" | "WEEKLY" | "MONTHLY")
+                      }
+                      className="flex-1 px-2 py-1 rounded border border-brand-cream bg-brand-paper text-xs text-brand-dark focus:outline-none focus:border-accent"
+                    >
+                      <option value="DAILY">Diariamente</option>
+                      <option value="WEEKLY">Semanalmente</option>
+                      <option value="MONTHLY">Mensualmente</option>
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold w-20 shrink-0">
+                      Cada
+                    </span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="30"
+                      value={recInterval}
+                      onChange={(e) => {
+                        const n = parseInt(e.target.value, 10);
+                        setRecInterval(Number.isFinite(n) && n >= 1 ? n : 1);
+                      }}
+                      className="w-16 px-2 py-1 rounded border border-brand-cream bg-brand-paper text-xs text-brand-dark text-center font-mono focus:outline-none focus:border-accent"
+                    />
+                    <span className="text-xs text-brand-warm">
+                      {recFreq === "DAILY"
+                        ? recInterval === 1 ? "día" : "días"
+                        : recFreq === "WEEKLY"
+                          ? recInterval === 1 ? "semana" : "semanas"
+                          : recInterval === 1 ? "mes" : "meses"}
+                    </span>
+                  </div>
+                  {recFreq === "WEEKLY" && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold w-20 shrink-0 mt-1">
+                        Días
+                      </span>
+                      <div className="flex gap-1 flex-wrap">
+                        {DAYS_MO_TO_SU.map(({ dow, label }) => (
+                          <button
+                            key={dow}
+                            onClick={() => toggleByDay(dow)}
+                            className={cn(
+                              "w-7 h-7 rounded-md text-xs font-semibold transition",
+                              recByDay.includes(dow)
+                                ? "bg-accent text-white"
+                                : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan",
+                            )}
+                            title={[
+                              "domingo",
+                              "lunes",
+                              "martes",
+                              "miércoles",
+                              "jueves",
+                              "viernes",
+                              "sábado",
+                            ][dow]}
+                          >
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-brand-tan m-0">
+                    RRULE: <code className="font-mono">{recurrence ?? "—"}</code>
+                  </p>
+                </div>
+              )}
             </div>
           </>
         )}
@@ -482,17 +675,3 @@ export default function QuickEventPopover({
     </div>
   );
 }
-
-// Helper para construir AnchorRect desde un MouseEvent (útil para llamadores)
-export function anchorFromClickEvent(e: React.MouseEvent | MouseEvent): AnchorRect {
-  const target = e.currentTarget instanceof HTMLElement ? e.currentTarget : null;
-  if (target) {
-    const r = target.getBoundingClientRect();
-    return { left: r.left, top: r.top, width: r.width, height: r.height };
-  }
-  // Fallback: construye rect de 1×1 en la posición del click
-  return { left: e.clientX, top: e.clientY, width: 0, height: 0 };
-}
-
-// isoOfDateHour exportada por si algún caller necesita el ISO default
-export { isoOfDateHour };
