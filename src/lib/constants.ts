@@ -128,6 +128,7 @@ export const NAV_ITEMS = [
       "Noche",
       "Deep Work",
       "Journal",
+      "Timeline",
       "Cápsula",
       "Emergencia",
     ],

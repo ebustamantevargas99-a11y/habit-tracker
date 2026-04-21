@@ -1,311 +1,319 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { cn } from '@/components/ui';
-import { Card } from '@/components/ui';
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
+import { Upload, Trash2, Loader2, X, GitCompare } from "lucide-react";
+import { api } from "@/lib/api-client";
+import { cn } from "@/components/ui";
 
-interface ProgressPhoto {
+type BodyPhoto = {
   id: string;
   date: string;
-  label: string;
-  category: 'Frente' | 'Lado' | 'Espalda';
-  notes: string;
-  weight?: number;
-  bodyFat?: number;
-}
+  category: "front" | "side" | "back";
+  photoData: string;
+  weight: number | null;
+  notes: string | null;
+  createdAt: string;
+};
 
-const INITIAL_PHOTOS: ProgressPhoto[] = [
-  { id: 'p1', date: '2026-01-15', label: 'Inicio del programa',  category: 'Frente', notes: 'Punto de partida',           weight: 82.5, bodyFat: 18.0 },
-  { id: 'p2', date: '2026-02-15', label: 'Mes 1',                category: 'Frente', notes: 'Primeros cambios visibles',  weight: 80.1, bodyFat: 16.5 },
-  { id: 'p3', date: '2026-03-15', label: 'Mes 2',                category: 'Frente', notes: 'Definición en abdomen',      weight: 78.8, bodyFat: 15.2 },
-  { id: 'p4', date: '2026-01-15', label: 'Inicio - Lateral',     category: 'Lado',   notes: 'Punto de partida lateral',   weight: 82.5, bodyFat: 18.0 },
-  { id: 'p5', date: '2026-03-15', label: 'Mes 2 - Lateral',      category: 'Lado',   notes: 'Mejora en postura',          weight: 78.8, bodyFat: 15.2 },
+const CATEGORIES: { id: "front" | "side" | "back"; label: string }[] = [
+  { id: "front", label: "Frente" },
+  { id: "side", label: "Lado" },
+  { id: "back", label: "Espalda" },
 ];
 
-type CategoryFilter = 'Todas' | 'Frente' | 'Lado' | 'Espalda';
-const CATEGORIES: CategoryFilter[] = ['Todas', 'Frente', 'Lado', 'Espalda'];
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-MX', { year: 'numeric', month: 'long', day: 'numeric' });
-}
-
-function formatDateShort(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: 'numeric' });
+async function resizeImage(file: File, maxSize = 1200, quality = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = (height * maxSize) / width;
+            width = maxSize;
+          } else {
+            width = (width * maxSize) / height;
+            height = maxSize;
+          }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx?.drawImage(img, 0, 0, width, height);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
 }
 
 export default function PhotosTab() {
-  const [photos, setPhotos] = useState<ProgressPhoto[]>(INITIAL_PHOTOS);
-  const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('Todas');
+  const [photos, setPhotos] = useState<BodyPhoto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState<"front" | "side" | "back">("front");
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
   const [compareMode, setCompareMode] = useState(false);
-  const [comparePhotos, setComparePhotos] = useState<[string | null, string | null]>([null, null]);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newPhoto, setNewPhoto] = useState<Partial<ProgressPhoto>>({
-    category: 'Frente',
-    date: new Date().toISOString().split('T')[0],
-  });
+  const [compareA, setCompareA] = useState<string | null>(null);
+  const [compareB, setCompareB] = useState<string | null>(null);
+  const [viewer, setViewer] = useState<BodyPhoto | null>(null);
 
-  const filtered = selectedCategory === 'Todas' ? photos : photos.filter((p) => p.category === selectedCategory);
-  const sorted = [...filtered].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  const refresh = useCallback(async () => {
+    try {
+      const data = await api.get<BodyPhoto[]>("/fitness/body-photos?limit=200");
+      setPhotos(data);
+    } catch {
+      toast.error("Error cargando fotos");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  const compareA = photos.find((p) => p.id === comparePhotos[0]);
-  const compareB = photos.find((p) => p.id === comparePhotos[1]);
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
 
-  const handleAddPhoto = () => {
-    if (!newPhoto.label || !newPhoto.date) return;
-    const photo: ProgressPhoto = {
-      id: `p${Date.now()}`,
-      date: newPhoto.date,
-      label: newPhoto.label,
-      category: (newPhoto.category as ProgressPhoto['category']) || 'Frente',
-      notes: newPhoto.notes || '',
-      weight: newPhoto.weight,
-      bodyFat: newPhoto.bodyFat,
-    };
-    setPhotos([...photos, photo]);
-    setShowAddForm(false);
-    setNewPhoto({ category: 'Frente', date: new Date().toISOString().split('T')[0] });
-  };
+  const filtered = useMemo(
+    () => photos.filter((p) => p.category === category),
+    [photos, category]
+  );
 
-  const toggleCompareSelection = (id: string) => {
-    if (comparePhotos[0] === id) setComparePhotos([null, comparePhotos[1]]);
-    else if (comparePhotos[1] === id) setComparePhotos([comparePhotos[0], null]);
-    else if (!comparePhotos[0]) setComparePhotos([id, comparePhotos[1]]);
-    else if (!comparePhotos[1]) setComparePhotos([comparePhotos[0], id]);
-    else setComparePhotos([id, comparePhotos[1]]);
-  };
+  async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toast.error("Imagen muy grande (máx 20MB)");
+      return;
+    }
+    setUploading(true);
+    try {
+      const dataUri = await resizeImage(file, 1200, 0.82);
+      const photo = await api.post<BodyPhoto>("/fitness/body-photos", {
+        photoData: dataUri,
+        category,
+      });
+      setPhotos((prev) => [photo, ...prev]);
+      toast.success("Foto subida");
+      if (fileRef.current) fileRef.current.value = "";
+    } catch {
+      toast.error("Error subiendo foto");
+    } finally {
+      setUploading(false);
+    }
+  }
 
-  const daysBetween = (a: string, b: string) =>
-    Math.round((new Date(b).getTime() - new Date(a).getTime()) / (1000 * 60 * 60 * 24));
+  async function deletePhoto(id: string) {
+    if (!confirm("¿Borrar esta foto?")) return;
+    try {
+      await api.delete(`/fitness/body-photos/${id}`);
+      setPhotos((prev) => prev.filter((p) => p.id !== id));
+      if (compareA === id) setCompareA(null);
+      if (compareB === id) setCompareB(null);
+      toast.success("Borrada");
+    } catch {
+      toast.error("Error");
+    }
+  }
+
+  function togglePhotoInCompare(id: string) {
+    if (compareA === id) {
+      setCompareA(null);
+    } else if (compareB === id) {
+      setCompareB(null);
+    } else if (!compareA) {
+      setCompareA(id);
+    } else if (!compareB) {
+      setCompareB(id);
+    } else {
+      setCompareA(id);
+      setCompareB(null);
+    }
+  }
+
+  const a = photos.find((p) => p.id === compareA);
+  const b = photos.find((p) => p.id === compareB);
+
+  if (loading) {
+    return (
+      <div className="text-center py-10 text-brand-warm">
+        <Loader2 size={20} className="inline animate-spin mr-2" />
+        Cargando…
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-6">
-      {/* Header + Controls */}
-      <Card variant="default" padding="md" className="flex justify-between items-center flex-wrap gap-4">
-        <div>
-          <h2 className="font-serif text-[22px] text-brand-dark m-0">📸 Fotos de Progreso</h2>
-          <p className="text-brand-warm text-[13px] m-0 mt-1">Documenta tu transformación visual</p>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex gap-1.5">
+          {CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              onClick={() => setCategory(c.id)}
+              className={cn(
+                "px-4 py-1.5 rounded-full text-xs font-medium transition",
+                category === c.id
+                  ? "bg-accent text-white"
+                  : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan"
+              )}
+            >
+              {c.label}{" "}
+              <span className="opacity-70">
+                ({photos.filter((p) => p.category === c.id).length})
+              </span>
+            </button>
+          ))}
         </div>
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2">
           <button
-            type="button"
-            onClick={() => setCompareMode(!compareMode)}
+            onClick={() => {
+              setCompareMode((v) => !v);
+              if (compareMode) {
+                setCompareA(null);
+                setCompareB(null);
+              }
+            }}
             className={cn(
-              'px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer transition-all border',
+              "px-3 py-2 rounded-button text-xs font-semibold flex items-center gap-1.5",
               compareMode
-                ? 'border-accent bg-accent/10 text-accent'
-                : 'border-brand-cream bg-brand-paper text-brand-brown',
+                ? "bg-accent text-white"
+                : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan"
             )}
           >
-            {compareMode ? '✕ Salir Comparar' : '🔄 Comparar'}
+            <GitCompare size={14} /> Comparar
           </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={handleFileSelect}
+            className="hidden"
+          />
           <button
-            type="button"
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="px-4 py-2 rounded-lg bg-accent text-brand-paper text-[13px] font-semibold border-none cursor-pointer"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="px-4 py-2 rounded-button bg-accent text-white text-sm font-semibold hover:bg-brand-brown disabled:opacity-40 flex items-center gap-2"
           >
-            + Nueva Foto
+            {uploading ? <Loader2 className="animate-spin" size={14} /> : <Upload size={14} />}
+            Subir foto
           </button>
         </div>
-      </Card>
+      </div>
 
-      {/* Add Photo Form */}
-      {showAddForm && (
-        <Card variant="default" padding="md" className="border-2 border-accent/20">
-          <h3 className="font-serif text-base text-brand-dark m-0 mb-4">Registrar Nueva Foto</h3>
-          <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))' }}>
-            {[
-              { label: 'Título',    input: <input value={newPhoto.label || ''} onChange={(e) => setNewPhoto({ ...newPhoto, label: e.target.value })} placeholder="Ej: Mes 3 - Frente" className="input w-full" /> },
-              { label: 'Fecha',     input: <input type="date" value={newPhoto.date || ''} onChange={(e) => setNewPhoto({ ...newPhoto, date: e.target.value })} className="input w-full" /> },
-              { label: 'Categoría', input: (
-                <select value={newPhoto.category || 'Frente'} onChange={(e) => setNewPhoto({ ...newPhoto, category: e.target.value as ProgressPhoto['category'] })} className="input w-full">
-                  <option value="Frente">Frente</option>
-                  <option value="Lado">Lado</option>
-                  <option value="Espalda">Espalda</option>
-                </select>
-              )},
-              { label: 'Peso (kg)',  input: <input type="number" value={newPhoto.weight || ''} onChange={(e) => setNewPhoto({ ...newPhoto, weight: parseFloat(e.target.value) || undefined })} placeholder="78.5" className="input w-full" /> },
-              { label: '% Grasa',   input: <input type="number" value={newPhoto.bodyFat || ''} onChange={(e) => setNewPhoto({ ...newPhoto, bodyFat: parseFloat(e.target.value) || undefined })} placeholder="15.2" className="input w-full" /> },
-              { label: 'Notas',     input: <input value={newPhoto.notes || ''} onChange={(e) => setNewPhoto({ ...newPhoto, notes: e.target.value })} placeholder="Observaciones..." className="input w-full" /> },
-            ].map(({ label, input }) => (
-              <div key={label}>
-                <label className="input-label">{label}</label>
-                {input}
+      {/* Comparador */}
+      {compareMode && a && b && (
+        <div className="bg-brand-paper border border-accent rounded-xl p-4">
+          <div className="grid grid-cols-2 gap-4">
+            {[a, b].map((p) => (
+              <div key={p.id}>
+                <p className="text-xs text-brand-warm mb-2 text-center font-semibold uppercase tracking-widest">
+                  {new Date(p.date).toLocaleDateString("es-MX", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                  {p.weight && ` · ${p.weight}kg`}
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.photoData}
+                  alt={p.date}
+                  className="w-full rounded-lg shadow-warm"
+                />
               </div>
             ))}
           </div>
-          <div className="flex gap-2 mt-4 justify-end">
-            <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 rounded-lg border border-brand-cream bg-transparent text-brand-brown cursor-pointer text-[13px]">Cancelar</button>
-            <button type="button" onClick={handleAddPhoto} className="px-4 py-2 rounded-lg bg-accent text-brand-paper border-none cursor-pointer text-[13px] font-semibold">Guardar Registro</button>
-          </div>
-          <p className="text-brand-warm text-[11px] m-0 mt-3 italic">
-            💡 Las fotos se subirán desde tu dispositivo cuando la app esté en producción. Por ahora se registran los datos asociados.
+          <p className="text-center text-xs text-brand-warm mt-3">
+            {Math.abs(
+              Math.ceil(
+                (new Date(b.date).getTime() - new Date(a.date).getTime()) /
+                  (1000 * 60 * 60 * 24)
+              )
+            )}{" "}
+            días de diferencia
           </p>
-        </Card>
+        </div>
       )}
 
-      {/* Category Filter */}
-      <div className="flex gap-2">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setSelectedCategory(cat)}
-            className={cn(
-              'px-3.5 py-1.5 rounded-2xl text-[13px] font-semibold cursor-pointer border transition-all',
-              selectedCategory === cat
-                ? 'bg-accent text-brand-paper border-accent'
-                : 'bg-brand-paper text-brand-brown border-brand-cream',
-            )}
-          >
-            {cat}
-          </button>
-        ))}
-      </div>
-
-      {/* Compare Mode */}
-      {compareMode && (
-        <Card variant="default" padding="md" className="border-2 border-dashed border-accent/40">
-          <h3 className="font-serif text-base text-brand-dark m-0 mb-4">Comparación Lado a Lado</h3>
-          {compareA && compareB ? (
-            <>
-              <div className="grid grid-cols-2 gap-6">
-                {[compareA, compareB].map((photo) => (
-                  <div key={photo.id} className="text-center">
-                    <div className="w-full aspect-[3/4] bg-brand-cream rounded-xl flex items-center justify-center mb-3 border border-brand-light-tan">
-                      <span className="text-5xl">📷</span>
-                    </div>
-                    <p className="font-bold text-brand-dark text-sm m-0 mb-1">{photo.label}</p>
-                    <p className="text-brand-warm text-xs m-0 mb-2">{formatDate(photo.date)}</p>
-                    <div className="flex gap-3 justify-center">
-                      {photo.weight && <span className="text-[13px] text-brand-brown">⚖️ {photo.weight} kg</span>}
-                      {photo.bodyFat && <span className="text-[13px] text-brand-brown">📊 {photo.bodyFat}%</span>}
-                    </div>
+      {filtered.length === 0 ? (
+        <div className="bg-brand-paper border border-dashed border-brand-cream rounded-xl p-12 text-center text-brand-warm">
+          Sin fotos en &ldquo;{CATEGORIES.find((c) => c.id === category)?.label}&rdquo;.
+          Sube tu primera.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {filtered.map((p) => {
+            const isSelected = compareA === p.id || compareB === p.id;
+            return (
+              <div
+                key={p.id}
+                className={cn(
+                  "relative bg-brand-paper border rounded-xl overflow-hidden cursor-pointer group",
+                  isSelected
+                    ? "border-accent ring-2 ring-accent/40"
+                    : "border-brand-cream hover:border-accent/50"
+                )}
+                onClick={() => (compareMode ? togglePhotoInCompare(p.id) : setViewer(p))}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.photoData}
+                  alt={p.date}
+                  className="w-full aspect-[3/4] object-cover"
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
+                  <p className="text-[11px] text-white font-mono">{p.date}</p>
+                </div>
+                {!compareMode && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void deletePhoto(p.id);
+                    }}
+                    className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded opacity-0 group-hover:opacity-100 transition"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                )}
+                {isSelected && (
+                  <div className="absolute top-2 left-2 w-6 h-6 bg-accent text-white rounded-full text-xs font-bold flex items-center justify-center">
+                    {compareA === p.id ? "A" : "B"}
                   </div>
-                ))}
+                )}
               </div>
-              {compareA.weight && compareB.weight && (
-                <div className="mt-5 p-4 bg-accent/5 rounded-xl border border-accent/20">
-                  <h4 className="font-serif text-sm text-brand-dark m-0 mb-3">📈 Cambios Detectados</h4>
-                  <div className="flex gap-6 flex-wrap">
-                    <div>
-                      <span className="text-xs text-brand-warm">Peso</span>
-                      <p className={cn('m-0 mt-0.5 font-bold text-base', compareB.weight <= compareA.weight ? 'text-success' : 'text-danger')}>
-                        {(compareB.weight - compareA.weight).toFixed(1)} kg
-                      </p>
-                    </div>
-                    {compareA.bodyFat && compareB.bodyFat && (
-                      <div>
-                        <span className="text-xs text-brand-warm">% Grasa</span>
-                        <p className={cn('m-0 mt-0.5 font-bold text-base', compareB.bodyFat <= compareA.bodyFat ? 'text-success' : 'text-danger')}>
-                          {(compareB.bodyFat - compareA.bodyFat).toFixed(1)}%
-                        </p>
-                      </div>
-                    )}
-                    <div>
-                      <span className="text-xs text-brand-warm">Tiempo entre fotos</span>
-                      <p className="m-0 mt-0.5 font-bold text-base text-brand-dark">
-                        {daysBetween(compareA.date, compareB.date)} días
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </>
-          ) : (
-            <p className="text-brand-warm text-[13px] text-center">Selecciona 2 fotos de la galería para comparar</p>
-          )}
-        </Card>
+            );
+          })}
+        </div>
       )}
 
-      {/* Photo Timeline */}
-      <Card variant="default" padding="md">
-        <h3 className="font-serif text-lg text-brand-dark m-0 mb-5">📅 Timeline de Transformación</h3>
-        {sorted.length === 0 ? (
-          <p className="text-brand-warm text-sm text-center py-10">No hay fotos en esta categoría. ¡Agrega tu primera foto!</p>
-        ) : (
-          <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
-            {sorted.map((photo) => {
-              const isSelected = comparePhotos.includes(photo.id);
-              return (
-                <div
-                  key={photo.id}
-                  onClick={() => compareMode && toggleCompareSelection(photo.id)}
-                  className={cn(
-                    'rounded-xl overflow-hidden border transition-all',
-                    isSelected ? 'border-[3px] border-accent bg-accent/5' : 'border border-brand-cream bg-brand-warm-white',
-                    compareMode ? 'cursor-pointer' : 'cursor-default',
-                  )}
-                >
-                  <div className="w-full aspect-[3/4] bg-brand-cream flex items-center justify-center relative">
-                    <span className="text-4xl opacity-60">📷</span>
-                    <span className="absolute top-2 left-2 bg-brand-dark text-brand-paper text-[10px] font-bold px-2 py-0.5 rounded-xl">
-                      {photo.category}
-                    </span>
-                    {isSelected && (
-                      <span className="absolute top-2 right-2 bg-accent text-brand-paper w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold">
-                        ✓
-                      </span>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <p className="font-bold text-brand-dark text-[13px] m-0 mb-0.5">{photo.label}</p>
-                    <p className="text-brand-warm text-[11px] m-0 mb-1.5">{formatDateShort(photo.date)}</p>
-                    <div className="flex gap-2 flex-wrap">
-                      {photo.weight && (
-                        <span className="text-[11px] text-brand-brown bg-brand-cream/80 px-1.5 py-0.5 rounded">
-                          ⚖️ {photo.weight} kg
-                        </span>
-                      )}
-                      {photo.bodyFat && (
-                        <span className="text-[11px] text-brand-brown bg-brand-cream/80 px-1.5 py-0.5 rounded">
-                          📊 {photo.bodyFat}%
-                        </span>
-                      )}
-                    </div>
-                    {photo.notes && <p className="text-brand-warm text-[11px] m-0 mt-1.5 italic">{photo.notes}</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </Card>
-
-      {/* Stats Summary */}
-      <div className="grid gap-4" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))' }}>
-        {[
-          {
-            icon: '📸',
-            value: String(photos.length),
-            label: 'Fotos Registradas',
-          },
-          {
-            icon: '📅',
-            value: String(photos.length >= 2 ? daysBetween(sorted[0]?.date || '', sorted[sorted.length - 1]?.date || '') : 0),
-            label: 'Días de Tracking',
-          },
-          {
-            icon: '⚖️',
-            value: photos.length >= 2 && sorted[0]?.weight && sorted[sorted.length - 1]?.weight
-              ? `${((sorted[sorted.length - 1]?.weight || 0) - (sorted[0]?.weight || 0)).toFixed(1)}`
-              : '—',
-            label: 'Cambio de Peso (kg)',
-          },
-          {
-            icon: '📊',
-            value: photos.length >= 2 && sorted[0]?.bodyFat && sorted[sorted.length - 1]?.bodyFat
-              ? `${((sorted[sorted.length - 1]?.bodyFat || 0) - (sorted[0]?.bodyFat || 0)).toFixed(1)}%`
-              : '—',
-            label: 'Cambio % Grasa',
-          },
-        ].map((s) => (
-          <Card key={s.label} variant="default" padding="md" className="text-center">
-            <p className="text-[28px] m-0 mb-1">{s.icon}</p>
-            <p className="font-serif text-2xl font-extrabold text-brand-dark m-0 mb-1">{s.value}</p>
-            <p className="text-xs text-brand-warm m-0">{s.label}</p>
-          </Card>
-        ))}
-      </div>
+      {/* Viewer fullscreen */}
+      {viewer && (
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          onClick={() => setViewer(null)}
+        >
+          <button
+            onClick={() => setViewer(null)}
+            className="absolute top-4 right-4 p-2 bg-white/10 text-white rounded-full hover:bg-white/20"
+          >
+            <X size={20} />
+          </button>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={viewer.photoData}
+            alt={viewer.date}
+            className="max-h-[90vh] max-w-full rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

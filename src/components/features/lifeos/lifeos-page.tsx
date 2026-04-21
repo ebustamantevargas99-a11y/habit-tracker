@@ -10,6 +10,7 @@ import {
   Siren,
   Sparkles,
   Loader2,
+  Milestone as MilestoneIcon,
 } from "lucide-react";
 import { cn } from "@/components/ui";
 import MorningRitualPanel from "./morning-ritual-panel";
@@ -18,14 +19,16 @@ import JournalPanel from "./journal-panel";
 import TimeCapsulePanel from "./time-capsule-panel";
 import FocusPanel from "./focus-panel";
 import EmergencyPanel from "./emergency-panel";
+import TimelinePanel from "./timeline-panel";
 
 const TABS = [
-  { id: "morning",   label: "Mañana",     icon: Sunrise,    color: "text-accent" },
-  { id: "evening",   label: "Noche",      icon: Sunset,     color: "text-brand-medium" },
-  { id: "focus",     label: "Deep Work",  icon: Target,     color: "text-info" },
-  { id: "journal",   label: "Journal",    icon: PenSquare,  color: "text-success" },
-  { id: "capsule",   label: "Cápsula",    icon: Clock,      color: "text-warning" },
-  { id: "emergency", label: "Emergencia", icon: Siren,      color: "text-danger" },
+  { id: "morning",   label: "Mañana",     icon: Sunrise,       color: "text-accent" },
+  { id: "evening",   label: "Noche",      icon: Sunset,        color: "text-brand-medium" },
+  { id: "focus",     label: "Deep Work",  icon: Target,        color: "text-info" },
+  { id: "journal",   label: "Journal",    icon: PenSquare,     color: "text-success" },
+  { id: "timeline",  label: "Timeline",   icon: MilestoneIcon, color: "text-accent" },
+  { id: "capsule",   label: "Cápsula",    icon: Clock,         color: "text-warning" },
+  { id: "emergency", label: "Emergencia", icon: Siren,         color: "text-danger" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -85,6 +88,7 @@ export default function LifeOSPage() {
       {activeTab === "evening" && <EveningRitualPanel />}
       {activeTab === "focus" && <FocusPanel />}
       {activeTab === "journal" && <JournalPanel />}
+      {activeTab === "timeline" && <TimelinePanel />}
       {activeTab === "capsule" && <TimeCapsulePanel />}
       {activeTab === "emergency" && <EmergencyPanel />}
     </div>

@@ -96,6 +96,12 @@ model User {
   morningRituals      MorningRitual[]
   eveningRituals      EveningRitual[]
   emergencyCard       EmergencyCard?
+
+  // ── Extras finales ─────────────────────────────────────────────────────────
+  mealTemplates       MealTemplate[]
+  recipes             Recipe[]
+  bodyPhotos          BodyPhoto[]
+  milestones          Milestone[]
 }
 
 model Account {
@@ -199,6 +205,8 @@ model UserProfile {
 
   // ── Onboarding / profile extended (2026-04-19 — Ultimate TRACKER pivote) ───
   onboardingCompleted Boolean   @default(false)
+  quietModeAuto       Boolean   @default(true)   // si detecta mood bajo consistente, oculta métricas
+  quietModeForced     Boolean   @default(false)  // forzado manualmente
   birthDate           DateTime?
   biologicalSex       String?   // "male" | "female" | "intersex" | "prefer_not_say"
   gender              String?
@@ -252,6 +260,7 @@ model Habit {
   streakBest    Int        @default(0)
   strength      Float      @default(0)
   isActive      Boolean    @default(true)
+  difficulty    String     @default("medium")  // tiny | small | medium | large
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -804,12 +813,16 @@ model FoodItem {
   sugar       Float      @default(0)
   sodium      Float      @default(0)
   isCustom    Boolean    @default(true)
+  barcode     String?
   createdAt   DateTime   @default(now())
   user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   mealItems   MealItem[]
+  mealTemplateItems MealTemplateItem[]
+  recipeItems RecipeItem[]
 
   @@index([userId])
   @@index([userId, name])
+  @@index([userId, barcode])
 }
 
 model MealLog {
@@ -819,6 +832,7 @@ model MealLog {
   mealType  String     // breakfast | lunch | dinner | snack
   name      String?
   notes     String?
+  photoData String?    @db.Text   // base64 data URI (opcional)
   createdAt DateTime   @default(now())
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     MealItem[]
@@ -1143,4 +1157,89 @@ model EmergencyCard {
   updatedAt      DateTime @updatedAt
   createdAt      DateTime @default(now())
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ─── Meal templates + Recipes ─────────────────────────────────────────────────
+
+model MealTemplate {
+  id          String             @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  mealType    String?            // breakfast | lunch | dinner | snack | null
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       MealTemplateItem[]
+
+  @@index([userId])
+}
+
+model MealTemplateItem {
+  id         String       @id @default(cuid())
+  templateId String
+  foodItemId String
+  quantity   Float        @default(1)
+  unit       String       @default("g")
+  template   MealTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  foodItem   FoodItem     @relation(fields: [foodItemId], references: [id])
+
+  @@index([templateId])
+}
+
+model Recipe {
+  id          String       @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  servings    Int          @default(1)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       RecipeItem[]
+
+  @@index([userId])
+}
+
+model RecipeItem {
+  id         String   @id @default(cuid())
+  recipeId   String
+  foodItemId String
+  quantity   Float    @default(1)
+  unit       String   @default("g")
+  recipe     Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  foodItem   FoodItem @relation(fields: [foodItemId], references: [id])
+
+  @@index([recipeId])
+}
+
+// ─── Body photos + Milestones ─────────────────────────────────────────────────
+
+model BodyPhoto {
+  id        String   @id @default(cuid())
+  userId    String
+  date      String   // YYYY-MM-DD
+  category  String   @default("front")   // "front" | "side" | "back"
+  photoData String   @db.Text             // base64 data URI
+  weight    Float?
+  notes     String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
+}
+
+model Milestone {
+  id          String   @id @default(cuid())
+  userId      String
+  date        String
+  type        String   // "habit_streak" | "pr" | "weight" | "book_finished" | "meditation" | "custom"
+  title       String
+  description String?
+  icon        String?  // emoji
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, date])
 }
