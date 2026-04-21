@@ -3,16 +3,11 @@ import { create } from "zustand";
 import { api } from "@/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface FastingLog {
-  id: string;
-  startTime: string;  // ISO string
-  endTime: string | null;
-  targetHours: number;
-  completed: boolean;
-  notes: string | null;
-  createdAt: string;
-}
+//
+// NOTA (2026-04-21 — Fitness redesign Fase 9):
+// El tipo FastingLog y sus endpoints fueron movidos a LifeOS (FastingSession).
+// Este store conserva solo Challenges hasta que la Fase 2 reemplace challenges
+// por TrainingPrograms.
 
 export interface FitnessChallenge {
   id: string;
@@ -30,16 +25,11 @@ export interface FitnessChallenge {
 // ─── State ────────────────────────────────────────────────────────────────────
 
 interface FitnessExtendedState {
-  fastingLogs: FastingLog[];
   challenges: FitnessChallenge[];
   isLoaded: boolean;
 
   initialize: () => Promise<void>;
   refresh: () => Promise<void>;
-
-  // Fasting
-  startFast: (targetHours: number) => Promise<FastingLog>;
-  completeFast: (id: string, completed: boolean) => Promise<void>;
 
   // Challenges
   addChallenge: (data: { name: string; totalDays: number; category?: string; description?: string }) => Promise<FitnessChallenge>;
@@ -50,7 +40,6 @@ interface FitnessExtendedState {
 // ─── Store ────────────────────────────────────────────────────────────────────
 
 export const useFitnessExtendedStore = create<FitnessExtendedState>((set, get) => ({
-  fastingLogs: [],
   challenges: [],
   isLoaded: false,
 
@@ -61,38 +50,14 @@ export const useFitnessExtendedStore = create<FitnessExtendedState>((set, get) =
 
   refresh: async () => {
     try {
-      const [fasting, challenges] = await Promise.all([
-        api.get<FastingLog[]>("/fitness/fasting?limit=20"),
-        api.get<FitnessChallenge[]>("/fitness/challenges"),
-      ]);
+      const challenges = await api.get<FitnessChallenge[]>("/fitness/challenges");
       set({
-        fastingLogs: fasting as FastingLog[],
         challenges: challenges as FitnessChallenge[],
         isLoaded: true,
       });
     } catch {
       set({ isLoaded: true });
     }
-  },
-
-  startFast: async (targetHours) => {
-    const log = await api.post<FastingLog>("/fitness/fasting", {
-      startTime: new Date().toISOString(),
-      targetHours,
-      completed: false,
-    });
-    set(s => ({ fastingLogs: [log, ...s.fastingLogs] }));
-    return log;
-  },
-
-  completeFast: async (id, completed) => {
-    const updated = await api.patch<FastingLog>(`/fitness/fasting/${id}`, {
-      endTime: new Date().toISOString(),
-      completed,
-    });
-    set(s => ({
-      fastingLogs: s.fastingLogs.map(f => f.id === id ? updated : f),
-    }));
   },
 
   addChallenge: async (data) => {

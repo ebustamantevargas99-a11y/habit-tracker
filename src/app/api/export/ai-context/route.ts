@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     bodyMetrics,
     weightLogs,
     stepsLogs,
-    fastingLogs,
+    fastingSessions,
     transactions,
     budgets,
     recurringTxns,
@@ -117,10 +117,10 @@ export async function GET(req: NextRequest) {
       select: { date: true, steps: true },
       orderBy: { date: "desc" },
     }),
-    prisma.fastingLog.findMany({
-      where: { userId, createdAt: { gte: new Date(from) } },
-      select: { startTime: true, endTime: true, targetHours: true, completed: true },
-      orderBy: { createdAt: "desc" },
+    prisma.fastingSession.findMany({
+      where: { userId, startedAt: { gte: new Date(from) } },
+      select: { startedAt: true, endedAt: true, targetHours: true, protocol: true },
+      orderBy: { startedAt: "desc" },
     }),
     prisma.transaction.findMany({
       where: { userId, date: { gte: from } },
@@ -424,16 +424,19 @@ export async function GET(req: NextRequest) {
     return bfMetric ? { value: bfMetric.value, date: bfMetric.date } : null;
   })();
 
-  const completedFasting = fastingLogs.filter((f) => f.completed);
+  // FastingSession — "completado" significa tener endedAt (startedAt lo inicia el user).
+  const completedFasting = fastingSessions.filter((f) => f.endedAt !== null);
   const currentFastingStreak = (() => {
     let streak = 0;
-    const sortedFasting = fastingLogs
-      .filter((f) => f.completed)
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
+    const sortedFasting = completedFasting
+      .slice()
+      .sort(
+        (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+      );
     for (let i = 0; i < sortedFasting.length; i++) {
       const expected = new Date();
       expected.setDate(expected.getDate() - i);
-      const logDate = new Date(sortedFasting[i].startTime).toISOString().split("T")[0];
+      const logDate = new Date(sortedFasting[i].startedAt).toISOString().split("T")[0];
       if (logDate === expected.toISOString().split("T")[0]) streak++;
       else break;
     }
@@ -445,13 +448,13 @@ export async function GET(req: NextRequest) {
       ? Math.round(
           avg(
             completedFasting.map((f) => {
-              if (!f.endTime) return f.targetHours;
+              if (!f.endedAt) return f.targetHours;
               return (
-                (new Date(f.endTime).getTime() - new Date(f.startTime).getTime()) /
+                (new Date(f.endedAt).getTime() - new Date(f.startedAt).getTime()) /
                 3600000
               );
-            })
-          )
+            }),
+          ),
         )
       : 0;
 
@@ -480,8 +483,8 @@ export async function GET(req: NextRequest) {
       stepsAverage30d,
     },
     fasting: {
-      totalCompletedThisMonth: completedFasting.filter((f) =>
-        new Date(f.startTime).toISOString().substring(0, 7) === thisMonth
+      totalCompletedThisMonth: completedFasting.filter(
+        (f) => new Date(f.startedAt).toISOString().substring(0, 7) === thisMonth,
       ).length,
       averageDuration: avgFastingDuration,
       currentStreak: currentFastingStreak,

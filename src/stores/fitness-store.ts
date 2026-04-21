@@ -95,6 +95,7 @@ interface FitnessState {
   bodyMetrics: BodyMetric[];
   weightLog: WeightEntry[];
   stepsLog: StepEntry[];
+  /** @deprecated — reemplazado por TrainingProgram en Fase 2. Placeholder por retro-compat. */
   weeklyPlan: EnginePlanDay[];
   totalWorkouts: number;
   currentWeekWorkouts: number;
@@ -123,7 +124,7 @@ interface FitnessState {
   // Steps tracking
   addSteps: (entry: StepEntry) => Promise<void>;
 
-  // Weekly plan
+  // Weekly plan — @deprecated (noop en Fase 1; se reemplaza por TrainingProgram en Fase 2)
   saveWeeklyPlanDay: (dayOfWeek: number, planDay: EnginePlanDay) => Promise<void>;
 
   // Derived tonelage history from stored workouts
@@ -151,7 +152,7 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
     if (get().isLoaded) return;
     set({ isLoading: true, error: null });
     try {
-      const [workouts, personalRecords, bodyMetrics, weightLog, stepsLog, stats, weeklyPlanRows] =
+      const [workouts, personalRecords, bodyMetrics, weightLog, stepsLog, stats] =
         await Promise.all([
           api.get<WorkoutSession[]>("/fitness/workouts"),
           api.get<PersonalRecord[]>("/fitness/personal-records"),
@@ -159,22 +160,7 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
           api.get<WeightEntry[]>("/fitness/weight?days=30"),
           api.get<StepEntry[]>("/fitness/steps?days=7"),
           api.get<{ totalWorkouts: number; currentWeekWorkouts: number; weeklyVolume: Record<string, number> }>("/fitness/stats"),
-          api.get<{ dayOfWeek: number; exercises: PlanExercise[] }[]>("/fitness/weekly-plan"),
         ]);
-
-      // Reconstruct EnginePlanDay[] from saved rows (only if rows exist)
-      let weeklyPlan: EnginePlanDay[] = [];
-      if ((weeklyPlanRows as { dayOfWeek: number; exercises: PlanExercise[] }[]).length > 0) {
-        weeklyPlan = (weeklyPlanRows as { dayOfWeek: number; exercises: PlanExercise[] }[]).map(
-          (r) => ({
-            // dayOfWeek stored but day/type not persisted — use placeholder, page will merge with WEEKLY_PLAN_DEFAULT
-            day: "",
-            type: "Rest" as const,
-            exercises: r.exercises,
-            _dayOfWeek: r.dayOfWeek,
-          })
-        ) as unknown as EnginePlanDay[];
-      }
 
       set({
         workouts,
@@ -182,7 +168,7 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
         bodyMetrics,
         weightLog,
         stepsLog,
-        weeklyPlan,
+        weeklyPlan: [], // se reemplaza por TrainingProgram en Fase 2
         totalWorkouts: stats.totalWorkouts,
         currentWeekWorkouts: stats.currentWeekWorkouts,
         weeklyVolume: stats.weeklyVolume,
@@ -245,8 +231,11 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
     set((state) => ({ stepsLog: [...state.stepsLog, entry] }));
   },
 
-  saveWeeklyPlanDay: async (dayOfWeek, planDay) => {
-    await api.put("/fitness/weekly-plan", { dayOfWeek, exercises: planDay.exercises });
+  // @deprecated — se reemplaza por TrainingProgram en Fase 2. Stub silencioso para no
+  // romper al UI legacy (weekly-plan-tab) hasta que se reescriba.
+  saveWeeklyPlanDay: async (_dayOfWeek, _planDay) => {
+    void _dayOfWeek;
+    void _planDay;
   },
 
   getTonelageHistory: () => {

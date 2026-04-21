@@ -124,7 +124,8 @@ export default function AppearanceTab() {
           <div>
             <p className="text-sm font-semibold text-brand-dark">Unidades</p>
             <p className="text-xs text-brand-warm mt-0.5">
-              Métrico (kg/cm) o Imperial (lb/in).
+              Métrico (kg / cm / km) o Imperial (lb / in / mi). Tus datos se guardan
+              siempre en métrico — cambiar aquí solo cambia cómo se muestran.
             </p>
           </div>
           <div className="flex gap-1">

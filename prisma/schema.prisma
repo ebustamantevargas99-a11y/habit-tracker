@@ -11,104 +11,109 @@ generator client {
 // ─── Auth (NextAuth required tables) ──────────────────────────────────────────
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  emailVerified DateTime?
-  image         String?
-  passwordHash  String?
+  id                   String    @id @default(cuid())
+  name                 String?
+  email                String    @unique
+  emailVerified        DateTime?
+  image                String?
+  passwordHash         String?
   // Security timestamps — Fase A seguridad (2026-04-20)
-  passwordChangedAt   DateTime?
-  lastLoginAt         DateTime?
-  failedLoginAttempts Int       @default(0)
-  lockedUntil         DateTime?
+  passwordChangedAt    DateTime?
+  lastLoginAt          DateTime?
+  failedLoginAttempts  Int       @default(0)
+  lockedUntil          DateTime?
   // 2FA TOTP
   twoFactorSecret      String?
-  twoFactorEnabled     Boolean  @default(false)
-  twoFactorBackupCodes String[] @default([])
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  twoFactorEnabled     Boolean   @default(false)
+  twoFactorBackupCodes String[]  @default([])
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
 
-  accounts        Account[]
-  sessions        Session[]
-  profile         UserProfile?
-  passwordResetTokens PasswordResetToken[]
+  accounts                Account[]
+  sessions                Session[]
+  profile                 UserProfile?
+  passwordResetTokens     PasswordResetToken[]
   emailVerificationTokens EmailVerificationToken[]
-  securityEvents  SecurityEvent[]
-  habits          Habit[]
-  habitLogs       HabitLog[]
-  workouts        Workout[]
-  exercises       Exercise[]
-  personalRecords PersonalRecord[]
-  bodyMetrics     BodyMetric[]
-  transactions       Transaction[]
-  budgets            Budget[]
-  financialAccounts  FinancialAccount[]
-  recurringTxns      RecurringTransaction[]
-  savingsGoals       SavingsGoal[]
-  debts              Debt[]
-  investments        Investment[]
-  netWorthSnapshots  NetWorthSnapshot[]
-  moodLogs        MoodLog[]
-  sleepLogs       SleepLog[]
-  dailyPlans      DailyPlan[]
-  badges          UserBadge[]
-  gamification    Gamification?
+  securityEvents          SecurityEvent[]
+  habits                  Habit[]
+  habitLogs               HabitLog[]
+  workouts                Workout[]
+  exercises               Exercise[]
+  personalRecords         PersonalRecord[]
+  bodyMetrics             BodyMetric[]
+  transactions            Transaction[]
+  budgets                 Budget[]
+  financialAccounts       FinancialAccount[]
+  recurringTxns           RecurringTransaction[]
+  savingsGoals            SavingsGoal[]
+  debts                   Debt[]
+  investments             Investment[]
+  netWorthSnapshots       NetWorthSnapshot[]
+  moodLogs                MoodLog[]
+  sleepLogs               SleepLog[]
+  dailyPlans              DailyPlan[]
+  badges                  UserBadge[]
+  gamification            Gamification?
 
   // ── NEW: previously in localStorage ──────────────────────────────────────
-  hydrationLogs    HydrationLog[]
-  medications      Medication[]
-  medicationLogs   MedicationLog[]
-  symptomLogs      SymptomLog[]
-  appointments     MedicalAppointment[]
-  okrObjectives    OKRObjective[]
+  hydrationLogs     HydrationLog[]
+  medications       Medication[]
+  medicationLogs    MedicationLog[]
+  symptomLogs       SymptomLog[]
+  appointments      MedicalAppointment[]
+  okrObjectives     OKRObjective[]
   projectionConfigs ProjectionConfig[]
-  pomodoroSessions PomodoroSession[]
-  projects         Project[]
-  fastingLogs      FastingLog[]
-  challenges       FitnessChallenge[]
-  weightLogs       WeightLog[]
-  stepsLogs        StepsLog[]
-  weeklyPlan       WeeklyPlan[]
+  pomodoroSessions  PomodoroSession[]
+  projects          Project[]
+  challenges        FitnessChallenge[]
+  weightLogs        WeightLog[]
+  stepsLogs         StepsLog[]
+
+  // ── Fitness redesign (2026-04-21 — Fase 9) ─────────────────────────────────
+  trainingPrograms TrainingProgram[]
+  readinessChecks  ReadinessCheck[]
+  cardioSessions   CardioSession[]
+  shoes            Shoe[]
+  bodyCompositions BodyComposition[]
 
   // ── Nutrition ──────────────────────────────────────────────────────────────
-  foodItems        FoodItem[]
-  mealLogs         MealLog[]
-  nutritionGoal    NutritionGoal?
+  foodItems     FoodItem[]
+  mealLogs      MealLog[]
+  nutritionGoal NutritionGoal?
 
   // ── Organization ───────────────────────────────────────────────────────────
-  notes            Note[]
-  lifeAreas        LifeArea[]
-  weeklyReviews    WeeklyReview[]
+  notes         Note[]
+  lifeAreas     LifeArea[]
+  weeklyReviews WeeklyReview[]
 
   // ── Scoring ────────────────────────────────────────────────────────────────
   lifeScoreSnapshots LifeScoreSnapshot[]
 
   // ── Reading ────────────────────────────────────────────────────────────────
-  books            Book[]
-  readingSessions  ReadingSession[]
+  books           Book[]
+  readingSessions ReadingSession[]
 
   // ── Fase 5 extras ──────────────────────────────────────────────────────────
-  fastingSessions     FastingSession[]
-  meditationSessions  MeditationSession[]
-  menstrualCycles     MenstrualCycle[]
-  periodLogs          PeriodLog[]
-  journalEntries      JournalEntry[]
-  timeCapsules        TimeCapsule[]
-  focusSessions       FocusSession[]
-  morningRituals      MorningRitual[]
-  eveningRituals      EveningRitual[]
-  emergencyCard       EmergencyCard?
+  fastingSessions    FastingSession[]
+  meditationSessions MeditationSession[]
+  menstrualCycles    MenstrualCycle[]
+  periodLogs         PeriodLog[]
+  journalEntries     JournalEntry[]
+  timeCapsules       TimeCapsule[]
+  focusSessions      FocusSession[]
+  morningRituals     MorningRitual[]
+  eveningRituals     EveningRitual[]
+  emergencyCard      EmergencyCard?
 
   // ── Extras finales ─────────────────────────────────────────────────────────
-  mealTemplates       MealTemplate[]
-  recipes             Recipe[]
-  bodyPhotos          BodyPhoto[]
-  milestones          Milestone[]
+  mealTemplates MealTemplate[]
+  recipes       Recipe[]
+  bodyPhotos    BodyPhoto[]
+  milestones    Milestone[]
 
   // ── Calendar redesign ──────────────────────────────────────────────────────
-  calendarEvents      CalendarEvent[]
-  dayTemplates        DayTemplate[]
+  calendarEvents CalendarEvent[]
+  dayTemplates   DayTemplate[]
 }
 
 model Account {
@@ -148,28 +153,28 @@ model VerificationToken {
 // ─── Security — Fase A (2026-04-20) ───────────────────────────────────────────
 
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique  // nunca guardar el token plain, solo hash
+  tokenHash String    @unique // nunca guardar el token plain, solo hash
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
   ipAddress String?
   userAgent String?
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, expiresAt])
   @@index([expiresAt])
 }
 
 model EmailVerificationToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  tokenHash String   @unique
+  tokenHash String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
@@ -177,12 +182,12 @@ model EmailVerificationToken {
 
 model SecurityEvent {
   id        String   @id @default(cuid())
-  userId    String?  // nullable porque puede ser un intento de login con email inexistente
-  email     String?  // email con el que se intentó (si falla lookup)
-  eventType String   // "login_success","login_failed","register","password_reset_requested","password_reset_completed","email_verified","account_deleted","data_exported","2fa_enabled","2fa_disabled"
+  userId    String? // nullable porque puede ser un intento de login con email inexistente
+  email     String? // email con el que se intentó (si falla lookup)
+  eventType String // "login_success","login_failed","register","password_reset_requested","password_reset_completed","email_verified","account_deleted","data_exported","2fa_enabled","2fa_disabled"
   ipAddress String?
   userAgent String?
-  metadata  Json?    // detalles específicos del evento
+  metadata  Json? // detalles específicos del evento
   createdAt DateTime @default(now())
   user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -194,53 +199,53 @@ model SecurityEvent {
 // ─── User Profile & Settings ──────────────────────────────────────────────────
 
 model UserProfile {
-  id               String @id @default(cuid())
-  userId           String @unique
+  id               String  @id @default(cuid())
+  userId           String  @unique
   bio              String?
   avatar           String?
-  timezone         String @default("America/Mexico_City")
-  units            String @default("metric")  // "metric" | "imperial"
-  primaryCurrency  String @default("MXN")     // ISO 4217 — moneda principal del user
-  language         String @default("es")
-  theme            String @default("warm")    // "warm" | "ocean" | "forest" | "rose"
+  timezone         String  @default("America/Mexico_City")
+  units            String  @default("metric") // "metric" | "imperial"
+  primaryCurrency  String  @default("MXN") // ISO 4217 — moneda principal del user
+  language         String  @default("es")
+  theme            String  @default("warm") // "warm" | "ocean" | "forest" | "rose"
   darkMode         Boolean @default(false)
-  weekStartsOn     Int    @default(1)
-  stepsGoal        Int    @default(10000)
-  waterGoal        Float  @default(2.0)
-  sleepGoal        Float  @default(8.0)
-  lifeScoreWeights Json   @default("{\"vision\":0.10,\"plan\":0.10,\"productivity\":0.15,\"organization\":0.08,\"finance\":0.15,\"fitness\":0.15,\"nutrition\":0.12,\"wellness\":0.15}")
+  weekStartsOn     Int     @default(1)
+  stepsGoal        Int     @default(10000)
+  waterGoal        Float   @default(2.0)
+  sleepGoal        Float   @default(8.0)
+  lifeScoreWeights Json    @default("{\"vision\":0.10,\"plan\":0.10,\"productivity\":0.15,\"organization\":0.08,\"finance\":0.15,\"fitness\":0.15,\"nutrition\":0.12,\"wellness\":0.15}")
   visionBoard      Json?
 
   // ── Onboarding / profile extended (2026-04-19 — Ultimate TRACKER pivote) ───
   onboardingCompleted Boolean   @default(false)
-  quietModeAuto       Boolean   @default(true)   // si detecta mood bajo consistente, oculta métricas
-  quietModeForced     Boolean   @default(false)  // forzado manualmente
+  quietModeAuto       Boolean   @default(true) // si detecta mood bajo consistente, oculta métricas
+  quietModeForced     Boolean   @default(false) // forzado manualmente
   birthDate           DateTime?
-  biologicalSex       String?   // "male" | "female" | "intersex" | "prefer_not_say"
+  biologicalSex       String? // "male" | "female" | "intersex" | "prefer_not_say"
   gender              String?
   pronouns            String?
   heightCm            Float?
   weightKg            Float?
-  activityLevel       String?   // "sedentary" | "light" | "moderate" | "active" | "very_active"
-  fitnessLevel        String?   // "beginner" | "intermediate" | "advanced"
+  activityLevel       String? // "sedentary" | "light" | "moderate" | "active" | "very_active"
+  fitnessLevel        String? // "beginner" | "intermediate" | "advanced"
   conditions          String[]  @default([])
-  interests           String[]  @default([])   // ["training","nutrition","mindfulness",...]
-  enabledModules      String[]  @default([])   // ["fitness","nutrition","habits",...]
+  interests           String[]  @default([]) // ["training","nutrition","mindfulness",...]
+  enabledModules      String[]  @default([]) // ["fitness","nutrition","habits",...]
   primaryGoals        String[]  @default([])
 
-  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Gamification ─────────────────────────────────────────────────────────────
 
 model Gamification {
-  id                       String @id @default(cuid())
-  userId                   String @unique
-  totalXP                  Int    @default(0)
-  currentLevel             Int    @default(1)
-  streakInsuranceDays      Int    @default(1)
-  streakInsuranceUsedThisWeek Int @default(0)
-  user                     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                          String @id @default(cuid())
+  userId                      String @unique
+  totalXP                     Int    @default(0)
+  currentLevel                Int    @default(1)
+  streakInsuranceDays         Int    @default(1)
+  streakInsuranceUsedThisWeek Int    @default(0)
+  user                        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model UserBadge {
@@ -256,31 +261,31 @@ model UserBadge {
 // ─── Habits ───────────────────────────────────────────────────────────────────
 
 model Habit {
-  id            String     @id @default(cuid())
-  userId        String
-  name          String
-  icon          String     @default("✅")
-  category      String
-  timeOfDay     String     @default("all")
-  frequency     String     @default("daily")
-  targetDays    Int[]
-  streakCurrent Int        @default(0)
-  streakBest    Int        @default(0)
-  strength      Float      @default(0)
-  isActive      Boolean    @default(true)
-  difficulty    String     @default("medium")        // tiny | small | medium | large
+  id                 String     @id @default(cuid())
+  userId             String
+  name               String
+  icon               String     @default("✅")
+  category           String
+  timeOfDay          String     @default("all")
+  frequency          String     @default("daily")
+  targetDays         Int[]
+  streakCurrent      Int        @default(0)
+  streakBest         Int        @default(0)
+  strength           Float      @default(0)
+  isActive           Boolean    @default(true)
+  difficulty         String     @default("medium") // tiny | small | medium | large
   // ── Sistema de arraigo ────────────────────────────────────────────────────
-  phase              String    @default("not_started") // not_started | starting | forming | strengthening | near_rooted | rooted
-  rootedAt           DateTime?                         // primera vez que cruzó día 92 (fase rooted)
-  rootedStreak       Int       @default(0)             // días arraigado contador (cuando phase=rooted)
-  graceDaysAvailable Int       @default(1)             // días de gracia en la semana actual
-  graceWeekStart     String?                           // fecha del lunes de esta semana (YYYY-MM-DD)
-  lastCompletedDate  String?                           // último día marcado como completado
-  estimatedMinutes   Int?                              // tiempo estimado por sesión (para alerta de pérdida)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
-  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs          HabitLog[]
+  phase              String     @default("not_started") // not_started | starting | forming | strengthening | near_rooted | rooted
+  rootedAt           DateTime? // primera vez que cruzó día 92 (fase rooted)
+  rootedStreak       Int        @default(0) // días arraigado contador (cuando phase=rooted)
+  graceDaysAvailable Int        @default(1) // días de gracia en la semana actual
+  graceWeekStart     String? // fecha del lunes de esta semana (YYYY-MM-DD)
+  lastCompletedDate  String? // último día marcado como completado
+  estimatedMinutes   Int? // tiempo estimado por sesión (para alerta de pérdida)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs               HabitLog[]
 
   @@index([userId, isActive])
 }
@@ -303,18 +308,27 @@ model HabitLog {
 // ─── Fitness ──────────────────────────────────────────────────────────────────
 
 model Exercise {
-  id               String           @id @default(cuid())
+  id               String            @id @default(cuid())
   userId           String?
   name             String
-  muscleGroup      String
+  muscleGroup      String // legacy (español) — retro-compat
+  primaryMuscle    String? // chest | back | shoulders | biceps | triceps | quads | hamstrings | glutes | core | calves | forearms | traps
+  secondaryMuscles String[]          @default([])
   category         String
-  equipment        String?
-  isCustom         Boolean          @default(false)
-  user             User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  equipment        String? // legacy single value — retro-compat
+  equipmentList    String[]          @default([]) // barbell | dumbbell | machine | cable | bodyweight | kettlebell | band | smith | plate | other
+  difficulty       String? // beginner | intermediate | advanced
+  description      String?           @db.Text
+  formTips         String[]          @default([])
+  commonMistakes   String[]          @default([])
+  alternatives     String[]          @default([]) // ids de ejercicios alternativos
+  isCustom         Boolean           @default(false)
+  user             User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
   workoutExercises WorkoutExercise[]
   personalRecords  PersonalRecord[]
 
   @@index([muscleGroup])
+  @@index([primaryMuscle])
 }
 
 model Workout {
@@ -324,15 +338,20 @@ model Workout {
   name            String
   durationMinutes Int               @default(0)
   totalVolume     Float             @default(0)
+  trimp           Float? // Training Impulse score (Banister)
   notes           String?
   completed       Boolean           @default(false)
   prsHit          Int               @default(0)
+  plannedPhaseId  String? // link a ProgramPhase (periodización)
+  readinessScore  Int? // snapshot del readiness del día (0-100)
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   exercises       WorkoutExercise[]
+  phase           ProgramPhase?     @relation(fields: [plannedPhaseId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
+  @@index([plannedPhaseId])
 }
 
 model WorkoutExercise {
@@ -354,9 +373,16 @@ model WorkoutSet {
   setNumber         Int
   weight            Float
   reps              Int
-  rpe               Float?
+  rpe               Float? // Rate of Perceived Exertion 0-10
+  rir               Int? // Reps in Reserve (10 - rpe). Puede guardarse directo.
+  tempo             String? // "3-1-1-2" = ecc-pause-con-pause (segundos)
+  setType           String          @default("straight") // straight | warmup | dropset | restpause | myoreps | cluster | superset | amrap | failure
+  groupId           String? // identificador común para agrupar supersets (A1+A2)
+  isWarmup          Boolean         @default(false)
   isPR              Boolean         @default(false)
   workoutExercise   WorkoutExercise @relation(fields: [workoutExerciseId], references: [id], onDelete: Cascade)
+
+  @@index([groupId])
 }
 
 model PersonalRecord {
@@ -419,49 +445,158 @@ model StepsLog {
   @@index([userId, date])
 }
 
-model FastingLog {
-  id          String    @id @default(cuid())
-  userId      String
-  startTime   DateTime
-  endTime     DateTime?
-  targetHours Int       @default(16)
-  completed   Boolean   @default(false)
-  notes       String?
-  createdAt   DateTime  @default(now())
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-}
+// FastingLog DROPPED (Fase 9 redesign) — consolidado en FastingSession (LifeOS)
 
 model FitnessChallenge {
-  id           String   @id @default(cuid())
-  userId       String
-  name         String
-  description  String?
-  startDate    String
-  endDate      String
-  targetValue  Float
-  currentValue Float    @default(0)
-  unit         String
-  isCompleted  Boolean  @default(false)
-  completedDays Int[]   @default([])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String   @id @default(cuid())
+  userId        String
+  name          String
+  description   String?
+  startDate     String
+  endDate       String
+  targetValue   Float
+  currentValue  Float    @default(0)
+  unit          String
+  isCompleted   Boolean  @default(false)
+  completedDays Int[]    @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
-model WeeklyPlan {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  dayOfWeek Int      // 0=Lunes … 6=Domingo
-  exercises Json     // PlanExercise[]
-  updatedAt DateTime @updatedAt
+// WeeklyPlan DROPPED (Fase 9 redesign) — reemplazado por TrainingProgram + ProgramPhase
 
-  @@unique([userId, dayOfWeek])
-  @@index([userId])
+// ─── Fitness redesign (Fase 9) — nuevos modelos pro ───────────────────────────
+
+model TrainingProgram {
+  id            String         @id @default(cuid())
+  userId        String
+  name          String
+  description   String?        @db.Text
+  type          String         @default("linear") // linear | dup | block | conjugate | custom
+  goal          String? // hypertrophy | strength | power | endurance | general
+  durationWeeks Int
+  startDate     String // YYYY-MM-DD
+  endDate       String?
+  active        Boolean        @default(false) // sólo uno activo por user (enforced en código)
+  daysPerWeek   Int            @default(4)
+  schedule      Json           @default("[]") // [{dayOfWeek:1, templateName:"Push", exercises:[...]}]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phases        ProgramPhase[]
+
+  @@index([userId, active])
+}
+
+model ProgramPhase {
+  id                  String          @id @default(cuid())
+  programId           String
+  name                String // accumulation | intensification | realization | deload | custom
+  weekStart           Int // semana del programa donde empieza (1-indexed)
+  weekEnd             Int
+  targetRpeMin        Float? // p.ej. 7
+  targetRpeMax        Float? // p.ej. 8
+  targetSetsPerMuscle Int? // sugerido semanal
+  notes               String?
+  program             TrainingProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  workouts            Workout[]
+
+  @@index([programId, weekStart])
+}
+
+model ReadinessCheck {
+  id             String   @id @default(cuid())
+  userId         String
+  date           String // YYYY-MM-DD
+  restingHr      Int?
+  hrv            Int? // ms (Heart Rate Variability)
+  sleepHours     Float?
+  sleepQuality   Int? // 1-10
+  soreness       Int? // 1-10 (10 = muy adolorido)
+  stress         Int? // 1-10
+  mood           Int? // 1-10
+  energy         Int? // 1-10
+  motivation     Int? // 1-10
+  score          Int? // 0-100 (calculado)
+  recommendation String? // go_hard | moderate | light | rest
+  notes          String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
+
+model CardioSession {
+  id                String    @id @default(cuid())
+  userId            String
+  date              String // YYYY-MM-DD
+  startedAt         DateTime
+  endedAt           DateTime?
+  activityType      String    @default("run") // run | bike | swim | row | walk | elliptical | hike | other
+  distanceKm        Float? // siempre km en DB; UI convierte mi si user imperial
+  durationSec       Int // segundos totales
+  avgPaceSecPerKm   Float? // pace promedio (segundos por km)
+  avgHr             Int? // bpm
+  maxHr             Int?
+  elevationGainM    Float?
+  caloriesBurned    Float?
+  perceivedExertion Int? // RPE 1-10
+  zones             Json? // {z1:sec, z2:sec, z3:sec, z4:sec, z5:sec}
+  splits            Json? // [{km:1, paceSec:300, hr:140}, ...]
+  route             Json? // GeoJSON (futuro GPS)
+  shoeId            String?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shoe              Shoe?     @relation(fields: [shoeId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@index([userId, activityType, date])
+}
+
+model Shoe {
+  id             String          @id @default(cuid())
+  userId         String
+  name           String // "Nike Pegasus 41 azul"
+  brand          String?
+  model          String?
+  purchaseDate   String? // YYYY-MM-DD
+  currentKm      Float           @default(0)
+  maxKm          Float           @default(800) // km recomendados antes de cambiar
+  retired        Boolean         @default(false)
+  retiredAt      DateTime?
+  notes          String?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cardioSessions CardioSession[]
+
+  @@index([userId, retired])
+}
+
+model BodyComposition {
+  id             String   @id @default(cuid())
+  userId         String
+  date           String // YYYY-MM-DD
+  weightKg       Float?
+  bodyFatPercent Float?
+  leanMassKg     Float?
+  fatMassKg      Float?
+  waterPercent   Float?
+  visceralFat    Float?
+  boneMassKg     Float?
+  bmr            Int? // basal metabolic rate (kcal)
+  method         String? // dexa | bia | caliper | navy_tape | photo_estimate | scale
+  notes          String?
+  createdAt      DateTime @default(now())
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId, date])
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -471,23 +606,23 @@ model WeeklyPlan {
 // ═══════════════════════════════════════════════════════════════════════════
 
 model FinancialAccount {
-  id            String   @id @default(cuid())
+  id            String                 @id @default(cuid())
   userId        String
   name          String
-  type          String                  // checking | savings | credit | investment | loan | crypto | cash
-  currency      String   @default("MXN")
-  balance       Float    @default(0)
+  type          String // checking | savings | credit | investment | loan | crypto | cash
+  currency      String                 @default("MXN")
+  balance       Float                  @default(0)
   creditLimit   Float?
   interestRate  Float?
   institution   String?
   color         String?
   icon          String?
-  archived      Boolean  @default(false)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions  Transaction[] @relation("TransactionAccount")
-  transfersFrom Transaction[] @relation("TransferFrom")
+  archived      Boolean                @default(false)
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions  Transaction[]          @relation("TransactionAccount")
+  transfersFrom Transaction[]          @relation("TransferFrom")
   recurrents    RecurringTransaction[]
   investments   Investment[]
 
@@ -496,26 +631,26 @@ model FinancialAccount {
 }
 
 model Transaction {
-  id                   String   @id @default(cuid())
-  userId               String
-  accountId            String
-  date                 String
-  amount               Float                      // siempre positivo; el type da el signo
-  type                 String                      // income | expense | transfer
-  category             String
-  subcategory          String?
-  merchant             String?
-  description          String?
-  notes                String?
-  tags                 String[] @default([])
-  photoData            String?  @db.Text           // base64 receipt
-  recurringId          String?
-  transferToAccountId  String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user                 User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account              FinancialAccount  @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Cascade)
-  transferTo           FinancialAccount? @relation("TransferFrom", fields: [transferToAccountId], references: [id])
+  id                  String            @id @default(cuid())
+  userId              String
+  accountId           String
+  date                String
+  amount              Float // siempre positivo; el type da el signo
+  type                String // income | expense | transfer
+  category            String
+  subcategory         String?
+  merchant            String?
+  description         String?
+  notes               String?
+  tags                String[]          @default([])
+  photoData           String?           @db.Text // base64 receipt
+  recurringId         String?
+  transferToAccountId String?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  user                User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account             FinancialAccount  @relation("TransactionAccount", fields: [accountId], references: [id], onDelete: Cascade)
+  transferTo          FinancialAccount? @relation("TransferFrom", fields: [transferToAccountId], references: [id])
 
   @@index([userId, date])
   @@index([userId, category])
@@ -524,27 +659,27 @@ model Transaction {
 }
 
 model RecurringTransaction {
-  id              String   @id @default(cuid())
-  userId          String
-  accountId       String
-  name            String
-  amount          Float
-  type            String                    // income | expense
-  category        String
-  subcategory     String?
-  merchant        String?
-  frequency       String                    // weekly | biweekly | monthly | quarterly | annual
-  dayOfMonth      Int?
-  nextDate        String                    // próxima fecha programada
-  endDate         String?
-  active          Boolean  @default(true)
-  autoLog         Boolean  @default(true)   // si genera transacción auto al llegar nextDate
-  linkedEventId   String?                   // CalendarEvent vinculado
-  lastLoggedDate  String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account         FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  id             String           @id @default(cuid())
+  userId         String
+  accountId      String
+  name           String
+  amount         Float
+  type           String // income | expense
+  category       String
+  subcategory    String?
+  merchant       String?
+  frequency      String // weekly | biweekly | monthly | quarterly | annual
+  dayOfMonth     Int?
+  nextDate       String // próxima fecha programada
+  endDate        String?
+  active         Boolean          @default(true)
+  autoLog        Boolean          @default(true) // si genera transacción auto al llegar nextDate
+  linkedEventId  String? // CalendarEvent vinculado
+  lastLoggedDate String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account        FinancialAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
 
   @@index([userId, active])
   @@index([userId, nextDate])
@@ -563,61 +698,61 @@ model Budget {
 }
 
 model SavingsGoal {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   name            String
   emoji           String?
   targetAmount    Float
-  currentAmount   Float    @default(0)
+  currentAmount   Float     @default(0)
   targetDate      String?
-  priority        String?                   // low | medium | high
+  priority        String? // low | medium | high
   linkedAccountId String?
-  category        String?                   // travel | home | emergency | car | wedding | education | other
+  category        String? // travel | home | emergency | car | wedding | education | other
   notes           String?
-  achieved        Boolean  @default(false)
+  achieved        Boolean   @default(false)
   achievedAt      DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
 
 model Debt {
-  id              String   @id @default(cuid())
+  id              String    @id @default(cuid())
   userId          String
   name            String
-  type            String                    // credit_card | loan | mortgage | student | personal | other
+  type            String // credit_card | loan | mortgage | student | personal | other
   balance         Float
   originalAmount  Float?
-  interestRate    Float                     // anual %
+  interestRate    Float // anual %
   minPayment      Float
   dueDay          Int?
   linkedAccountId String?
-  active          Boolean  @default(true)
+  active          Boolean   @default(true)
   paidOffAt       DateTime?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, active])
 }
 
 model Investment {
-  id              String   @id @default(cuid())
+  id              String            @id @default(cuid())
   userId          String
   symbol          String
   name            String
-  type            String                    // crypto | stock | etf | bond | real_estate | other
+  type            String // crypto | stock | etf | bond | real_estate | other
   quantity        Float
   averageCost     Float
-  currency        String   @default("USD")
+  currency        String            @default("USD")
   linkedAccountId String?
   lastPrice       Float?
   lastPriceAt     DateTime?
   notes           String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   account         FinancialAccount? @relation(fields: [linkedAccountId], references: [id])
 
@@ -626,15 +761,15 @@ model Investment {
 }
 
 model NetWorthSnapshot {
-  id           String   @id @default(cuid())
-  userId       String
-  date         String
-  assets       Float
-  liabilities  Float
-  netWorth     Float
-  breakdown    Json
-  createdAt    DateTime @default(now())
-  user         User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String
+  date        String
+  assets      Float
+  liabilities Float
+  netWorth    Float
+  breakdown   Json
+  createdAt   DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -690,17 +825,17 @@ model HydrationLog {
 }
 
 model Medication {
-  id             String           @id @default(cuid())
-  userId         String
-  name           String
-  brand          String?
-  dosage         String?
-  frequency      String           @default("daily")
-  timeOfDay      String?
-  isActive       Boolean          @default(true)
-  createdAt      DateTime         @default(now())
-  user           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs           MedicationLog[]
+  id              String           @id @default(cuid())
+  userId          String
+  name            String
+  brand           String?
+  dosage          String?
+  frequency       String           @default("daily")
+  timeOfDay       String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs            MedicationLog[]
   supplementFacts SupplementFact[]
 
   @@index([userId])
@@ -745,18 +880,18 @@ model SymptomLog {
 }
 
 model MedicalAppointment {
-  id          String   @id @default(cuid())
-  userId      String
-  doctorName  String
-  specialty   String
-  location    String?
-  dateTime    String
-  reason      String?
-  status      String   @default("pending")
-  result      String?
-  notes       String?
-  createdAt   DateTime @default(now())
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  doctorName String
+  specialty  String
+  location   String?
+  dateTime   String
+  reason     String?
+  status     String   @default("pending")
+  result     String?
+  notes      String?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
 }
@@ -799,22 +934,22 @@ model OKRKeyResult {
 }
 
 model ProjectionConfig {
-  id          String                @id @default(cuid())
-  userId      String
-  objectiveId String?
-  name        String
-  model       String                @default("linear")
-  baseline    Float
-  goal        Float
-  unit        String                @default("%")
-  startDate   String
-  endDate     String
-  alertThreshold Float             @default(0.15)
-  autoGenerate   Boolean           @default(true)
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  milestones  ProjectionMilestone[]
+  id             String                @id @default(cuid())
+  userId         String
+  objectiveId    String?
+  name           String
+  model          String                @default("linear")
+  baseline       Float
+  goal           Float
+  unit           String                @default("%")
+  startDate      String
+  endDate        String
+  alertThreshold Float                 @default(0.15)
+  autoGenerate   Boolean               @default(true)
+  createdAt      DateTime              @default(now())
+  updatedAt      DateTime              @updatedAt
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  milestones     ProjectionMilestone[]
 
   @@index([userId])
 }
@@ -864,18 +999,18 @@ model Project {
 }
 
 model ProjectTask {
-  id          String    @id @default(cuid())
+  id          String           @id @default(cuid())
   projectId   String
   title       String
   description String?
-  status      String    @default("todo")
+  status      String           @default("todo")
   priority    String?
   objectiveId String?
-  weight      Int       @default(1)
+  weight      Int              @default(1)
   dueDate     String?
-  orderIndex  Int       @default(0)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  orderIndex  Int              @default(0)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
   subtasks    ProjectSubtask[]
 
@@ -928,26 +1063,26 @@ model TimeBlock {
 // ─── Nutrition ────────────────────────────────────────────────────────────────
 
 model FoodItem {
-  id          String     @id @default(cuid())
-  userId      String
-  name        String
-  brand       String?
-  servingSize Float      @default(100)
-  servingUnit String     @default("g")
-  calories    Float
-  protein     Float      @default(0)
-  carbs       Float      @default(0)
-  fat         Float      @default(0)
-  fiber       Float      @default(0)
-  sugar       Float      @default(0)
-  sodium      Float      @default(0)
-  isCustom    Boolean    @default(true)
-  barcode     String?
-  createdAt   DateTime   @default(now())
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  mealItems   MealItem[]
+  id                String             @id @default(cuid())
+  userId            String
+  name              String
+  brand             String?
+  servingSize       Float              @default(100)
+  servingUnit       String             @default("g")
+  calories          Float
+  protein           Float              @default(0)
+  carbs             Float              @default(0)
+  fat               Float              @default(0)
+  fiber             Float              @default(0)
+  sugar             Float              @default(0)
+  sodium            Float              @default(0)
+  isCustom          Boolean            @default(true)
+  barcode           String?
+  createdAt         DateTime           @default(now())
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  mealItems         MealItem[]
   mealTemplateItems MealTemplateItem[]
-  recipeItems RecipeItem[]
+  recipeItems       RecipeItem[]
 
   @@index([userId])
   @@index([userId, name])
@@ -958,10 +1093,10 @@ model MealLog {
   id        String     @id @default(cuid())
   userId    String
   date      String
-  mealType  String     // breakfast | lunch | dinner | snack
+  mealType  String // breakfast | lunch | dinner | snack
   name      String?
   notes     String?
-  photoData String?    @db.Text   // base64 data URI (opcional)
+  photoData String?    @db.Text // base64 data URI (opcional)
   createdAt DateTime   @default(now())
   user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   items     MealItem[]
@@ -986,33 +1121,33 @@ model MealItem {
 }
 
 model NutritionGoal {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  calories       Float    @default(2000)
-  protein        Float    @default(150)
-  carbs          Float    @default(200)
-  fat            Float    @default(65)
-  fiber          Float    @default(25)
-  waterMl        Int      @default(2500)
-  mealsPerDay    Int      @default(3)
-  updatedAt      DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  calories    Float    @default(2000)
+  protein     Float    @default(150)
+  carbs       Float    @default(200)
+  fat         Float    @default(65)
+  fiber       Float    @default(25)
+  waterMl     Int      @default(2500)
+  mealsPerDay Int      @default(3)
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Organization ─────────────────────────────────────────────────────────────
 
 model Note {
-  id         String   @id @default(cuid())
-  userId     String
-  title      String
-  content    String   @db.Text
-  category   String   @default("general")
-  tags       String[]
-  isPinned   Boolean  @default(false)
-  color      String   @default("#FEFCE8")
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  category  String   @default("general")
+  tags      String[]
+  isPinned  Boolean  @default(false)
+  color     String   @default("#FEFCE8")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([userId, category])
@@ -1023,7 +1158,7 @@ model LifeArea {
   userId      String
   name        String
   emoji       String   @default("🎯")
-  score       Int      @default(5)   // 1-10
+  score       Int      @default(5) // 1-10
   description String?
   color       String   @default("#B8860B")
   orderIndex  Int      @default(0)
@@ -1035,21 +1170,21 @@ model LifeArea {
 }
 
 model WeeklyReview {
-  id              String   @id @default(cuid())
-  userId          String
-  weekStart       String   // ISO date of Monday
-  wins            String[] @default([])
-  challenges      String[] @default([])
-  learnings       String[] @default([])
-  nextWeekGoals   String[] @default([])
-  gratitude       String[] @default([])
-  overallRating   Int      @default(5)  // 1-10
-  energyLevel     Int      @default(5)
-  productivityScore Int    @default(5)
-  notes           String?  @db.Text
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String   @id @default(cuid())
+  userId            String
+  weekStart         String // ISO date of Monday
+  wins              String[] @default([])
+  challenges        String[] @default([])
+  learnings         String[] @default([])
+  nextWeekGoals     String[] @default([])
+  gratitude         String[] @default([])
+  overallRating     Int      @default(5) // 1-10
+  energyLevel       Int      @default(5)
+  productivityScore Int      @default(5)
+  notes             String?  @db.Text
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, weekStart])
   @@index([userId])
@@ -1060,9 +1195,9 @@ model WeeklyReview {
 model LifeScoreSnapshot {
   id        String   @id @default(cuid())
   userId    String
-  date      String   // YYYY-MM-DD del final del window
-  overall   Int      // 0-100
-  breakdown Json     // { habits: {score, samples, reason}, fitness: ..., etc. }
+  date      String // YYYY-MM-DD del final del window
+  overall   Int // 0-100
+  breakdown Json // { habits: {score, samples, reason}, fitness: ..., etc. }
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -1073,21 +1208,21 @@ model LifeScoreSnapshot {
 // ─── Reading (libros + sesiones de lectura) ───────────────────────────────────
 
 model Book {
-  id          String   @id @default(cuid())
+  id          String           @id @default(cuid())
   userId      String
   title       String
   author      String?
   totalPages  Int?
-  currentPage Int      @default(0)
-  status      String   @default("reading")   // reading | finished | want | paused
-  rating      Int?     // 1-5
+  currentPage Int              @default(0)
+  status      String           @default("reading") // reading | finished | want | paused
+  rating      Int? // 1-5
   coverUrl    String?
   genre       String?
-  notes       String?  @db.Text
-  startedAt   String?  // YYYY-MM-DD
+  notes       String?          @db.Text
+  startedAt   String? // YYYY-MM-DD
   finishedAt  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
   user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   sessions    ReadingSession[]
 
@@ -1098,7 +1233,7 @@ model ReadingSession {
   id        String   @id @default(cuid())
   userId    String
   bookId    String
-  date      String   // YYYY-MM-DD
+  date      String // YYYY-MM-DD
   pagesRead Int      @default(0)
   minutes   Int?
   notes     String?
@@ -1113,15 +1248,15 @@ model ReadingSession {
 // ─── Fasting (intermittent fasting) ───────────────────────────────────────────
 
 model FastingSession {
-  id           String    @id @default(cuid())
-  userId       String
-  startedAt    DateTime
-  endedAt      DateTime?
-  targetHours  Int       @default(16)   // 16, 18, 20, 24, 36
-  protocol     String?                   // "16:8", "18:6", "OMAD", etc.
-  notes        String?
-  createdAt    DateTime  @default(now())
-  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String    @id @default(cuid())
+  userId      String
+  startedAt   DateTime
+  endedAt     DateTime?
+  targetHours Int       @default(16) // 16, 18, 20, 24, 36
+  protocol    String? // "16:8", "18:6", "OMAD", etc.
+  notes       String?
+  createdAt   DateTime  @default(now())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startedAt])
 }
@@ -1129,16 +1264,16 @@ model FastingSession {
 // ─── Meditation ───────────────────────────────────────────────────────────────
 
 model MeditationSession {
-  id               String   @id @default(cuid())
-  userId           String
-  date             String   // YYYY-MM-DD
-  durationMinutes  Int
-  type             String   @default("mindfulness")  // breathing | guided | mindfulness | yoga | body-scan
-  moodBefore       Int?
-  moodAfter        Int?
-  notes            String?
-  createdAt        DateTime @default(now())
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  userId          String
+  date            String // YYYY-MM-DD
+  durationMinutes Int
+  type            String   @default("mindfulness") // breathing | guided | mindfulness | yoga | body-scan
+  moodBefore      Int?
+  moodAfter       Int?
+  notes           String?
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
 }
@@ -1146,34 +1281,34 @@ model MeditationSession {
 // ─── Menstrual Cycle ──────────────────────────────────────────────────────────
 
 model MenstrualCycle {
-  id            String   @id @default(cuid())
-  userId        String
-  startDate     String   // YYYY-MM-DD (inicio del período)
-  endDate       String?  // fin del período (no del ciclo, del sangrado)
-  cycleLength   Int?     // días (calculado al iniciar el siguiente)
-  periodLength  Int?     // días de sangrado
-  flowHeavy     Boolean  @default(false)
-  notes         String?
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  periodLogs    PeriodLog[]
+  id           String      @id @default(cuid())
+  userId       String
+  startDate    String // YYYY-MM-DD (inicio del período)
+  endDate      String? // fin del período (no del ciclo, del sangrado)
+  cycleLength  Int? // días (calculado al iniciar el siguiente)
+  periodLength Int? // días de sangrado
+  flowHeavy    Boolean     @default(false)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  periodLogs   PeriodLog[]
 
   @@unique([userId, startDate])
   @@index([userId, startDate])
 }
 
 model PeriodLog {
-  id        String   @id @default(cuid())
+  id        String          @id @default(cuid())
   userId    String
   cycleId   String?
   date      String
-  flow      String   // none | spotting | light | medium | heavy
-  symptoms  String[] @default([])  // cramps | headache | bloating | mood_swings | ...
-  mood      Int?     // 1-10
-  energy    Int?     // 1-10
-  libido    Int?     // 1-10
+  flow      String // none | spotting | light | medium | heavy
+  symptoms  String[]        @default([]) // cramps | headache | bloating | mood_swings | ...
+  mood      Int? // 1-10
+  energy    Int? // 1-10
+  libido    Int? // 1-10
   notes     String?
-  createdAt DateTime @default(now())
+  createdAt DateTime        @default(now())
   user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   cycle     MenstrualCycle? @relation(fields: [cycleId], references: [id], onDelete: SetNull)
 
@@ -1187,9 +1322,9 @@ model JournalEntry {
   id        String   @id @default(cuid())
   userId    String
   date      String
-  prompt    String?  // prompt del día (si aplica)
+  prompt    String? // prompt del día (si aplica)
   content   String   @db.Text
-  mood      Int?     // 1-10
+  mood      Int? // 1-10
   tags      String[] @default([])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1201,14 +1336,14 @@ model JournalEntry {
 // ─── Time Capsule ─────────────────────────────────────────────────────────────
 
 model TimeCapsule {
-  id         String    @id @default(cuid())
-  userId     String
-  message    String    @db.Text
-  unlockAt   DateTime
-  opened     Boolean   @default(false)
-  openedAt   DateTime?
-  createdAt  DateTime  @default(now())
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String    @id @default(cuid())
+  userId    String
+  message   String    @db.Text
+  unlockAt  DateTime
+  opened    Boolean   @default(false)
+  openedAt  DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, unlockAt])
 }
@@ -1216,19 +1351,19 @@ model TimeCapsule {
 // ─── Focus / Deep Work ────────────────────────────────────────────────────────
 
 model FocusSession {
-  id              String    @id @default(cuid())
-  userId          String
-  startedAt       DateTime
-  endedAt         DateTime?
-  plannedMinutes  Int       @default(90)
-  actualMinutes   Int?
-  task            String?
-  category        String?   // "work" | "study" | "creative" | "admin"
-  interruptions   Int       @default(0)
-  rating          Int?      // 1-5 satisfacción
-  notes           String?
-  createdAt       DateTime  @default(now())
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String    @id @default(cuid())
+  userId         String
+  startedAt      DateTime
+  endedAt        DateTime?
+  plannedMinutes Int       @default(90)
+  actualMinutes  Int?
+  task           String?
+  category       String? // "work" | "study" | "creative" | "admin"
+  interruptions  Int       @default(0)
+  rating         Int? // 1-5 satisfacción
+  notes          String?
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startedAt])
 }
@@ -1236,33 +1371,33 @@ model FocusSession {
 // ─── Morning / Evening rituals ────────────────────────────────────────────────
 
 model MorningRitual {
-  id             String   @id @default(cuid())
-  userId         String
-  date           String
-  wakeTime       String?
-  hydration      Boolean  @default(false)
-  meditation     Boolean  @default(false)
-  intention      String?  // intención del día
-  gratitude      String[] @default([])
-  energy         Int?     // 1-10
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  userId     String
+  date       String
+  wakeTime   String?
+  hydration  Boolean  @default(false)
+  meditation Boolean  @default(false)
+  intention  String? // intención del día
+  gratitude  String[] @default([])
+  energy     Int? // 1-10
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])
 }
 
 model EveningRitual {
-  id             String   @id @default(cuid())
-  userId         String
-  date           String
-  sleepTime      String?
-  reflection     String?
-  gratitude      String[] @default([])
-  tomorrowTop3   String[] @default([])
-  medsDone       Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id           String   @id @default(cuid())
+  userId       String
+  date         String
+  sleepTime    String?
+  reflection   String?
+  gratitude    String[] @default([])
+  tomorrowTop3 String[] @default([])
+  medsDone     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, date])
   @@index([userId, date])
@@ -1271,21 +1406,21 @@ model EveningRitual {
 // ─── Emergency Share Card ─────────────────────────────────────────────────────
 
 model EmergencyCard {
-  id             String   @id @default(cuid())
-  userId         String   @unique
-  bloodType      String?
-  allergies      String[] @default([])
-  conditions     String[] @default([])
-  medications    String[] @default([])
-  emergencyName  String?
-  emergencyPhone String?
+  id                String    @id @default(cuid())
+  userId            String    @unique
+  bloodType         String?
+  allergies         String[]  @default([])
+  conditions        String[]  @default([])
+  medications       String[]  @default([])
+  emergencyName     String?
+  emergencyPhone    String?
   emergencyRelation String?
-  notes          String?
-  shareToken     String?  @unique
-  shareExpiresAt DateTime?
-  updatedAt      DateTime @updatedAt
-  createdAt      DateTime @default(now())
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notes             String?
+  shareToken        String?   @unique
+  shareExpiresAt    DateTime?
+  updatedAt         DateTime  @updatedAt
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Meal templates + Recipes ─────────────────────────────────────────────────
@@ -1295,7 +1430,7 @@ model MealTemplate {
   userId      String
   name        String
   description String?
-  mealType    String?            // breakfast | lunch | dinner | snack | null
+  mealType    String? // breakfast | lunch | dinner | snack | null
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @updatedAt
   user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1347,9 +1482,9 @@ model RecipeItem {
 model BodyPhoto {
   id        String   @id @default(cuid())
   userId    String
-  date      String   // YYYY-MM-DD
-  category  String   @default("front")   // "front" | "side" | "back"
-  photoData String   @db.Text             // base64 data URI
+  date      String // YYYY-MM-DD
+  category  String   @default("front") // "front" | "side" | "back"
+  photoData String   @db.Text // base64 data URI
   weight    Float?
   notes     String?
   createdAt DateTime @default(now())
@@ -1362,10 +1497,10 @@ model Milestone {
   id          String   @id @default(cuid())
   userId      String
   date        String
-  type        String   // "habit_streak" | "pr" | "weight" | "book_finished" | "meditation" | "custom"
+  type        String // "habit_streak" | "pr" | "weight" | "book_finished" | "meditation" | "custom"
   title       String
   description String?
-  icon        String?  // emoji
+  icon        String? // emoji
   metadata    Json?
   createdAt   DateTime @default(now())
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -1376,40 +1511,40 @@ model Milestone {
 // ─── Calendar (redesign) ──────────────────────────────────────────────────────
 
 model CalendarEvent {
-  id              String    @id @default(cuid())
-  userId          String
+  id     String @id @default(cuid())
+  userId String
 
-  title           String
-  description     String?   @db.Text
+  title       String
+  description String? @db.Text
 
   // Temporal
-  startAt         DateTime
-  endAt           DateTime?
-  allDay          Boolean   @default(false)
+  startAt DateTime
+  endAt   DateTime?
+  allDay  Boolean   @default(false)
 
   // Categorización
-  type            String    @default("custom")  // custom | meeting | appointment | personal | health | travel | social
-  category        String?
-  color           String?   // hex del user
-  icon            String?   // emoji
-  location        String?
+  type     String  @default("custom") // custom | meeting | appointment | personal | health | travel | social
+  category String?
+  color    String? // hex del user
+  icon     String? // emoji
+  location String?
 
   // Recurrencia simplificada estilo RRULE: FREQ=DAILY|WEEKLY|MONTHLY;BYDAY=MO,WE,FR;COUNT=10
-  recurrence      String?
-  recurrenceEnd   DateTime?
+  recurrence    String?
+  recurrenceEnd DateTime?
 
   // Recordatorio
   reminderMinutes Int?
 
   // Link a otros módulos (opcional, si es evento "virtual" de otro recurso)
-  sourceModule    String?   // workout | meal | focus | meditation | cycle | habit | fasting
-  sourceId        String?
+  sourceModule String? // workout | meal | focus | meditation | cycle | habit | fasting
+  sourceId     String?
 
-  completed       Boolean   @default(false)
+  completed Boolean @default(false)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startAt])
   @@index([userId, type])
@@ -1418,8 +1553,8 @@ model CalendarEvent {
 model DayTemplate {
   id        String   @id @default(cuid())
   userId    String
-  name      String           // "Mi lunes de productividad"
-  blocks    Json             // [{startHour: 7, durHours: 1, title: "Ritual mañana", icon: "🌅"}, ...]
+  name      String // "Mi lunes de productividad"
+  blocks    Json // [{startHour: 7, durHours: 1, title: "Ritual mañana", icon: "🌅"}, ...]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
