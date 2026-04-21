@@ -6,12 +6,13 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from "recharts";
 import {
-  Plus, Trash2, Search, Target, UtensilsCrossed, Apple, ChevronDown, ChevronUp, X,
+  Plus, Trash2, Search, Target, UtensilsCrossed, Apple, ChevronDown, ChevronUp, X, Sparkles,
 } from "lucide-react";
 import { colors } from "@/lib/colors";
 import { useNutritionStore, MealLog, FoodItem } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
 import { cn, ErrorBanner } from "@/components/ui";
+import NutritionPro from "@/components/features/nutrition-v2/nutrition-pro";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -627,6 +628,7 @@ function GoalsTab() {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 const TABS = [
+  { id: "pro",       label: "Nuevo (Pro)",    icon: Sparkles        },
   { id: "diario",    label: "Diario",         icon: UtensilsCrossed },
   { id: "resumen",   label: "Resumen 7d",     icon: BarChart        },
   { id: "alimentos", label: "Mis Alimentos",  icon: Apple           },
@@ -664,7 +666,9 @@ export default function NutritionPage() {
       </div>
 
       {/* Content */}
-      {!isLoaded ? (
+      {activeTab === "pro" ? (
+        <NutritionPro />
+      ) : !isLoaded ? (
         <div className="text-center p-12 text-brand-medium">Cargando datos...</div>
       ) : (
         <>

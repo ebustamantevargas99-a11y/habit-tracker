@@ -27,8 +27,10 @@ export async function POST(
     if (!food)
       return NextResponse.json({ error: "Alimento no encontrado" }, { status: 404 });
 
-    const quantity = d.quantity ?? 1;
-    const ratio = quantity / (food.servingSize / 100);
+    const quantity = d.quantity ?? food.servingSize;
+    // quantity represents units of food.servingUnit (e.g. grams for g-foods, pieces for piece-foods).
+    // servingSize is the amount that yields the stored macros. Ratio = consumed / one-serving.
+    const ratio = food.servingSize > 0 ? quantity / food.servingSize : 1;
     const item = await prisma.mealItem.create({
       data: {
         mealLogId,
