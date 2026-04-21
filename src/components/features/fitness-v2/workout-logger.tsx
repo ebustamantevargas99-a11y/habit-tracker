@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Timer, Trash2, GripVertical, MoreHorizontal } from "lucide-react";
+import { Plus, Timer, Trash2, GripVertical, Zap } from "lucide-react";
 import ExerciseSelector, { type CatalogExercise } from "./exercise-selector";
 import RestTimer from "./rest-timer";
-import SetRow, { type WorkoutSet } from "./set-row";
+import SetRow, { type WorkoutSet, type SetType } from "./set-row";
 import { oneRMEstimate, setVolume } from "@/lib/fitness/calculations";
 import { api } from "@/lib/api-client";
+
+type PreviousBest = { weight: number; reps: number } | null;
 
 type LoggedExercise = {
   uid: string;
@@ -18,6 +20,17 @@ type LoggedExercise = {
   restSeconds: number;
   isLowerBody: boolean;
   notes?: string;
+  /** Mejor set previo (para mostrar como ref en cada SetRow) */
+  previousBest: PreviousBest;
+  /** Sugerencia de smart progression calculada al agregar o bajo demanda */
+  suggestion?: {
+    weight: number;
+    reps: number;
+    reason: string;
+    confidence: number;
+    plateau: boolean;
+    needsDeload: boolean;
+  };
 };
 
 const DEFAULT_REST: Record<string, number> = {
@@ -29,6 +42,64 @@ const DEFAULT_REST: Record<string, number> = {
 
 let _uidCounter = 0;
 const uid = () => `${Date.now()}-${++_uidCounter}`;
+
+// ─── API contract types ──────────────────────────────────────────────────────
+type ProgressionResponse = {
+  exercise: { id: string; name: string };
+  historyCount: number;
+  estimated1RM: number | null;
+  suggestion: {
+    suggestedWeight: number;
+    suggestedReps: number;
+    reason: string;
+    confidence: number;
+    plateauDetected: boolean;
+    needsDeload: boolean;
+  };
+};
+
+type DetectedPR = {
+  exerciseId: string;
+  exerciseName: string;
+  oldOneRM: number | null;
+  newOneRM: number;
+  delta: number;
+};
+
+type WorkoutCreateResponse = {
+  id: string;
+  detectedPRs?: DetectedPR[];
+};
+
+type ExerciseHistoryRow = {
+  date: string;
+  exercises: Array<{
+    exerciseName: string;
+    sets: Array<{ weight: number; reps: number; isWarmup?: boolean }>;
+  }>;
+};
+
+// Dada la respuesta /fitness/workouts, encuentra el mejor set del ejercicio dado.
+function findPreviousBest(
+  workouts: ExerciseHistoryRow[],
+  exerciseName: string,
+): PreviousBest {
+  let best: { weight: number; reps: number } | null = null;
+  for (const w of workouts) {
+    for (const e of w.exercises) {
+      if (e.exerciseName !== exerciseName) continue;
+      for (const s of e.sets) {
+        if (s.isWarmup) continue;
+        if (!best || s.weight * s.reps > best.weight * best.reps) {
+          best = { weight: s.weight, reps: s.reps };
+        }
+      }
+    }
+  }
+  return best;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function WorkoutLogger() {
   const [workoutName, setWorkoutName] = useState(() => {
@@ -44,7 +115,7 @@ export default function WorkoutLogger() {
   const [submitting, setSubmitting] = useState(false);
   const [startTime] = useState(new Date());
 
-  function addExercise(ex: CatalogExercise) {
+  async function addExercise(ex: CatalogExercise) {
     const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(ex.muscleGroup);
     const restKey =
       ex.category === "isolation"
@@ -52,6 +123,22 @@ export default function WorkoutLogger() {
         : isLower
           ? "compound_lower"
           : "compound_upper";
+
+    // Fetch previous best + suggestion en paralelo, sin bloquear el UI.
+    const [prevBest, suggestion] = await Promise.all([
+      api
+        .get<ExerciseHistoryRow[]>(`/fitness/workouts?limit=20`)
+        .then((list) => findPreviousBest(list, ex.name))
+        .catch(() => null),
+      api
+        .get<ProgressionResponse>(
+          `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.id)}&repMin=5&repMax=8&targetRpe=8`,
+        )
+        .catch(() => null),
+    ]);
+
+    const initialWeight = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
+    const initialReps = suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
 
     setExercises((prev) => [
       ...prev,
@@ -64,14 +151,26 @@ export default function WorkoutLogger() {
           {
             id: uid(),
             setNumber: 1,
-            weight: 0,
-            reps: 0,
+            weight: initialWeight,
+            reps: initialReps,
             rpe: null,
             completed: false,
+            setType: "straight",
           },
         ],
         restSeconds: DEFAULT_REST[restKey] ?? DEFAULT_REST.default,
         isLowerBody: isLower,
+        previousBest: prevBest,
+        suggestion: suggestion
+          ? {
+              weight: suggestion.suggestion.suggestedWeight,
+              reps: suggestion.suggestion.suggestedReps,
+              reason: suggestion.suggestion.reason,
+              confidence: suggestion.suggestion.confidence,
+              plateau: suggestion.suggestion.plateauDetected,
+              needsDeload: suggestion.suggestion.needsDeload,
+            }
+          : undefined,
       },
     ]);
   }
@@ -92,9 +191,10 @@ export default function WorkoutLogger() {
           reps: last?.reps ?? 0,
           rpe: null,
           completed: false,
+          setType: "straight",
         };
         return { ...e, sets: [...e.sets, next] };
-      })
+      }),
     );
   }
 
@@ -106,7 +206,7 @@ export default function WorkoutLogger() {
           ...e,
           sets: e.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)),
         };
-      })
+      }),
     );
   }
 
@@ -115,7 +215,7 @@ export default function WorkoutLogger() {
       prev.map((e) => {
         if (e.uid !== exUid) return e;
         return { ...e, sets: e.sets.filter((s) => s.id !== setId) };
-      })
+      }),
     );
   }
 
@@ -127,8 +227,54 @@ export default function WorkoutLogger() {
     const nowCompleted = !set.completed;
     patchSet(exUid, setId, { completed: nowCompleted });
 
-    if (nowCompleted && set.weight > 0 && set.reps > 0) {
+    // Solo timer para sets que cuentan (no warmups)
+    const isCountingSet = !set.isWarmup && set.setType !== "warmup";
+    if (nowCompleted && isCountingSet && set.weight > 0 && set.reps > 0) {
       setActiveTimer(ex.restSeconds);
+    }
+  }
+
+  async function refetchSuggestion(exUid: string) {
+    const ex = exercises.find((e) => e.uid === exUid);
+    if (!ex) return;
+    try {
+      const r = await api.get<ProgressionResponse>(
+        `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.exerciseId)}&repMin=5&repMax=8&targetRpe=8`,
+      );
+      const sug = r.suggestion;
+      setExercises((prev) =>
+        prev.map((e) =>
+          e.uid !== exUid
+            ? e
+            : {
+                ...e,
+                suggestion: {
+                  weight: sug.suggestedWeight,
+                  reps: sug.suggestedReps,
+                  reason: sug.reason,
+                  confidence: sug.confidence,
+                  plateau: sug.plateauDetected,
+                  needsDeload: sug.needsDeload,
+                },
+                sets: e.sets.map((s, i) =>
+                  i === 0 && !s.completed
+                    ? { ...s, weight: sug.suggestedWeight, reps: sug.suggestedReps }
+                    : s,
+                ),
+              },
+        ),
+      );
+      if (sug.needsDeload) {
+        toast.warning(`Deload sugerido para ${ex.exerciseName}`, {
+          description: sug.reason,
+        });
+      } else {
+        toast.success(`${ex.exerciseName}: ${sug.suggestedWeight} kg × ${sug.suggestedReps}`, {
+          description: sug.reason,
+        });
+      }
+    } catch {
+      toast.error("No se pudo calcular sugerencia");
     }
   }
 
@@ -139,7 +285,7 @@ export default function WorkoutLogger() {
     let topSingle: { weight: number; reps: number; e1RM: number } | null = null;
     for (const ex of exercises) {
       for (const s of ex.sets) {
-        if (s.isWarmup) continue;
+        if (s.isWarmup || s.setType === "warmup") continue;
         totalSets++;
         if (s.completed) {
           completedSets++;
@@ -160,7 +306,7 @@ export default function WorkoutLogger() {
       return;
     }
     const hasCompletedSet = exercises.some((e) =>
-      e.sets.some((s) => s.completed && s.weight > 0 && s.reps > 0)
+      e.sets.some((s) => s.completed && s.weight > 0 && s.reps > 0),
     );
     if (!hasCompletedSet) {
       toast.error("Completa al menos una serie válida");
@@ -168,26 +314,53 @@ export default function WorkoutLogger() {
     }
 
     setSubmitting(true);
-    const durationMinutes = Math.max(1, Math.round((Date.now() - startTime.getTime()) / 60000));
+    const durationMinutes = Math.max(
+      1,
+      Math.round((Date.now() - startTime.getTime()) / 60000),
+    );
     const payload = {
       date: new Date().toISOString().split("T")[0],
       name: workoutName.trim() || "Entreno",
       duration: durationMinutes,
       totalVolume: totals.volume,
-      prsHit: 0,
       exercises: exercises.map((ex) => ({
         exerciseName: ex.exerciseName,
         muscleGroup: ex.muscleGroup,
         notes: ex.notes,
         sets: ex.sets
           .filter((s) => s.completed && s.weight > 0 && s.reps > 0)
-          .map((s) => ({ weight: s.weight, reps: s.reps, rpe: s.rpe })),
+          .map((s) => ({
+            weight: s.weight,
+            reps: s.reps,
+            rpe: s.rpe,
+            tempo: s.tempo ?? null,
+            setType: (s.setType ?? (s.isWarmup ? "warmup" : "straight")) as SetType,
+            groupId: s.groupId ?? null,
+            isWarmup: s.isWarmup ?? s.setType === "warmup",
+          })),
       })),
     };
 
     try {
-      await api.post("/fitness/workouts", payload);
-      toast.success("Entreno guardado. +15 XP");
+      const res = await api.post<WorkoutCreateResponse>("/fitness/workouts", payload);
+      const prs = res.detectedPRs ?? [];
+      if (prs.length > 0) {
+        // Celebración con confetti (cargado lazy) — uno por cada PR
+        const { fireConfettiPR } = await import("@/lib/celebrations/confetti");
+        for (const pr of prs) {
+          fireConfettiPR();
+          const deltaStr =
+            pr.oldOneRM != null
+              ? ` (+${pr.delta.toFixed(1)} kg)`
+              : "";
+          toast.success(
+            `🏆 Nuevo PR: ${pr.exerciseName} ${pr.newOneRM.toFixed(1)} kg (e1RM)${deltaStr}`,
+            { duration: 7000 },
+          );
+        }
+      } else {
+        toast.success("Entreno guardado. +15 XP");
+      }
       setExercises([]);
       setActiveTimer(null);
     } catch {
@@ -209,7 +382,9 @@ export default function WorkoutLogger() {
         />
         <div className="flex gap-3 text-xs text-brand-warm">
           <div className="text-right">
-            <p className="font-mono text-sm text-brand-dark font-bold">{totals.completedSets}/{totals.totalSets}</p>
+            <p className="font-mono text-sm text-brand-dark font-bold">
+              {totals.completedSets}/{totals.totalSets}
+            </p>
             <p>Series</p>
           </div>
           <div className="text-right">
@@ -239,18 +414,35 @@ export default function WorkoutLogger() {
       )}
 
       {exercises.map((ex) => (
-        <div key={ex.uid} className="bg-brand-paper rounded-xl border border-brand-cream p-4">
+        <div
+          key={ex.uid}
+          className="bg-brand-paper rounded-xl border border-brand-cream p-4"
+        >
           <header className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <GripVertical size={16} className="text-brand-light-tan shrink-0" />
               <div className="min-w-0">
-                <p className="font-semibold text-brand-dark truncate">{ex.exerciseName}</p>
+                <p className="font-semibold text-brand-dark truncate">
+                  {ex.exerciseName}
+                </p>
                 <p className="text-xs text-brand-warm">
                   {ex.muscleGroup} · descanso {ex.restSeconds}s
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1">
+              <button
+                type="button"
+                onClick={() => refetchSuggestion(ex.uid)}
+                className="p-2 rounded hover:bg-accent/10 text-accent flex items-center gap-1"
+                aria-label="Sugerir peso inteligente"
+                title="Sugerencia basada en tu histórico + RPE"
+              >
+                <Zap size={16} />
+                <span className="text-xs font-semibold hidden sm:inline">
+                  Sugerir
+                </span>
+              </button>
               <button
                 type="button"
                 onClick={() => setActiveTimer(ex.restSeconds)}
@@ -270,12 +462,33 @@ export default function WorkoutLogger() {
             </div>
           </header>
 
-          <div className="grid grid-cols-[32px_80px_1fr_1fr_1fr_32px_32px] gap-2 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
+          {/* Suggestion banner */}
+          {ex.suggestion && (
+            <div
+              className={`mb-3 px-3 py-2 rounded-md text-xs border ${
+                ex.suggestion.needsDeload
+                  ? "bg-warning-light/40 border-warning text-warning"
+                  : ex.suggestion.plateau
+                    ? "bg-info-light/40 border-info text-info"
+                    : "bg-success-light/30 border-success/50 text-brand-dark"
+              }`}
+            >
+              <p className="m-0">
+                <strong>
+                  {ex.suggestion.weight} kg × {ex.suggestion.reps}
+                </strong>{" "}
+                · {ex.suggestion.reason}
+              </p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-[28px_64px_1fr_1fr_1fr_28px_28px_28px] gap-1.5 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
             <div className="text-center">#</div>
             <div className="text-center">Prev</div>
             <div className="text-center">Peso</div>
             <div className="text-center">Reps</div>
             <div className="text-center">RPE</div>
+            <div></div>
             <div></div>
             <div></div>
           </div>
@@ -285,6 +498,7 @@ export default function WorkoutLogger() {
               <SetRow
                 key={s.id}
                 set={s}
+                previousBest={ex.previousBest}
                 onChange={(patch) => patchSet(ex.uid, s.id, patch)}
                 onComplete={() => completeSet(ex.uid, s.id)}
                 onDelete={() => deleteSet(ex.uid, s.id)}
