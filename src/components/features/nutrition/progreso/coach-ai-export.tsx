@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
+import { Copy, Download, ExternalLink, RefreshCw, Sparkles } from "lucide-react";
 import { Card, cn } from "@/components/ui";
 import { api } from "@/lib/api-client";
 
@@ -14,6 +14,9 @@ interface CoachExportResponse {
     daysLogged: number;
     weightRecords: number;
     bodyCompositions: number;
+    bloodMarkers?: number;
+    deficientNutrients?: number;
+    excessNutrients?: number;
   };
 }
 
@@ -94,14 +97,33 @@ export default function CoachAIExport() {
           ))}
         </div>
 
-        <button
-          onClick={generate}
-          disabled={loading}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-button bg-brand-dark text-brand-cream font-semibold text-sm hover:bg-brand-brown transition disabled:opacity-40"
-        >
-          <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-          {loading ? "Armando prompt…" : data ? "Regenerar" : "Generar prompt"}
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            onClick={generate}
+            disabled={loading}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-button bg-brand-dark text-brand-cream font-semibold text-sm hover:bg-brand-brown transition disabled:opacity-40"
+          >
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            {loading ? "Armando prompt…" : data ? "Regenerar" : "Generar prompt"}
+          </button>
+          <button
+            onClick={() => {
+              const url = `/api/nutrition/export?format=csv&days=${days}`;
+              // Descarga forzada
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = "";
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+            }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-button bg-brand-cream text-brand-dark text-sm font-semibold hover:bg-brand-light-tan"
+            type="button"
+            title="Descarga CSV con diario de comidas + totales + peso + composición + marcadores"
+          >
+            <Download size={16} /> Exportar CSV {days}d
+          </button>
+        </div>
       </Card>
 
       {data && (
@@ -125,10 +147,27 @@ export default function CoachAIExport() {
             >
               <ExternalLink size={14} /> Abrir ChatGPT
             </button>
-            <span className="text-xs text-brand-warm">
-              {data.stats.daysLogged} días · {data.stats.weightRecords} pesos ·{" "}
-              {data.stats.bodyCompositions} composiciones
-            </span>
+            <div className="flex items-center gap-2 text-xs text-brand-warm flex-wrap">
+              <span>
+                {data.stats.daysLogged}d · {data.stats.weightRecords} pesos ·{" "}
+                {data.stats.bodyCompositions} comp
+              </span>
+              {(data.stats.bloodMarkers ?? 0) > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-danger-light/40 text-danger font-semibold">
+                  {data.stats.bloodMarkers} marcadores
+                </span>
+              )}
+              {(data.stats.deficientNutrients ?? 0) > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-warning-light/40 text-warning font-semibold">
+                  {data.stats.deficientNutrients} deficiencias
+                </span>
+              )}
+              {(data.stats.excessNutrients ?? 0) > 0 && (
+                <span className="px-1.5 py-0.5 rounded-full bg-info/20 text-info font-semibold">
+                  {data.stats.excessNutrients} excesos
+                </span>
+              )}
+            </div>
           </div>
           <pre className="bg-brand-warm-white border border-brand-light-cream rounded-md p-4 text-xs text-brand-dark overflow-auto max-h-[500px] whitespace-pre-wrap font-mono">
             {data.prompt}
