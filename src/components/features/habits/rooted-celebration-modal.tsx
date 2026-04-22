@@ -80,7 +80,7 @@ export default function RootedCelebrationModal({
                 🎖️ Se agregó a tu Timeline
               </p>
               <p className="text-xs text-brand-warm">
-                Este momento quedó registrado como un hito en tu recorrido personal. Lo verás en el Year Review y en Life OS → Timeline.
+                Este momento quedó registrado como un hito en tu recorrido personal. Lo verás en el Year Review.
               </p>
             </div>
           )}

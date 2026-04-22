@@ -35,7 +35,6 @@ export async function GET(req: NextRequest) {
       lifeScoreSnapshots,
       bodyMetrics,
       weeklyReviews,
-      journalEntries,
     ] = await Promise.all([
       prisma.calendarEvent.count({
         where: { userId, startAt: { gte: startDate, lte: endDate } },
@@ -106,10 +105,6 @@ export async function GET(req: NextRequest) {
       prisma.weeklyReview.findMany({
         where: { userId, weekStart: { gte: startISO, lte: endISO } },
         orderBy: { weekStart: "asc" },
-      }),
-      prisma.journalEntry.findMany({
-        where: { userId, date: { gte: startISO, lte: endISO } },
-        select: { date: true, content: true, mood: true, tags: true },
       }),
     ]);
 
@@ -222,9 +217,6 @@ export async function GET(req: NextRequest) {
       focus: {
         sessions: focusSessions.length,
         totalMinutes: focusMinutes,
-      },
-      journal: {
-        entries: journalEntries.length,
       },
       weeklyReviews: {
         count: weeklyReviews.length,

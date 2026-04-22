@@ -29,12 +29,13 @@ const SCOPES: ScopeDef[] = [
     id: "fitness",
     emoji: "💪",
     label: "Fitness (gym)",
-    description: "Workouts, PRs, volumen, métricas corporales, programas, fotos",
+    description: "Workouts, PRs, volumen, métricas corporales, programas, fotos, ayuno y meditación",
     includes: [
       "Workout, WorkoutExercise, WorkoutSet",
       "PersonalRecord · BodyMetric · WeightLog · StepsLog",
       "TrainingProgram, ProgramPhase, ReadinessCheck",
       "BodyComposition · BodyPhoto · FitnessChallenge",
+      "FastingSession · MeditationSession",
     ],
   },
   {
@@ -69,10 +70,11 @@ const SCOPES: ScopeDef[] = [
     id: "productivity",
     emoji: "⚡",
     label: "Productividad",
-    description: "Proyectos, tareas, subtareas, pomodoros, planner diario",
+    description: "Proyectos, tareas, subtareas, pomodoros, planner diario, Deep Work",
     includes: [
       "Project, ProjectTask, ProjectSubtask",
       "PomodoroSession · DailyPlan, TimeBlock",
+      "FocusSession",
     ],
   },
   {
@@ -95,17 +97,6 @@ const SCOPES: ScopeDef[] = [
     label: "Lectura",
     description: "Libros + sesiones de lectura",
     includes: ["Book · ReadingSession"],
-  },
-  {
-    id: "lifeos",
-    emoji: "✨",
-    label: "Life OS",
-    description: "Rituales, journal, focus, cápsulas de tiempo, ayuno, meditación",
-    includes: [
-      "FastingSession · MeditationSession · FocusSession",
-      "JournalEntry · TimeCapsule · EmergencyCard",
-      "MorningRitual · EveningRitual",
-    ],
   },
   {
     id: "cycle",

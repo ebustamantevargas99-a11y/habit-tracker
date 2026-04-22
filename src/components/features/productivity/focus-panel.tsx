@@ -41,7 +41,7 @@ export default function FocusPanel() {
 
   const refresh = useCallback(async () => {
     try {
-      const data = await api.get<FocusSession[]>("/lifeos/focus/sessions");
+      const data = await api.get<FocusSession[]>("/productivity/focus/sessions");
       setSessions(data);
       setActive(data.find((s) => !s.endedAt) ?? null);
     } catch {
@@ -70,7 +70,7 @@ export default function FocusPanel() {
 
   async function startSession() {
     try {
-      const s = await api.post<FocusSession>("/lifeos/focus/sessions", {
+      const s = await api.post<FocusSession>("/productivity/focus/sessions", {
         plannedMinutes: plannedMin,
         task: task.trim() || null,
         category,
@@ -87,7 +87,7 @@ export default function FocusPanel() {
   async function endSession() {
     if (!active) return;
     try {
-      const s = await api.patch<FocusSession>(`/lifeos/focus/sessions/${active.id}`, {});
+      const s = await api.patch<FocusSession>(`/productivity/focus/sessions/${active.id}`, {});
       setActive(null);
       setSessions((prev) => prev.map((x) => (x.id === s.id ? s : x)));
       if (reached) fireConfettiDefault();
@@ -100,7 +100,7 @@ export default function FocusPanel() {
   async function deleteSession(id: string) {
     if (!confirm("¿Borrar?")) return;
     try {
-      await api.delete(`/lifeos/focus/sessions/${id}`);
+      await api.delete(`/productivity/focus/sessions/${id}`);
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
       toast.error("Error");

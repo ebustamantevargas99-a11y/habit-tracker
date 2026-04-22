@@ -51,7 +51,6 @@ export * from "./schemas/reading";
 export * from "./schemas/fasting";
 export * from "./schemas/meditation";
 export * from "./schemas/cycle";
-export * from "./schemas/lifeos";
 export * from "./schemas/nutrition-extras";
 export * from "./schemas/fitness-extras";
 export * from "./schemas/calendar";

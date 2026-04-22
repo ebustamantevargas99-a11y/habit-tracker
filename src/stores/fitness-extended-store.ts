@@ -5,7 +5,7 @@ import { api } from "@/lib/api-client";
 // ─── Types ────────────────────────────────────────────────────────────────────
 //
 // NOTA (2026-04-21 — Fitness redesign Fase 9):
-// El tipo FastingLog y sus endpoints fueron movidos a LifeOS (FastingSession).
+// El tipo FastingLog y sus endpoints fueron renombrados a FastingSession.
 // Este store conserva solo Challenges hasta que la Fase 2 reemplace challenges
 // por TrainingPrograms.
 

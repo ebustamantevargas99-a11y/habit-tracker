@@ -55,3 +55,18 @@ export const pomodoroCreateSchema = z.object({
   isWork: z.boolean().optional(),
   notes: z.string().max(2000).optional().nullable(),
 });
+
+// ─── Focus Session (Deep Work) ────────────────────────────────────────────────
+
+export const focusSessionStartSchema = z.object({
+  plannedMinutes: z.number().int().min(5).max(480).optional(),
+  task: z.string().max(500).optional().nullable(),
+  category: z.string().max(50).optional().nullable(),
+});
+
+export const focusSessionEndSchema = z.object({
+  actualMinutes: z.number().int().min(0).max(480).optional(),
+  interruptions: z.number().int().min(0).max(100).optional(),
+  rating: z.number().int().min(1).max(5).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+});

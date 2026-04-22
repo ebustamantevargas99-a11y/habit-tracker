@@ -99,20 +99,6 @@ export const NAV_ITEMS = [
     sections: [],
   },
   {
-    key: "lifeos",
-    label: "Life OS",
-    icon: "Sparkles",
-    sections: [
-      "Mañana",
-      "Noche",
-      "Deep Work",
-      "Journal",
-      "Timeline",
-      "Cápsula",
-      "Emergencia",
-    ],
-  },
-  {
     key: "settings",
     label: "Configuración",
     icon: "Settings",

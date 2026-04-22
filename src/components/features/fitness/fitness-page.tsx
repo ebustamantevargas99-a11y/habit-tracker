@@ -47,7 +47,7 @@ export default function FitnessPage() {
       peso:          "cuerpo",
       pasos:         "cuerpo",
       fotos:         "cuerpo",
-      ayuno:         "gym", // legacy — ayuno ya vive en LifeOS; enviamos a Gym por default
+      ayuno:         "gym", // legacy — ayuno vive en su propio módulo; enviamos a Gym por default
       nuevo:         "gym",
       "volumen-pro": "gym",
     };

@@ -5,7 +5,7 @@ import { cn } from "@/components/ui";
 import { useAppStore, type ProductivityTab } from "@/stores/app-store";
 import HabitTrackerPage from "@/components/features/habits/habit-tracker-page";
 import KanbanView from "@/components/features/projects/kanban-view";
-import FocusPanel from "@/components/features/lifeos/focus-panel";
+import FocusPanel from "@/components/features/productivity/focus-panel";
 
 const TABS: { id: ProductivityTab; label: string; icon: React.ElementType }[] = [
   { id: "habits",   label: "Hábitos",    icon: CheckSquare },

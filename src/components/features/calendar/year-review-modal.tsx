@@ -12,7 +12,6 @@ import {
   Clock,
   Trophy,
   Target,
-  PenSquare,
   Flame,
   Copy,
   ChevronLeft,
@@ -51,7 +50,6 @@ type YearReviewData = {
   meditation: { sessions: number; totalMinutes: number };
   fasting: { sessions: number; totalHours: number };
   focus: { sessions: number; totalMinutes: number };
-  journal: { entries: number };
   weeklyReviews: { count: number; avgOverallRating: number | null };
   milestones: Array<{ date: string; type: string; title: string; icon: string | null }>;
   lifeScore: { avgOverall: number | null; snapshotCount: number };
@@ -113,7 +111,6 @@ function buildPromptForAI(data: YearReviewData): string {
   prompt += `Meditación: ${m.sessions} sesiones · ${m.totalMinutes} min totales\n`;
   prompt += `Ayuno: ${data.fasting.sessions} sesiones · ${data.fasting.totalHours}h totales\n`;
   prompt += `Deep Work: ${data.focus.sessions} sesiones · ${Math.round(data.focus.totalMinutes / 60)}h totales\n`;
-  prompt += `Journal: ${data.journal.entries} entradas\n`;
   if (data.weeklyReviews.avgOverallRating !== null) {
     prompt += `Weekly Reviews: ${data.weeklyReviews.count} · rating promedio ${data.weeklyReviews.avgOverallRating}/10\n`;
   }
@@ -246,7 +243,6 @@ export default function YearReviewModal({
                 <Stat icon={<Wind size={18} />} value={data.meditation.sessions} label="Sesiones meditación" />
                 <Stat icon={<Clock size={18} />} value={data.fasting.totalHours + "h"} label="Horas en ayuno" />
                 <Stat icon={<Target size={18} />} value={Math.round(data.focus.totalMinutes / 60) + "h"} label="Deep Work" />
-                <Stat icon={<PenSquare size={18} />} value={data.journal.entries} label="Entradas journal" />
                 <Stat icon={<Sparkles size={18} />} value={data.calendar.totalEvents} label="Eventos en calendario" />
               </div>
 

@@ -95,10 +95,6 @@ export type DayAgenda = {
       completed: boolean;
     }>;
     cycle: { name: string; emoji: string; day: number } | null;
-    rituals: {
-      morning: { completed: boolean; energy: number | null } | null;
-      evening: { completed: boolean } | null;
-    };
   };
 };
 

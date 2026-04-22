@@ -12,7 +12,6 @@ import { prisma } from "@/lib/prisma";
 // - Fasting window (si hay una activa que cruza el día)
 // - Habits del día (chips)
 // - Cycle info (fase actual)
-// - Morning/Evening ritual
 // - Top priorities + rating + notes del DailyPlan legado
 
 export async function GET(
@@ -39,8 +38,6 @@ export async function GET(
       habits,
       habitLogs,
       cycle,
-      morningRitual,
-      eveningRitual,
     ] = await Promise.all([
       prisma.calendarEvent.findMany({
         where: {
@@ -96,12 +93,6 @@ export async function GET(
       prisma.menstrualCycle.findFirst({
         where: { userId, startDate: { lte: date } },
         orderBy: { startDate: "desc" },
-      }),
-      prisma.morningRitual.findUnique({
-        where: { userId_date: { userId, date } },
-      }),
-      prisma.eveningRitual.findUnique({
-        where: { userId_date: { userId, date } },
       }),
     ]);
 
@@ -205,25 +196,6 @@ export async function GET(
           completed: completedHabitIds.has(h.id),
         })),
         cycle: cyclePhase,
-        rituals: {
-          morning: morningRitual
-            ? {
-                completed:
-                  morningRitual.hydration || morningRitual.meditation ||
-                  Boolean(morningRitual.intention) ||
-                  morningRitual.gratitude.length > 0,
-                energy: morningRitual.energy,
-              }
-            : null,
-          evening: eveningRitual
-            ? {
-                completed:
-                  Boolean(eveningRitual.reflection) ||
-                  eveningRitual.gratitude.length > 0 ||
-                  eveningRitual.tomorrowTop3.length > 0,
-              }
-            : null,
-        },
       },
     });
   });

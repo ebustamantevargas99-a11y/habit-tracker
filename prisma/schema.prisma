@@ -91,12 +91,7 @@ model User {
   meditationSessions MeditationSession[]
   menstrualCycles    MenstrualCycle[]
   periodLogs         PeriodLog[]
-  journalEntries     JournalEntry[]
-  timeCapsules       TimeCapsule[]
   focusSessions      FocusSession[]
-  morningRituals     MorningRitual[]
-  eveningRituals     EveningRitual[]
-  emergencyCard      EmergencyCard?
 
   // ── Extras finales ─────────────────────────────────────────────────────────
   mealTemplates MealTemplate[]
@@ -1243,39 +1238,7 @@ model PeriodLog {
   @@index([userId, date])
 }
 
-// ─── Journaling ───────────────────────────────────────────────────────────────
-
-model JournalEntry {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String
-  prompt    String? // prompt del día (si aplica)
-  content   String   @db.Text
-  mood      Int? // 1-10
-  tags      String[] @default([])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, date])
-}
-
-// ─── Time Capsule ─────────────────────────────────────────────────────────────
-
-model TimeCapsule {
-  id        String    @id @default(cuid())
-  userId    String
-  message   String    @db.Text
-  unlockAt  DateTime
-  opened    Boolean   @default(false)
-  openedAt  DateTime?
-  createdAt DateTime  @default(now())
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, unlockAt])
-}
-
-// ─── Focus / Deep Work ────────────────────────────────────────────────────────
+// ─── Focus / Deep Work (movido a Productividad 2026-04 — LifeOS eliminado) ──
 
 model FocusSession {
   id             String    @id @default(cuid())
@@ -1293,61 +1256,6 @@ model FocusSession {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, startedAt])
-}
-
-// ─── Morning / Evening rituals ────────────────────────────────────────────────
-
-model MorningRitual {
-  id         String   @id @default(cuid())
-  userId     String
-  date       String
-  wakeTime   String?
-  hydration  Boolean  @default(false)
-  meditation Boolean  @default(false)
-  intention  String? // intención del día
-  gratitude  String[] @default([])
-  energy     Int? // 1-10
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
-
-model EveningRitual {
-  id           String   @id @default(cuid())
-  userId       String
-  date         String
-  sleepTime    String?
-  reflection   String?
-  gratitude    String[] @default([])
-  tomorrowTop3 String[] @default([])
-  medsDone     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
-
-// ─── Emergency Share Card ─────────────────────────────────────────────────────
-
-model EmergencyCard {
-  id                String    @id @default(cuid())
-  userId            String    @unique
-  bloodType         String?
-  allergies         String[]  @default([])
-  conditions        String[]  @default([])
-  medications       String[]  @default([])
-  emergencyName     String?
-  emergencyPhone    String?
-  emergencyRelation String?
-  notes             String?
-  shareToken        String?   @unique
-  shareExpiresAt    DateTime?
-  updatedAt         DateTime  @updatedAt
-  createdAt         DateTime  @default(now())
-  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Meal templates + Recipes ─────────────────────────────────────────────────

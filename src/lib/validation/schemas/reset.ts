@@ -13,7 +13,6 @@ export const resetScopeEnum = z.enum([
   "organization",
   "calendar",
   "reading",
-  "lifeos",
   "cycle",
   "milestones",
   "gamification",

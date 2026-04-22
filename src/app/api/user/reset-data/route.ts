@@ -44,6 +44,10 @@ async function resetFitness(userId: string, counts: DeleteCounts) {
   const readiness = await prisma.readinessCheck.deleteMany({ where: { userId } });
   const bodyComp = await prisma.bodyComposition.deleteMany({ where: { userId } });
   const photos = await prisma.bodyPhoto.deleteMany({ where: { userId } });
+  // Fasting y Meditation sobrevivieron al drop de lifeos; los agrupamos en fitness
+  // para que queden cubiertos por el wipe completo.
+  const fasting = await prisma.fastingSession.deleteMany({ where: { userId } });
+  const meditation = await prisma.meditationSession.deleteMany({ where: { userId } });
   counts.workouts = workouts.count;
   counts.personalRecords = prs.count;
   counts.bodyMetrics = bodyMetrics.count;
@@ -54,6 +58,8 @@ async function resetFitness(userId: string, counts: DeleteCounts) {
   counts.readinessChecks = readiness.count;
   counts.bodyCompositions = bodyComp.count;
   counts.bodyPhotos = photos.count;
+  counts.fastingSessions = fasting.count;
+  counts.meditationSessions = meditation.count;
 }
 
 async function resetCardio(userId: string, counts: DeleteCounts) {
@@ -106,9 +112,12 @@ async function resetProductivity(userId: string, counts: DeleteCounts) {
   const pomodoros = await prisma.pomodoroSession.deleteMany({ where: { userId } });
   // TimeBlock cae con DailyPlan
   const plans = await prisma.dailyPlan.deleteMany({ where: { userId } });
+  // Deep Work sessions viven en Productividad
+  const focus = await prisma.focusSession.deleteMany({ where: { userId } });
   counts.projects = projects.count;
   counts.pomodoroSessions = pomodoros.count;
   counts.dailyPlans = plans.count;
+  counts.focusSessions = focus.count;
 }
 
 async function resetOrganization(userId: string, counts: DeleteCounts) {
@@ -135,25 +144,6 @@ async function resetReading(userId: string, counts: DeleteCounts) {
   // ReadingSession cae con Book (cascade)
   const books = await prisma.book.deleteMany({ where: { userId } });
   counts.books = books.count;
-}
-
-async function resetLifeOS(userId: string, counts: DeleteCounts) {
-  const fasting = await prisma.fastingSession.deleteMany({ where: { userId } });
-  const meditation = await prisma.meditationSession.deleteMany({ where: { userId } });
-  const journal = await prisma.journalEntry.deleteMany({ where: { userId } });
-  const capsules = await prisma.timeCapsule.deleteMany({ where: { userId } });
-  const focus = await prisma.focusSession.deleteMany({ where: { userId } });
-  const morning = await prisma.morningRitual.deleteMany({ where: { userId } });
-  const evening = await prisma.eveningRitual.deleteMany({ where: { userId } });
-  const emergency = await prisma.emergencyCard.deleteMany({ where: { userId } });
-  counts.fastingSessions = fasting.count;
-  counts.meditationSessions = meditation.count;
-  counts.journalEntries = journal.count;
-  counts.timeCapsules = capsules.count;
-  counts.focusSessions = focus.count;
-  counts.morningRituals = morning.count;
-  counts.eveningRituals = evening.count;
-  counts.emergencyCard = emergency.count;
 }
 
 async function resetCycle(userId: string, counts: DeleteCounts) {
@@ -201,7 +191,6 @@ const SCOPE_EXECUTORS: Record<
   organization: resetOrganization,
   calendar: resetCalendar,
   reading: resetReading,
-  lifeos: resetLifeOS,
   cycle: resetCycle,
   milestones: resetMilestones,
   gamification: resetGamification,

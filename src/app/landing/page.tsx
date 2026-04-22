@@ -148,8 +148,8 @@ export default function LandingPage() {
           />
           <FeatureCard
             icon={<Wind />}
-            title="Meditación + Journal"
-            description="Timer circular con respiración, beep al terminar. Journal con 12 prompts rotativos y tags."
+            title="Meditación"
+            description="Timer circular con respiración, beep al terminar. Registro de sesiones con tipo y duración."
           />
           <FeatureCard
             icon={<BookOpen />}
@@ -159,12 +159,7 @@ export default function LandingPage() {
           <FeatureCard
             icon={<Brain />}
             title="Life Score 0-100"
-            description="Puntuación multi-dimensión agregada (hábitos + fitness + wellness + nutrición + productividad). Chart 30 días."
-          />
-          <FeatureCard
-            icon={<Sparkles />}
-            title="Life OS"
-            description="Rituals mañana/noche, Time Capsule, tarjeta de emergencia compartible 24h, journal con prompts diarios."
+            description="Puntuación multi-dimensión agregada (hábitos + fitness + nutrición + productividad). Chart 30 días."
           />
           <FeatureCard
             icon={<Target />}

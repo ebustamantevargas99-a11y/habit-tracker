@@ -12,8 +12,6 @@ import {
   Circle,
   Trash2,
   Loader2,
-  Sunrise,
-  Sunset,
   Sparkles,
   Bookmark,
 } from "lucide-react";
@@ -432,42 +430,6 @@ function AmbientCards({ data }: { data: DayAgenda }) {
             Día {data.agenda.cycle.day} · Fase {data.agenda.cycle.name}
           </p>
         </div>
-      </div>
-    );
-  }
-  if (data.agenda.rituals.morning) {
-    cards.push(
-      <div
-        key="morning"
-        className={cn(
-          "border rounded-xl p-3 flex items-center gap-3",
-          data.agenda.rituals.morning.completed
-            ? "bg-success/10 border-success/30"
-            : "bg-accent-glow/20 border-accent/30"
-        )}
-      >
-        <Sunrise size={18} className="text-accent" />
-        <p className="text-xs font-semibold text-brand-dark">
-          Ritual mañana {data.agenda.rituals.morning.completed ? "✓" : "pendiente"}
-        </p>
-      </div>
-    );
-  }
-  if (data.agenda.rituals.evening) {
-    cards.push(
-      <div
-        key="evening"
-        className={cn(
-          "border rounded-xl p-3 flex items-center gap-3",
-          data.agenda.rituals.evening.completed
-            ? "bg-success/10 border-success/30"
-            : "bg-brand-dark/5 border-brand-medium/30"
-        )}
-      >
-        <Sunset size={18} className="text-brand-medium" />
-        <p className="text-xs font-semibold text-brand-dark">
-          Ritual noche {data.agenda.rituals.evening.completed ? "✓" : "pendiente"}
-        </p>
       </div>
     );
   }
