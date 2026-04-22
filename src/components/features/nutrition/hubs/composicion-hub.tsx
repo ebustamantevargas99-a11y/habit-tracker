@@ -3,13 +3,15 @@
 /**
  * Hub "Composición" — bioimpedancia como feature estrella del rediseño.
  *
- * Fase 2: skeleton con form básico que persiste a BodyComposition + explicación
- * didáctica de las métricas. Fase 4 añade gráficos de evolución, analyzeProgress
- * patterns, Navy tape calculator y comparativa nutrición ↔ composición.
+ * Tres sub-tabs:
+ *   - Registro: form + última medición destacada + tabla del historial
+ *   - Evolución: gráficas de línea por métrica (peso, %grasa, LBM, etc.)
+ *   - Análisis: detección de patrón (recomp / hipertrofia / fat_loss /
+ *     muscle_loss / fat_gain / stable) + FFMI con clasificación Kouri
  *
  * Infra ya lista:
- *   - Modelo Prisma BodyComposition con 9 campos (weight, %grasa, LBM, fatMass,
- *     water, visceral, bone, BMR, method)
+ *   - Modelo Prisma BodyComposition con 9 campos (weight, %grasa, LBM,
+ *     fatMass, water, visceral, bone, BMR, method)
  *   - GET/POST /api/nutrition/body-composition (derivación automática de LBM
  *     y fatMass desde peso + %grasa)
  *   - PATCH/DELETE /api/nutrition/body-composition/[id]
@@ -20,7 +22,7 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { Card, cn } from "@/components/ui";
+import { Card, Tabs, cn } from "@/components/ui";
 import { api, ApiError } from "@/lib/api-client";
 import { todayLocal } from "@/lib/date/local";
 import { useUserStore } from "@/stores/user-store";
@@ -30,6 +32,8 @@ import {
   classifyVisceralFat,
   type Sex,
 } from "@/lib/nutrition/body-composition";
+import BodyEvolutionChart from "../composicion/body-evolution-chart";
+import BodyProgressAnalysis from "../composicion/body-progress-analysis";
 
 interface BodyCompositionRow {
   id: string;
@@ -55,13 +59,21 @@ const METHOD_LABELS: Record<string, string> = {
   scale: "Báscula inteligente",
 };
 
+const SUB_TABS = [
+  { id: "registro",  label: "📋 Registro"  },
+  { id: "evolucion", label: "📈 Evolución" },
+  { id: "analisis",  label: "🧠 Análisis"  },
+];
+
 export default function ComposicionHub() {
   const { user } = useUserStore();
   const sex: Sex = user?.profile?.biologicalSex === "female" ? "female" : "male";
   const tz = user?.profile?.timezone;
+  const heightCm = user?.profile?.heightCm ?? null;
 
   const [rows, setRows] = useState<BodyCompositionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subTab, setSubTab] = useState<string>("registro");
   const [showForm, setShowForm] = useState(false);
 
   async function refresh() {
@@ -106,64 +118,68 @@ export default function ComposicionHub() {
           <p className="text-brand-warm text-sm m-0 mt-1">
             Registros de bioimpedancia (BIA), DEXA, plicómetro o Navy tape.
             La app deriva masa magra y grasa automáticamente si das peso +
-            % grasa.
+            % grasa, detecta patrones de progreso y calcula tu FFMI.
           </p>
         </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-button bg-accent text-white text-sm font-semibold hover:opacity-90 transition"
-        >
-          <Plus size={14} /> {showForm ? "Cancelar" : "Nueva medición"}
-        </button>
+        {subTab === "registro" && (
+          <button
+            onClick={() => setShowForm((v) => !v)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-button bg-accent text-white text-sm font-semibold hover:opacity-90 transition"
+          >
+            <Plus size={14} /> {showForm ? "Cancelar" : "Nueva medición"}
+          </button>
+        )}
       </header>
 
-      {showForm && (
-        <NewMeasurementForm
-          tz={tz}
-          onSaved={(created) => {
-            setShowForm(false);
-            setRows((prev) =>
-              [created, ...prev.filter((r) => r.id !== created.id)].sort(
-                (a, b) => b.date.localeCompare(a.date),
-              ),
-            );
-          }}
-        />
+      <Tabs
+        tabs={SUB_TABS}
+        activeTab={subTab}
+        onChange={(id) => setSubTab(id as string)}
+        className="mb-6 flex-wrap border-brand-light-tan"
+      />
+
+      {subTab === "registro" && (
+        <div className="flex flex-col gap-6">
+          {showForm && (
+            <NewMeasurementForm
+              tz={tz}
+              onSaved={(created) => {
+                setShowForm(false);
+                setRows((prev) =>
+                  [created, ...prev.filter((r) => r.id !== created.id)].sort(
+                    (a, b) => b.date.localeCompare(a.date),
+                  ),
+                );
+              }}
+            />
+          )}
+
+          {latest && <LatestSummary row={latest} sex={sex} />}
+
+          {loading && rows.length === 0 ? (
+            <Card
+              variant="default"
+              padding="md"
+              className="border-brand-light-tan text-center text-brand-warm text-sm"
+            >
+              <Loader2 size={14} className="inline animate-spin mr-2" />
+              Cargando…
+            </Card>
+          ) : rows.length === 0 ? (
+            <EmptyStateCard sex={sex} />
+          ) : (
+            <HistoryTable rows={rows} sex={sex} onDelete={remove} />
+          )}
+
+          <MetricsExplainer />
+        </div>
       )}
 
-      <div className="flex flex-col gap-6 mt-6">
-        {/* Resumen última medición */}
-        {latest && <LatestSummary row={latest} sex={sex} />}
+      {subTab === "evolucion" && <BodyEvolutionChart rows={rows} />}
 
-        {loading && rows.length === 0 ? (
-          <Card variant="default" padding="md" className="border-brand-light-tan text-center text-brand-warm text-sm">
-            <Loader2 size={14} className="inline animate-spin mr-2" />
-            Cargando…
-          </Card>
-        ) : rows.length === 0 ? (
-          <EmptyStateCard sex={sex} />
-        ) : (
-          <HistoryTable rows={rows} sex={sex} onDelete={remove} />
-        )}
-
-        {/* Explicación didáctica de qué se trackea */}
-        <MetricsExplainer />
-
-        {/* Placeholder Fase 4 */}
-        <Card variant="default" padding="md" className="border-brand-light-tan">
-          <h3 className="font-serif text-lg text-brand-dark m-0 mb-2">
-            Gráficos y análisis IA (Fase 4)
-          </h3>
-          <p className="text-brand-warm text-sm m-0">
-            En la próxima iteración: gráficas de evolución de cada métrica
-            (% grasa, masa magra, visceral), detección automática de patrones
-            (recomp / hipertrofia / fat_loss / muscle_loss), FFMI con
-            clasificación (Kouri et al.), y resumen IA comparando tu nutrición
-            con los cambios de composición (&quot;subiste 2 kg en 60 días y
-            1.5 kg fueron masa magra — hipertrofia en curso&quot;).
-          </p>
-        </Card>
-      </div>
+      {subTab === "analisis" && (
+        <BodyProgressAnalysis rows={rows} sex={sex} heightCm={heightCm} />
+      )}
     </section>
   );
 }
@@ -183,7 +199,8 @@ function LatestSummary({
     row.visceralFat != null ? classifyVisceralFat(row.visceralFat) : null;
 
   const kpis: Array<{ label: string; value: string; sub?: string; color?: string }> = [];
-  if (row.weightKg != null) kpis.push({ label: "Peso", value: `${row.weightKg.toFixed(1)} kg` });
+  if (row.weightKg != null)
+    kpis.push({ label: "Peso", value: `${row.weightKg.toFixed(1)} kg` });
   if (row.bodyFatPercent != null) {
     kpis.push({
       label: "% Grasa",
@@ -192,9 +209,12 @@ function LatestSummary({
       color: bfCat?.color,
     });
   }
-  if (row.leanMassKg != null) kpis.push({ label: "Masa magra", value: `${row.leanMassKg.toFixed(1)} kg` });
-  if (row.fatMassKg != null) kpis.push({ label: "Masa grasa", value: `${row.fatMassKg.toFixed(1)} kg` });
-  if (row.waterPercent != null) kpis.push({ label: "Agua", value: `${row.waterPercent.toFixed(1)}%` });
+  if (row.leanMassKg != null)
+    kpis.push({ label: "Masa magra", value: `${row.leanMassKg.toFixed(1)} kg` });
+  if (row.fatMassKg != null)
+    kpis.push({ label: "Masa grasa", value: `${row.fatMassKg.toFixed(1)} kg` });
+  if (row.waterPercent != null)
+    kpis.push({ label: "Agua", value: `${row.waterPercent.toFixed(1)}%` });
   if (row.visceralFat != null) {
     kpis.push({
       label: "Visceral",
@@ -213,7 +233,8 @@ function LatestSummary({
             : "danger",
     });
   }
-  if (row.boneMassKg != null) kpis.push({ label: "Masa ósea", value: `${row.boneMassKg.toFixed(2)} kg` });
+  if (row.boneMassKg != null)
+    kpis.push({ label: "Masa ósea", value: `${row.boneMassKg.toFixed(2)} kg` });
   if (row.bmr != null) kpis.push({ label: "BMR", value: `${row.bmr} kcal` });
 
   return (
@@ -233,7 +254,10 @@ function LatestSummary({
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {kpis.map((k) => (
-          <div key={k.label} className="bg-brand-paper rounded-lg p-3 border border-brand-light-cream">
+          <div
+            key={k.label}
+            className="bg-brand-paper rounded-lg p-3 border border-brand-light-cream"
+          >
             <p className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold m-0">
               {k.label}
             </p>
@@ -273,7 +297,11 @@ function HistoryTable({
   onDelete: (id: string) => void;
 }) {
   return (
-    <Card variant="default" padding="none" className="border-brand-light-tan overflow-hidden">
+    <Card
+      variant="default"
+      padding="none"
+      className="border-brand-light-tan overflow-hidden"
+    >
       <div className="px-4 py-3 border-b border-brand-light-cream bg-brand-warm-white">
         <h3 className="font-serif text-base text-brand-dark m-0">
           Historial ({rows.length} medicion{rows.length === 1 ? "" : "es"})
@@ -294,15 +322,25 @@ function HistoryTable({
           </thead>
           <tbody>
             {rows.map((r) => {
-              const bfCat = r.bodyFatPercent != null ? classifyBodyFat(r.bodyFatPercent, sex) : null;
+              const bfCat =
+                r.bodyFatPercent != null
+                  ? classifyBodyFat(r.bodyFatPercent, sex)
+                  : null;
               return (
-                <tr key={r.id} className="border-t border-brand-light-cream hover:bg-brand-warm-white">
-                  <td className="px-3 py-2 text-brand-dark font-mono text-xs">{r.date}</td>
+                <tr
+                  key={r.id}
+                  className="border-t border-brand-light-cream hover:bg-brand-warm-white"
+                >
+                  <td className="px-3 py-2 text-brand-dark font-mono text-xs">
+                    {r.date}
+                  </td>
                   <td className="px-2 py-2 text-right text-brand-dark font-mono">
                     {r.weightKg != null ? `${r.weightKg.toFixed(1)}` : "—"}
                   </td>
                   <td className="px-2 py-2 text-right text-brand-dark font-mono">
-                    {r.bodyFatPercent != null ? `${r.bodyFatPercent.toFixed(1)}%` : "—"}
+                    {r.bodyFatPercent != null
+                      ? `${r.bodyFatPercent.toFixed(1)}%`
+                      : "—"}
                     {bfCat && (
                       <span className="ml-1 text-[9px] text-brand-warm uppercase">
                         {bfCat.slice(0, 3)}
@@ -316,7 +354,9 @@ function HistoryTable({
                     {r.visceralFat ?? "—"}
                   </td>
                   <td className="px-2 py-2 text-brand-warm text-xs">
-                    {r.method ? METHOD_LABELS[r.method]?.split(" ")[0] ?? r.method : "—"}
+                    {r.method
+                      ? METHOD_LABELS[r.method]?.split(" ")[0] ?? r.method
+                      : "—"}
                   </td>
                   <td className="px-2 py-2">
                     <button
@@ -338,7 +378,11 @@ function HistoryTable({
 
 function EmptyStateCard({ sex: _sex }: { sex: Sex }) {
   return (
-    <Card variant="default" padding="md" className="border-brand-light-tan text-center">
+    <Card
+      variant="default"
+      padding="md"
+      className="border-brand-light-tan text-center"
+    >
       <h3 className="font-serif text-lg text-brand-dark m-0">
         Registra tu primera medición
       </h3>
@@ -361,8 +405,9 @@ function MetricsExplainer() {
       <ul className="text-sm text-brand-dark list-none p-0 m-0 flex flex-col gap-2">
         <li>
           <strong>% Grasa corporal</strong> — porcentaje del peso total que es
-          tejido adiposo. Clasificación ACE: <em>atleta 6-13% (♂)/14-20% (♀)</em>,
-          <em> fitness 14-17%/21-24%</em>, <em>promedio 18-24%/25-31%</em>.
+          tejido adiposo. Clasificación ACE:{" "}
+          <em>atleta 6-13% (♂)/14-20% (♀)</em>,{" "}
+          <em>fitness 14-17%/21-24%</em>, <em>promedio 18-24%/25-31%</em>.
         </li>
         <li>
           <strong>Masa magra (LBM)</strong> — todo lo que no es grasa: músculo,
@@ -374,7 +419,8 @@ function MetricsExplainer() {
         </li>
         <li>
           <strong>% Agua</strong> — hidratación corporal total. Baja con
-          deshidratación o glicógeno bajo. Rango sano: 50-65% (♂) · 45-60% (♀).
+          deshidratación o glicógeno bajo. Rango sano: 50-65% (♂) · 45-60%
+          (♀).
         </li>
         <li>
           <strong>Grasa visceral</strong> — índice 1-60 que refleja grasa
@@ -554,7 +600,13 @@ function NewMeasurementForm({
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div>
       <label className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
