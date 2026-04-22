@@ -1049,17 +1049,33 @@ model MealItem {
 }
 
 model NutritionGoal {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  calories    Float    @default(2000)
-  protein     Float    @default(150)
-  carbs       Float    @default(200)
-  fat         Float    @default(65)
-  fiber       Float    @default(25)
-  waterMl     Int      @default(2500)
-  mealsPerDay Int      @default(3)
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String @id @default(cuid())
+  userId      String @unique
+  calories    Float  @default(2000)
+  protein     Float  @default(150)
+  carbs       Float  @default(200)
+  fat         Float  @default(65)
+  fiber       Float  @default(25)
+  waterMl     Int    @default(2500)
+  mealsPerDay Int    @default(3)
+
+  // ── Objetivo de peso y metabolismo (Fase redesign Nutrición 2026-04) ────────
+  goalType       String? // "cut" | "maintain" | "bulk" | "recomp"
+  targetWeightKg Float? // peso objetivo (nullable = sin meta)
+  startWeightKg  Float? // peso al crear/editar la meta (para cálculo de pace real)
+  startDate      String? // YYYY-MM-DD de cuándo arrancó esta meta
+  targetDate     String? // YYYY-MM-DD deadline opcional
+  weeklyRateKg   Float? // kg/semana planificado (ej -0.5 cut, +0.25 bulk)
+  bmrKcal        Int? // Basal Metabolic Rate calculado (Mifflin-St Jeor)
+  tdeeKcal       Int? // Total Daily Energy Expenditure = BMR * activityFactor
+  activityFactor Float? // 1.2 sed / 1.375 light / 1.55 mod / 1.725 active / 1.9 very
+
+  // Objetivos de composición (bioimpedancia)
+  targetBodyFatPercent Float?
+  targetLeanMassKg     Float?
+
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // ─── Organization ─────────────────────────────────────────────────────────────
