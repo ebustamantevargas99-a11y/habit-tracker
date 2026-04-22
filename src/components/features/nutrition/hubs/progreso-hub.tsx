@@ -17,13 +17,15 @@ import { Tabs } from "@/components/ui";
 import WeightProgressionChart from "../progreso/weight-progression-chart";
 import CaloriesPeriodChart from "../progreso/calories-period-chart";
 import CoachAIExport from "../progreso/coach-ai-export";
+import NutrientReport from "../progreso/nutrient-report";
 import { SummaryTab } from "../nutrition-page";
 
 const SUB_TABS = [
-  { id: "peso",      label: "⚖️ Peso + proyección" },
-  { id: "calorias",  label: "🔥 Calorías" },
-  { id: "resumen",   label: "📊 Resumen 7d" },
-  { id: "coach",     label: "🤖 Coach IA" },
+  { id: "peso",       label: "⚖️ Peso + proyección" },
+  { id: "calorias",   label: "🔥 Calorías" },
+  { id: "nutrientes", label: "🧪 Nutrientes 30d" },
+  { id: "resumen",    label: "📊 Resumen 7d" },
+  { id: "coach",      label: "🤖 Coach IA" },
 ];
 
 export default function ProgresoHub() {
@@ -46,10 +48,11 @@ export default function ProgresoHub() {
         className="mb-6 flex-wrap border-brand-light-tan"
       />
 
-      {subTab === "peso"     && <WeightProgressionChart />}
-      {subTab === "calorias" && <CaloriesPeriodChart />}
-      {subTab === "resumen"  && <SummaryTab />}
-      {subTab === "coach"    && <CoachAIExport />}
+      {subTab === "peso"       && <WeightProgressionChart />}
+      {subTab === "calorias"   && <CaloriesPeriodChart />}
+      {subTab === "nutrientes" && <NutrientReport />}
+      {subTab === "resumen"    && <SummaryTab />}
+      {subTab === "coach"      && <CoachAIExport />}
     </section>
   );
 }
