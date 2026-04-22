@@ -1,19 +1,22 @@
 "use client";
 
 /**
- * Hub "Alimentos" — consolida FoodsTab (custom foods) + GoalsTab (metas
- * nutricionales). Fase 2 usa la versión legacy; Fase 5 añade recipe builder
- * visual, meta de peso extendida con BMR/TDEE auto-calculado desde profile,
- * y clasificación del weeklyRate según ISSN.
+ * Hub "Alimentos" — consolida tres secciones:
+ *   - 🥗 Mis Alimentos: lista custom de foods (legacy FoodsTab)
+ *   - 🎯 Meta avanzada: wizard BMR/TDEE + peso objetivo + ISSN pace + macros
+ *     auto-calculados (Fase 5)
+ *   - ⚙️ Metas manuales: override numérico directo (legacy GoalsTab)
  */
 
 import { useState } from "react";
 import { Tabs } from "@/components/ui";
 import { FoodsTab, GoalsTab } from "../nutrition-page";
+import GoalWizard from "../alimentos/goal-wizard";
 
 const SUB_TABS = [
-  { id: "foods", label: "🥗 Mis Alimentos" },
-  { id: "goals", label: "🎯 Metas" },
+  { id: "foods",    label: "🥗 Mis Alimentos" },
+  { id: "wizard",   label: "🎯 Meta avanzada" },
+  { id: "manual",   label: "⚙️ Metas manuales" },
 ];
 
 export default function AlimentosHub() {
@@ -26,8 +29,9 @@ export default function AlimentosHub() {
           Alimentos y Metas
         </h2>
         <p className="text-brand-warm text-sm m-0 mt-1">
-          Tu lista personal de alimentos personalizados + objetivos calóricos
-          y de macros. Las metas de peso avanzadas llegan en Fase 5.
+          Tu lista personal de alimentos + wizard de meta avanzada con BMR/TDEE
+          auto-calculado (Mifflin-St Jeor) + macros distribuidos según ISSN
+          + override manual si ya sabes exactamente qué calorías quieres.
         </p>
       </header>
 
@@ -38,8 +42,9 @@ export default function AlimentosHub() {
         className="mb-6 flex-wrap border-brand-light-tan"
       />
 
-      {subTab === "foods" && <FoodsTab />}
-      {subTab === "goals" && <GoalsTab />}
+      {subTab === "foods"  && <FoodsTab />}
+      {subTab === "wizard" && <GoalWizard />}
+      {subTab === "manual" && <GoalsTab />}
     </section>
   );
 }

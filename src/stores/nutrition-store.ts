@@ -51,6 +51,18 @@ export interface NutritionGoal {
   fiber: number;
   waterMl: number;
   mealsPerDay: number;
+  // Redesign Nutrición — objetivo de peso + metabolismo calculado
+  goalType?: "cut" | "maintain" | "bulk" | "recomp" | null;
+  targetWeightKg?: number | null;
+  startWeightKg?: number | null;
+  startDate?: string | null;        // YYYY-MM-DD
+  targetDate?: string | null;       // YYYY-MM-DD
+  weeklyRateKg?: number | null;     // negativo = cut, positivo = bulk
+  bmrKcal?: number | null;
+  tdeeKcal?: number | null;
+  activityFactor?: number | null;
+  targetBodyFatPercent?: number | null;
+  targetLeanMassKg?: number | null;
 }
 
 export interface DailySummary {
