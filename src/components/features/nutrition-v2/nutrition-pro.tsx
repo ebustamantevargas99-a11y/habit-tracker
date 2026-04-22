@@ -8,6 +8,8 @@ import { api } from "@/lib/api-client";
 import FoodSearchModal, { type CatalogFood } from "./food-search-modal";
 import MacrosRing from "./macros-ring";
 import BarcodeScanner from "../nutrition/alimentos/barcode-scanner";
+import QuickAddPanel from "../nutrition/alimentos/quick-add-panel";
+import { useUserStore } from "@/stores/user-store";
 
 // ─── Meal templates + barcode types ─────────────────────────────────────────
 
@@ -110,6 +112,7 @@ type HydrationLog = {
 };
 
 export default function NutritionPro() {
+  const tz = useUserStore((s) => s.user?.profile?.timezone);
   const [meals, setMeals] = useState<MealLog[]>([]);
   const [goal, setGoal] = useState<NutritionGoal>(DEFAULT_GOAL);
   const [loading, setLoading] = useState(true);
@@ -456,6 +459,31 @@ export default function NutritionPro() {
           />
         </div>
       </div>
+
+      {/* Quick-add: favoritos, recientes, copiar de ayer */}
+      <QuickAddPanel
+        tz={tz}
+        onAddFood={async (mealType, food) => {
+          const mealId = await ensureMeal(mealType);
+          const item = await api.post<MealItem>(
+            `/nutrition/meals/${mealId}/items`,
+            {
+              foodItemId: food.foodItemId,
+              quantity: food.servingSize,
+              unit: food.servingUnit,
+            },
+          );
+          setMeals((prev) =>
+            prev.map((m) =>
+              m.mealType === mealType
+                ? { ...m, items: [...m.items, item] }
+                : m,
+            ),
+          );
+          toast.success(`${food.name} → ${MEAL_LABELS[mealType]}`);
+        }}
+        onCopied={() => void loadData()}
+      />
 
       {/* Meals — 4 cards */}
       {(Object.keys(MEAL_LABELS) as MealType[]).map((type) => {
