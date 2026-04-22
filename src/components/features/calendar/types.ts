@@ -10,12 +10,22 @@ export type CalendarEvent = {
   color: string | null;
   icon: string | null;
   location: string | null;
+  groupId: string | null;
   recurrence: string | null;
   recurrenceEnd: string | null;
   reminderMinutes: number | null;
   sourceModule: string | null;
   sourceId: string | null;
   completed: boolean;
+};
+
+export type CalendarGroup = {
+  id: string;
+  name: string;
+  color: string;
+  icon: string | null;
+  visible: boolean;
+  sortOrder: number;
 };
 
 export type DayAgenda = {

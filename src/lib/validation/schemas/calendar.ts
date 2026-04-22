@@ -12,6 +12,11 @@ const eventTypeEnum = z.enum([
   "study",
 ]);
 
+const hexColor = z
+  .string()
+  .trim()
+  .regex(/^#[0-9a-fA-F]{6}$/, "Color hex #RRGGBB");
+
 export const calendarEventCreateSchema = z.object({
   title: z.string().trim().min(1).max(300),
   description: z.string().max(10000).optional().nullable(),
@@ -20,14 +25,10 @@ export const calendarEventCreateSchema = z.object({
   allDay: z.boolean().optional(),
   type: eventTypeEnum.optional(),
   category: z.string().trim().max(100).optional().nullable(),
-  color: z
-    .string()
-    .trim()
-    .regex(/^#[0-9a-fA-F]{6}$/, "Color hex #RRGGBB")
-    .optional()
-    .nullable(),
+  color: hexColor.optional().nullable(),
   icon: z.string().trim().max(10).optional().nullable(),
   location: z.string().trim().max(500).optional().nullable(),
+  groupId: z.string().max(40).optional().nullable(),
   recurrence: z.string().trim().max(200).optional().nullable(),
   recurrenceEnd: z.string().datetime().optional().nullable(),
   reminderMinutes: z.number().int().min(0).max(10080).optional().nullable(),
@@ -36,6 +37,18 @@ export const calendarEventCreateSchema = z.object({
 export const calendarEventUpdateSchema = calendarEventCreateSchema.partial().extend({
   completed: z.boolean().optional(),
 });
+
+// ─── Calendar Groups (estilo iCloud) ──────────────────────────────────────────
+
+export const calendarGroupCreateSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  color: hexColor.optional(),
+  icon: z.string().trim().max(10).optional().nullable(),
+  visible: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(1000).optional(),
+});
+
+export const calendarGroupUpdateSchema = calendarGroupCreateSchema.partial();
 
 export const dayTemplateCreateSchema = z.object({
   name: z.string().trim().min(1).max(200),

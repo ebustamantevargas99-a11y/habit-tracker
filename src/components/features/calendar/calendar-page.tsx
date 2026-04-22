@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Calendar as CalendarIcon,
   CalendarDays,
@@ -16,6 +16,8 @@ import TodayView from "./today-view";
 import WeekView from "./week-view";
 import MonthView from "./month-view";
 import YearReviewModal from "./year-review-modal";
+import CalendarGroupsSidebar from "./calendar-groups-sidebar";
+import type { CalendarGroup } from "./types";
 import { useAppStore, type PlanTab } from "@/stores/app-store";
 
 const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
@@ -23,6 +25,8 @@ const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
   { id: "week",  label: "Semana", icon: CalendarDays },
   { id: "month", label: "Mes",    icon: CalendarRange },
 ];
+
+const LS_COLLAPSED_KEY = "calendar.sidebarCollapsed";
 
 export default function CalendarPage() {
   const view = useAppStore((s) => s.planTab);
@@ -35,12 +39,41 @@ export default function CalendarPage() {
   );
   const [showYearReview, setShowYearReview] = useState(false);
 
+  // Sidebar state
+  const [collapsed, setCollapsed] = useState<boolean>(false);
+  const [groups, setGroups] = useState<CalendarGroup[]>([]);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(LS_COLLAPSED_KEY);
+      if (saved === "1") setCollapsed(true);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   useEffect(() => {
     if (typeof Notification === "undefined") {
       setNotifPermission("unsupported");
     } else {
       setNotifPermission(Notification.permission);
     }
+  }, []);
+
+  function toggleCollapsed() {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(LS_COLLAPSED_KEY, next ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
+  }
+
+  const handleGroupsChange = useCallback((g: CalendarGroup[]) => {
+    setGroups(g);
   }, []);
 
   async function requestNotifPermission() {
@@ -71,78 +104,89 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="space-y-5">
-      {/* View switcher + actions */}
-      <div className="flex items-center justify-between gap-2 border-b-2 border-brand-cream">
-        <div className="flex gap-1">
-          {VIEWS.map((v) => {
-            const Icon = v.icon;
-            return (
+    <div className="flex gap-0 -mx-6 -my-6 min-h-[calc(100vh-80px)]">
+      {/* Sidebar (retráctil) */}
+      <CalendarGroupsSidebar
+        collapsed={collapsed}
+        onToggleCollapsed={toggleCollapsed}
+        onGroupsChange={handleGroupsChange}
+      />
+
+      {/* Contenido principal */}
+      <div className="flex-1 min-w-0 px-6 py-6 space-y-5">
+        {/* View switcher + actions */}
+        <div className="flex items-center justify-between gap-2 border-b-2 border-brand-cream">
+          <div className="flex gap-1">
+            {VIEWS.map((v) => {
+              const Icon = v.icon;
+              return (
+                <button
+                  key={v.id}
+                  onClick={() => setView(v.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
+                    view === v.id
+                      ? "border-b-accent text-accent font-semibold"
+                      : "border-b-transparent text-brand-medium hover:text-brand-dark"
+                  )}
+                >
+                  <Icon size={15} />
+                  {v.label}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex gap-2 pb-1.5 flex-wrap">
+            {notifPermission !== "unsupported" && notifPermission !== "granted" && (
               <button
-                key={v.id}
-                onClick={() => setView(v.id)}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-                  view === v.id
-                    ? "border-b-accent text-accent font-semibold"
-                    : "border-b-transparent text-brand-medium hover:text-brand-dark"
-                )}
+                onClick={requestNotifPermission}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
+                title="Activar recordatorios push del navegador"
               >
-                <Icon size={15} />
-                {v.label}
+                <BellOff size={12} /> Activar recordatorios
               </button>
-            );
-          })}
-        </div>
-        <div className="flex gap-2 pb-1.5">
-          {notifPermission !== "unsupported" && notifPermission !== "granted" && (
+            )}
+            {notifPermission === "granted" && (
+              <span
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-button text-xs text-success"
+                title="Recordatorios activos"
+              >
+                <Bell size={12} /> Recordatorios ✓
+              </span>
+            )}
             <button
-              onClick={requestNotifPermission}
+              onClick={exportICal}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
-              title="Activar recordatorios push del navegador"
+              title="Descargar .ics para Google/Apple Calendar"
             >
-              <BellOff size={12} /> Activar recordatorios
+              <Download size={12} /> Export
             </button>
-          )}
-          {notifPermission === "granted" && (
-            <span
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-button text-xs text-success"
-              title="Recordatorios activos"
+            <button
+              onClick={() => setShowYearReview(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-button bg-accent text-white text-xs font-semibold hover:bg-brand-brown"
+              title="Revisión anual con análisis IA"
             >
-              <Bell size={12} /> Recordatorios ✓
-            </span>
-          )}
-          <button
-            onClick={exportICal}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
-            title="Descargar .ics para Google/Apple Calendar"
-          >
-            <Download size={12} /> Export
-          </button>
-          <button
-            onClick={() => setShowYearReview(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-button bg-accent text-white text-xs font-semibold hover:bg-brand-brown"
-            title="Revisión anual con análisis IA"
-          >
-            <Sparkles size={12} /> Revisión anual
-          </button>
+              <Sparkles size={12} /> Revisión anual
+            </button>
+          </div>
         </div>
+
+        {view === "today" && (
+          <TodayView selectedDate={selectedDate} onDateChange={setSelectedDate} />
+        )}
+        {view === "week" && <WeekView groups={groups} />}
+        {view === "month" && (
+          <MonthView
+            groups={groups}
+            onDrillDown={(date) => {
+              setSelectedDate(date);
+              setView("today");
+            }}
+          />
+        )}
+
+        {showYearReview && <YearReviewModal onClose={() => setShowYearReview(false)} />}
       </div>
-
-      {view === "today" && (
-        <TodayView selectedDate={selectedDate} onDateChange={setSelectedDate} />
-      )}
-      {view === "week" && <WeekView />}
-      {view === "month" && (
-        <MonthView
-          onDrillDown={(date) => {
-            setSelectedDate(date);
-            setView("today");
-          }}
-        />
-      )}
-
-      {showYearReview && <YearReviewModal onClose={() => setShowYearReview(false)} />}
     </div>
   );
 }

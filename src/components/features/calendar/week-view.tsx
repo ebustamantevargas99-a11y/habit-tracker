@@ -16,7 +16,7 @@ import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import QuickAddBar from "./quick-add-bar";
 import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarGroup } from "./types";
 import { TYPE_META } from "./types";
 
 // Configuración del grid
@@ -72,11 +72,30 @@ function durationHours(ev: CalendarEvent): number {
   return 0.5;
 }
 
-export default function WeekView() {
+interface WeekViewProps {
+  groups: CalendarGroup[];
+}
+
+export default function WeekView({ groups }: WeekViewProps) {
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [data, setData] = useState<WeekData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Editing | null>(null);
+
+  // Índice id→group para lookups rápidos (color, visible)
+  const groupsById = useMemo(() => {
+    const m = new Map<string, CalendarGroup>();
+    for (const g of groups) m.set(g.id, g);
+    return m;
+  }, [groups]);
+
+  // Filtra eventos: si tienen groupId, solo aparecen si el grupo es visible.
+  // Si no tienen groupId, siempre se muestran (comportamiento por defecto).
+  function isEventVisible(ev: CalendarEvent): boolean {
+    if (!ev.groupId) return true;
+    const g = groupsById.get(ev.groupId);
+    return g ? g.visible : true;
+  }
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -272,7 +291,7 @@ export default function WeekView() {
             {weekDays.map((d) => {
               const dateStr = toDateStr(d);
               const dayEvents = data?.events.filter(
-                (e) => toDateStr(new Date(e.startAt)) === dateStr
+                (e) => toDateStr(new Date(e.startAt)) === dateStr && isEventVisible(e),
               ) ?? [];
               const dayWorkouts = data?.workouts.filter((w) => w.date === dateStr) ?? [];
               return (
@@ -281,6 +300,7 @@ export default function WeekView() {
                   dateStr={dateStr}
                   events={dayEvents}
                   workouts={dayWorkouts}
+                  groupsById={groupsById}
                   onCellClick={(hour, anchor) =>
                     setEditing({ mode: "create", dateStr, hour, anchor })
                   }
@@ -303,6 +323,7 @@ export default function WeekView() {
               : { kind: "edit", event: editing.event }
           }
           anchor={editing.anchor}
+          groups={groups}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
             setData((prev) => {
@@ -337,12 +358,14 @@ function DayColumn({
   dateStr,
   events,
   workouts,
+  groupsById,
   onCellClick,
   onEventClick,
 }: {
   dateStr: string;
   events: CalendarEvent[];
   workouts: Array<{ id: string; name: string; durationMinutes: number; completed: boolean }>;
+  groupsById: Map<string, CalendarGroup>;
   onCellClick: (hour: number, anchor: AnchorRect) => void;
   onEventClick: (ev: CalendarEvent, anchor: AnchorRect) => void;
 }) {
@@ -371,6 +394,7 @@ function DayColumn({
         <EventBlock
           key={ev.id}
           event={ev}
+          group={ev.groupId ? groupsById.get(ev.groupId) ?? null : null}
           onClick={(anchor) => onEventClick(ev, anchor)}
         />
       ))}
@@ -435,9 +459,11 @@ function DropCell({
 
 function EventBlock({
   event,
+  group,
   onClick,
 }: {
   event: CalendarEvent;
+  group: CalendarGroup | null;
   onClick: (anchor: AnchorRect) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
@@ -459,7 +485,13 @@ function EventBlock({
   const height = Math.max(20, dur * HOUR_HEIGHT);
 
   const meta = TYPE_META[event.type] ?? TYPE_META.custom;
-  const hasCustomColor = event.type === "custom" && event.color;
+  // Prioridad de color: custom explícito > color del grupo > default del type
+  const effectiveColor =
+    event.type === "custom" && event.color
+      ? event.color
+      : group
+        ? group.color
+        : null;
 
   const style: React.CSSProperties = {
     position: "absolute",
@@ -472,14 +504,18 @@ function EventBlock({
     zIndex: isDragging ? 50 : 10,
   };
 
-  // Si el user eligió color custom, lo aplicamos inline (override de meta.bgClass).
-  if (hasCustomColor) {
-    style.backgroundColor = `${event.color}22`;
-    style.borderLeftColor = event.color!;
-    style.color = event.color!;
+  if (effectiveColor) {
+    style.backgroundColor = `${effectiveColor}22`;
+    style.borderLeftColor = effectiveColor;
+    style.color = effectiveColor;
   }
 
-  const label = event.type === "custom" && event.category?.trim() ? event.category : null;
+  const label =
+    event.type === "custom" && event.category?.trim()
+      ? event.category
+      : group
+        ? group.name
+        : null;
 
   return (
     <div
@@ -495,7 +531,7 @@ function EventBlock({
       }}
       className={cn(
         "rounded-md border-l-4 px-1.5 py-1 cursor-grab active:cursor-grabbing text-[10px] leading-tight overflow-hidden",
-        !hasCustomColor && meta.bgClass,
+        !effectiveColor && meta.bgClass,
         event.completed && "line-through opacity-60"
       )}
     >

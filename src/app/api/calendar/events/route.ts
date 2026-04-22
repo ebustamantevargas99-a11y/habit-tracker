@@ -31,6 +31,20 @@ export async function POST(req: NextRequest) {
     if (!parsed.ok) return parsed.response;
     const d = parsed.data;
 
+    // Ownership del grupo (si viene)
+    if (d.groupId) {
+      const grp = await prisma.calendarGroup.findFirst({
+        where: { id: d.groupId, userId },
+        select: { id: true },
+      });
+      if (!grp) {
+        return NextResponse.json(
+          { error: "Grupo de calendario no encontrado" },
+          { status: 404 },
+        );
+      }
+    }
+
     const event = await prisma.calendarEvent.create({
       data: {
         userId,
@@ -44,6 +58,7 @@ export async function POST(req: NextRequest) {
         color: d.color ?? null,
         icon: d.icon ?? null,
         location: d.location ?? null,
+        groupId: d.groupId ?? null,
         recurrence: d.recurrence ?? null,
         recurrenceEnd: d.recurrenceEnd ? new Date(d.recurrenceEnd) : null,
         reminderMinutes: d.reminderMinutes ?? null,

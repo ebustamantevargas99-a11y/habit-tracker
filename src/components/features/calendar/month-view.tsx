@@ -7,7 +7,7 @@ import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import QuickAddBar from "./quick-add-bar";
 import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarGroup } from "./types";
 import { TYPE_META } from "./types";
 
 type MonthData = {
@@ -66,14 +66,28 @@ function buildGrid(d: Date): Date[] {
 }
 
 export default function MonthView({
+  groups,
   onDrillDown,
 }: {
+  groups: CalendarGroup[];
   onDrillDown: (date: string) => void;
 }) {
   const [cursor, setCursor] = useState<Date>(new Date());
   const [data, setData] = useState<MonthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Editing | null>(null);
+
+  const groupsById = useMemo(() => {
+    const m = new Map<string, CalendarGroup>();
+    for (const g of groups) m.set(g.id, g);
+    return m;
+  }, [groups]);
+
+  function isEventVisible(ev: CalendarEvent): boolean {
+    if (!ev.groupId) return true;
+    const g = groupsById.get(ev.groupId);
+    return g ? g.visible : true;
+  }
 
   const grid = useMemo(() => buildGrid(cursor), [cursor]);
   const month = cursor.getMonth();
@@ -130,6 +144,7 @@ export default function MonthView({
       });
     }
     for (const ev of data.events) {
+      if (!isEventVisible(ev)) continue;
       const k = toDateStr(new Date(ev.startAt));
       const entry = map.get(k);
       if (entry) entry.events.push(ev);
@@ -241,6 +256,7 @@ export default function MonthView({
                 isToday={isToday}
                 bgOpacity={bgOpacity}
                 entry={entry}
+                groupsById={groupsById}
                 onOpenCreate={openCreate}
                 onOpenEdit={openEdit}
                 onDrillDown={onDrillDown}
@@ -259,6 +275,7 @@ export default function MonthView({
               : { kind: "edit", event: editing.event }
           }
           anchor={editing.anchor}
+          groups={groups}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
             setData((prev) => {
@@ -296,6 +313,7 @@ function MonthCell({
   isToday,
   bgOpacity,
   entry,
+  groupsById,
   onOpenCreate,
   onOpenEdit,
   onDrillDown,
@@ -315,6 +333,7 @@ function MonthCell({
         density: number;
       }
     | undefined;
+  groupsById: Map<string, CalendarGroup>;
   onOpenCreate: (dateStr: string, anchor: AnchorRect) => void;
   onOpenEdit: (event: CalendarEvent, anchor: AnchorRect) => void;
   onDrillDown: (date: string) => void;
@@ -379,25 +398,37 @@ function MonthCell({
       <div className="space-y-0.5">
         {entry?.events.slice(0, 3).map((ev) => {
           const meta = TYPE_META[ev.type] ?? TYPE_META.custom;
-          const hasCustomColor = ev.type === "custom" && ev.color;
+          const group = ev.groupId ? groupsById.get(ev.groupId) ?? null : null;
+          const effectiveColor =
+            ev.type === "custom" && ev.color
+              ? ev.color
+              : group
+                ? group.color
+                : null;
+          const title =
+            ev.type === "custom" && ev.category?.trim()
+              ? `${ev.category} · Click para editar`
+              : group
+                ? `${group.name} · Click para editar`
+                : "Click para editar";
           return (
             <div
               key={ev.id}
               onClick={(e) => handleEventClick(ev, e)}
               style={
-                hasCustomColor
-                  ? { backgroundColor: `${ev.color}22`, color: ev.color!, borderLeft: `3px solid ${ev.color}` }
+                effectiveColor
+                  ? {
+                      backgroundColor: `${effectiveColor}22`,
+                      color: effectiveColor,
+                      borderLeft: `3px solid ${effectiveColor}`,
+                    }
                   : undefined
               }
               className={cn(
                 "text-[9px] px-1 py-[1px] rounded truncate cursor-pointer",
-                !hasCustomColor && meta.bgClass,
+                !effectiveColor && meta.bgClass,
               )}
-              title={
-                ev.type === "custom" && ev.category?.trim()
-                  ? `${ev.category} · Click para editar`
-                  : "Click para editar"
-              }
+              title={title}
             >
               {ev.icon ?? meta.emoji} {ev.title}
             </div>

@@ -19,6 +19,20 @@ export async function PATCH(
     if (!parsed.ok) return parsed.response;
     const d = parsed.data;
 
+    // Si viene groupId y no es null, verificar ownership
+    if (d.groupId) {
+      const grp = await prisma.calendarGroup.findFirst({
+        where: { id: d.groupId, userId },
+        select: { id: true },
+      });
+      if (!grp) {
+        return NextResponse.json(
+          { error: "Grupo de calendario no encontrado" },
+          { status: 404 },
+        );
+      }
+    }
+
     const updated = await prisma.calendarEvent.update({
       where: { id },
       data: {
@@ -32,6 +46,7 @@ export async function PATCH(
         ...("color" in d ? { color: d.color ?? null } : {}),
         ...("icon" in d ? { icon: d.icon ?? null } : {}),
         ...("location" in d ? { location: d.location ?? null } : {}),
+        ...("groupId" in d ? { groupId: d.groupId ?? null } : {}),
         ...("recurrence" in d ? { recurrence: d.recurrence ?? null } : {}),
         ...("recurrenceEnd" in d
           ? { recurrenceEnd: d.recurrenceEnd ? new Date(d.recurrenceEnd) : null }

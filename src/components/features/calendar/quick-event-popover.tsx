@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Trash2, X, MapPin, FileText, Bell, Repeat, Palette, Check } from "lucide-react";
+import { Trash2, X, MapPin, FileText, Bell, Repeat, Palette, Check, Folder } from "lucide-react";
 import { toast } from "sonner";
-import { api } from "@/lib/api-client";
+import { api, ApiError } from "@/lib/api-client";
 import { cn } from "@/components/ui";
-import type { CalendarEvent } from "./types";
+import type { CalendarEvent, CalendarGroup } from "./types";
 import { TYPE_META } from "./types";
 import { parseRecurrence, formatRecurrence } from "@/lib/calendar/recurrence";
 
@@ -24,6 +24,8 @@ interface Props {
   mode: Mode;
   /** Rect del elemento clickeado (viewport coords). El popover se posiciona al lado. */
   anchor: AnchorRect;
+  /** Grupos disponibles para asignar al evento. Se filtran por visible en UI. */
+  groups?: CalendarGroup[];
   onClose: () => void;
   onSaved: (event: CalendarEvent) => void;
   onDeleted?: (id: string) => void;
@@ -113,6 +115,7 @@ function formatDateLong(dateStr: string): string {
 export default function QuickEventPopover({
   mode,
   anchor,
+  groups,
   onClose,
   onSaved,
   onDeleted,
@@ -127,6 +130,7 @@ export default function QuickEventPopover({
         type: e.type,
         category: e.category ?? "",
         color: e.color ?? "",
+        groupId: e.groupId ?? "",
         dateStr: yyyymmdd(e.startAt),
         startTime: hhmm(e.startAt),
         endTime: e.endAt ? hhmm(e.endAt) : hhmm(new Date(new Date(e.startAt).getTime() + 3600000).toISOString()),
@@ -142,6 +146,7 @@ export default function QuickEventPopover({
       type: "custom",
       category: "",
       color: "",
+      groupId: "",
       dateStr: mode.dateStr,
       startTime: `${String(Math.floor(mode.hour)).padStart(2, "0")}:${String(Math.round((mode.hour - Math.floor(mode.hour)) * 60)).padStart(2, "0")}`,
       endTime: `${String(Math.floor(defaultEndHour)).padStart(2, "0")}:${String(Math.round((defaultEndHour - Math.floor(defaultEndHour)) * 60)).padStart(2, "0")}`,
@@ -156,6 +161,7 @@ export default function QuickEventPopover({
   const [type, setType] = useState<string>(initial.type);
   const [category, setCategory] = useState(initial.category);
   const [color, setColor] = useState(initial.color);
+  const [groupId, setGroupId] = useState(initial.groupId);
   const [dateStr, setDateStr] = useState(initial.dateStr);
   const [startTime, setStartTime] = useState(initial.startTime);
   const [endTime, setEndTime] = useState(initial.endTime);
@@ -226,7 +232,7 @@ export default function QuickEventPopover({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, type, category, color, dateStr, startTime, endTime, description, location, reminderMinutes, recurrence]);
+  }, [title, type, category, color, groupId, dateStr, startTime, endTime, description, location, reminderMinutes, recurrence]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -261,6 +267,7 @@ export default function QuickEventPopover({
         type,
         category: type === "custom" ? (category.trim() || null) : null,
         color: type === "custom" ? (color || null) : null,
+        groupId: groupId || null,
         location: location.trim() || null,
         reminderMinutes,
         recurrence,
@@ -272,8 +279,9 @@ export default function QuickEventPopover({
       onSaved(saved);
       toast.success(isEdit ? "Guardado" : "Evento creado");
       onClose();
-    } catch {
-      toast.error("Error guardando");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "Error guardando";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -284,11 +292,14 @@ export default function QuickEventPopover({
     if (!confirm("¿Borrar evento?")) return;
     try {
       await api.delete(`/calendar/events/${mode.event.id}`);
+      // Notificar al padre y cerrar — cerrar antes evita que un re-render deje
+      // el popover apuntando a un evento que ya no existe.
       onDeleted?.(mode.event.id);
-      toast.success("Borrado");
+      toast.success("Evento borrado");
       onClose();
-    } catch {
-      toast.error("Error");
+    } catch (err) {
+      const msg = err instanceof ApiError ? err.message : "No se pudo borrar";
+      toast.error(msg);
     }
   }
 
@@ -370,6 +381,32 @@ export default function QuickEventPopover({
 
       {/* Body */}
       <div className="px-4 py-3 flex flex-col gap-3">
+        {/* Selector de calendario/grupo (si el user tiene grupos creados) */}
+        {groups && groups.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Folder size={14} className="text-brand-warm shrink-0" />
+            <select
+              value={groupId}
+              onChange={(e) => setGroupId(e.target.value)}
+              className="flex-1 px-2 py-1 rounded border border-brand-cream bg-brand-warm-white text-xs text-brand-dark focus:outline-none focus:border-accent"
+            >
+              <option value="">Sin calendario</option>
+              {groups.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </select>
+            {groupId && (
+              <span
+                className="shrink-0 w-3 h-3 rounded-full border border-brand-cream"
+                style={{ backgroundColor: groups.find((g) => g.id === groupId)?.color ?? "transparent" }}
+                aria-hidden
+              />
+            )}
+          </div>
+        )}
+
         {/* Custom name + color (solo si type=custom) */}
         {isCustom && (
           <div className="flex flex-col gap-2 bg-brand-warm-white rounded-lg p-2.5 border border-brand-light-cream">

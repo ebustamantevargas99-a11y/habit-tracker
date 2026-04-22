@@ -114,6 +114,7 @@ model User {
   // ── Calendar redesign ──────────────────────────────────────────────────────
   calendarEvents CalendarEvent[]
   dayTemplates   DayTemplate[]
+  calendarGroups CalendarGroup[]
 }
 
 model Account {
@@ -1529,6 +1530,10 @@ model CalendarEvent {
   icon     String? // emoji
   location String?
 
+  // Grupo / calendario al que pertenece (estilo iCloud)
+  groupId String?
+  group   CalendarGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
   // Recurrencia simplificada estilo RRULE: FREQ=DAILY|WEEKLY|MONTHLY;BYDAY=MO,WE,FR;COUNT=10
   recurrence    String?
   recurrenceEnd DateTime?
@@ -1548,6 +1553,27 @@ model CalendarEvent {
 
   @@index([userId, startAt])
   @@index([userId, type])
+  @@index([groupId])
+}
+
+// Grupos de calendarios (estilo iCloud sidebar).
+// Cada user tiene N grupos; cada evento puede pertenecer a un grupo (opcional).
+// visible controla si los eventos del grupo se muestran o se ocultan en UI,
+// pero esa visibilidad es por-user y se persiste para que sobreviva reload.
+model CalendarGroup {
+  id        String          @id @default(cuid())
+  userId    String
+  name      String
+  color     String          @default("#b8860b") // hex del user
+  icon      String? // emoji opcional
+  visible   Boolean         @default(true)
+  sortOrder Int             @default(0)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events    CalendarEvent[]
+
+  @@index([userId])
 }
 
 model DayTemplate {
