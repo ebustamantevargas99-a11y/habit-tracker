@@ -49,18 +49,12 @@ model User {
   debts                   Debt[]
   investments             Investment[]
   netWorthSnapshots       NetWorthSnapshot[]
-  moodLogs                MoodLog[]
-  sleepLogs               SleepLog[]
   dailyPlans              DailyPlan[]
   badges                  UserBadge[]
   gamification            Gamification?
 
-  // ── NEW: previously in localStorage ──────────────────────────────────────
+  // Hidratación vive ahora en Nutrición (Bienestar eliminado 2026-04)
   hydrationLogs    HydrationLog[]
-  medications      Medication[]
-  medicationLogs   MedicationLog[]
-  symptomLogs      SymptomLog[]
-  appointments     MedicalAppointment[]
   pomodoroSessions PomodoroSession[]
   projects         Project[]
   challenges       FitnessChallenge[]
@@ -806,39 +800,7 @@ model NetWorthSnapshot {
   @@index([userId, date])
 }
 
-// ─── Wellness ─────────────────────────────────────────────────────────────────
-
-model MoodLog {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String
-  mood      Int
-  emotions  String[]
-  factors   String[]
-  notes     String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
-
-model SleepLog {
-  id            String   @id @default(cuid())
-  userId        String
-  date          String
-  bedtime       String
-  wakeTime      String
-  quality       Int
-  durationHours Float
-  dreamJournal  String?
-  factors       String[]
-  createdAt     DateTime @default(now())
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId, date])
-}
+// ─── Hidratación (movido a Nutrición en 2026-04 — Bienestar eliminado) ──────
 
 model HydrationLog {
   id        String   @id @default(cuid())
@@ -853,78 +815,6 @@ model HydrationLog {
 
   @@unique([userId, date])
   @@index([userId, date])
-}
-
-model Medication {
-  id              String           @id @default(cuid())
-  userId          String
-  name            String
-  brand           String?
-  dosage          String?
-  frequency       String           @default("daily")
-  timeOfDay       String?
-  isActive        Boolean          @default(true)
-  createdAt       DateTime         @default(now())
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  logs            MedicationLog[]
-  supplementFacts SupplementFact[]
-
-  @@index([userId])
-}
-
-model MedicationLog {
-  id           String     @id @default(cuid())
-  userId       String
-  medicationId String
-  date         String
-  taken        Boolean    @default(false)
-  takenAt      DateTime?
-  notes        String?
-  medication   Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([medicationId, date])
-  @@index([userId, date])
-}
-
-model SupplementFact {
-  id            String     @id @default(cuid())
-  medicationId  String
-  nutrient      String
-  amount        String
-  dailyValuePct String?
-  medication    Medication @relation(fields: [medicationId], references: [id], onDelete: Cascade)
-}
-
-model SymptomLog {
-  id        String   @id @default(cuid())
-  userId    String
-  date      String
-  symptom   String
-  intensity Int
-  duration  String?
-  notes     String?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, date])
-}
-
-model MedicalAppointment {
-  id         String   @id @default(cuid())
-  userId     String
-  doctorName String
-  specialty  String
-  location   String?
-  dateTime   String
-  reason     String?
-  status     String   @default("pending")
-  result     String?
-  notes      String?
-  createdAt  DateTime @default(now())
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
 }
 
 // ─── Productivity ─────────────────────────────────────────────────────────────

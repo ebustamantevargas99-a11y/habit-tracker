@@ -1,23 +1,22 @@
 // Constantes compartidas entre la página de onboarding, settings y lógica de módulos.
 // No hardcodear strings de módulos o intereses fuera de aquí — referir siempre.
 
+// Módulos wellness (mood/sleep/hydration/medications) fueron eliminados en
+// 2026-04. Hidratación vive ahora en nutrición. Medicamentos/suplementos se
+// loggean como alimentos custom. Sleep y mood quedaron descontinuados.
 export type ModuleKey =
   | "home"
   | "habits"
-  | "mood"
   | "tasks"
   | "settings"
   | "fitness"
   | "nutrition"
   | "fasting"
-  | "sleep"
-  | "hydration"
   | "finance"
   | "projects"
   | "planner"
   | "meditation"
   | "reading"
-  | "medications"
   | "menstrualCycle"
   | "pregnancy"
   | "organization"
@@ -33,12 +32,9 @@ export type InterestKey =
   | "productivity"
   | "study"
   | "reading"
-  | "sleep"
-  | "hydration"
   | "fasting"
   | "menstrualCycle"
   | "pregnancy"
-  | "medications"
   | "none";
 
 export type BiologicalSex =
@@ -62,7 +58,6 @@ export type Units = "metric" | "imperial";
 export const CORE_MODULES: ModuleKey[] = [
   "home",
   "habits",
-  "mood",
   "tasks",
   "settings",
   "gamification",
@@ -77,14 +72,11 @@ export const MODULE_ACTIVATION: Record<
   fitness: ["training"],
   nutrition: ["nutrition"],
   fasting: ["fasting"],
-  sleep: ["sleep"],
-  hydration: ["hydration"],
   finance: ["finance"],
   projects: ["productivity"],
   planner: ["productivity", "study"],
   meditation: ["mindfulness"],
   reading: ["reading"],
-  medications: ["medications"],
   menstrualCycle: ["menstrualCycle"],
   pregnancy: ["pregnancy"],
   organization: [],
@@ -134,16 +126,6 @@ export const INTEREST_LABELS: Record<InterestKey, { label: string; emoji: string
     emoji: "📖",
     description: "Tracker de libros, notas de lectura",
   },
-  sleep: {
-    label: "Sueño detallado",
-    emoji: "😴",
-    description: "Horarios, calidad, factores, dream journal",
-  },
-  hydration: {
-    label: "Hidratación",
-    emoji: "💧",
-    description: "Log de agua, recordatorios",
-  },
   fasting: {
     label: "Ayuno intermitente",
     emoji: "⏰",
@@ -158,11 +140,6 @@ export const INTEREST_LABELS: Record<InterestKey, { label: string; emoji: string
     label: "Embarazo / Lactancia",
     emoji: "🤰",
     description: "Seguimiento de embarazo o lactancia",
-  },
-  medications: {
-    label: "Medicamentos / Suplementos",
-    emoji: "💊",
-    description: "Recordatorios, adherencia, síntomas",
   },
   none: {
     label: "Ninguno específico",

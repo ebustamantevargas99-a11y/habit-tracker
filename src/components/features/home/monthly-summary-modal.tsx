@@ -50,7 +50,7 @@ interface MonthlySummaryModalProps {
   onClose: () => void;
 }
 
-type TabType = "general" | "fitness" | "finanzas" | "nutricion" | "productividad" | "bienestar";
+type TabType = "general" | "fitness" | "finanzas" | "nutricion" | "productividad";
 
 export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("general");
@@ -60,7 +60,6 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     { subject: "Nutrición", value: 72 },
     { subject: "Productividad", value: 78 },
     { subject: "Finanzas", value: 68 },
-    { subject: "Bienestar", value: 75 },
     { subject: "Relaciones", value: 70 },
   ];
 
@@ -69,7 +68,6 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     { subject: "Nutrición", value: 85 },
     { subject: "Productividad", value: 88 },
     { subject: "Finanzas", value: 76 },
-    { subject: "Bienestar", value: 89 },
     { subject: "Relaciones", value: 78 },
   ];
 
@@ -130,26 +128,12 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     tasksCompleted: { total: 142, change: "+18" },
   };
 
-  const bienestarData = {
-    sleepQuality: { average: 7.8, change: "+0.6" },
-    moodAverage: { emoji: "😊", label: "Bueno", score: 7.5, change: "+0.8" },
-    hydrationAvg: { value: 2.4, unit: "L/día", change: "+0.3L" },
-    journalDays: { count: 22, total: 30 },
-    medicationAdherence: 96,
-    correlations: [
-      "Los días que meditaste, tu mood fue 1.8 puntos más alto",
-      "Cuando dormiste +7h, completaste 28% más hábitos",
-      "Tu hidratación mejora los días que entrenas",
-    ],
-  };
-
   const tabs: { id: TabType; label: string }[] = [
     { id: "general", label: "General" },
     { id: "fitness", label: "Fitness" },
     { id: "finanzas", label: "Finanzas" },
     { id: "nutricion", label: "Nutrición" },
     { id: "productividad", label: "Productividad" },
-    { id: "bienestar", label: "Bienestar" },
   ];
 
   const renderGeneralTab = () => (
@@ -427,55 +411,6 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
     </div>
   );
 
-  const renderBienestarTab = () => (
-    <div className="grid gap-8">
-      {/* Sleep Quality */}
-      <div className="grid grid-cols-2 gap-6">
-        <div className="bg-info-light border border-info rounded-lg p-5">
-          <p className="text-xs text-info m-0 mb-3 uppercase font-semibold">Calidad de Sueño Promedio</p>
-          <p className="text-[32px] font-bold text-brand-dark m-0">{bienestarData.sleepQuality.average}/10</p>
-          <p className="text-[13px] text-info mt-2 m-0">+{bienestarData.sleepQuality.change} vs mes anterior</p>
-        </div>
-        <div className="bg-warning-light border border-warning rounded-lg p-5">
-          <p className="text-xs text-warning m-0 mb-3 uppercase font-semibold">Estado de Ánimo Promedio</p>
-          <p className="text-[32px] font-bold text-brand-dark m-0">{bienestarData.moodAverage.emoji} {bienestarData.moodAverage.score}/10</p>
-          <p className="text-[13px] text-warning mt-2 m-0">+{bienestarData.moodAverage.change} vs mes anterior</p>
-        </div>
-      </div>
-
-      {/* Hydration & Journal */}
-      <div className="grid grid-cols-3 gap-6">
-        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
-          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Hidratación</p>
-          <p className="text-[28px] font-bold text-info m-0">{bienestarData.hydrationAvg.value} {bienestarData.hydrationAvg.unit}</p>
-          <p className="text-xs text-success mt-[6px] m-0">{bienestarData.hydrationAvg.change}</p>
-        </div>
-        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
-          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Días de Journaling</p>
-          <p className="text-[28px] font-bold text-accent m-0">{bienestarData.journalDays.count}/{bienestarData.journalDays.total}</p>
-          <p className="text-xs text-brand-warm mt-[6px] m-0">{Math.round((bienestarData.journalDays.count / bienestarData.journalDays.total) * 100)}% del mes</p>
-        </div>
-        <div className="bg-brand-paper border border-brand-light-tan rounded-lg p-4 text-center">
-          <p className="text-xs text-brand-warm m-0 mb-3 uppercase">Medicación</p>
-          <p className="text-[28px] font-bold text-success m-0">{bienestarData.medicationAdherence}%</p>
-          <p className="text-xs text-brand-warm mt-[6px] m-0">Adherencia</p>
-        </div>
-      </div>
-
-      {/* Correlations */}
-      <div className="bg-accent-glow border border-brand-tan rounded-lg p-5">
-        <p className="text-sm font-semibold text-brand-dark m-0 mb-4">🔗 Correlaciones Detectadas</p>
-        <div className="grid gap-3">
-          {bienestarData.correlations.map((corr, i) => (
-            <div key={i} className="bg-brand-paper border border-brand-cream rounded-lg px-4 py-3 text-[13px] text-brand-dark">
-              💡 {corr}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
   const renderTabContent = () => {
     switch (activeTab) {
       case "general":      return renderGeneralTab();
@@ -483,7 +418,6 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
       case "finanzas":     return renderFinanzasTab();
       case "nutricion":    return renderNutricionTab();
       case "productividad": return renderProductividadTab();
-      case "bienestar":    return renderBienestarTab();
     }
   };
 

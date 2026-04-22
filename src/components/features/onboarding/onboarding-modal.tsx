@@ -42,7 +42,6 @@ export default function OnboardingModal({ onComplete }: Props) {
     { id: 'fitness', label: 'Mejorar mi condición física', emoji: '💪' },
     { id: 'finance', label: 'Controlar mis finanzas', emoji: '💰' },
     { id: 'productivity', label: 'Ser más productivo', emoji: '⚡' },
-    { id: 'wellness', label: 'Cuidar mi bienestar mental', emoji: '🧘' },
     { id: 'nutrition', label: 'Comer más saludable', emoji: '🥗' },
     { id: 'organization', label: 'Organizar mi vida', emoji: '📋' },
     { id: 'vision', label: 'Definir mi visión de vida', emoji: '🌟' },
@@ -56,7 +55,6 @@ export default function OnboardingModal({ onComplete }: Props) {
     { id: 'finance', label: 'Finanzas', emoji: '💰', desc: 'Presupuesto y ahorro' },
     { id: 'fitness', label: 'Fitness', emoji: '💪', desc: 'Entrenamiento y métricas' },
     { id: 'nutrition', label: 'Nutrición', emoji: '🥗', desc: 'Comidas y recetas' },
-    { id: 'wellness', label: 'Bienestar', emoji: '🧘', desc: 'Ánimo, sueño, hidratación' },
   ];
 
   const steps: Step[] = [

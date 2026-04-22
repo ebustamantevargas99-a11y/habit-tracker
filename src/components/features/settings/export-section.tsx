@@ -18,7 +18,7 @@ const C = {
 type LoadingKey =
   | 'habits-csv' | 'habits-json'
   | 'fitness-json' | 'finance-json'
-  | 'wellness-json' | 'productivity-json'
+  | 'productivity-json'
   | 'ai-json' | 'ai-md' | 'ai-copy';
 
 // ─── Module Export Button ─────────────────────────────────────────────────────
@@ -115,18 +115,6 @@ export default function ExportSection() {
     exportToJSON({ transactions, budgets, bills, subscriptions, wishlist }, 'finanzas');
   });
 
-  const exportWellnessJSON = () => withLoading('wellness-json', async () => {
-    const [mood, sleep, hydration, medications, symptoms, appointments] = await Promise.all([
-      api.get('/wellness/mood?days=90'),
-      api.get('/wellness/sleep?days=90'),
-      api.get('/wellness/hydration?days=30'),
-      api.get('/wellness/medications'),
-      api.get('/wellness/symptoms?days=90'),
-      api.get('/wellness/appointments'),
-    ]);
-    exportToJSON({ mood, sleep, hydration, medications, symptoms, appointments }, 'bienestar');
-  });
-
   const exportProductivityJSON = () => withLoading('productivity-json', async () => {
     const [pomodoro, projects, okr] = await Promise.all([
       api.get('/productivity/pomodoro?days=90'),
@@ -175,7 +163,6 @@ export default function ExportSection() {
     { label: 'Hábitos (JSON)', key: 'habits-json' as LoadingKey, onClick: exportHabitsJSON },
     { label: 'Fitness (JSON)', key: 'fitness-json' as LoadingKey, onClick: exportFitnessJSON },
     { label: 'Finanzas (JSON)', key: 'finance-json' as LoadingKey, onClick: exportFinanceJSON },
-    { label: 'Bienestar (JSON)', key: 'wellness-json' as LoadingKey, onClick: exportWellnessJSON },
     { label: 'Productividad (JSON)', key: 'productivity-json' as LoadingKey, onClick: exportProductivityJSON },
   ];
 

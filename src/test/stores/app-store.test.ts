@@ -10,7 +10,6 @@ beforeEach(() => {
     financeTab: 'resumen',
     nutritionTab: 'diario',
     organizationTab: 'notas',
-    wellnessSubTab: 'sleep',
     productivitySubTab: 'habits',
     planTab: 'today',
     showMonthlySummary: false,
@@ -76,11 +75,6 @@ describe('useAppStore — setPageFromURL()', () => {
   it('sets page without tab', () => {
     useAppStore.getState().setPageFromURL('home');
     expect(useAppStore.getState().activePage).toBe('home');
-  });
-
-  it('sets wellness sub-tab for valid value', () => {
-    useAppStore.getState().setPageFromURL('wellness', 'hydration');
-    expect(useAppStore.getState().wellnessSubTab).toBe('hydration');
   });
 
   it('sets productivity sub-tab for valid value', () => {

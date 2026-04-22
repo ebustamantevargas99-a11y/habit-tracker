@@ -29,16 +29,6 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     emoji: "⏰",
     description: "Ventanas de ayuno e histórico",
   },
-  sleep: {
-    label: "Sueño detallado",
-    emoji: "😴",
-    description: "Horarios, calidad, factores, dream journal",
-  },
-  hydration: {
-    label: "Hidratación",
-    emoji: "💧",
-    description: "Log de agua y recordatorios",
-  },
   finance: {
     label: "Finanzas",
     emoji: "💰",
@@ -63,11 +53,6 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     label: "Lectura",
     emoji: "📖",
     description: "Tracker de libros",
-  },
-  medications: {
-    label: "Medicamentos",
-    emoji: "💊",
-    description: "Adherencia y síntomas",
   },
   menstrualCycle: {
     label: "Ciclo menstrual",

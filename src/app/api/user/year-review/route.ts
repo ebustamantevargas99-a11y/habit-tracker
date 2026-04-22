@@ -31,8 +31,6 @@ export async function GET(req: NextRequest) {
       meditations,
       fastings,
       focusSessions,
-      moods,
-      sleeps,
       milestones,
       lifeScoreSnapshots,
       bodyMetrics,
@@ -90,14 +88,6 @@ export async function GET(req: NextRequest) {
         where: { userId, startedAt: { gte: startDate, lte: endDate } },
         select: { actualMinutes: true, plannedMinutes: true, task: true, rating: true },
       }),
-      prisma.moodLog.findMany({
-        where: { userId, date: { gte: startISO, lte: endISO } },
-        select: { date: true, mood: true },
-      }),
-      prisma.sleepLog.findMany({
-        where: { userId, date: { gte: startISO, lte: endISO } },
-        select: { date: true, durationHours: true, quality: true },
-      }),
       prisma.milestone.findMany({
         where: { userId, date: { gte: startISO, lte: endISO } },
         select: { date: true, type: true, title: true, icon: true },
@@ -146,12 +136,6 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.completed - a.completed)
       .slice(0, 5);
 
-    const avgMood = moods.length
-      ? +(moods.reduce((s, m) => s + m.mood, 0) / moods.length).toFixed(1)
-      : null;
-    const avgSleep = sleeps.length
-      ? +(sleeps.reduce((s, x) => s + x.durationHours, 0) / sleeps.length).toFixed(1)
-      : null;
     const avgLifeScore = lifeScoreSnapshots.length
       ? Math.round(
           lifeScoreSnapshots.reduce((s, x) => s + x.overall, 0) /
@@ -220,12 +204,6 @@ export async function GET(req: NextRequest) {
           ? Math.round((habitLogs.filter((l) => l.completed).length / habitLogs.length) * 100)
           : 0,
         top: topHabits,
-      },
-      wellness: {
-        moodEntries: moods.length,
-        avgMood,
-        sleepEntries: sleeps.length,
-        avgSleepHours: avgSleep,
       },
       reading: {
         booksFinished: booksFinished.length,

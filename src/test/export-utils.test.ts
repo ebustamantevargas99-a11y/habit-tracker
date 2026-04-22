@@ -93,18 +93,18 @@ describe('countBy()', () => {
 
 describe('lifeScoreFrom()', () => {
   it('returns 0 when all parts are 0', () => {
-    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 0, wellness: 0, productivity: 0 })).toBe(0);
+    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 0, productivity: 0 })).toBe(0);
   });
 
   it('returns 100 when all parts are 100', () => {
-    expect(lifeScoreFrom({ habits: 100, fitness: 100, finance: 100, wellness: 100, productivity: 100 })).toBe(100);
+    expect(lifeScoreFrom({ habits: 100, fitness: 100, finance: 100, productivity: 100 })).toBe(100);
   });
 
-  it('weights are correct: habits(0.22)+fitness(0.22)+finance(0.18)+wellness(0.22)+productivity(0.16) = 1.0', () => {
+  it('weights are correct: habits(0.28)+fitness(0.28)+finance(0.22)+productivity(0.22) = 1.0', () => {
     // Cross-check: only one area at 100 → result = that area's weight * 100
-    expect(lifeScoreFrom({ habits: 100, fitness: 0, finance: 0, wellness: 0, productivity: 0 })).toBe(22);
-    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 100, wellness: 0, productivity: 0 })).toBe(18);
-    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 0, wellness: 0, productivity: 100 })).toBe(16);
+    expect(lifeScoreFrom({ habits: 100, fitness: 0, finance: 0, productivity: 0 })).toBe(28);
+    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 100, productivity: 0 })).toBe(22);
+    expect(lifeScoreFrom({ habits: 0, fitness: 0, finance: 0, productivity: 100 })).toBe(22);
   });
 });
 

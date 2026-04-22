@@ -6,7 +6,6 @@ export type ExportScope =
   | "monthly"
   | "fitness"
   | "finance"
-  | "wellness"
   | "nutrition"
   | "habits"
   | "holistic";
@@ -53,7 +52,6 @@ export const SCOPE_LABELS: Record<ExportScope, string> = {
   monthly: "Resumen mensual",
   fitness: "Fitness (entrenos + PRs)",
   finance: "Finanzas",
-  wellness: "Salud mental + sueño",
   nutrition: "Nutrición",
   habits: "Hábitos",
   holistic: "Análisis holístico completo",

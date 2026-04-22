@@ -129,37 +129,6 @@ async function main() {
   }
   await prisma.habitLog.createMany({ data: logs });
 
-  console.log("[seed] Sembrando moods + sleep…");
-  for (let daysBack = 13; daysBack >= 0; daysBack--) {
-    const d = new Date();
-    d.setDate(d.getDate() - daysBack);
-    const date = d.toISOString().split("T")[0];
-    await prisma.moodLog.upsert({
-      where: { userId_date: { userId: user.id, date } },
-      create: {
-        userId: user.id,
-        date,
-        mood: Math.floor(Math.random() * 4) + 6,
-        emotions: ["enfocado", "tranquilo"],
-        factors: ["buen sueño", "ejercicio"],
-      },
-      update: {},
-    });
-    await prisma.sleepLog.upsert({
-      where: { userId_date: { userId: user.id, date } },
-      create: {
-        userId: user.id,
-        date,
-        bedtime: "23:30",
-        wakeTime: "07:00",
-        quality: Math.floor(Math.random() * 3) + 7,
-        durationHours: 7 + Math.random(),
-        factors: [],
-      },
-      update: {},
-    });
-  }
-
   console.log("[seed] Sembrando cuenta + transacciones finanzas…");
   const account = await prisma.financialAccount.create({
     data: {

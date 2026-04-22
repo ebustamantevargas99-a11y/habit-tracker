@@ -202,7 +202,7 @@ export default function MeditationPage() {
           </p>
         </div>
         <AIExportButton
-          scope="wellness"
+          scope="holistic"
           label="Analizar con IA"
           title="Análisis de meditación"
           variant="outline"

@@ -29,7 +29,6 @@ const LIFE_DIM_LABELS: Record<string, { label: string; icon: string }> = {
   habits:       { label: 'Hábitos',      icon: '✨' },
   fitness:      { label: 'Fitness',      icon: '💪' },
   nutrition:    { label: 'Nutrición',    icon: '🥗' },
-  wellness:     { label: 'Bienestar',    icon: '🧘' },
   productivity: { label: 'Productividad', icon: '⚡' },
 };
 
@@ -175,7 +174,6 @@ export default function HomeDashboard() {
   }, []);
 
   const [lifeScoreApi, setLifeScoreApi] = useState<LifeScoreApi | null>(null);
-  const [quietMode, setQuietMode] = useState<{ active: boolean; reason?: string | null; moodAvg?: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -187,12 +185,6 @@ export default function HomeDashboard() {
       .catch(() => {
         // Fallback al avgStrength si el endpoint falla
       });
-    api
-      .get<{ active: boolean; reason?: string | null; moodAvg?: number }>('/user/quiet-mode')
-      .then((data) => {
-        if (!cancelled) setQuietMode(data);
-      })
-      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -296,7 +288,7 @@ export default function HomeDashboard() {
     decline: +(100 * Math.pow(0.98, (i + 1) * 7)).toFixed(1),
   })), [completionRate]);
 
-  const RADAR_CATEGORIES = ['Bienestar', 'Fitness', 'Nutrición', 'Productividad', 'Aprendizaje', 'Finanzas', 'Creatividad', 'Mindfulness'];
+  const RADAR_CATEGORIES = ['Fitness', 'Nutrición', 'Productividad', 'Aprendizaje', 'Finanzas', 'Creatividad', 'Mindfulness'];
   const radarData = useMemo(() => {
     const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate() - 6);
     const lastWeekStart = new Date(); lastWeekStart.setDate(lastWeekStart.getDate() - 13);
@@ -339,19 +331,6 @@ export default function HomeDashboard() {
   return (
     <div className="bg-brand-paper">
       <ErrorBanner error={error} onDismiss={clearError} />
-      {quietMode?.active && (
-        <div className="bg-brand-warm-white border border-brand-cream rounded-xl p-4 mb-6 flex items-start gap-3">
-          <span className="text-2xl leading-none mt-0.5">🤍</span>
-          <div className="flex-1">
-            <p className="font-semibold text-brand-dark text-sm">Quiet Mode activado</p>
-            <p className="text-xs text-brand-warm mt-0.5">
-              {quietMode.reason === 'low_mood_auto'
-                ? `Detectamos mood bajo últimos 7 días (avg ${quietMode.moodAvg}/10). Ocultamos métricas de performance. Prioriza descanso y autocompasión.`
-                : 'Métricas de performance ocultas por tu preferencia. Recuerda: el progreso no es lineal.'}
-            </p>
-          </div>
-        </div>
-      )}
       {/* Welcome Banner */}
       <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-[16px] p-8 text-brand-paper mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-start gap-6">
@@ -388,8 +367,7 @@ export default function HomeDashboard() {
         </div>
       </div>
 
-      {/* Metric Cards (ocultas en quiet mode) */}
-      {!quietMode?.active && (
+      {/* Metric Cards */}
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
           <div className="text-xs text-brand-warm mb-2">vs. Semana Pasada</div>
@@ -437,10 +415,9 @@ export default function HomeDashboard() {
           </div>
         </div>
       </div>
-      )}
 
-      {/* Life Score Breakdown (oculto en quiet mode) */}
-      {!quietMode?.active && lifeScoreBreakdown && (
+      {/* Life Score Breakdown */}
+      {lifeScoreBreakdown && (
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5 mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -512,7 +489,7 @@ export default function HomeDashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-5 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {(Object.entries(LIFE_DIM_LABELS) as [string, { label: string; icon: string }][]).map(
               ([key, meta]) => {
                 const dim = lifeScoreBreakdown[key];

@@ -42,7 +42,6 @@ export * from "./schemas/auth";
 export * from "./schemas/finance";
 export * from "./schemas/common";
 export * from "./schemas/fitness";
-export * from "./schemas/wellness";
 export * from "./schemas/productivity";
 export * from "./schemas/organization";
 export * from "./schemas/nutrition";

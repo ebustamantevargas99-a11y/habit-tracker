@@ -91,16 +91,13 @@ export async function gatherPromptContext(args: BuildArgs): Promise<PromptContex
 }
 
 async function gatherDaySnapshot(userId: string, date: string): Promise<PromptContext["today"]> {
-  const [habits, habitLogs, moodLog, sleepLog, hydration, meals, workout, tasks, pomodoros, txs] =
+  const [habits, habitLogs, meals, workout, tasks, pomodoros, txs] =
     await Promise.all([
       prisma.habit.findMany({
         where: { userId, isActive: true },
         select: { id: true, name: true, streakCurrent: true },
       }),
       prisma.habitLog.findMany({ where: { userId, date } }),
-      prisma.moodLog.findUnique({ where: { userId_date: { userId, date } } }),
-      prisma.sleepLog.findUnique({ where: { userId_date: { userId, date } } }),
-      prisma.hydrationLog.findUnique({ where: { userId_date: { userId, date } } }),
       prisma.mealLog.findMany({
         where: { userId, date },
         include: { items: true },
@@ -161,24 +158,6 @@ async function gatherDaySnapshot(userId: string, date: string): Promise<PromptCo
   return {
     date,
     habitsCompleted,
-    mood: moodLog
-      ? {
-          score: moodLog.mood,
-          emotions: moodLog.emotions,
-          factors: moodLog.factors,
-          notes: moodLog.notes,
-        }
-      : null,
-    sleep: sleepLog
-      ? {
-          hours: sleepLog.durationHours,
-          quality: sleepLog.quality,
-          bedtime: sleepLog.bedtime,
-          wakeTime: sleepLog.wakeTime,
-        }
-      : null,
-    hydrationMl: hydration?.amountMl,
-    hydrationGoalMl: hydration?.goalMl,
     nutrition,
     workout: workout
       ? {
@@ -201,19 +180,11 @@ async function gatherAggregates(
   from: string,
   to: string
 ): Promise<PromptContext["aggregates"]> {
-  const [habits, habitLogs, sleeps, moods, workouts, meals, txs] = await Promise.all([
+  const [habits, habitLogs, workouts, meals, txs] = await Promise.all([
     prisma.habit.findMany({ where: { userId, isActive: true }, select: { id: true, name: true } }),
     prisma.habitLog.findMany({
       where: { userId, date: { gte: from, lte: to } },
       select: { habitId: true, completed: true, date: true },
-    }),
-    prisma.sleepLog.findMany({
-      where: { userId, date: { gte: from, lte: to } },
-      select: { durationHours: true },
-    }),
-    prisma.moodLog.findMany({
-      where: { userId, date: { gte: from, lte: to } },
-      select: { mood: true },
     }),
     prisma.workout.findMany({
       where: { userId, date: { gte: from, lte: to } },
@@ -252,14 +223,6 @@ async function gatherAggregates(
     if (!worstHabit || pct < worstHabit.pct) worstHabit = { name: h.name, pct };
   }
 
-  const sleepAvg =
-    sleeps.length > 0
-      ? sleeps.reduce((s, l) => s + l.durationHours, 0) / sleeps.length
-      : 0;
-
-  const moodAvg =
-    moods.length > 0 ? moods.reduce((s, m) => s + m.mood, 0) / moods.length : undefined;
-
   const totalVolume = workouts.reduce((s, w) => s + w.totalVolume, 0);
   const totalPRs = workouts.reduce((s, w) => s + w.prsHit, 0);
 
@@ -278,7 +241,6 @@ async function gatherAggregates(
 
   const daysActive = new Set([
     ...habitLogs.map((l) => l.date),
-    ...sleeps.map((_, i) => `sleep-${i}`),
     ...meals.map((m) => m.date),
   ]).size;
 
@@ -287,8 +249,6 @@ async function gatherAggregates(
     habitAverageCompletion: habitsCounted > 0 ? totalCompletion / habitsCounted : 0,
     bestHabit,
     worstHabit,
-    sleepAverageHours: sleepAvg,
-    moodAverage: moodAvg,
     workoutsCount: workouts.length,
     totalVolumeKg: totalVolume || undefined,
     caloriesAverage,

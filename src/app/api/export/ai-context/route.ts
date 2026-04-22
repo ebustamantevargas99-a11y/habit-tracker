@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { estimate1RM } from "@/lib/utils";
-import { avg, trend, topN, countBy, lifeScoreFrom } from "@/lib/export-utils";
+import { avg, trend, lifeScoreFrom } from "@/lib/export-utils";
 
 // ─── Local helpers (not exported) ────────────────────────────────────────────
 
@@ -54,13 +54,6 @@ export async function GET(req: NextRequest) {
     recurringTxns,
     savingsGoals,
     debts,
-    moodLogs,
-    sleepLogs,
-    hydrationLogs,
-    medications,
-    medicationLogs,
-    symptomLogs,
-    appointments,
     dailyPlans,
     pomodoroSessions,
     projects,
@@ -141,39 +134,6 @@ export async function GET(req: NextRequest) {
     prisma.debt.findMany({
       where: { userId, active: true },
       select: { name: true, balance: true, interestRate: true, minPayment: true },
-    }),
-    prisma.moodLog.findMany({
-      where: { userId, date: { gte: from } },
-      select: { date: true, mood: true, emotions: true, factors: true },
-      orderBy: { date: "desc" },
-    }),
-    prisma.sleepLog.findMany({
-      where: { userId, date: { gte: from } },
-      select: { date: true, quality: true, durationHours: true, bedtime: true, wakeTime: true },
-      orderBy: { date: "desc" },
-    }),
-    prisma.hydrationLog.findMany({
-      where: { userId, date: { gte: from } },
-      select: { date: true, amountMl: true, goalMl: true },
-      orderBy: { date: "desc" },
-    }),
-    prisma.medication.findMany({
-      where: { userId, isActive: true },
-      select: { id: true, name: true, brand: true, dosage: true, frequency: true },
-    }),
-    prisma.medicationLog.findMany({
-      where: { userId, date: { gte: from } },
-      select: { medicationId: true, date: true, taken: true },
-    }),
-    prisma.symptomLog.findMany({
-      where: { userId, date: { gte: from } },
-      select: { date: true, symptom: true, intensity: true, duration: true, notes: true },
-      orderBy: { date: "desc" },
-    }),
-    prisma.medicalAppointment.findMany({
-      where: { userId },
-      select: { doctorName: true, specialty: true, dateTime: true, location: true, reason: true, status: true, result: true },
-      orderBy: { dateTime: "asc" },
     }),
     prisma.dailyPlan.findMany({
       where: { userId, date: { gte: from } },
@@ -600,199 +560,6 @@ export async function GET(req: NextRequest) {
   };
 
   // ════════════════════════════════════════════════════════
-  //  WELLNESS
-  // ════════════════════════════════════════════════════════
-
-  const moodLast7 = moodLogs.filter((m) => m.date >= sevenDaysAgoStr).map((m) => m.mood);
-  const moodPrev7 = moodLogs
-    .filter((m) => m.date >= fourteenDaysAgoStr && m.date < sevenDaysAgoStr)
-    .map((m) => m.mood);
-  const moodLast30 = moodLogs.filter((m) => m.date >= thirtyDaysAgoStr).map((m) => m.mood);
-
-  const allEmotions = moodLogs.flatMap((m) => m.emotions);
-  const allFactors = moodLogs.flatMap((m) => m.factors);
-  const topEmotions = countBy(allEmotions, (e) => e)
-    .slice(0, 5)
-    .map(({ key, count }) => ({ emotion: key, count }));
-  const topFactors = countBy(allFactors, (f) => f)
-    .slice(0, 5)
-    .map(({ key, count }) => ({ factor: key, count }));
-
-  const sleepLast7 = sleepLogs.filter((s) => s.date >= sevenDaysAgoStr);
-  const sleepPrev7 = sleepLogs.filter(
-    (s) => s.date >= fourteenDaysAgoStr && s.date < sevenDaysAgoStr
-  );
-  const sleepLast30 = sleepLogs.filter((s) => s.date >= thirtyDaysAgoStr);
-
-  const avgSleepDuration7d = avg(sleepLast7.map((s) => s.durationHours));
-  const avgSleepDuration30d = avg(sleepLast30.map((s) => s.durationHours));
-
-  const avgBedtime = (() => {
-    if (sleepLast7.length === 0) return "—";
-    const times = sleepLast7.map((s) => {
-      const [h, m] = s.bedtime.split(":").map(Number);
-      return h * 60 + (m || 0);
-    });
-    const meanMin = Math.round(avg(times));
-    return `${String(Math.floor(meanMin / 60)).padStart(2, "0")}:${String(meanMin % 60).padStart(2, "0")}`;
-  })();
-
-  const avgWakeTime = (() => {
-    if (sleepLast7.length === 0) return "—";
-    const times = sleepLast7.map((s) => {
-      const [h, m] = s.wakeTime.split(":").map(Number);
-      return h * 60 + (m || 0);
-    });
-    const meanMin = Math.round(avg(times));
-    return `${String(Math.floor(meanMin / 60)).padStart(2, "0")}:${String(meanMin % 60).padStart(2, "0")}`;
-  })();
-
-  const hydrationGoalMet = hydrationLogs.filter(
-    (h) => h.goalMl > 0 && h.amountMl >= h.goalMl
-  ).length;
-  const hydrationGoalRate =
-    hydrationLogs.length > 0
-      ? Math.round((hydrationGoalMet / hydrationLogs.length) * 100)
-      : 0;
-  const avgGlasses7d =
-    hydrationLogs.filter((h) => h.date >= sevenDaysAgoStr).length > 0
-      ? Math.round(
-          avg(
-            hydrationLogs
-              .filter((h) => h.date >= sevenDaysAgoStr)
-              .map((h) => Math.round(h.amountMl / 250))
-          )
-        )
-      : 0;
-
-  const medAdherence = medications.map((med) => {
-    const logs30 = medicationLogs.filter(
-      (l) => l.medicationId === med.id && l.date >= thirtyDaysAgoStr
-    );
-    const takenCount = logs30.filter((l) => l.taken).length;
-    const rate = logs30.length > 0 ? Math.round((takenCount / logs30.length) * 100) : 0;
-    return {
-      name: med.name,
-      brand: med.brand ?? null,
-      dose: med.dosage ?? null,
-      frequency: med.frequency,
-      adherenceRate30d: rate,
-    };
-  });
-  const overallAdherence =
-    medAdherence.length > 0
-      ? Math.round(avg(medAdherence.map((m) => m.adherenceRate30d)))
-      : 100;
-
-  const symptomMap: Record<string, { count: number; totalIntensity: number }> = {};
-  symptomLogs.forEach((s) => {
-    if (!symptomMap[s.symptom]) symptomMap[s.symptom] = { count: 0, totalIntensity: 0 };
-    symptomMap[s.symptom].count++;
-    symptomMap[s.symptom].totalIntensity += s.intensity;
-  });
-  const topSymptoms = Object.entries(symptomMap)
-    .sort((a, b) => b[1].count - a[1].count)
-    .slice(0, 5)
-    .map(([symptom, data]) => ({
-      symptom,
-      occurrences: data.count,
-      averageIntensity: Math.round(data.totalIntensity / data.count),
-    }));
-
-  const symptomCountLast7 = symptomLogs.filter((s) => s.date >= sevenDaysAgoStr).length;
-  const symptomCountPrev7 = symptomLogs.filter(
-    (s) => s.date >= fourteenDaysAgoStr && s.date < sevenDaysAgoStr
-  ).length;
-  const symptomTrend: "increasing" | "decreasing" | "stable" =
-    symptomCountLast7 > symptomCountPrev7 * 1.1
-      ? "increasing"
-      : symptomCountLast7 < symptomCountPrev7 * 0.9
-      ? "decreasing"
-      : "stable";
-
-  const nowISO = new Date().toISOString();
-  const upcomingAppts = appointments.filter(
-    (a) => a.status !== "completed" && a.dateTime >= nowISO
-  );
-  const pastAppts = appointments.filter(
-    (a) => a.status === "completed" || a.dateTime < nowISO
-  ).slice(0, 5);
-
-  const wellnessSection = {
-    mood: {
-      averageMood7d: avg(moodLast7),
-      averageMood30d: avg(moodLast30),
-      moodTrend: trend(moodLast7, moodPrev7),
-      topEmotions,
-      topFactors,
-      recentLogs: moodLogs.slice(0, 14).map((m) => ({
-        date: m.date,
-        mood: m.mood,
-        emotions: m.emotions,
-        factors: m.factors,
-      })),
-    },
-    sleep: {
-      averageQuality7d: avg(sleepLast7.map((s) => s.quality)),
-      averageQuality30d: avg(sleepLast30.map((s) => s.quality)),
-      averageDuration7d: avgSleepDuration7d,
-      averageDuration30d: avgSleepDuration30d,
-      averageBedtime: avgBedtime,
-      averageWakeTime: avgWakeTime,
-      sleepTrend: trend(
-        sleepLast7.map((s) => s.quality),
-        sleepPrev7.map((s) => s.quality)
-      ),
-      recentLogs: sleepLogs.slice(0, 14).map((s) => ({
-        date: s.date,
-        quality: s.quality,
-        duration: s.durationHours,
-        bedtime: s.bedtime,
-        wakeTime: s.wakeTime,
-      })),
-    },
-    hydration: {
-      averageGlasses7d: avgGlasses7d,
-      goalCompletionRate30d: hydrationGoalRate,
-      recentLogs: hydrationLogs.slice(0, 14).map((h) => ({
-        date: h.date,
-        glasses: Math.round(h.amountMl / 250),
-        goal: Math.round(h.goalMl / 250),
-      })),
-    },
-    medications: {
-      active: medAdherence,
-      overallAdherence30d: overallAdherence,
-    },
-    symptoms: {
-      recentSymptoms: symptomLogs.slice(0, 14).map((s) => ({
-        date: s.date,
-        symptom: s.symptom,
-        intensity: s.intensity,
-        duration: s.duration ?? null,
-        notes: s.notes ?? null,
-      })),
-      topSymptoms,
-      symptomTrend,
-    },
-    appointments: {
-      upcoming: upcomingAppts.slice(0, 5).map((a) => ({
-        doctorName: a.doctorName,
-        specialty: a.specialty,
-        dateTime: a.dateTime,
-        location: a.location ?? null,
-        reason: a.reason ?? null,
-      })),
-      recentCompleted: pastAppts.map((a) => ({
-        doctorName: a.doctorName,
-        specialty: a.specialty,
-        date: a.dateTime.substring(0, 10),
-        result: a.result ?? null,
-      })),
-    },
-  };
-
-  // ════════════════════════════════════════════════════════
   //  PRODUCTIVITY
   // ════════════════════════════════════════════════════════
 
@@ -995,8 +762,6 @@ export async function GET(req: NextRequest) {
   // Build date index for cross correlations
   const allDates = Array.from(
     new Set([
-      ...moodLogs.map((m) => m.date),
-      ...sleepLogs.map((s) => s.date),
       ...habitLogs.map((h) => h.date),
       ...workouts.map((w) => w.date),
     ])
@@ -1005,40 +770,6 @@ export async function GET(req: NextRequest) {
     .sort()
     .slice(-30);
 
-  const habitCountByDate: Record<string, { completed: number; total: number }> = {};
-  habitLogs.forEach((l) => {
-    if (!habitCountByDate[l.date]) habitCountByDate[l.date] = { completed: 0, total: 0 };
-    habitCountByDate[l.date].total++;
-    if (l.completed) habitCountByDate[l.date].completed++;
-  });
-
-  const sleepVsProductivity = allDates.map((date) => {
-    const sleep = sleepLogs.find((s) => s.date === date);
-    const mood = moodLogs.find((m) => m.date === date);
-    const habits = habitCountByDate[date] ?? { completed: 0, total: 0 };
-    return {
-      date,
-      sleepQuality: sleep?.quality ?? null,
-      sleepDuration: sleep?.durationHours ?? null,
-      habitsCompleted: habits.completed,
-      habitTotal: habits.total,
-      moodScore: mood?.mood ?? null,
-    };
-  });
-
-  const exerciseVsMood = allDates.map((date) => {
-    const workout = workouts.find((w) => w.date === date);
-    const mood = moodLogs.find((m) => m.date === date);
-    const sleep = sleepLogs.find((s) => s.date === date);
-    return {
-      date,
-      workedOut: !!workout,
-      totalVolume: workout ? Math.round(workout.totalVolume) : 0,
-      moodScore: mood?.mood ?? null,
-      sleepQuality: sleep?.quality ?? null,
-    };
-  });
-
   // Life Score
   const habitsScore = Math.min(avgCompletionRate, 100);
   const fitnessScore = Math.min(
@@ -1046,11 +777,6 @@ export async function GET(req: NextRequest) {
     100
   );
   const financeScore = Math.max(0, Math.min(50 + savingsRate, 100));
-  const wellnessScore = Math.round(
-    (avg(moodLast30) / 10) * 40 +
-    (avg(sleepLast30.map((s) => s.quality)) / 10) * 40 +
-    (hydrationGoalRate / 100) * 20
-  );
   const productivityScore = Math.min(
     productivitySection.planner.completionRate * 0.5 +
     Math.min(pomodoroSessions.length * 2, 50),
@@ -1061,7 +787,6 @@ export async function GET(req: NextRequest) {
     habits: Math.round(habitsScore),
     fitness: Math.round(fitnessScore),
     finance: Math.round(financeScore),
-    wellness: Math.round(wellnessScore),
     productivity: Math.round(productivityScore),
   };
   const overallLifeScore = lifeScoreFrom(lifeScoreBreakdown);
@@ -1080,8 +805,6 @@ export async function GET(req: NextRequest) {
   });
 
   const crossModuleInsights = {
-    sleepVsProductivity,
-    exerciseVsMood,
     nutritionVsFitness,
     lifeScore: {
       overall: overallLifeScore,
@@ -1105,7 +828,6 @@ export async function GET(req: NextRequest) {
     habits: habitsSection,
     fitness: fitnessSection,
     finance: financeSection,
-    wellness: wellnessSection,
     productivity: productivitySection,
     nutrition: nutritionSection,
     organization: organizationSection,
@@ -1120,40 +842,7 @@ export async function GET(req: NextRequest) {
   if (format === "markdown") {
     const userName = user?.name ?? "Usuario";
     const { overall, breakdown } = crossModuleInsights.lifeScore;
-    const { habits: hs, fitness: fs, finance: fn, wellness: ws, productivity: ps, nutrition: ns, organization: os } = pkg;
-
-    const workoutMoodsWithEx = exerciseVsMood.filter((d) => d.workedOut && d.moodScore !== null);
-    const workoutMoodsWithout = exerciseVsMood.filter((d) => !d.workedOut && d.moodScore !== null);
-    const avgMoodWithWorkout = avg(workoutMoodsWithEx.map((d) => d.moodScore as number));
-    const avgMoodWithoutWorkout = avg(workoutMoodsWithout.map((d) => d.moodScore as number));
-    const goodSleepDays = sleepVsProductivity.filter(
-      (d) => (d.sleepDuration ?? 0) >= 7 && d.habitTotal > 0
-    );
-    const badSleepDays = sleepVsProductivity.filter(
-      (d) => (d.sleepDuration ?? 0) > 0 && (d.sleepDuration ?? 0) < 7 && d.habitTotal > 0
-    );
-    const goodSleepHabitRate =
-      goodSleepDays.length > 0
-        ? Math.round(
-            (goodSleepDays.reduce(
-              (s, d) => s + d.habitsCompleted / d.habitTotal,
-              0
-            ) /
-              goodSleepDays.length) *
-              100
-          )
-        : 0;
-    const badSleepHabitRate =
-      badSleepDays.length > 0
-        ? Math.round(
-            (badSleepDays.reduce(
-              (s, d) => s + d.habitsCompleted / d.habitTotal,
-              0
-            ) /
-              badSleepDays.length) *
-              100
-          )
-        : 0;
+    const { habits: hs, fitness: fs, finance: fn, productivity: ps, nutrition: ns, organization: os } = pkg;
 
     const md = `# Resumen Ejecutivo — ${userName}
 ## Generado: ${new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
@@ -1165,7 +854,6 @@ export async function GET(req: NextRequest) {
 - Hábitos: ${breakdown.habits}/100
 - Fitness: ${breakdown.fitness}/100
 - Finanzas: ${breakdown.finance}/100
-- Bienestar: ${breakdown.wellness}/100
 - Productividad: ${breakdown.productivity}/100
 
 ---
@@ -1215,23 +903,6 @@ ${fn.budgetStatus.map((b) => `- ${b.category}: S/. ${b.spent}/${b.limit} (${b.pe
 
 ---
 
-### 🧠 Bienestar
-- Ánimo promedio (7d): ${ws.mood.averageMood7d}/10 | (30d): ${ws.mood.averageMood30d}/10
-- Tendencia ánimo: ${ws.mood.moodTrend === "improving" ? "↑ Mejorando" : ws.mood.moodTrend === "declining" ? "↓ Declinando" : "→ Estable"}
-- Emociones frecuentes: ${ws.mood.topEmotions.map((e) => e.emotion).join(", ") || "—"}
-- Sueño promedio: ${ws.sleep.averageDuration7d}h/noche, calidad ${ws.sleep.averageQuality7d}/10
-- Hora de dormir: ${ws.sleep.averageBedtime} | Despertar: ${ws.sleep.averageWakeTime}
-- Tendencia sueño: ${ws.sleep.sleepTrend === "improving" ? "↑ Mejorando" : ws.sleep.sleepTrend === "declining" ? "↓ Declinando" : "→ Estable"}
-- Hidratación: ${ws.hydration.averageGlasses7d} vasos/día, meta cumplida ${ws.hydration.goalCompletionRate30d}% del tiempo
-- Adherencia medicamentos: ${ws.medications.overallAdherence30d}%
-- Síntomas frecuentes: ${ws.symptoms.topSymptoms.map((s) => `${s.symptom} (×${s.occurrences})`).join(", ") || "Ninguno registrado"}
-- Tendencia síntomas: ${ws.symptoms.symptomTrend === "increasing" ? "↑ Aumentando" : ws.symptoms.symptomTrend === "decreasing" ? "↓ Disminuyendo" : "→ Estable"}
-
-Próximas citas médicas:
-${ws.appointments.upcoming.map((a) => `- ${a.doctorName} (${a.specialty}): ${a.dateTime.substring(0, 10)}${a.reason ? ` — ${a.reason}` : ""}`).join("\n") || "Sin citas próximas"}
-
----
-
 ### ⚡ Productividad
 - Días planificados: ${ps.planner.daysPlannedThisMonth}
 - Calificación promedio del día: ${ps.planner.averageDayRating ?? "—"}/10
@@ -1266,10 +937,6 @@ Rueda de la Vida:
 ${os.lifeAreas.areas.map((a) => `- ${a.emoji} ${a.name}: ${a.score}/10`).join("\n") || "Sin áreas configuradas"}
 
 ---
-
-### 🔗 Correlaciones Detectadas
-${goodSleepDays.length > 0 || badSleepDays.length > 0 ? `- Días con buen sueño (≥7h): hábitos completados ${goodSleepHabitRate}% vs ${badSleepHabitRate}% con sueño insuficiente` : "- Sin suficientes datos de sueño para correlaciones"}
-${workoutMoodsWithEx.length > 0 || workoutMoodsWithout.length > 0 ? `- Días con ejercicio: ánimo promedio ${avgMoodWithWorkout}/10 vs ${avgMoodWithoutWorkout}/10 sin ejercicio` : "- Sin suficientes datos de ejercicio para correlaciones"}
 
 ---
 *Generado por Habit Tracker AI Context Engine v1 · Período: ${days} días*

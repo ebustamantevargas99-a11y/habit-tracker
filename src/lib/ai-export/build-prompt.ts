@@ -18,10 +18,6 @@ type ProfileSummary = {
 type DaySnapshot = {
   date: string;
   habitsCompleted: { name: string; streak: number; completed: boolean }[];
-  mood?: { score: number; emotions: string[]; factors: string[]; notes?: string | null } | null;
-  sleep?: { hours: number; quality?: number | null; bedtime?: string | null; wakeTime?: string | null } | null;
-  hydrationMl?: number;
-  hydrationGoalMl?: number;
   nutrition?: {
     calories: number;
     protein: number;
@@ -51,8 +47,6 @@ type PeriodAggregates = {
   habitAverageCompletion: number;
   bestHabit?: { name: string; pct: number };
   worstHabit?: { name: string; pct: number };
-  sleepAverageHours: number;
-  moodAverage?: number;
   workoutsCount: number;
   workoutsPlanned?: number;
   totalVolumeKg?: number;
@@ -88,7 +82,6 @@ const DEFAULT_QUESTIONS: Record<ExportScope, string> = {
   monthly: "Resumen del mes: qué funcionó, qué no, y enfoque del próximo mes.",
   fitness: "Evalúa mi progreso de fitness. ¿Estoy sobrecargando progresivamente? ¿Qué músculo descuido?",
   finance: "Analiza mi comportamiento financiero y sugiéreme ajustes.",
-  wellness: "Correlaciona sueño + mood + estrés. ¿Qué me está afectando?",
   nutrition: "Mi relación calorías/macros vs objetivo. Detecta déficit o exceso crónico.",
   habits: "Qué hábitos están muriendo, cuáles están sólidos, y qué habit stacking sugieres.",
   holistic: "Vista 360 de mi vida. Conecta dominios — cómo lo que hago en X afecta Y.",
@@ -166,22 +159,6 @@ function appendDaySnapshot(lines: string[], d: DaySnapshot) {
     );
   }
 
-  if (d.sleep) {
-    const qual = d.sleep.quality != null ? ` (calidad ${d.sleep.quality}/10)` : "";
-    lines.push(`SUEÑO: ${d.sleep.hours.toFixed(1)}h${qual}`);
-  }
-
-  if (d.hydrationMl != null) {
-    const goal = d.hydrationGoalMl ? ` / objetivo ${d.hydrationGoalMl}ml` : "";
-    lines.push(`HIDRATACIÓN: ${d.hydrationMl}ml${goal}`);
-  }
-
-  if (d.mood) {
-    const factors = d.mood.factors.length ? ` — factores: ${d.mood.factors.join(", ")}` : "";
-    lines.push(`MOOD: ${d.mood.score}/10${factors}`);
-    if (d.mood.notes) lines.push(`  Nota: ${d.mood.notes}`);
-  }
-
   if (d.tasksTotal != null) {
     lines.push(`TAREAS: ${d.tasksCompleted ?? 0}/${d.tasksTotal} completadas`);
   }
@@ -205,8 +182,6 @@ function appendAggregates(lines: string[], a: PeriodAggregates) {
     lines.push(`Hábito más fuerte: ${a.bestHabit.name} (${(a.bestHabit.pct * 100).toFixed(0)}%)`);
   if (a.worstHabit)
     lines.push(`Hábito más débil: ${a.worstHabit.name} (${(a.worstHabit.pct * 100).toFixed(0)}%)`);
-  lines.push(`Sueño promedio: ${a.sleepAverageHours.toFixed(1)}h`);
-  if (a.moodAverage != null) lines.push(`Mood promedio: ${a.moodAverage.toFixed(1)}/10`);
   lines.push(
     `Entrenos: ${a.workoutsCount}${a.workoutsPlanned ? `/${a.workoutsPlanned}` : ""}`
   );

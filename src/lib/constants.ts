@@ -87,18 +87,6 @@ export const NAV_ITEMS = [
     ],
   },
   {
-    key: "wellness",
-    label: "Bienestar",
-    icon: "Heart",
-    sections: [
-      "Sleep Tracker",
-      "Hydration",
-      "Medication",
-      "Menstrual Cycle",
-      "Health Log",
-    ],
-  },
-  {
     key: "meditation",
     label: "Meditación",
     icon: "Wind",
@@ -140,13 +128,15 @@ export const NAV_ITEMS = [
 export type PageKey = (typeof NAV_ITEMS)[number]["key"];
 
 // ─── Life Score Weights ───────────────────────────────────────────────────────
+// Sin "wellness" — ese módulo fue eliminado. Pesos redistribuidos a
+// fitness/nutrition (donde viven ahora sueño/comida) y habits (donde
+// viven los hábitos diarios de salud).
 export const LIFE_SCORE_WEIGHTS = {
-  plan: 0.10,
-  productivity: 0.15,
-  finance: 0.15,
-  fitness: 0.15,
-  nutrition: 0.12,
-  wellness: 0.15,
+  plan: 0.15,
+  productivity: 0.20,
+  finance: 0.20,
+  fitness: 0.22,
+  nutrition: 0.23,
 } as const;
 
 // ─── Muscle Volume Landmarks (series/week) ────────────────────────────────────

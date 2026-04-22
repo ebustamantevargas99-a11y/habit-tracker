@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore, type WellnessTab, type ProductivityTab, type PlanTab } from "@/stores/app-store";
+import { useAppStore, type ProductivityTab, type PlanTab } from "@/stores/app-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
@@ -16,18 +16,10 @@ const NAV_TO_MODULE: Record<string, ModuleKey> = {
   fitness: "fitness",
   nutrition: "nutrition",
   organization: "organization",
-  wellness: "mood",
   settings: "settings",
 };
 
 // ─── Section → tab ID maps ────────────────────────────────────────────────────
-
-const WELLNESS_SECTION_MAP: Record<string, WellnessTab> = {
-  "Sleep Tracker": "sleep",
-  "Hydration":     "hydration",
-  "Medication":    "medication",
-  "Health Log":    "healthlog",
-};
 
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Hábitos":    "habits",
@@ -90,7 +82,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const {
     activePage, setActivePage,
-    setWellnessSubTab, setProductivitySubTab, setPlanTab,
+    setProductivitySubTab, setPlanTab,
     setFitnessTab, setFinanceTab, setNutritionTab, setReadingTab, setOrganizationTab,
   } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
@@ -183,7 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                       key={section}
                       onClick={() => {
                         setActivePage(item.key);
-                        if (item.key === "wellness"      && WELLNESS_SECTION_MAP[section])      setWellnessSubTab(WELLNESS_SECTION_MAP[section]);
                         if (item.key === "productivity"  && PRODUCTIVITY_SECTION_MAP[section])  setProductivitySubTab(PRODUCTIVITY_SECTION_MAP[section]);
                         if (item.key === "plan"          && PLAN_SECTION_MAP[section] != null)  setPlanTab(PLAN_SECTION_MAP[section]);
                         if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);

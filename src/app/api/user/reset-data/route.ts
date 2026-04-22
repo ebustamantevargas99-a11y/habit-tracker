@@ -91,29 +91,13 @@ async function resetNutrition(userId: string, counts: DeleteCounts) {
   const templates = await prisma.mealTemplate.deleteMany({ where: { userId } });
   const recipes = await prisma.recipe.deleteMany({ where: { userId } });
   const foods = await prisma.foodItem.deleteMany({ where: { userId } });
-  const hydration = await prisma.hydrationLog.deleteMany({ where: { userId } });
   // NutritionGoal es único por user; lo borramos también
   const goal = await prisma.nutritionGoal.deleteMany({ where: { userId } });
   counts.mealLogs = meals.count;
   counts.mealTemplates = templates.count;
   counts.recipes = recipes.count;
   counts.foodItems = foods.count;
-  counts.hydrationLogs = hydration.count;
   counts.nutritionGoals = goal.count;
-}
-
-async function resetWellness(userId: string, counts: DeleteCounts) {
-  const mood = await prisma.moodLog.deleteMany({ where: { userId } });
-  const sleep = await prisma.sleepLog.deleteMany({ where: { userId } });
-  // MedicationLog y SupplementFact caen con Medication (cascade)
-  const meds = await prisma.medication.deleteMany({ where: { userId } });
-  const symptoms = await prisma.symptomLog.deleteMany({ where: { userId } });
-  const appts = await prisma.medicalAppointment.deleteMany({ where: { userId } });
-  counts.moodLogs = mood.count;
-  counts.sleepLogs = sleep.count;
-  counts.medications = meds.count;
-  counts.symptomLogs = symptoms.count;
-  counts.medicalAppointments = appts.count;
 }
 
 async function resetProductivity(userId: string, counts: DeleteCounts) {
@@ -213,7 +197,6 @@ const SCOPE_EXECUTORS: Record<
   cardio: resetCardio,
   finance: resetFinance,
   nutrition: resetNutrition,
-  wellness: resetWellness,
   productivity: resetProductivity,
   organization: resetOrganization,
   calendar: resetCalendar,

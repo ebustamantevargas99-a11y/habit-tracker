@@ -41,15 +41,14 @@ export function lifeScoreFrom(parts: {
   habits: number;
   fitness: number;
   finance: number;
-  wellness: number;
   productivity: number;
 }): number {
+  // Pesos redistribuidos al eliminar la dimensión wellness (sumaba 0.22).
   return Math.round(
-    parts.habits * 0.22 +
-    parts.fitness * 0.22 +
-    parts.finance * 0.18 +
-    parts.wellness * 0.22 +
-    parts.productivity * 0.16
+    parts.habits * 0.28 +
+    parts.fitness * 0.28 +
+    parts.finance * 0.22 +
+    parts.productivity * 0.22
   );
 }
 

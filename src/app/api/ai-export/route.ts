@@ -12,7 +12,6 @@ const exportRequestSchema = z.object({
     "monthly",
     "fitness",
     "finance",
-    "wellness",
     "nutrition",
     "habits",
     "holistic",
@@ -41,7 +40,6 @@ function scopeRange(scope: string, fromArg?: string, toArg?: string): { from: Da
       return { from, to: today };
     case "fitness":
     case "finance":
-    case "wellness":
     case "nutrition":
     case "habits":
       from.setDate(today.getDate() - 13);

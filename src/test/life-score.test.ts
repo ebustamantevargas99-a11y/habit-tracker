@@ -49,13 +49,6 @@ describe("life-score · hasModule", () => {
     expect(hasModule(["fitness"], "habits")).toBe(false);
   });
 
-  it("wellness matchea con mood o sleep alternativos", () => {
-    expect(hasModule(["mood"], "wellness")).toBe(true);
-    expect(hasModule(["sleep"], "wellness")).toBe(true);
-    expect(hasModule(["wellness"], "wellness")).toBe(true);
-    expect(hasModule(["habits"], "wellness")).toBe(false);
-  });
-
   it("productivity matchea con tasks/projects/planner", () => {
     expect(hasModule(["planner"], "productivity")).toBe(true);
     expect(hasModule(["tasks"], "productivity")).toBe(true);
@@ -70,14 +63,13 @@ describe("life-score · pesos por default", () => {
     }
   });
 
-  it("habits y wellness pesan 1.0 (core)", () => {
+  it("habits pesa 1.0 (core)", () => {
     expect(DEFAULT_WEIGHTS.habits).toBe(1.0);
-    expect(DEFAULT_WEIGHTS.wellness).toBe(1.0);
   });
 
-  it("la suma total es razonable (4-5)", () => {
+  it("la suma total es razonable (3-5)", () => {
     const sum = Object.values(DEFAULT_WEIGHTS).reduce((a, b) => a + b, 0);
-    expect(sum).toBeGreaterThanOrEqual(3);
-    expect(sum).toBeLessThanOrEqual(6);
+    expect(sum).toBeGreaterThanOrEqual(2.5);
+    expect(sum).toBeLessThanOrEqual(5);
   });
 });

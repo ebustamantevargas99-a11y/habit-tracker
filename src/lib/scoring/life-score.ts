@@ -4,7 +4,6 @@ export type LifeDimension =
   | "habits"
   | "fitness"
   | "nutrition"
-  | "wellness"
   | "productivity";
 
 export type DimensionScore = {
@@ -29,7 +28,6 @@ const DIMENSION_MODULES: Record<LifeDimension, string[]> = {
   habits:       ["habits"],
   fitness:      ["fitness"],
   nutrition:    ["nutrition"],
-  wellness:     ["wellness", "mood", "sleep"],
   productivity: ["productivity", "tasks", "projects", "planner"],
 };
 
@@ -37,7 +35,6 @@ const DEFAULT_WEIGHTS: Record<LifeDimension, number> = {
   habits:       1.0,
   fitness:      0.8,
   nutrition:    0.8,
-  wellness:     1.0,
   productivity: 0.7,
 };
 
@@ -127,50 +124,6 @@ async function scoreNutrition(userId: string, dates: string[]): Promise<Dimensio
   };
 }
 
-async function scoreWellness(userId: string, dates: string[]): Promise<DimensionScore> {
-  const [moods, sleeps] = await Promise.all([
-    prisma.moodLog.findMany({
-      where: { userId, date: { in: dates } },
-      select: { mood: true },
-    }),
-    prisma.sleepLog.findMany({
-      where: { userId, date: { in: dates } },
-      select: { durationHours: true, quality: true },
-    }),
-  ]);
-
-  if (moods.length === 0 && sleeps.length === 0) {
-    return { score: null, samples: 0, reason: "Sin mood ni sueño" };
-  }
-
-  // Mood: avg en escala 1-10 → 0-100
-  const moodAvg = moods.length
-    ? (moods.reduce((s, m) => s + m.mood, 0) / moods.length) * 10
-    : null;
-
-  // Sleep: avg hours vs 8h ideal, y quality 1-10 → 0-100
-  let sleepScore: number | null = null;
-  if (sleeps.length) {
-    const avgHours = sleeps.reduce((s, x) => s + x.durationHours, 0) / sleeps.length;
-    const avgQuality = sleeps.reduce((s, x) => s + x.quality, 0) / sleeps.length;
-    // Hours: 8h = 100, 6h = 70, 5h = 40
-    const hoursScore = clamp((avgHours / 8) * 100);
-    const qualityScore = avgQuality * 10;
-    sleepScore = (hoursScore + qualityScore) / 2;
-  }
-
-  const parts: number[] = [];
-  if (moodAvg !== null) parts.push(moodAvg);
-  if (sleepScore !== null) parts.push(sleepScore);
-  const score = clamp(parts.reduce((a, b) => a + b, 0) / parts.length);
-
-  return {
-    score,
-    samples: moods.length + sleeps.length,
-    reason: `${moods.length} mood · ${sleeps.length} sleep`,
-  };
-}
-
 async function scoreProductivity(userId: string, dates: string[]): Promise<DimensionScore> {
   // Tareas completadas en la ventana (via dueDate en rango)
   const tasks = await prisma.projectTask.findMany({
@@ -218,16 +171,13 @@ export async function computeLifeScore(
     (profile?.lifeScoreWeights as Record<string, number> | null) ?? {};
 
   // Scores por dimensión (paralelo)
-  const [habits, fitness, nutrition, wellness, productivity] = await Promise.all([
+  const [habits, fitness, nutrition, productivity] = await Promise.all([
     scoreHabits(userId, dates),
     hasModule(enabled, "fitness")
       ? scoreFitness(userId, dates)
       : Promise.resolve({ score: null, samples: 0, reason: "Módulo desactivado" } as DimensionScore),
     hasModule(enabled, "nutrition")
       ? scoreNutrition(userId, dates)
-      : Promise.resolve({ score: null, samples: 0, reason: "Módulo desactivado" } as DimensionScore),
-    hasModule(enabled, "wellness")
-      ? scoreWellness(userId, dates)
       : Promise.resolve({ score: null, samples: 0, reason: "Módulo desactivado" } as DimensionScore),
     hasModule(enabled, "productivity")
       ? scoreProductivity(userId, dates)
@@ -238,7 +188,6 @@ export async function computeLifeScore(
     habits,
     fitness,
     nutrition,
-    wellness,
     productivity,
   };
 

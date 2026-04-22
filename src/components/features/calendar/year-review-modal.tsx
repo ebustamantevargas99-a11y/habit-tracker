@@ -10,8 +10,6 @@ import {
   BookOpen,
   Wind,
   Clock,
-  Heart,
-  Moon,
   Trophy,
   Target,
   PenSquare,
@@ -49,7 +47,6 @@ type YearReviewData = {
     overallRate: number;
     top: Array<{ name: string; icon: string | null; completed: number; total: number; rate: number; bestStreak: number }>;
   };
-  wellness: { moodEntries: number; avgMood: number | null; sleepEntries: number; avgSleepHours: number | null };
   reading: { booksFinished: number; books: Array<{ title: string; author: string | null; rating: number | null; finishedAt: string | null; totalPages: number | null }>; pagesRead: number; readingMinutes: number };
   meditation: { sessions: number; totalMinutes: number };
   fasting: { sessions: number; totalHours: number };
@@ -64,7 +61,6 @@ function buildPromptForAI(data: YearReviewData): string {
   const f = data.fitness;
   const n = data.nutrition;
   const h = data.habits;
-  const w = data.wellness;
   const r = data.reading;
   const m = data.meditation;
 
@@ -103,10 +99,6 @@ function buildPromptForAI(data: YearReviewData): string {
       prompt += `  • ${hb.icon ?? "·"} ${hb.name}: ${hb.completed}/${hb.total} (${hb.rate}%) · mejor racha ${hb.bestStreak}d\n`;
     });
   }
-
-  prompt += `\n💝 BIENESTAR\n`;
-  if (w.avgMood !== null) prompt += `Mood promedio: ${w.avgMood}/10 (${w.moodEntries} registros)\n`;
-  if (w.avgSleepHours !== null) prompt += `Sueño promedio: ${w.avgSleepHours}h (${w.sleepEntries} registros)\n`;
 
   prompt += `\n📖 LECTURA\n`;
   prompt += `${r.booksFinished} libros terminados · ${r.pagesRead} páginas · ${Math.round(r.readingMinutes / 60)}h totales\n`;
@@ -255,12 +247,6 @@ export default function YearReviewModal({
                 <Stat icon={<Clock size={18} />} value={data.fasting.totalHours + "h"} label="Horas en ayuno" />
                 <Stat icon={<Target size={18} />} value={Math.round(data.focus.totalMinutes / 60) + "h"} label="Deep Work" />
                 <Stat icon={<PenSquare size={18} />} value={data.journal.entries} label="Entradas journal" />
-                {data.wellness.avgMood !== null && (
-                  <Stat icon={<Heart size={18} />} value={data.wellness.avgMood} label="Mood promedio" />
-                )}
-                {data.wellness.avgSleepHours !== null && (
-                  <Stat icon={<Moon size={18} />} value={data.wellness.avgSleepHours + "h"} label="Sueño promedio" />
-                )}
                 <Stat icon={<Sparkles size={18} />} value={data.calendar.totalEvents} label="Eventos en calendario" />
               </div>
 

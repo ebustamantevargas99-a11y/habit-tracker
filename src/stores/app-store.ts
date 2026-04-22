@@ -1,13 +1,11 @@
 import { create } from "zustand";
 import type { PageKey } from "@/lib/constants";
 
-export type WellnessTab = 'sleep' | 'hydration' | 'medication' | 'healthlog';
 export type ProductivityTab = 'command' | 'habits' | 'projects' | 'pomodoro' | 'projection';
 export type PlanTab = "today" | "week" | "month";
 
 // Valid tab values per page (used by setPageFromURL for validation)
 const VALID_TABS: Record<string, string[]> = {
-  wellness:     ['sleep', 'hydration', 'medication', 'healthlog'],
   productivity: ['command', 'habits', 'projects', 'pomodoro', 'projection'],
   plan:         ['today', 'week', 'month'],
   fitness:      ['gym', 'cardio', 'cuerpo', 'programas', 'analisis'],
@@ -23,10 +21,6 @@ interface AppState {
   sidebarOpen: boolean;
   setActivePage: (page: PageKey) => void;
   toggleSidebar: () => void;
-
-  // Wellness deep-link
-  wellnessSubTab: WellnessTab;
-  setWellnessSubTab: (tab: WellnessTab) => void;
 
   // Productivity deep-link
   productivitySubTab: ProductivityTab;
@@ -72,9 +66,6 @@ export const useAppStore = create<AppState>((set) => ({
   setActivePage: (page) => set({ activePage: page }),
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
 
-  wellnessSubTab: 'sleep',
-  setWellnessSubTab: (tab) => set({ wellnessSubTab: tab }),
-
   productivitySubTab: 'habits',
   setProductivitySubTab: (tab) => set({ productivitySubTab: tab }),
 
@@ -103,9 +94,6 @@ export const useAppStore = create<AppState>((set) => ({
       const validTabs = VALID_TABS[page] ?? [];
       if (validTabs.includes(tab)) {
         switch (page) {
-          case 'wellness':
-            update.wellnessSubTab = tab as WellnessTab;
-            break;
           case 'productivity':
             update.productivitySubTab = tab as ProductivityTab;
             break;

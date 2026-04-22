@@ -25,8 +25,6 @@ export async function GET(req: NextRequest) {
     const [
       habitLogs,
       workouts,
-      moods,
-      sleeps,
       mealLogs,
       readingSessions,
       booksFinished,
@@ -47,14 +45,6 @@ export async function GET(req: NextRequest) {
           totalVolume: true,
           prsHit: true,
         },
-      }),
-      prisma.moodLog.findMany({
-        where: { userId, date: { gte: startISO, lt: endISO } },
-        select: { date: true, mood: true, emotions: true, factors: true },
-      }),
-      prisma.sleepLog.findMany({
-        where: { userId, date: { gte: startISO, lt: endISO } },
-        select: { date: true, durationHours: true, quality: true },
       }),
       prisma.mealLog.findMany({
         where: { userId, date: { gte: startISO, lt: endISO } },
@@ -106,19 +96,6 @@ export async function GET(req: NextRequest) {
     const totalPRs = workouts.reduce((s, w) => s + (w.prsHit ?? 0), 0);
     const totalMinutesGym = workouts.reduce((s, w) => s + (w.durationMinutes ?? 0), 0);
 
-    const moodAvg = moods.length
-      ? moods.reduce((s, m) => s + m.mood, 0) / moods.length
-      : null;
-    const bestMood = moods.length ? Math.max(...moods.map((m) => m.mood)) : null;
-    const worstMood = moods.length ? Math.min(...moods.map((m) => m.mood)) : null;
-
-    const sleepAvgHours = sleeps.length
-      ? sleeps.reduce((s, x) => s + x.durationHours, 0) / sleeps.length
-      : null;
-    const sleepAvgQuality = sleeps.length
-      ? sleeps.reduce((s, x) => s + x.quality, 0) / sleeps.length
-      : null;
-
     const daysWithMeals = new Set(mealLogs.map((m) => m.date)).size;
     const totalCalories = mealLogs.reduce(
       (s, m) => s + m.items.reduce((ss, it) => ss + it.calories, 0),
@@ -151,17 +128,6 @@ export async function GET(req: NextRequest) {
         totalVolume: Math.round(totalVolume),
         totalMinutes: totalMinutesGym,
         totalPRs,
-      },
-      mood: {
-        count: moods.length,
-        avg: moodAvg ? +moodAvg.toFixed(1) : null,
-        best: bestMood,
-        worst: worstMood,
-      },
-      sleep: {
-        count: sleeps.length,
-        avgHours: sleepAvgHours ? +sleepAvgHours.toFixed(1) : null,
-        avgQuality: sleepAvgQuality ? +sleepAvgQuality.toFixed(1) : null,
       },
       nutrition: {
         daysWithMeals,

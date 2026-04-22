@@ -59,20 +59,10 @@ const SCOPES: ScopeDef[] = [
     id: "nutrition",
     emoji: "🥗",
     label: "Nutrición",
-    description: "Alimentos, comidas, recetas, hidratación, meta nutricional",
+    description: "Alimentos, comidas, recetas, meta nutricional",
     includes: [
       "MealLog (+ items), MealTemplate, Recipe",
-      "FoodItem · HydrationLog · NutritionGoal",
-    ],
-  },
-  {
-    id: "wellness",
-    emoji: "🧘",
-    label: "Bienestar",
-    description: "Mood, sueño, medicamentos, síntomas, citas médicas",
-    includes: [
-      "MoodLog · SleepLog · MedicalAppointment",
-      "Medication (+ logs + supplements) · SymptomLog",
+      "FoodItem · NutritionGoal",
     ],
   },
   {

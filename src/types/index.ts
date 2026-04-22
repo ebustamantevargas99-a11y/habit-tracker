@@ -13,8 +13,7 @@ export type AreaKey =
   | "organization"
   | "finance"
   | "fitness"
-  | "nutrition"
-  | "wellness";
+  | "nutrition";
 
 export interface LifeAreaScore {
   key: AreaKey;
@@ -162,28 +161,6 @@ export interface Budget {
   spent: number;
 }
 
-// ─── Wellness ─────────────────────────────────────────────────────────────────
-
-export interface MoodLog {
-  id: string;
-  date: string;
-  mood: number; // 1-10
-  emotions: string[];
-  factors: string[];
-  notes?: string;
-}
-
-export interface SleepLog {
-  id: string;
-  date: string;
-  bedtime: string; // HH:mm
-  wakeTime: string; // HH:mm
-  quality: number; // 1-10
-  durationHours: number;
-  dreams?: string;
-  factors: string[];
-}
-
 // ─── Planner ──────────────────────────────────────────────────────────────────
 
 export interface TimeBlock {
@@ -250,14 +227,6 @@ export interface MonthlySummary {
     bestStreak: { habit: string; days: number };
     pomodorosCompleted: number;
     tasksCompleted: number;
-  };
-  wellness: {
-    avgSleepQuality: number;
-    sleepChange: number;
-    avgMood: number;
-    moodChange: number;
-    journalingDays: number;
-    correlations: string[];
   };
 }
 

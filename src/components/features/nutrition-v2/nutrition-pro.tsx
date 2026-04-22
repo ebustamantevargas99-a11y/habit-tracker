@@ -135,7 +135,7 @@ export default function NutritionPro() {
         api.get<MealLog[]>(`/nutrition/meals?date=${today}`),
         api.get<NutritionGoal | null>("/nutrition/goals").catch(() => null),
         api
-          .get<HydrationLog[]>(`/wellness/hydration?days=1`)
+          .get<HydrationLog[]>(`/nutrition/hydration?days=1`)
           .catch(() => [] as HydrationLog[]),
         api
           .get<MealTemplateFull[]>("/nutrition/meal-templates")
@@ -227,7 +227,7 @@ export default function NutritionPro() {
       amountMl: Math.max(0, prev.amountMl + deltaMl),
     }));
     try {
-      const updated = await api.patch<HydrationLog>("/wellness/hydration", { deltaMl });
+      const updated = await api.patch<HydrationLog>("/nutrition/hydration", { deltaMl });
       setHydration({ amountMl: updated.amountMl, goalMl: updated.goalMl });
       if (deltaMl > 0) {
         toast.success(`+${deltaMl}ml · ${updated.amountMl}ml / ${updated.goalMl}ml`);

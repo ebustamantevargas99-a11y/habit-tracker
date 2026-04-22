@@ -18,11 +18,6 @@ const PlaceholderPage: React.FC = () => {
       icon: "Target",
       sections: ["Objetivos a Corto Plazo", "Objetivos a Largo Plazo", "Seguimiento de Progreso", "Hitos y Logros"],
     },
-    wellness: {
-      title: "Bienestar",
-      icon: "Heart",
-      sections: ["Salud Mental", "Salud Física", "Balance Vida-Trabajo", "Recomendaciones Personalizadas"],
-    },
     settings: {
       title: "Configuración",
       icon: "Settings",

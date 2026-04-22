@@ -7,7 +7,6 @@ import HomeDashboard from "@/components/features/home/home-dashboard";
 import ProductivityPage from "@/components/features/productivity/productivity-page";
 import CalendarPage from "@/components/features/calendar/calendar-page";
 import FinancePage from "@/components/features/finance/finance-page";
-import MoodTrackerPage from "@/components/features/wellness/mood-tracker-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
 import ReadingPage from "@/components/features/reading/reading-page";
@@ -28,7 +27,6 @@ import { useRouteSync } from "@/lib/use-route-sync";
 import { useHabitStore } from "@/stores/habit-store";
 import { useFinanceStore } from "@/stores/finance-store";
 import { useFitnessStore } from "@/stores/fitness-store";
-import { useWellnessStore } from "@/stores/wellness-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { useThemeStore } from "@/stores/theme-store";
@@ -91,7 +89,6 @@ export default function MainApp() {
   const initHabits       = useHabitStore((s) => s.initialize);
   const initFinance      = useFinanceStore((s) => s.initialize);
   const initFitness      = useFitnessStore((s) => s.initialize);
-  const initWellness     = useWellnessStore((s) => s.initialize);
   const initGamification = useGamificationStore((s) => s.initialize);
   const initUser         = useUserStore((s) => s.initialize);
   const initNutrition    = useNutritionStore((s) => s.initialize);
@@ -101,12 +98,11 @@ export default function MainApp() {
     initHabits();
     initFinance();
     initFitness();
-    initWellness();
     initGamification();
     initUser();
     initNutrition();
     initOrganization();
-  }, [initHabits, initFinance, initFitness, initWellness, initGamification, initUser, initNutrition, initOrganization]);
+  }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition, initOrganization]);
 
   const renderPage = () => {
     switch (activePage) {
@@ -114,7 +110,6 @@ export default function MainApp() {
       case "productivity": return <ProductivityPage />;
       case "plan":         return <CalendarPage />;
       case "finance":      return <FinancePage />;
-      case "wellness":     return <MoodTrackerPage />;
       case "fitness":      return <FitnessPage />;
       case "nutrition":    return <NutritionPage />;
       case "reading":      return <ReadingPage />;
@@ -139,7 +134,6 @@ export default function MainApp() {
     menstrualCycle: "Ciclo menstrual",
     lifeos:       "Life OS",
     organization: "Organización",
-    wellness:     "Bienestar",
     settings:     "Configuración",
   };
 
