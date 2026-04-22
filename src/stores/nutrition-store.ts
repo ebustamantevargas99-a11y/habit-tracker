@@ -113,6 +113,13 @@ export interface NutritionGoal {
   activityFactor?: number | null;
   targetBodyFatPercent?: number | null;
   targetLeanMassKg?: number | null;
+  // Macro split en %
+  useMacroSplit?: boolean;
+  proteinPct?: number | null;
+  carbsPct?: number | null;
+  fatPct?: number | null;
+  // Override custom de targets de micronutrientes (keys = nombres FoodItem fields)
+  customTargets?: Record<string, number> | null;
 }
 
 export interface DailySummary {

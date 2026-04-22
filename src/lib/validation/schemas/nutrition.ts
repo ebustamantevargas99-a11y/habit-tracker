@@ -119,6 +119,18 @@ export const nutritionGoalUpsertSchema = z.object({
   // Targets de composición
   targetBodyFatPercent: z.number().min(3).max(60).optional().nullable(),
   targetLeanMassKg: z.number().min(20).max(200).optional().nullable(),
+
+  // Macro split mode
+  useMacroSplit: z.boolean().optional(),
+  proteinPct: z.number().min(0).max(100).optional().nullable(),
+  carbsPct: z.number().min(0).max(100).optional().nullable(),
+  fatPct: z.number().min(0).max(100).optional().nullable(),
+
+  // Custom micronutrient targets — objeto { [nutrientKey]: number }
+  customTargets: z
+    .record(z.string().max(40), z.number().min(0).max(100_000))
+    .optional()
+    .nullable(),
 });
 
 // ─── Body Composition (bioimpedancia / DEXA / Navy / etc.) ────────────────────

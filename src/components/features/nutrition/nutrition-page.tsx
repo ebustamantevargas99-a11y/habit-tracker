@@ -1,7 +1,7 @@
 "use client";
 import { todayLocal } from "@/lib/date/local";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line,
@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { colors } from "@/lib/colors";
 import { api } from "@/lib/api-client";
-import { useNutritionStore, MealLog, FoodItem } from "@/stores/nutrition-store";
+import { useNutritionStore, MealLog, FoodItem, NutritionGoal } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
 import { cn, ErrorBanner } from "@/components/ui";
 import HoyHub from "./hubs/hoy-hub";
@@ -726,17 +726,59 @@ export function GoalsTab() {
     waterMl: goals?.waterMl ?? 2500,
     mealsPerDay: goals?.mealsPerDay ?? 3,
   });
+  const [useMacroSplit, setUseMacroSplit] = useState(goals?.useMacroSplit ?? false);
+  const [splitPct, setSplitPct] = useState({
+    protein: goals?.proteinPct ?? 30,
+    carbs: goals?.carbsPct ?? 40,
+    fat: goals?.fatPct ?? 30,
+  });
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    if (goals) setForm({
-      calories: goals.calories, protein: goals.protein, carbs: goals.carbs,
-      fat: goals.fat, fiber: goals.fiber, waterMl: goals.waterMl, mealsPerDay: goals.mealsPerDay,
-    });
+    if (goals) {
+      setForm({
+        calories: goals.calories, protein: goals.protein, carbs: goals.carbs,
+        fat: goals.fat, fiber: goals.fiber, waterMl: goals.waterMl, mealsPerDay: goals.mealsPerDay,
+      });
+      setUseMacroSplit(goals.useMacroSplit ?? false);
+      if (goals.proteinPct != null || goals.carbsPct != null || goals.fatPct != null) {
+        setSplitPct({
+          protein: goals.proteinPct ?? 30,
+          carbs: goals.carbsPct ?? 40,
+          fat: goals.fatPct ?? 30,
+        });
+      }
+    }
   }, [goals]);
 
+  // Si está en modo split, derivar gramos desde % + kcal antes de guardar
+  const derivedFromSplit = useMemo(() => {
+    if (!useMacroSplit) return null;
+    const proteinG = Math.round((splitPct.protein / 100) * form.calories / 4);
+    const carbsG = Math.round((splitPct.carbs / 100) * form.calories / 4);
+    const fatG = Math.round((splitPct.fat / 100) * form.calories / 9);
+    return { proteinG, carbsG, fatG };
+  }, [useMacroSplit, splitPct, form.calories]);
+
+  const splitSum = splitPct.protein + splitPct.carbs + splitPct.fat;
+  const splitValid = Math.abs(splitSum - 100) <= 1;
+
   const handleSave = async () => {
-    await updateGoals(form);
+    const payload: Partial<NutritionGoal> = {
+      ...form,
+      useMacroSplit,
+    };
+    if (useMacroSplit) {
+      payload.proteinPct = splitPct.protein;
+      payload.carbsPct = splitPct.carbs;
+      payload.fatPct = splitPct.fat;
+      if (derivedFromSplit) {
+        payload.protein = derivedFromSplit.proteinG;
+        payload.carbs = derivedFromSplit.carbsG;
+        payload.fat = derivedFromSplit.fatG;
+      }
+    }
+    await updateGoals(payload);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
@@ -744,15 +786,53 @@ export function GoalsTab() {
   const totalCalFromMacros = form.protein * 4 + form.carbs * 4 + form.fat * 9;
 
   return (
-    <div className="flex flex-col gap-6 max-w-[600px]">
+    <div className="flex flex-col gap-6 max-w-[640px]">
       <div className="bg-brand-warm-white rounded-xl p-6 border border-brand-cream">
-        <h3 className="m-0 mb-5 text-brand-dark">Metas Nutricionales</h3>
+        <h3 className="m-0 mb-4 text-brand-dark">Metas Nutricionales</h3>
+
+        {/* Toggle modo */}
+        <div className="flex items-center gap-2 mb-5 p-3 rounded-lg bg-brand-cream">
+          <button
+            onClick={() => setUseMacroSplit(false)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-semibold transition",
+              !useMacroSplit
+                ? "bg-brand-dark text-brand-cream"
+                : "bg-transparent text-brand-medium hover:bg-brand-light-tan",
+            )}
+            type="button"
+          >
+            Gramos absolutos
+          </button>
+          <button
+            onClick={() => setUseMacroSplit(true)}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-xs font-semibold transition",
+              useMacroSplit
+                ? "bg-brand-dark text-brand-cream"
+                : "bg-transparent text-brand-medium hover:bg-brand-light-tan",
+            )}
+            type="button"
+          >
+            Macro split %
+          </button>
+          <p className="text-[11px] text-brand-warm m-0 ml-2">
+            {useMacroSplit
+              ? "Ej: 40C/30P/30G — gramos se derivan de calorías."
+              : "Gramos/día fijos."}
+          </p>
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           {[
             { key: "calories",    label: "Calorías (kcal/día)",    min: 1000, max: 5000 },
-            { key: "protein",     label: "Proteína (g/día)",       min: 0,    max: 400  },
-            { key: "carbs",       label: "Carbohidratos (g/día)",  min: 0,    max: 600  },
-            { key: "fat",         label: "Grasas (g/día)",         min: 0,    max: 200  },
+            ...(useMacroSplit
+              ? []
+              : [
+                  { key: "protein",     label: "Proteína (g/día)",       min: 0,    max: 400  },
+                  { key: "carbs",       label: "Carbohidratos (g/día)",  min: 0,    max: 600  },
+                  { key: "fat",         label: "Grasas (g/día)",         min: 0,    max: 200  },
+                ] as const),
             { key: "fiber",       label: "Fibra (g/día)",          min: 0,    max: 100  },
             { key: "waterMl",     label: "Agua (ml/día)",          min: 500,  max: 6000 },
             { key: "mealsPerDay", label: "Comidas/día",            min: 1,    max: 8    },
@@ -771,30 +851,205 @@ export function GoalsTab() {
           ))}
         </div>
 
-        {/* Macro distribution preview */}
-        <div className="mt-5 p-[14px] bg-brand-cream rounded-lg">
-          <div className="text-xs text-brand-medium mb-2">Distribución de calorías desde macros</div>
-          <div className="text-sm text-brand-dark">
-            P: {Math.round((form.protein * 4 / totalCalFromMacros) * 100)}% · C: {Math.round((form.carbs * 4 / totalCalFromMacros) * 100)}% · G: {Math.round((form.fat * 9 / totalCalFromMacros) * 100)}%
-            {" "}= {totalCalFromMacros} kcal totales
-          </div>
-          {Math.abs(totalCalFromMacros - form.calories) > 50 && (
-            <div className="text-xs text-warning mt-1">
-              Los macros suman {totalCalFromMacros} kcal, diferente a tu meta de {form.calories} kcal.
+        {/* Macro split inputs */}
+        {useMacroSplit && (
+          <div className="mt-5 p-4 rounded-lg bg-brand-warm-white border border-brand-cream">
+            <p className="text-xs text-brand-medium mb-3 font-semibold">
+              Porcentajes del total de calorías
+            </p>
+            <div className="grid grid-cols-3 gap-3">
+              {(["protein", "carbs", "fat"] as const).map((k) => (
+                <div key={k}>
+                  <label className="text-xs text-brand-medium block mb-1 capitalize">
+                    {k === "protein" ? "Proteína %" : k === "carbs" ? "Carbs %" : "Grasa %"}
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={splitPct[k]}
+                    onChange={(e) =>
+                      setSplitPct((p) => ({
+                        ...p,
+                        [k]: parseFloat(e.target.value) || 0,
+                      }))
+                    }
+                    className="w-full px-3 py-2 border border-brand-light-tan rounded-lg text-sm text-brand-dark box-border"
+                  />
+                </div>
+              ))}
             </div>
-          )}
-        </div>
+            <div
+              className={cn(
+                "text-xs mt-3 m-0",
+                splitValid ? "text-success" : "text-warning",
+              )}
+            >
+              Suma: {splitSum}%{" "}
+              {!splitValid && "— debe sumar 100%"}
+            </div>
+            {derivedFromSplit && splitValid && (
+              <div className="text-xs text-brand-dark mt-2 font-mono">
+                → P {derivedFromSplit.proteinG}g · C {derivedFromSplit.carbsG}g · G{" "}
+                {derivedFromSplit.fatG}g
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Macro distribution preview (solo modo gramos) */}
+        {!useMacroSplit && totalCalFromMacros > 0 && (
+          <div className="mt-5 p-[14px] bg-brand-cream rounded-lg">
+            <div className="text-xs text-brand-medium mb-2">Distribución de calorías desde macros</div>
+            <div className="text-sm text-brand-dark">
+              P: {Math.round((form.protein * 4 / totalCalFromMacros) * 100)}% · C: {Math.round((form.carbs * 4 / totalCalFromMacros) * 100)}% · G: {Math.round((form.fat * 9 / totalCalFromMacros) * 100)}%
+              {" "}= {totalCalFromMacros} kcal totales
+            </div>
+            {Math.abs(totalCalFromMacros - form.calories) > 50 && (
+              <div className="text-xs text-warning mt-1">
+                Los macros suman {totalCalFromMacros} kcal, diferente a tu meta de {form.calories} kcal.
+              </div>
+            )}
+          </div>
+        )}
 
         <button
           onClick={handleSave}
+          disabled={useMacroSplit && !splitValid}
           className={cn(
-            "mt-5 px-6 py-[10px] text-white border-none rounded-lg cursor-pointer transition-[background-color] duration-300",
+            "mt-5 px-6 py-[10px] text-white border-none rounded-lg cursor-pointer transition-[background-color] duration-300 disabled:opacity-40",
             saved ? "bg-success" : "bg-accent"
           )}
         >
           {saved ? "¡Guardado!" : "Guardar metas"}
         </button>
       </div>
+
+      {/* Custom targets de micronutrientes */}
+      <CustomTargetsEditor />
+    </div>
+  );
+}
+
+// ─── Custom targets de micronutrientes ─────────────────────────────────────
+
+interface CustomTargetDef {
+  key: string;
+  label: string;
+  unit: string;
+  fdaDv: number;  // default FDA Daily Value
+}
+
+const CUSTOM_TARGET_OPTIONS: CustomTargetDef[] = [
+  { key: "fiber",       label: "Fibra",       unit: "g",  fdaDv: 28   },
+  { key: "saturatedFat",label: "Sat. fat",    unit: "g",  fdaDv: 20   },
+  { key: "cholesterol", label: "Colesterol",  unit: "mg", fdaDv: 300  },
+  { key: "sodium",      label: "Sodio",       unit: "mg", fdaDv: 2300 },
+  { key: "addedSugar",  label: "Azúcar add.", unit: "g",  fdaDv: 50   },
+  { key: "potassium",   label: "Potasio",     unit: "mg", fdaDv: 4700 },
+  { key: "calcium",     label: "Calcio",      unit: "mg", fdaDv: 1300 },
+  { key: "iron",        label: "Hierro",      unit: "mg", fdaDv: 18   },
+  { key: "magnesium",   label: "Magnesio",    unit: "mg", fdaDv: 420  },
+  { key: "zinc",        label: "Zinc",        unit: "mg", fdaDv: 11   },
+  { key: "vitaminA",    label: "Vit A",       unit: "μg", fdaDv: 900  },
+  { key: "vitaminC",    label: "Vit C",       unit: "mg", fdaDv: 90   },
+  { key: "vitaminD",    label: "Vit D",       unit: "μg", fdaDv: 20   },
+  { key: "vitaminE",    label: "Vit E",       unit: "mg", fdaDv: 15   },
+  { key: "vitaminB12",  label: "B12",         unit: "μg", fdaDv: 2.4  },
+  { key: "folate",      label: "Folato",      unit: "μg", fdaDv: 400  },
+  { key: "caffeine",    label: "Cafeína",     unit: "mg", fdaDv: 400  },
+  { key: "leucine",     label: "Leucina",     unit: "mg", fdaDv: 2500 },
+];
+
+function CustomTargetsEditor() {
+  const { goals, updateGoals } = useNutritionStore();
+  const [targets, setTargets] = useState<Record<string, number | undefined>>(
+    () => {
+      const init: Record<string, number | undefined> = {};
+      if (goals?.customTargets) {
+        for (const [k, v] of Object.entries(goals.customTargets)) {
+          init[k] = v;
+        }
+      }
+      return init;
+    },
+  );
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (goals?.customTargets) {
+      const init: Record<string, number | undefined> = {};
+      for (const [k, v] of Object.entries(goals.customTargets)) {
+        init[k] = v;
+      }
+      setTargets(init);
+    }
+  }, [goals?.customTargets]);
+
+  async function handleSave() {
+    // Quitar entradas vacías o 0 → que usen el FDA DV default
+    const cleaned: Record<string, number> = {};
+    for (const [k, v] of Object.entries(targets)) {
+      if (typeof v === "number" && Number.isFinite(v) && v > 0) {
+        cleaned[k] = v;
+      }
+    }
+    await updateGoals({
+      customTargets: Object.keys(cleaned).length > 0 ? cleaned : null,
+    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  return (
+    <div className="bg-brand-warm-white rounded-xl p-6 border border-brand-cream">
+      <h3 className="m-0 mb-1 text-brand-dark">Targets personalizados de micronutrientes</h3>
+      <p className="text-xs text-brand-warm m-0 mb-5">
+        Sobrescribe los FDA Daily Values 2020 con tus propios targets. Útil
+        si tu médico/nutri te pidió más hierro, potasio específico, etc. Deja
+        en blanco para usar el default FDA.
+      </p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {CUSTOM_TARGET_OPTIONS.map((opt) => (
+          <div key={opt.key}>
+            <label className="text-xs text-brand-medium block mb-1">
+              {opt.label}{" "}
+              <span className="text-brand-tan">
+                ({opt.unit})
+              </span>
+            </label>
+            <input
+              type="number"
+              min={0}
+              value={targets[opt.key] ?? ""}
+              onChange={(e) =>
+                setTargets((t) => {
+                  const v = e.target.value;
+                  const next = { ...t };
+                  if (v === "") {
+                    delete next[opt.key];
+                  } else {
+                    const n = parseFloat(v);
+                    if (Number.isFinite(n)) next[opt.key] = n;
+                  }
+                  return next;
+                })
+              }
+              placeholder={`FDA: ${opt.fdaDv}`}
+              className="w-full px-3 py-2 border border-brand-light-tan rounded-lg text-sm text-brand-dark box-border"
+            />
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={handleSave}
+        className={cn(
+          "mt-5 px-6 py-[10px] text-white border-none rounded-lg cursor-pointer transition-[background-color] duration-300",
+          saved ? "bg-success" : "bg-accent",
+        )}
+      >
+        {saved ? "¡Guardado!" : "Guardar targets custom"}
+      </button>
     </div>
   );
 }

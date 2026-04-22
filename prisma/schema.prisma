@@ -1124,6 +1124,16 @@ model NutritionGoal {
   targetBodyFatPercent Float?
   targetLeanMassKg     Float?
 
+  // Macro split mode — si true, se usan %s en vez de gramos absolutos
+  useMacroSplit Boolean @default(false)
+  proteinPct    Float?
+  carbsPct      Float?
+  fatPct        Float?
+
+  // Custom micronutrient targets (override FDA DV 2020)
+  // Ejemplo: { "potassium": 4700, "vitaminD": 25, "iron": 18 }
+  customTargets Json?
+
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

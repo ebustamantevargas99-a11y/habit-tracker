@@ -11,9 +11,10 @@
  *   https://www.fda.gov/food/nutrition-facts-label/daily-value-nutrition-and-supplement-facts-labels
  */
 
-import { Pencil, Trash2, X } from "lucide-react";
+import { AlertCircle, CheckCircle, Pencil, Trash2, X } from "lucide-react";
 import { Card, cn } from "@/components/ui";
 import type { FoodItem } from "@/stores/nutrition-store";
+import { analyzeOmegaRatio } from "@/lib/nutrition/omega-ratio";
 
 // ─── Daily Values FDA 2020 (adulto 2000 kcal) ───────────────────────────────
 // Valor en unidad canónica del campo correspondiente.
@@ -200,6 +201,11 @@ export default function FoodDetailView({
           </p>
         )}
       </div>
+
+      {/* Omega ratio card — solo si hay data relevante */}
+      {(food.omega3 != null || food.omega6 != null) && (
+        <OmegaCard omega3={food.omega3} omega6={food.omega6} />
+      )}
 
       {/* Desglose */}
       {hasBreakdown && (
@@ -468,6 +474,75 @@ function pct(
 }
 
 // ─── Subcomponents ───────────────────────────────────────────────────────────
+
+function OmegaCard({
+  omega3,
+  omega6,
+}: {
+  omega3: number | null | undefined;
+  omega6: number | null | undefined;
+}) {
+  const analysis = analyzeOmegaRatio(omega3, omega6);
+  const isGood =
+    analysis.classification === "excellent" ||
+    analysis.classification === "good";
+  const isBad =
+    analysis.classification === "poor" ||
+    analysis.classification === "very_poor" ||
+    analysis.classification === "no_omega3";
+
+  const classLabel: Record<typeof analysis.classification, string> = {
+    excellent: "Excelente",
+    good: "Bueno",
+    poor: "Pobre",
+    very_poor: "Muy pobre",
+    no_omega3: "Desbalanceado",
+    no_data: "Sin datos",
+  };
+
+  return (
+    <Card
+      variant="default"
+      padding="sm"
+      className={cn(
+        "border-l-4",
+        isGood && "border-success bg-success/5",
+        isBad && "border-danger bg-danger-light/20",
+        !isGood && !isBad && "border-brand-light-tan",
+      )}
+    >
+      <div className="flex items-start gap-2">
+        {isGood ? (
+          <CheckCircle size={16} className="text-success shrink-0 mt-0.5" />
+        ) : isBad ? (
+          <AlertCircle size={16} className="text-danger shrink-0 mt-0.5" />
+        ) : null}
+        <div className="flex-1">
+          <p className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold m-0">
+            Ratio omega-6 : omega-3
+          </p>
+          <p className="font-mono text-lg text-brand-dark m-0">
+            {analysis.ratio != null ? `${analysis.ratio} : 1` : "—"}{" "}
+            <span
+              className={cn(
+                "text-xs font-normal",
+                isGood ? "text-success" : isBad ? "text-danger" : "text-brand-warm",
+              )}
+            >
+              · {classLabel[analysis.classification]}
+            </span>
+          </p>
+          <p className="text-xs text-brand-warm m-0 mt-1">
+            {analysis.recommendation}
+          </p>
+          <p className="text-[10px] text-brand-tan m-0 mt-1 font-mono">
+            omega-3: {analysis.omega3}g · omega-6: {analysis.omega6}g
+          </p>
+        </div>
+      </div>
+    </Card>
+  );
+}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (

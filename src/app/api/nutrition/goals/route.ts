@@ -1,5 +1,6 @@
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { parseJson, nutritionGoalUpsertSchema } from "@/lib/validation";
 
@@ -38,6 +39,17 @@ export async function PUT(req: NextRequest) {
         ...(d.activityFactor !== undefined && { activityFactor: d.activityFactor }),
         ...(d.targetBodyFatPercent !== undefined && { targetBodyFatPercent: d.targetBodyFatPercent }),
         ...(d.targetLeanMassKg !== undefined && { targetLeanMassKg: d.targetLeanMassKg }),
+        ...(d.useMacroSplit !== undefined && { useMacroSplit: d.useMacroSplit }),
+        ...(d.proteinPct !== undefined && { proteinPct: d.proteinPct }),
+        ...(d.carbsPct !== undefined && { carbsPct: d.carbsPct }),
+        ...(d.fatPct !== undefined && { fatPct: d.fatPct }),
+        ...(d.customTargets !== undefined && {
+          // Prisma Json nullable: null explícito necesita Prisma.JsonNull
+          customTargets:
+            d.customTargets === null
+              ? Prisma.JsonNull
+              : (d.customTargets as Prisma.InputJsonValue),
+        }),
       },
       create: {
         userId,
@@ -59,6 +71,11 @@ export async function PUT(req: NextRequest) {
         activityFactor: d.activityFactor ?? null,
         targetBodyFatPercent: d.targetBodyFatPercent ?? null,
         targetLeanMassKg: d.targetLeanMassKg ?? null,
+        useMacroSplit: d.useMacroSplit ?? false,
+        proteinPct: d.proteinPct ?? null,
+        carbsPct: d.carbsPct ?? null,
+        fatPct: d.fatPct ?? null,
+        ...(d.customTargets != null && { customTargets: d.customTargets }),
       },
     });
     return NextResponse.json(goal);
