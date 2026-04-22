@@ -7,6 +7,7 @@ import { Plus, Trash2, Copy, Loader2, Sparkles, Droplet, Camera, Scan, Bookmark,
 import { api } from "@/lib/api-client";
 import FoodSearchModal, { type CatalogFood } from "./food-search-modal";
 import MacrosRing from "./macros-ring";
+import BarcodeScanner from "../nutrition/alimentos/barcode-scanner";
 
 // ─── Meal templates + barcode types ─────────────────────────────────────────
 
@@ -790,27 +791,27 @@ function BarcodeModal({
   onClose: () => void;
   onFound: (food: { id: string; name: string }) => void;
 }) {
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [looking, setLooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  async function lookup() {
-    if (!/^\d{8,20}$/.test(code.trim())) {
-      setError("Código inválido (8-20 dígitos)");
-      return;
-    }
-    setLoading(true);
+  async function lookup(code: string) {
+    setLooking(true);
     setError(null);
     try {
       const res = await api.get<{ food: { id: string; name: string }; source: string }>(
-        `/nutrition/barcode/${code.trim()}`
+        `/nutrition/barcode/${code}`,
       );
       onFound(res.food);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Producto no encontrado");
-    } finally {
-      setLoading(false);
+      setLooking(false);
     }
+  }
+
+  // Mientras no haya resultado usamos BarcodeScanner, que maneja cámara +
+  // fallback manual internamente. Cuando detecta un código llama a lookup().
+  if (!error && !looking) {
+    return <BarcodeScanner onClose={onClose} onDetected={(code) => void lookup(code)} />;
   }
 
   return (
@@ -824,7 +825,7 @@ function BarcodeModal({
       >
         <header className="px-6 py-4 border-b border-brand-cream flex items-center justify-between">
           <h2 className="font-display text-lg font-bold text-brand-dark m-0">
-            Escanear / ingresar código
+            {looking ? "Buscando…" : "No encontrado"}
           </h2>
           <button
             onClick={onClose}
@@ -833,41 +834,29 @@ function BarcodeModal({
             <X size={16} />
           </button>
         </header>
-        <div className="px-6 py-5">
-          <p className="text-xs text-brand-warm mb-3">
-            Ingresa el código EAN/UPC del producto. Se consulta en OpenFoodFacts
-            (gratis, 3M+ productos).
-          </p>
-          <input
-            type="text"
-            inputMode="numeric"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && lookup()}
-            autoFocus
-            placeholder="3017620422003"
-            className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
-          />
-          {error && (
-            <p className="text-xs text-danger mt-2">{error}</p>
+        <div className="px-6 py-5 text-center">
+          {looking ? (
+            <>
+              <Loader2 size={24} className="animate-spin mx-auto text-accent" />
+              <p className="text-sm text-brand-warm mt-3 m-0">
+                Consultando OpenFoodFacts…
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="text-sm text-brand-dark m-0">{error}</p>
+              <button
+                onClick={() => {
+                  setError(null);
+                  setLooking(false);
+                }}
+                className="mt-4 px-4 py-2 rounded-button bg-accent text-white text-sm font-semibold hover:opacity-90"
+              >
+                Volver a escanear
+              </button>
+            </>
           )}
         </div>
-        <footer className="px-6 py-3 border-t border-brand-cream flex gap-2 justify-end">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-button text-sm text-brand-warm hover:bg-brand-cream"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={lookup}
-            disabled={loading || !code.trim()}
-            className="px-5 py-2 rounded-button text-sm font-semibold bg-accent text-white hover:bg-brand-brown disabled:opacity-40 flex items-center gap-2"
-          >
-            {loading && <Loader2 size={12} className="animate-spin" />}
-            Buscar
-          </button>
-        </footer>
       </div>
     </div>
   );

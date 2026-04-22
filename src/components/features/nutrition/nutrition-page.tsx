@@ -7,9 +7,10 @@ import {
   PieChart, Pie, Cell, LineChart, Line,
 } from "recharts";
 import {
-  Plus, Trash2, Search, Target, UtensilsCrossed, Apple, ChevronDown, ChevronUp, X, Sparkles,
+  Plus, Trash2, Search, Target, UtensilsCrossed, Apple, ChevronDown, ChevronUp, X, Sparkles, ScanLine,
 } from "lucide-react";
 import { colors } from "@/lib/colors";
+import { api } from "@/lib/api-client";
 import { useNutritionStore, MealLog, FoodItem } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
 import { cn, ErrorBanner } from "@/components/ui";
@@ -19,6 +20,7 @@ import ComposicionHub from "./hubs/composicion-hub";
 import AlimentosHub from "./hubs/alimentos-hub";
 import FoodEditor from "./alimentos/food-editor";
 import FoodDetailView from "./alimentos/food-detail-view";
+import BarcodeScanner from "./alimentos/barcode-scanner";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -425,6 +427,7 @@ export function FoodsTab() {
   const [mode, setMode] = useState<"list" | "new" | "edit" | "detail">("list");
   const [activeFood, setActiveFood] = useState<FoodItem | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Filtrado: nombre/marca + categoría
   const filtered = foodItems.filter((f) => {
@@ -556,12 +559,55 @@ export function FoodsTab() {
           </select>
         )}
         <button
+          onClick={() => setShowScanner(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-brand-cream text-brand-dark border border-brand-light-tan rounded-lg cursor-pointer text-sm font-semibold hover:bg-brand-light-tan"
+          type="button"
+          title="Escanea un código de barras con la cámara o ingresa EAN manualmente"
+        >
+          <ScanLine size={16} /> Escanear
+        </button>
+        <button
           onClick={() => setMode("new")}
           className="flex items-center gap-2 px-4 py-2 bg-accent text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:opacity-90"
         >
           <Plus size={16} /> Nuevo alimento
         </button>
       </div>
+
+      {showScanner && (
+        <BarcodeScanner
+          onClose={() => setShowScanner(false)}
+          onDetected={async (code) => {
+            try {
+              const res = await api.get<{
+                food: FoodItem;
+                source: string;
+              }>(`/nutrition/barcode/${code}`);
+              // El endpoint /barcode crea el FoodItem en DB automáticamente.
+              // Refrescamos store para que aparezca en la lista.
+              await useNutritionStore.getState().getDailySummary();
+              // También injectamos en foodItems local
+              const existing = useNutritionStore
+                .getState()
+                .foodItems.find((f) => f.id === res.food.id);
+              if (!existing) {
+                useNutritionStore.setState((s) => ({
+                  foodItems: [res.food, ...s.foodItems],
+                }));
+              }
+              setShowScanner(false);
+              setActiveFood(res.food);
+              setMode("detail");
+            } catch (err) {
+              const msg =
+                err instanceof Error
+                  ? err.message
+                  : "Producto no encontrado";
+              alert(msg);
+            }
+          }}
+        />
+      )}
 
       <p className="text-xs text-brand-warm m-0">
         {filtered.length} de {foodItems.length}{" "}
