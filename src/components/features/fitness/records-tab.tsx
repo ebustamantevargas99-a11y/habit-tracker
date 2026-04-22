@@ -16,9 +16,27 @@ interface RecordsTabProps {
 }
 
 export default function RecordsTab({ liveRecords, tonelageHistory }: RecordsTabProps) {
-  const [selectedExercise, setSelectedExercise] = useState(liveRecords[0]?.exercise ?? 'Press Banca');
+  const [selectedExercise, setSelectedExercise] = useState(liveRecords[0]?.exercise ?? '');
   const newPRsThisMonth = liveRecords.filter(r => r.isNewPR).length;
   const chartData = tonelageHistory[selectedExercise] ?? [];
+
+  // Empty state — sin PRs registrados (user nuevo, o tras reset de datos).
+  if (liveRecords.length === 0) {
+    return (
+      <div className="bg-brand-paper rounded-xl p-10 border border-brand-light-tan text-center">
+        <div className="flex justify-center mb-3">
+          <Trophy size={36} className="text-brand-tan" />
+        </div>
+        <h3 className="font-serif text-xl text-brand-dark m-0">
+          Aún no tienes PRs registrados
+        </h3>
+        <p className="text-brand-warm text-sm m-0 mt-2 max-w-md mx-auto">
+          Completa una sesión de <strong>Hoy</strong> con peso × reps y el sistema
+          detecta automáticamente tu primer 1RM estimado (Epley / Helms).
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-5">

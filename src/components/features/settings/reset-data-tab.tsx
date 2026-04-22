@@ -321,8 +321,21 @@ function ConfirmResetModal({
           ? `Reset completo: ${total} registros eliminados.`
           : `"${scope.label}" reseteado: ${total} registros eliminados.`,
       );
+
+      // Limpia caches del browser que sobreviven al reload (drafts sessionStorage,
+      // estado de UI en localStorage). Los drafts de fitness session son los más
+      // visibles — sin esto el "logger clásico" sigue mostrando datos fantasma.
+      try {
+        // Drafts y estados volátiles
+        sessionStorage.removeItem("fitness_draft_exercises");
+        sessionStorage.removeItem("habit_draft");
+        sessionStorage.removeItem("finance_draft_txn");
+      } catch {
+        /* ignore (private mode / storage denegado) */
+      }
+
       onDone();
-      // Recargar para que los stores vuelvan a cargar datos limpios
+      // Recarga dura para que todos los Zustand stores vuelvan a inicializar
       setTimeout(() => window.location.reload(), 900);
     } catch (err) {
       const msg = err instanceof ApiError ? err.message : "No se pudo resetear";

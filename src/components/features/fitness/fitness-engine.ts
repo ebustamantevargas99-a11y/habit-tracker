@@ -124,13 +124,21 @@ export const EXERCISE_IMPACT: Record<string, Partial<Record<string, number>>> = 
 };
 
 // ─── Sample / Default Data ────────────────────────────────────────────────────
+// Vacíos a propósito: la app empieza sin datos seed. El user añade ejercicios
+// desde el selector del logger pro. Los mocks hardcoded que había antes causaban
+// que después de un reset de datos los valores fake volvieran a aparecer.
 
-export const SAMPLE_EXERCISES = [
-  { id: 1, name: 'Press Banca',  muscleGroup: 'Pecho',      lastWeight: 80,  lastReps: 8,  pr: 90,  repMin: 8,  repMax: 12, lastWeekReps: [10, 9, 8, 8]    },
-  { id: 2, name: 'Sentadilla',   muscleGroup: 'Cuádriceps', lastWeight: 100, lastReps: 6,  pr: 120, repMin: 6,  repMax: 10, lastWeekReps: [8, 7, 7, 6]     },
-  { id: 3, name: 'Peso Muerto',  muscleGroup: 'Espalda',    lastWeight: 120, lastReps: 5,  pr: 140, repMin: 5,  repMax: 8,  lastWeekReps: [6, 5, 5]        },
-  { id: 4, name: 'Curl Bíceps',  muscleGroup: 'Bíceps',     lastWeight: 14,  lastReps: 12, pr: 16,  repMin: 10, repMax: 15, lastWeekReps: [12, 12, 12, 12] },
-];
+export const SAMPLE_EXERCISES: Array<{
+  id: number;
+  name: string;
+  muscleGroup: string;
+  lastWeight: number;
+  lastReps: number;
+  pr: number;
+  repMin: number;
+  repMax: number;
+  lastWeekReps: number[];
+}> = [];
 
 export const MUSCLE_GROUPS = [
   'Pecho', 'Espalda', 'Hombros', 'Bíceps', 'Tríceps',
@@ -155,32 +163,19 @@ export const WEEKLY_PLAN_DEFAULT: EnginePlanDay[] = [
   { day: 'Domingo',   type: 'Rest', exercises: [] },
 ];
 
-/** Base accumulated weekly volume (simulates historical DB data) */
-export const BASE_WEEKLY_VOLUME: Record<string, number> = {
-  Pecho: 8, Espalda: 10, Hombros: 6, Bíceps: 6, Tríceps: 6,
-  Cuádriceps: 8, Isquiotibiales: 6, Glúteos: 6, Core: 4, Pantorrillas: 4,
-};
+/** Volumen semanal acumulado. Vacío — se calcula desde workouts reales via
+ *  /api/fitness/volume (ver volume-tab.tsx). */
+export const BASE_WEEKLY_VOLUME: Record<string, number> = {};
 
-/** Initial PRs (seeded before any active session) */
-export const INITIAL_PRS: LivePR[] = [
-  { exercise: 'Press Banca', oneRM: 95,  fiveRM: epleyNRM(95, 5),  tenRM: epleyNRM(95, 10),  date: '2026-03-10', prevOneRM: 90,  isNewPR: false },
-  { exercise: 'Sentadilla',  oneRM: 130, fiveRM: epleyNRM(130, 5), tenRM: epleyNRM(130, 10), date: '2026-03-15', prevOneRM: 120, isNewPR: false },
-  { exercise: 'Peso Muerto', oneRM: 150, fiveRM: epleyNRM(150, 5), tenRM: epleyNRM(150, 10), date: '2026-03-08', prevOneRM: 145, isNewPR: false },
-  { exercise: 'Curl Bíceps', oneRM: 18,  fiveRM: epleyNRM(18, 5),  tenRM: epleyNRM(18, 10),  date: '2026-03-12', prevOneRM: 16,  isNewPR: false },
-];
+/** PRs iniciales. Vacío a propósito — los PRs reales vienen del store que
+ *  lee PersonalRecord de la DB. Tras un reset de datos debe quedar vacío. */
+export const INITIAL_PRS: LivePR[] = [];
 
-/** Simulated tonelage history — last 8 weeks */
-export const INITIAL_TONELAGE: Record<string, TonelagePoint[]> = {
-  'Press Banca': [{ week: 'S1', volume: 5600 }, { week: 'S2', volume: 5880 }, { week: 'S3', volume: 6160 }, { week: 'S4', volume: 6000 }, { week: 'S5', volume: 6400 }, { week: 'S6', volume: 6720 }, { week: 'S7', volume: 7040 }, { week: 'S8', volume: 7200 }],
-  'Sentadilla':  [{ week: 'S1', volume: 8000 }, { week: 'S2', volume: 8400 }, { week: 'S3', volume: 8800 }, { week: 'S4', volume: 8600 }, { week: 'S5', volume: 9000 }, { week: 'S6', volume: 9600 }, { week: 'S7', volume: 9800 }, { week: 'S8', volume: 10200 }],
-  'Peso Muerto': [{ week: 'S1', volume: 9600 }, { week: 'S2', volume: 10200 }, { week: 'S3', volume: 10400 }, { week: 'S4', volume: 10800 }, { week: 'S5', volume: 11200 }, { week: 'S6', volume: 11600 }, { week: 'S7', volume: 12000 }, { week: 'S8', volume: 12400 }],
-  'Curl Bíceps': [{ week: 'S1', volume: 840 }, { week: 'S2', volume: 900 }, { week: 'S3', volume: 960 }, { week: 'S4', volume: 980 }, { week: 'S5', volume: 1020 }, { week: 'S6', volume: 1080 }, { week: 'S7', volume: 1120 }, { week: 'S8', volume: 1176 }],
-};
+/** Tonelaje histórico. Vacío — se deriva de Workouts reales en el store. */
+export const INITIAL_TONELAGE: Record<string, TonelagePoint[]> = {};
 
-/** Build default session exercises (used on first load and after finishing a session) */
+/** Build default session exercises: empieza SIN ejercicios. El user agrega
+ *  desde el selector. Antes había 4 ejercicios seed que resurgían tras reset. */
 export function makeDefaultExercises(): EngineExercise[] {
-  return SAMPLE_EXERCISES.map((ex) => ({
-    ...ex,
-    sets: [{ id: String(Date.now() + ex.id), weight: ex.lastWeight, reps: ex.lastReps, rpe: 7 }],
-  }));
+  return [];
 }

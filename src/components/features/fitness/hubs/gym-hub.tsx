@@ -1,7 +1,7 @@
 "use client";
 import { todayLocal } from "@/lib/date/local";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Tabs } from "@/components/ui";
 import { useFitnessStore } from "@/stores/fitness-store";
 import {
@@ -11,7 +11,6 @@ import {
   epleyNRM,
   computeFractionalVolume,
   makeDefaultExercises,
-  INITIAL_PRS,
 } from "../fitness-engine";
 import WorkoutTab from "../workout-tab";
 import VolumeTab from "../volume-tab";
@@ -76,24 +75,24 @@ export default function GymHub() {
     }
   }, [sessionExercises]);
 
-  // ── Live PRs (merge de store persistidos con el seed inicial) ──────────────
-  const [livePRs, setLivePRs] = useState<LivePR[]>(INITIAL_PRS);
-  const prsSyncedRef = useRef(false);
+  // ── Live PRs (derivados de `personalRecords` del store) ───────────────────
+  // Antes arrancaba con INITIAL_PRS (seeds hardcoded) que sobrevivían tras un
+  // reset de datos. Ahora derivamos directo de DB y solo añadimos PRs locales
+  // que se detectan durante la sesión activa.
+  const [livePRs, setLivePRs] = useState<LivePR[]>([]);
   useEffect(() => {
-    if (prsSyncedRef.current) return;
-    prsSyncedRef.current = true;
-    if (personalRecords.length > 0) {
-      setLivePRs((prev) =>
-        prev.map((pr) => {
-          const stored = personalRecords.find((s) => s.exercise === pr.exercise);
-          if (!stored) return pr;
-          if (stored.oneRM >= pr.oneRM) {
-            return { ...pr, ...stored, prevOneRM: stored.oneRM, isNewPR: false };
-          }
-          return pr;
-        }),
-      );
-    }
+    // Re-sync cada vez que cambia el store (incluye tras reset).
+    setLivePRs(
+      personalRecords.map((r) => ({
+        exercise: r.exercise,
+        oneRM: r.oneRM,
+        fiveRM: r.fiveRM,
+        tenRM: r.tenRM,
+        date: r.date,
+        prevOneRM: r.oneRM,
+        isNewPR: false,
+      })),
+    );
   }, [personalRecords]);
 
   // ── Fractional session volume (motor 1) ────────────────────────────────────

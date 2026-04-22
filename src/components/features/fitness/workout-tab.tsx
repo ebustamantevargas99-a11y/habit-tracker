@@ -216,6 +216,18 @@ export default function WorkoutTab({ exercises, onExercisesChange, isSaving, onF
 
   return (
     <div className="flex flex-col gap-4">
+      {exercises.length === 0 && (
+        <Card variant="default" padding="md" className="border-dashed border-2 border-brand-light-tan text-center">
+          <p className="text-brand-dark font-semibold m-0">
+            Sin ejercicios en esta sesión
+          </p>
+          <p className="text-brand-warm text-xs m-0 mt-1">
+            Usa el <strong>logger pro</strong> de arriba para agregar ejercicios
+            con el selector, o pulsa <strong>&ldquo;Agregar ejercicio&rdquo;</strong>{" "}
+            al pie de esta sección.
+          </p>
+        </Card>
+      )}
       <div className="grid grid-cols-[1fr_280px] gap-6">
         {/* Main Workout Grid */}
         <div className="flex flex-col gap-5">
