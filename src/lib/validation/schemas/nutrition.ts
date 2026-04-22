@@ -135,6 +135,67 @@ export const nutritionGoalUpsertSchema = z.object({
 
 // ─── Body Composition (bioimpedancia / DEXA / Navy / etc.) ────────────────────
 
+// ─── Blood markers (glucosa, BP, lípidos, A1C, ketones) ───────────────────────
+
+export const bloodMarkerContextEnum = z.enum([
+  "fasting",
+  "postprandial",
+  "random",
+  "pre_meal",
+  "post_meal",
+]);
+
+export const bloodMarkerSourceEnum = z.enum([
+  "cgm",
+  "home_meter",
+  "lab",
+  "smartwatch",
+  "other",
+]);
+
+const optNumBm = nonNegativeNumber.optional().nullable();
+
+// Base object — reutilizado por create (con validación "al menos uno") y
+// update (partial sin date).
+const bloodMarkerBaseObject = z.object({
+  date: dateSchema,
+  measuredAt: z.string().datetime().optional().nullable(),
+  context: bloodMarkerContextEnum.optional().nullable(),
+  glucoseMgDl: z.number().min(0).max(1000).optional().nullable(),
+  a1cPercent: z.number().min(3).max(20).optional().nullable(),
+  ketonesMmolL: z.number().min(0).max(20).optional().nullable(),
+  insulinMuIml: z.number().min(0).max(500).optional().nullable(),
+  systolic: z.number().int().min(50).max(300).optional().nullable(),
+  diastolic: z.number().int().min(30).max(200).optional().nullable(),
+  heartRate: z.number().int().min(20).max(250).optional().nullable(),
+  totalCholesterol: z.number().min(0).max(1000).optional().nullable(),
+  hdl: optNumBm,
+  ldl: optNumBm,
+  triglycerides: optNumBm,
+  source: bloodMarkerSourceEnum.optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+});
+
+export const bloodMarkerCreateSchema = bloodMarkerBaseObject.refine(
+  (v) =>
+    v.glucoseMgDl != null ||
+    v.a1cPercent != null ||
+    v.ketonesMmolL != null ||
+    v.insulinMuIml != null ||
+    v.systolic != null ||
+    v.diastolic != null ||
+    v.heartRate != null ||
+    v.totalCholesterol != null ||
+    v.hdl != null ||
+    v.ldl != null ||
+    v.triglycerides != null,
+  { message: "Registra al menos un marcador" },
+);
+
+export const bloodMarkerUpdateSchema = bloodMarkerBaseObject
+  .partial()
+  .omit({ date: true });
+
 export const bodyCompositionMethodEnumNutrition = z.enum([
   "dexa",
   "bia",

@@ -34,6 +34,7 @@ import {
 } from "@/lib/nutrition/body-composition";
 import BodyEvolutionChart from "../composicion/body-evolution-chart";
 import BodyProgressAnalysis from "../composicion/body-progress-analysis";
+import BloodMarkersPanel from "../composicion/blood-markers";
 
 interface BodyCompositionRow {
   id: string;
@@ -60,9 +61,10 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 const SUB_TABS = [
-  { id: "registro",  label: "📋 Registro"  },
-  { id: "evolucion", label: "📈 Evolución" },
-  { id: "analisis",  label: "🧠 Análisis"  },
+  { id: "registro",   label: "📋 Registro"    },
+  { id: "evolucion",  label: "📈 Evolución"   },
+  { id: "analisis",   label: "🧠 Análisis"    },
+  { id: "marcadores", label: "🩸 Marcadores sangre" },
 ];
 
 export default function ComposicionHub() {
@@ -180,6 +182,8 @@ export default function ComposicionHub() {
       {subTab === "analisis" && (
         <BodyProgressAnalysis rows={rows} sex={sex} heightCm={heightCm} />
       )}
+
+      {subTab === "marcadores" && <BloodMarkersPanel />}
     </section>
   );
 }
