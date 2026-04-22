@@ -1,4 +1,5 @@
 'use client';
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState } from 'react';
 import {
@@ -153,7 +154,7 @@ export default function BodyMetricsTab({ onSave }: BodyMetricsTabProps) {
         <div className="flex justify-end">
           <button
             onClick={() => onSave({
-              date: new Date().toISOString().split('T')[0],
+              date: todayLocal(),
               weight, bodyFat,
               chest: measurements.chest, waist: measurements.waist,
               armLeft: measurements.arms, armRight: measurements.arms,

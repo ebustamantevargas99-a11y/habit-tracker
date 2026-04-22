@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -59,7 +60,7 @@ export default function ReadinessCheck({ onSaved }: { onSaved?: () => void }) {
 
   useEffect(() => {
     // Precargar check de hoy si ya existe
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocal();
     api
       .get<ReadinessRow[]>(`/fitness/readiness?days=14`)
       .then((rows) => {
@@ -97,7 +98,7 @@ export default function ReadinessCheck({ onSaved }: { onSaved?: () => void }) {
   async function save() {
     setSubmitting(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayLocal();
       await api.post("/fitness/readiness", {
         date: today,
         sleepHours: values.sleepHours ?? null,

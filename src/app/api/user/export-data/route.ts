@@ -43,8 +43,6 @@ export async function GET(req: NextRequest) {
       medicationLogs,
       symptomLogs,
       appointments,
-      okrObjectives,
-      projectionConfigs,
       pomodoroSessions,
       projects,
       foodItems,
@@ -104,14 +102,6 @@ export async function GET(req: NextRequest) {
       prisma.medicationLog.findMany({ where: { userId } }),
       prisma.symptomLog.findMany({ where: { userId } }),
       prisma.medicalAppointment.findMany({ where: { userId } }),
-      prisma.oKRObjective.findMany({
-        where: { userId },
-        include: { keyResults: true },
-      }),
-      prisma.projectionConfig.findMany({
-        where: { userId },
-        include: { milestones: true },
-      }),
       prisma.pomodoroSession.findMany({ where: { userId } }),
       prisma.project.findMany({
         where: { userId },
@@ -174,8 +164,6 @@ export async function GET(req: NextRequest) {
       medicationLogs,
       symptomLogs,
       appointments,
-      okrObjectives,
-      projectionConfigs,
       pomodoroSessions,
       projects,
       foodItems,

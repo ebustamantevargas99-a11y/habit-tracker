@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState } from "react";
 import { toast } from "sonner";
@@ -45,7 +46,7 @@ export default function ProgramBuilder({ onCreated }: { onCreated?: () => void }
         goal,
         durationWeeks: parseInt(durationWeeks, 10) || 8,
         daysPerWeek: parseInt(daysPerWeek, 10) || 4,
-        startDate: new Date().toISOString().split("T")[0],
+        startDate: todayLocal(),
         active: activateNow,
         schedule: [],
       });

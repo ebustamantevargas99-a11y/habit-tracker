@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -16,7 +17,7 @@ type Ritual = {
 };
 
 export default function EveningRitualPanel() {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayLocal();
   const [ritual, setRitual] = useState<Ritual>({
     date: today,
     sleepTime: null,

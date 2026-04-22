@@ -44,7 +44,6 @@ export * from "./schemas/common";
 export * from "./schemas/fitness";
 export * from "./schemas/wellness";
 export * from "./schemas/productivity";
-export * from "./schemas/okr";
 export * from "./schemas/organization";
 export * from "./schemas/nutrition";
 export * from "./schemas/habits";

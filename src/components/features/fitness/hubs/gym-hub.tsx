@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Tabs } from "@/components/ui";
@@ -118,7 +119,7 @@ export default function GymHub() {
             oneRM: best,
             fiveRM: epleyNRM(best, 5),
             tenRM: epleyNRM(best, 10),
-            date: new Date().toISOString().split("T")[0],
+            date: todayLocal(),
             isNewPR: true,
           };
           updatePR({
@@ -150,7 +151,7 @@ export default function GymHub() {
     if (!hasData) return;
     setIsSavingSession(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayLocal();
       const totalVolume = sessionExercises.reduce(
         (sum, ex) =>
           sum + ex.sets.reduce((s, set) => s + set.weight * set.reps, 0),

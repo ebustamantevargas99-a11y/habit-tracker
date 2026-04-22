@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -539,7 +540,7 @@ function LogSessionModal({
   const [notes, setNotes] = useState("");
   const [saving, setSaving] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayLocal();
 
   async function handleSave() {
     const p = parseInt(pagesRead, 10);

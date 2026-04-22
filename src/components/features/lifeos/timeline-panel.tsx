@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -196,7 +197,7 @@ function AddMilestoneModal({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [icon, setIcon] = useState("🏆");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayLocal());
 
   return (
     <div

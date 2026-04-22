@@ -1,4 +1,5 @@
 'use client';
+import { todayLocal } from "@/lib/date/local";
 
 import { useState, useEffect } from 'react';
 import { cn, ErrorBanner } from '@/components/ui';
@@ -82,7 +83,7 @@ const MoodTrackerPage = () => {
   const switchTab = (tab: WellnessTab) => { setActiveTab(tab); setWellnessSubTab(tab); };
 
   // ── SLEEP STATE ──────────────────────────────────────────────────────────
-  const today = new Date().toISOString().split('T')[0];
+  const today = todayLocal();
   const [sleepDate, setSleepDate]         = useState(today);
   const [sleepBedtime, setSleepBedtime]   = useState('23:30');
   const [sleepWakeTime, setSleepWakeTime] = useState('07:00');

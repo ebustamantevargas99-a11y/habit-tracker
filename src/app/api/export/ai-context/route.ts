@@ -64,7 +64,6 @@ export async function GET(req: NextRequest) {
     dailyPlans,
     pomodoroSessions,
     projects,
-    okrObjectives,
     gamification,
     badges,
   ] = await Promise.all([
@@ -187,13 +186,6 @@ export async function GET(req: NextRequest) {
     prisma.project.findMany({
       where: { userId, status: "active" },
       select: { name: true, tasks: { select: { status: true } } },
-    }),
-    prisma.oKRObjective.findMany({
-      where: { userId, isActive: true },
-      select: {
-        title: true, progress: true,
-        keyResults: { select: { title: true, targetValue: true, currentValue: true, unit: true } },
-      },
     }),
     prisma.gamification.findUnique({
       where: { userId },
@@ -856,22 +848,6 @@ export async function GET(req: NextRequest) {
         };
       }),
     },
-    okr: {
-      objectives: okrObjectives.map((o) => ({
-        title: o.title,
-        progress: Math.round(o.progress),
-        keyResults: o.keyResults.map((kr) => ({
-          title: kr.title,
-          target: kr.targetValue,
-          current: kr.currentValue,
-          unit: kr.unit ?? null,
-          progressPercent:
-            kr.targetValue > 0
-              ? Math.round((kr.currentValue / kr.targetValue) * 100)
-              : 0,
-        })),
-      })),
-    },
   };
 
   // ════════════════════════════════════════════════════════
@@ -1265,9 +1241,6 @@ ${ws.appointments.upcoming.map((a) => `- ${a.doctorName} (${a.specialty}): ${a.d
 
 Progreso de proyectos:
 ${ps.projects.active.map((p) => `- ${p.name}: ${p.completedTasks}/${p.totalTasks} tareas (${p.progressPercent}%)`).join("\n") || "Sin proyectos activos"}
-
-OKRs:
-${ps.okr.objectives.map((o) => `- ${o.title}: ${o.progress}%\n${o.keyResults.map((kr) => `  · ${kr.title}: ${kr.current}/${kr.target}${kr.unit ? " " + kr.unit : ""} (${kr.progressPercent}%)`).join("\n")}`).join("\n") || "Sin OKRs activos"}
 
 ---
 

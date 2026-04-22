@@ -1,4 +1,5 @@
 'use client';
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState } from 'react';
 import {
@@ -26,13 +27,13 @@ function getHeatClass(steps: number, goal: number): string {
 export default function StepsTab({ stepsLog: storedLog, onAddSteps }: StepsTabProps) {
   const [dailyGoal] = useState(10000);
   const [todaySteps, setTodaySteps] = useState(() => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = todayLocal();
     return storedLog.find((e) => e.date === today)?.steps ?? 0;
   });
 
   const handleStepsBlur = () => {
     if (todaySteps > 0) {
-      onAddSteps({ date: new Date().toISOString().split('T')[0], steps: todaySteps }).catch(() => {});
+      onAddSteps({ date: todayLocal(), steps: todaySteps }).catch(() => {});
     }
   };
 

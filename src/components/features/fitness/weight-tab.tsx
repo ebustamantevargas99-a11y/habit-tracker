@@ -1,4 +1,5 @@
 'use client';
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState } from 'react';
 import {
@@ -35,7 +36,7 @@ export default function WeightTab({ weightLog: storedLog, onAddWeight }: WeightT
 
   const addWeight = () => {
     if (!newWeight) return;
-    onAddWeight({ date: new Date().toISOString().split('T')[0], weight: parseFloat(newWeight) }).catch(() => {});
+    onAddWeight({ date: todayLocal(), weight: parseFloat(newWeight) }).catch(() => {});
     setNewWeight('');
   };
 

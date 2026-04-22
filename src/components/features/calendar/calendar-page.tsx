@@ -19,6 +19,8 @@ import YearReviewModal from "./year-review-modal";
 import CalendarGroupsSidebar from "./calendar-groups-sidebar";
 import type { CalendarGroup } from "./types";
 import { useAppStore, type PlanTab } from "@/stores/app-store";
+import { useUserStore } from "@/stores/user-store";
+import { todayLocal } from "@/lib/date/local";
 
 const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
   { id: "today", label: "Hoy",    icon: CalendarIcon },
@@ -31,9 +33,8 @@ const LS_COLLAPSED_KEY = "calendar.sidebarCollapsed";
 export default function CalendarPage() {
   const view = useAppStore((s) => s.planTab);
   const setView = useAppStore((s) => s.setPlanTab);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const tz = useUserStore((s) => s.user?.profile?.timezone);
+  const [selectedDate, setSelectedDate] = useState(() => todayLocal(tz));
   const [notifPermission, setNotifPermission] = useState<NotificationPermission | "unsupported">(
     "default"
   );

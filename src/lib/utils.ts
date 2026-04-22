@@ -7,38 +7,6 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Calculate Life Score (weighted average of all areas)
- * See PROJECT-BIBLE.md Section 5.2
- */
-export function calculateLifeScore(areas: {
-  vision: number;
-  plan: number;
-  productivity: number;
-  organization: number;
-  finance: number;
-  fitness: number;
-  nutrition: number;
-  wellness: number;
-}): number {
-  const weights = {
-    vision: 0.10,
-    plan: 0.10,
-    productivity: 0.15,
-    organization: 0.08,
-    finance: 0.15,
-    fitness: 0.15,
-    nutrition: 0.12,
-    wellness: 0.15,
-  };
-
-  let score = 0;
-  for (const [key, weight] of Object.entries(weights)) {
-    score += (areas[key as keyof typeof areas] || 0) * weight;
-  }
-  return Math.round(score * 10) / 10;
-}
-
-/**
  * Calculate Habit Strength (0-100%)
  * Based on Phillippa Lally's research: 66 days average to form a habit
  * See PROJECT-BIBLE.md Section 5.10

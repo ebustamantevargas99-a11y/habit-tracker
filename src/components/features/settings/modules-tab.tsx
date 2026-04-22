@@ -44,11 +44,6 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     emoji: "💰",
     description: "Transacciones, presupuestos, metas",
   },
-  okr: {
-    label: "OKR / Metas",
-    emoji: "🎯",
-    description: "Objetivos, key results, proyecciones",
-  },
   projects: {
     label: "Proyectos",
     emoji: "📁",
@@ -93,11 +88,6 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     label: "Journaling",
     emoji: "📝",
     description: "Prompts diarios y reflexión",
-  },
-  visionBoard: {
-    label: "Vision Board",
-    emoji: "✨",
-    description: "Visualización de metas",
   },
 };
 

@@ -24,6 +24,8 @@ import QuickAddBar from "./quick-add-bar";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
 import type { DayAgenda, CalendarEvent } from "./types";
 import { TYPE_META } from "./types";
+import { useUserStore } from "@/stores/user-store";
+import { todayLocal, toLocalDateStr } from "@/lib/date/local";
 
 // Construimos un timeline virtual combinando todos los recursos del día
 type TimelineItem =
@@ -67,6 +69,7 @@ export default function TodayView({
   selectedDate: string;
   onDateChange: (date: string) => void;
 }) {
+  const tz = useUserStore((s) => s.user?.profile?.timezone);
   const [data, setData] = useState<DayAgenda | null>(null);
   const [loading, setLoading] = useState(true);
   const [savingPlan, setSavingPlan] = useState(false);
@@ -190,12 +193,12 @@ export default function TodayView({
   }, [data]);
 
   const todayDate = new Date(selectedDate + "T12:00:00");
-  const isToday = selectedDate === new Date().toISOString().split("T")[0];
+  const isToday = selectedDate === todayLocal(tz);
 
   function shiftDate(delta: number) {
     const d = new Date(selectedDate + "T00:00:00");
     d.setDate(d.getDate() + delta);
-    onDateChange(d.toISOString().split("T")[0]);
+    onDateChange(toLocalDateStr(d, tz));
   }
 
   if (loading && !data) {
@@ -236,7 +239,7 @@ export default function TodayView({
             ← Ayer
           </button>
           <button
-            onClick={() => onDateChange(new Date().toISOString().split("T")[0])}
+            onClick={() => onDateChange(todayLocal(tz))}
             className="px-3 py-1.5 rounded-button border border-brand-cream text-sm text-brand-medium hover:bg-brand-cream"
           >
             Hoy

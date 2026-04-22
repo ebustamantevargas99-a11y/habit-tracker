@@ -18,6 +18,8 @@ import QuickAddBar from "./quick-add-bar";
 import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
 import type { CalendarEvent, CalendarGroup } from "./types";
 import { TYPE_META } from "./types";
+import { useUserStore } from "@/stores/user-store";
+import { toLocalDateStr } from "@/lib/date/local";
 
 // Configuración del grid
 const HOUR_START = 6;  // 6am
@@ -53,8 +55,12 @@ function addDays(d: Date, n: number): Date {
   return r;
 }
 
-function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+/**
+ * "YYYY-MM-DD" en la TZ del user. Fallback a la TZ del navegador si no pasa.
+ * Reemplaza el viejo `toISOString().split("T")[0]` que devolvía UTC.
+ */
+function toDateStr(d: Date, tz?: string | null): string {
+  return toLocalDateStr(d, tz);
 }
 
 function hourFromDate(iso: string): number {
@@ -77,6 +83,7 @@ interface WeekViewProps {
 }
 
 export default function WeekView({ groups }: WeekViewProps) {
+  const tz = useUserStore((s) => s.user?.profile?.timezone);
   const [weekStart, setWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [data, setData] = useState<WeekData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,11 +111,13 @@ export default function WeekView({ groups }: WeekViewProps) {
 
   const weekEnd = useMemo(() => addDays(weekStart, 6), [weekStart]);
 
+  const todayStr = useMemo(() => toDateStr(new Date(), tz), [tz]);
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const from = toDateStr(weekStart);
-      const to = toDateStr(weekEnd);
+      const from = toDateStr(weekStart, tz);
+      const to = toDateStr(weekEnd, tz);
       const res = await api.get<WeekData>(`/calendar/range?from=${from}&to=${to}`);
       setData(res);
     } catch {
@@ -236,11 +245,11 @@ export default function WeekView({ groups }: WeekViewProps) {
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-brand-cream bg-brand-warm-white">
             <div />
             {weekDays.map((d) => {
-              const isToday = toDateStr(d) === toDateStr(new Date());
-              const density = data?.density[toDateStr(d)] ?? 0;
+              const isToday = toDateStr(d, tz) === todayStr;
+              const density = data?.density[toDateStr(d, tz)] ?? 0;
               return (
                 <div
-                  key={toDateStr(d)}
+                  key={toDateStr(d, tz)}
                   className={cn(
                     "px-2 py-2 text-center border-l border-brand-cream",
                     isToday && "bg-accent/10"
@@ -289,15 +298,16 @@ export default function WeekView({ groups }: WeekViewProps) {
 
             {/* Columnas de días */}
             {weekDays.map((d) => {
-              const dateStr = toDateStr(d);
+              const dateStr = toDateStr(d, tz);
               const dayEvents = data?.events.filter(
-                (e) => toDateStr(new Date(e.startAt)) === dateStr && isEventVisible(e),
+                (e) => toDateStr(new Date(e.startAt), tz) === dateStr && isEventVisible(e),
               ) ?? [];
               const dayWorkouts = data?.workouts.filter((w) => w.date === dateStr) ?? [];
               return (
                 <DayColumn
                   key={dateStr}
                   dateStr={dateStr}
+                  todayStr={todayStr}
                   events={dayEvents}
                   workouts={dayWorkouts}
                   groupsById={groupsById}
@@ -356,6 +366,7 @@ export default function WeekView({ groups }: WeekViewProps) {
 
 function DayColumn({
   dateStr,
+  todayStr,
   events,
   workouts,
   groupsById,
@@ -363,13 +374,14 @@ function DayColumn({
   onEventClick,
 }: {
   dateStr: string;
+  todayStr: string;
   events: CalendarEvent[];
   workouts: Array<{ id: string; name: string; durationMinutes: number; completed: boolean }>;
   groupsById: Map<string, CalendarGroup>;
   onCellClick: (hour: number, anchor: AnchorRect) => void;
   onEventClick: (ev: CalendarEvent, anchor: AnchorRect) => void;
 }) {
-  const isToday = dateStr === toDateStr(new Date());
+  const isToday = dateStr === todayStr;
 
   return (
     <div

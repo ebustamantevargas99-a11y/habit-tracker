@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -39,7 +40,7 @@ export default function TemplateLibrary({ onActivated }: { onActivated?: () => v
     if (!confirm(`Activar "${t.name}" (${t.durationWeeks} semanas)? Esto desactivará cualquier programa activo.`)) return;
     setActivating(t.id);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayLocal();
       await api.post(`/fitness/programs?fromTemplate=1`, {
         templateId: t.id,
         startDate: today,

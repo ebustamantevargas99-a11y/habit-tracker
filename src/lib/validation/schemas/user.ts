@@ -11,9 +11,9 @@ const INTEREST_KEYS = [
 ] as const;
 const MODULE_KEYS = [
   "home", "habits", "mood", "tasks", "settings", "fitness", "nutrition",
-  "fasting", "sleep", "hydration", "finance", "okr", "projects", "planner",
+  "fasting", "sleep", "hydration", "finance", "projects", "planner",
   "meditation", "reading", "medications", "menstrualCycle", "pregnancy",
-  "organization", "gamification", "journal", "visionBoard",
+  "organization", "gamification", "journal",
 ] as const;
 
 export const onboardingSchema = z.object({
@@ -56,10 +56,3 @@ export const profileUpdateSchema = z.object({
   sleepGoal: nonNegativeNumber.optional(),
 });
 
-// Vision board is a free-form JSON blob saved under UserProfile.visionBoard.
-// Keep the schema permissive but cap payload size to prevent abuse.
-export const visionBoardUpdateSchema = z
-  .record(z.string(), z.unknown())
-  .refine((v) => JSON.stringify(v).length < 500_000, {
-    message: "Vision board demasiado grande (max 500KB)",
-  });

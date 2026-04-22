@@ -17,7 +17,6 @@ const NAV_TO_MODULE: Record<string, ModuleKey> = {
   nutrition: "nutrition",
   organization: "organization",
   wellness: "mood",
-  vision: "okr",
   settings: "settings",
 };
 

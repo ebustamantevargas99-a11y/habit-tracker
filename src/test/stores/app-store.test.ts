@@ -40,8 +40,8 @@ describe('useAppStore — setActivePage()', () => {
 
   it('successive calls update the page', () => {
     useAppStore.getState().setActivePage('finance');
-    useAppStore.getState().setActivePage('vision');
-    expect(useAppStore.getState().activePage).toBe('vision');
+    useAppStore.getState().setActivePage('organization');
+    expect(useAppStore.getState().activePage).toBe('organization');
   });
 });
 

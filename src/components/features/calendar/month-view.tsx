@@ -9,6 +9,8 @@ import QuickAddBar from "./quick-add-bar";
 import QuickEventPopover, { type AnchorRect } from "./quick-event-popover";
 import type { CalendarEvent, CalendarGroup } from "./types";
 import { TYPE_META } from "./types";
+import { useUserStore } from "@/stores/user-store";
+import { toLocalDateStr } from "@/lib/date/local";
 
 type MonthData = {
   events: CalendarEvent[];
@@ -29,8 +31,8 @@ const WEEK_DAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 // indica hora específica, arrancamos en 9:00am).
 const DEFAULT_CREATE_HOUR = 9;
 
-function toDateStr(d: Date): string {
-  return d.toISOString().split("T")[0];
+function toDateStr(d: Date, tz?: string | null): string {
+  return toLocalDateStr(d, tz);
 }
 
 function startOfMonth(d: Date): Date {
@@ -72,10 +74,13 @@ export default function MonthView({
   groups: CalendarGroup[];
   onDrillDown: (date: string) => void;
 }) {
+  const tz = useUserStore((s) => s.user?.profile?.timezone);
   const [cursor, setCursor] = useState<Date>(new Date());
   const [data, setData] = useState<MonthData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Editing | null>(null);
+
+  const todayStr = useMemo(() => toDateStr(new Date(), tz), [tz]);
 
   const groupsById = useMemo(() => {
     const m = new Map<string, CalendarGroup>();
@@ -95,8 +100,8 @@ export default function MonthView({
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const from = toDateStr(grid[0]);
-      const to = toDateStr(grid[grid.length - 1]);
+      const from = toDateStr(grid[0], tz);
+      const to = toDateStr(grid[grid.length - 1], tz);
       const res = await api.get<MonthData>(`/calendar/range?from=${from}&to=${to}`);
       setData(res);
     } catch {
@@ -133,7 +138,7 @@ export default function MonthView({
     >();
     if (!data) return map;
     for (const g of grid) {
-      const k = toDateStr(g);
+      const k = toDateStr(g, tz);
       map.set(k, {
         events: [],
         workouts: [],
@@ -145,7 +150,7 @@ export default function MonthView({
     }
     for (const ev of data.events) {
       if (!isEventVisible(ev)) continue;
-      const k = toDateStr(new Date(ev.startAt));
+      const k = toDateStr(new Date(ev.startAt), tz);
       const entry = map.get(k);
       if (entry) entry.events.push(ev);
     }
@@ -239,9 +244,9 @@ export default function MonthView({
         {/* Cells */}
         <div className="grid grid-cols-7">
           {grid.map((d) => {
-            const k = toDateStr(d);
+            const k = toDateStr(d, tz);
             const isOtherMonth = d.getMonth() !== month;
-            const isToday = k === toDateStr(new Date());
+            const isToday = k === todayStr;
             const entry = dayData.get(k);
             const dens = entry?.density ?? 0;
             const densityIntensity = Math.min(1, dens / Math.max(1, maxDensity));

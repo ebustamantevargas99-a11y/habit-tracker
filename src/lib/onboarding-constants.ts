@@ -13,7 +13,6 @@ export type ModuleKey =
   | "sleep"
   | "hydration"
   | "finance"
-  | "okr"
   | "projects"
   | "planner"
   | "meditation"
@@ -24,7 +23,6 @@ export type ModuleKey =
   | "organization"
   | "gamification"
   | "journal"
-  | "visionBoard"
   | "lifeos";
 
 export type InterestKey =
@@ -82,7 +80,6 @@ export const MODULE_ACTIVATION: Record<
   sleep: ["sleep"],
   hydration: ["hydration"],
   finance: ["finance"],
-  okr: ["productivity"],
   projects: ["productivity"],
   planner: ["productivity", "study"],
   meditation: ["mindfulness"],
@@ -92,7 +89,6 @@ export const MODULE_ACTIVATION: Record<
   pregnancy: ["pregnancy"],
   organization: [],
   journal: ["mindfulness"],
-  visionBoard: [],
   lifeos: [],
 };
 
@@ -126,7 +122,7 @@ export const INTEREST_LABELS: Record<InterestKey, { label: string; emoji: string
   productivity: {
     label: "Productividad / Trabajo",
     emoji: "🎯",
-    description: "Tareas, proyectos, pomodoro, OKR",
+    description: "Tareas, proyectos, pomodoro, deep work",
   },
   study: {
     label: "Estudio / Aprendizaje",

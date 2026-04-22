@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState, useEffect } from "react";
 import {
@@ -35,7 +36,7 @@ const MEAL_BORDER: Record<string, string> = {
 const MACRO_COLORS = [colors.success, colors.accentLight, colors.medium];
 
 function todayStr() {
-  return new Date().toISOString().split("T")[0];
+  return todayLocal();
 }
 
 function macroRing(protein: number, carbs: number, fat: number) {

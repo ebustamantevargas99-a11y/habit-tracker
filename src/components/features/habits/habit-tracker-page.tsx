@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useEffect, useMemo, useState } from "react";
 import { Plus, Loader2, LayoutGrid, Map as MapIcon, List } from "lucide-react";
@@ -55,7 +56,7 @@ export default function HabitTrackerPage() {
     return h < 12 ? "Buenos días" : h < 19 ? "Buenas tardes" : "Buenas noches";
   }, []);
 
-  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const todayStr = useMemo(() => todayLocal(), []);
   const completedTodayIds = useMemo(
     () =>
       new Set(

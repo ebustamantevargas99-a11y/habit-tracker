@@ -1,4 +1,5 @@
 'use client';
+import { todayLocal } from "@/lib/date/local";
 
 import React, { useState } from 'react';
 import { Download, Clipboard, Check, Loader2 } from 'lucide-react';
@@ -142,7 +143,7 @@ export default function ExportSection() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mi-vida-ai-context-${new Date().toISOString().split('T')[0]}.json`;
+    link.download = `mi-vida-ai-context-${todayLocal()}.json`;
     link.click();
     URL.revokeObjectURL(url);
   });
@@ -154,7 +155,7 @@ export default function ExportSection() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `mi-vida-resumen-${new Date().toISOString().split('T')[0]}.md`;
+    link.download = `mi-vida-resumen-${todayLocal()}.md`;
     link.click();
     URL.revokeObjectURL(url);
   });

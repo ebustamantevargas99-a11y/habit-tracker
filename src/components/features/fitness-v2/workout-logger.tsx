@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -319,7 +320,7 @@ export default function WorkoutLogger() {
       Math.round((Date.now() - startTime.getTime()) / 60000),
     );
     const payload = {
-      date: new Date().toISOString().split("T")[0],
+      date: todayLocal(),
       name: workoutName.trim() || "Entreno",
       duration: durationMinutes,
       totalVolume: totals.volume,

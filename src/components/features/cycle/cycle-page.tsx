@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -108,7 +109,7 @@ export default function CyclePage() {
   }, [dayOfCycle]);
 
   async function startNewCycle() {
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocal();
     try {
       const cycle = await api.post<MenstrualCycle>("/cycle/cycles", { startDate: today });
       setCycles((prev) => [{ ...cycle, periodLogs: [] }, ...prev]);
@@ -357,7 +358,7 @@ function LogModal({
   onClose: () => void;
   onSave: (input: Omit<PeriodLog, "id">) => void;
 }) {
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const [date, setDate] = useState(todayLocal());
   const [flow, setFlow] = useState<PeriodLog["flow"]>("none");
   const [symptoms, setSymptoms] = useState<string[]>([]);
   const [mood, setMood] = useState<number | null>(null);

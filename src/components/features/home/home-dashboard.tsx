@@ -14,6 +14,7 @@ import { useUserStore } from '@/stores/user-store';
 import { cn, ErrorBanner } from '@/components/ui';
 import AIExportButton from '@/components/features/ai-export/ai-export-button';
 import { api } from '@/lib/api-client';
+import { todayLocal, toLocalDateStr } from '@/lib/date/local';
 
 type LifeScoreApi = {
   overall: number;
@@ -165,6 +166,7 @@ export default function HomeDashboard() {
   const clearError = useHabitStore((s) => s.clearError);
   const { user } = useUserStore();
   const displayName = user?.name ?? 'Usuario';
+  const tz = user?.profile?.timezone;
 
   const [currentTime, setCurrentTime] = useState(new Date());
   useEffect(() => {
@@ -209,7 +211,7 @@ export default function HomeDashboard() {
 
   const quote = useMemo(() => motivationalQuotes[currentTime.getDate() % motivationalQuotes.length], [currentTime]);
 
-  const todayStr = useMemo(() => new Date().toISOString().split('T')[0], []);
+  const todayStr = useMemo(() => todayLocal(tz), [tz]);
 
   const completedTodayIds = useMemo(
     () => new Set(logs.filter(l => l.date === todayStr && l.completed).map(l => l.habitId)),
@@ -235,7 +237,7 @@ export default function HomeDashboard() {
   const avgStrength = useMemo(() => {
     if (habits.length === 0) return 0;
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const cutoffStr = cutoff.toISOString().split('T')[0];
+    const cutoffStr = toLocalDateStr(cutoff, tz);
     const rates = habits.map(h => {
       const habitLogs = logs.filter(l => l.habitId === h.id && l.date >= cutoffStr);
       const done = habitLogs.filter(l => l.completed).length;
@@ -251,7 +253,7 @@ export default function HomeDashboard() {
 
   const habitStrengthData = useMemo(() => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30);
-    const cutoffStr = cutoff.toISOString().split('T')[0];
+    const cutoffStr = toLocalDateStr(cutoff, tz);
     return habits.map(h => {
       const habitLogs = logs.filter(l => l.habitId === h.id && l.date >= cutoffStr);
       const done = habitLogs.filter(l => l.completed).length;
@@ -263,8 +265,8 @@ export default function HomeDashboard() {
     return Array.from({ length: 12 }, (_, i) => {
       const weekEnd = new Date(); weekEnd.setDate(weekEnd.getDate() - i * 7);
       const weekStart = new Date(weekEnd); weekStart.setDate(weekStart.getDate() - 6);
-      const esStr = weekEnd.toISOString().split('T')[0];
-      const ssStr = weekStart.toISOString().split('T')[0];
+      const esStr = toLocalDateStr(weekEnd, tz);
+      const ssStr = toLocalDateStr(weekStart, tz);
       const weekLogs = logs.filter(l => l.date >= ssStr && l.date <= esStr);
       const done = weekLogs.filter(l => l.completed).length;
       const total = weekLogs.length;
@@ -278,7 +280,7 @@ export default function HomeDashboard() {
   const heatmapData = useMemo(() => {
     return Array.from({ length: 90 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (89 - i));
-      const ds = d.toISOString().split('T')[0];
+      const ds = toLocalDateStr(d, tz);
       const dayLogs = logs.filter(l => l.date === ds && l.completed);
       return { day: i + 1, dateStr: ds, count: dayLogs.length };
     });
@@ -299,9 +301,9 @@ export default function HomeDashboard() {
     const thisWeekStart = new Date(); thisWeekStart.setDate(thisWeekStart.getDate() - 6);
     const lastWeekStart = new Date(); lastWeekStart.setDate(lastWeekStart.getDate() - 13);
     const lastWeekEnd = new Date(); lastWeekEnd.setDate(lastWeekEnd.getDate() - 7);
-    const twStr = thisWeekStart.toISOString().split('T')[0];
-    const lwsStr = lastWeekStart.toISOString().split('T')[0];
-    const lweStr = lastWeekEnd.toISOString().split('T')[0];
+    const twStr = toLocalDateStr(thisWeekStart, tz);
+    const lwsStr = toLocalDateStr(lastWeekStart, tz);
+    const lweStr = toLocalDateStr(lastWeekEnd, tz);
     return RADAR_CATEGORIES.map(cat => {
       const catHabits = habits.filter(h => h.category === cat);
       if (catHabits.length === 0) return { area: cat, thisWeek: 0, lastWeek: 0 };
@@ -319,9 +321,9 @@ export default function HomeDashboard() {
     const thisWeekStart = new Date(today); thisWeekStart.setDate(today.getDate() - 6);
     const lastWeekStart = new Date(today); lastWeekStart.setDate(today.getDate() - 13);
     const lastWeekEnd = new Date(today); lastWeekEnd.setDate(today.getDate() - 7);
-    const twStr = thisWeekStart.toISOString().split('T')[0];
-    const lwsStr = lastWeekStart.toISOString().split('T')[0];
-    const lweStr = lastWeekEnd.toISOString().split('T')[0];
+    const twStr = toLocalDateStr(thisWeekStart, tz);
+    const lwsStr = toLocalDateStr(lastWeekStart, tz);
+    const lweStr = toLocalDateStr(lastWeekEnd, tz);
     const twLogs = logs.filter(l => l.date >= twStr);
     const lwLogs = logs.filter(l => l.date >= lwsStr && l.date <= lweStr);
     const twRate = twLogs.length > 0 ? (twLogs.filter(l => l.completed).length / twLogs.length) * 100 : 0;

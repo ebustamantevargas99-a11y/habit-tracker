@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -125,7 +126,7 @@ export default function NutritionPro() {
   async function loadData() {
     setLoading(true);
     try {
-      const today = new Date().toISOString().split("T")[0];
+      const today = todayLocal();
       const [mealsRes, goalRes, hydrationRes, templatesRes] = await Promise.all([
         api.get<MealLog[]>(`/nutrition/meals?date=${today}`),
         api.get<NutritionGoal | null>("/nutrition/goals").catch(() => null),
@@ -240,7 +241,7 @@ export default function NutritionPro() {
   async function ensureMeal(type: MealType): Promise<string> {
     const existing = meals.find((m) => m.mealType === type);
     if (existing) return existing.id;
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocal();
     const created = await api.post<MealLog>("/nutrition/meals", {
       date: today,
       mealType: type,

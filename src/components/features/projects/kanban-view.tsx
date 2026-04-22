@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
@@ -445,7 +446,7 @@ function TaskCard({
   const subsDone = task.subtasks.filter((s) => s.completed).length;
   const hasSubs = task.subtasks.length > 0;
   const isOverdue =
-    task.dueDate && task.dueDate < new Date().toISOString().split("T")[0];
+    task.dueDate && task.dueDate < todayLocal();
   const priorityMeta = task.priority ? PRIORITY_META[task.priority] : null;
 
   const style: React.CSSProperties = {

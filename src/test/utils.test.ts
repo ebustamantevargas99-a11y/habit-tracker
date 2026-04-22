@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  calculateLifeScore,
   calculateHabitStrength,
   compoundEffect,
   estimate1RM,
@@ -19,32 +18,6 @@ describe('cn()', () => {
 
   it('merges conflicting Tailwind classes (last wins)', () => {
     expect(cn('text-red-500', 'text-blue-500')).toBe('text-blue-500');
-  });
-});
-
-describe('calculateLifeScore()', () => {
-  it('returns 0 when all areas are 0', () => {
-    const areas = { vision: 0, plan: 0, productivity: 0, organization: 0, finance: 0, fitness: 0, nutrition: 0, wellness: 0 };
-    expect(calculateLifeScore(areas)).toBe(0);
-  });
-
-  it('returns 10 when all areas are at maximum (10)', () => {
-    const areas = { vision: 10, plan: 10, productivity: 10, organization: 10, finance: 10, fitness: 10, nutrition: 10, wellness: 10 };
-    expect(calculateLifeScore(areas)).toBe(10);
-  });
-
-  it('returns a value between 0 and 10 for mixed scores', () => {
-    const areas = { vision: 7, plan: 6, productivity: 8, organization: 5, finance: 7, fitness: 9, nutrition: 6, wellness: 8 };
-    const score = calculateLifeScore(areas);
-    expect(score).toBeGreaterThan(0);
-    expect(score).toBeLessThanOrEqual(10);
-  });
-
-  it('correctly weights higher-weight areas', () => {
-    // productivity (0.15) vs organization (0.08) — productivity matters more
-    const moreProductivity = { vision: 0, plan: 0, productivity: 10, organization: 0, finance: 0, fitness: 0, nutrition: 0, wellness: 0 };
-    const moreOrg = { vision: 0, plan: 0, productivity: 0, organization: 10, finance: 0, fitness: 0, nutrition: 0, wellness: 0 };
-    expect(calculateLifeScore(moreProductivity)).toBeGreaterThan(calculateLifeScore(moreOrg));
   });
 });
 

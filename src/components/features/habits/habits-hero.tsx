@@ -1,4 +1,5 @@
 "use client";
+import { todayLocal } from "@/lib/date/local";
 
 import { Flame, Target, Trophy, Clock, Sparkles } from "lucide-react";
 import { cn } from "@/components/ui";
@@ -20,7 +21,7 @@ export default function HabitsHero({
   greeting: string;
   displayName: string;
 }) {
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayLocal();
   const completedTodayIds = new Set(
     logs.filter((l) => l.date === today && l.completed).map((l) => l.habitId)
   );
