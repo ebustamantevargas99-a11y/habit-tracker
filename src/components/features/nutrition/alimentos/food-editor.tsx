@@ -407,8 +407,83 @@ export default function FoodEditor({
         </div>
       </Section>
 
-      {/* Sección 6: Otros */}
-      <Section title="6 · Otros">
+      {/* Sección 6: Glycemic + net carbs */}
+      <Section title="6 · Índice glicémico + net carbs">
+        <p className="text-[11px] text-brand-warm m-0 mb-3">
+          Útil para dietas keto (net carbs), diabetes/sensibilidad a la
+          insulina (GI/GL) y atletas monitoreando energía.
+        </p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Field label="Índice glicémico (0-100)">
+            <NumInput
+              value={form.glycemicIndex ?? ""}
+              onChange={(v) => set("glycemicIndex", v)}
+              step="1"
+              placeholder="55"
+            />
+          </Field>
+          <Field label="Carga glicémica">
+            <NumInput
+              value={form.glycemicLoad ?? ""}
+              onChange={(v) => set("glycemicLoad", v)}
+              step="0.1"
+              placeholder="GI × carbs / 100"
+            />
+          </Field>
+          <Field label="Net carbs (g)">
+            <NumInput
+              value={form.netCarbs ?? ""}
+              onChange={(v) => set("netCarbs", v)}
+              step="0.1"
+              placeholder="carbs − fibra"
+            />
+          </Field>
+        </div>
+      </Section>
+
+      {/* Sección 7: Aminoácidos esenciales */}
+      <Section title="7 · Aminoácidos esenciales (mg)">
+        <p className="text-[11px] text-brand-warm m-0 mb-3">
+          Para atletas (leucina ≥3g dispara MPS) y vegetarianos
+          (lisina/metionina son los aminos limitantes).
+        </p>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          <Field label="Leucina *">
+            <NumInput value={form.leucine ?? ""} onChange={(v) => set("leucine", v)} step="1" />
+          </Field>
+          <Field label="Isoleucina">
+            <NumInput value={form.isoleucine ?? ""} onChange={(v) => set("isoleucine", v)} step="1" />
+          </Field>
+          <Field label="Valina">
+            <NumInput value={form.valine ?? ""} onChange={(v) => set("valine", v)} step="1" />
+          </Field>
+          <Field label="Lisina">
+            <NumInput value={form.lysine ?? ""} onChange={(v) => set("lysine", v)} step="1" />
+          </Field>
+          <Field label="Metionina">
+            <NumInput value={form.methionine ?? ""} onChange={(v) => set("methionine", v)} step="1" />
+          </Field>
+          <Field label="Fenilalanina">
+            <NumInput value={form.phenylalanine ?? ""} onChange={(v) => set("phenylalanine", v)} step="1" />
+          </Field>
+          <Field label="Treonina">
+            <NumInput value={form.threonine ?? ""} onChange={(v) => set("threonine", v)} step="1" />
+          </Field>
+          <Field label="Triptófano">
+            <NumInput value={form.tryptophan ?? ""} onChange={(v) => set("tryptophan", v)} step="1" />
+          </Field>
+          <Field label="Histidina">
+            <NumInput value={form.histidine ?? ""} onChange={(v) => set("histidine", v)} step="1" />
+          </Field>
+        </div>
+        <p className="text-[10px] text-brand-tan m-0 mt-2">
+          * Leucina es el más crítico — umbral ~2.5-3g por comida para
+          maximizar síntesis proteica muscular.
+        </p>
+      </Section>
+
+      {/* Sección 8: Otros */}
+      <Section title="8 · Otros">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <Field label="Cafeína (mg)">
             <NumInput
@@ -585,6 +660,9 @@ const NUMERIC_KEYS: ReadonlyArray<keyof FoodItem> = [
   "iron", "magnesium", "zinc", "phosphorus", "vitaminA", "vitaminC",
   "vitaminD", "vitaminE", "vitaminK", "thiamin", "riboflavin", "niacin",
   "vitaminB6", "folate", "vitaminB12", "caffeine", "alcohol", "water",
+  "glycemicIndex", "glycemicLoad", "netCarbs",
+  "leucine", "isoleucine", "valine", "lysine", "methionine",
+  "phenylalanine", "threonine", "tryptophan", "histidine",
 ];
 
 const TEXT_KEYS: ReadonlyArray<keyof FoodItem> = [

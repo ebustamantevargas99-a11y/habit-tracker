@@ -44,6 +44,9 @@ export async function PATCH(
       "magnesium", "zinc", "phosphorus", "vitaminA", "vitaminC", "vitaminD",
       "vitaminE", "vitaminK", "thiamin", "riboflavin", "niacin", "vitaminB6",
       "folate", "vitaminB12", "caffeine", "alcohol", "water",
+      "glycemicIndex", "glycemicLoad", "netCarbs",
+      "leucine", "isoleucine", "valine", "lysine", "methionine",
+      "phenylalanine", "threonine", "tryptophan", "histidine",
     ] as const;
     for (const k of simpleKeys) {
       if (d[k] !== undefined) data[k] = d[k];

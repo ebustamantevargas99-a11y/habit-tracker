@@ -1034,6 +1034,20 @@ model FoodItem {
   vitaminB6         Float?             // mg
   folate            Float?             // B9 μg
   vitaminB12        Float?             // μg
+  // Glycemic — crucial para keto / diabetes
+  glycemicIndex     Float?             // 0-100
+  glycemicLoad      Float?             // GI × carbs / 100
+  netCarbs          Float?             // override manual — si null, carbs - fiber
+  // Aminoácidos esenciales (mg por porción) — para atletas vs vegetarianos
+  leucine           Float?             // BCAA clave para síntesis proteica
+  isoleucine        Float?             // BCAA
+  valine            Float?             // BCAA
+  lysine            Float?             // limitante en granos
+  methionine        Float?             // limitante en legumbres
+  phenylalanine     Float?
+  threonine         Float?
+  tryptophan        Float?             // precursor serotonina
+  histidine         Float?
   // Otros
   caffeine          Float?             // mg
   alcohol           Float?             // g

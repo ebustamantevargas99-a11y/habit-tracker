@@ -51,6 +51,20 @@ export const foodCreateSchema = z.object({
   vitaminB6: optNum,
   folate: optNum,
   vitaminB12: optNum,
+  // Glycemic + net carbs
+  glycemicIndex: z.number().min(0).max(200).optional().nullable(),
+  glycemicLoad: optNum,
+  netCarbs: optNum,
+  // Aminoácidos esenciales (mg)
+  leucine: optNum,
+  isoleucine: optNum,
+  valine: optNum,
+  lysine: optNum,
+  methionine: optNum,
+  phenylalanine: optNum,
+  threonine: optNum,
+  tryptophan: optNum,
+  histidine: optNum,
   // Otros
   caffeine: optNum,
   alcohol: optNum,

@@ -66,6 +66,20 @@ export async function POST(req: NextRequest) {
         vitaminB6: d.vitaminB6 ?? null,
         folate: d.folate ?? null,
         vitaminB12: d.vitaminB12 ?? null,
+        // Glycemic + net carbs
+        glycemicIndex: d.glycemicIndex ?? null,
+        glycemicLoad: d.glycemicLoad ?? null,
+        netCarbs: d.netCarbs ?? null,
+        // Aminoácidos esenciales
+        leucine: d.leucine ?? null,
+        isoleucine: d.isoleucine ?? null,
+        valine: d.valine ?? null,
+        lysine: d.lysine ?? null,
+        methionine: d.methionine ?? null,
+        phenylalanine: d.phenylalanine ?? null,
+        threonine: d.threonine ?? null,
+        tryptophan: d.tryptophan ?? null,
+        histidine: d.histidine ?? null,
         // Otros
         caffeine: d.caffeine ?? null,
         alcohol: d.alcohol ?? null,

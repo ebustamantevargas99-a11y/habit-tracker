@@ -80,6 +80,22 @@ export default function FoodDetailView({
     "thiamin", "riboflavin", "niacin", "vitaminB6", "folate", "vitaminB12",
   ]);
   const hasOthers = hasAny(food, ["caffeine", "alcohol", "water"]);
+  const hasGlycemic =
+    food.glycemicIndex != null ||
+    food.glycemicLoad != null ||
+    food.netCarbs != null ||
+    (food.carbs > 0 && food.fiber > 0); // se calcula auto
+  const hasAminos = hasAny(food, [
+    "leucine", "isoleucine", "valine", "lysine", "methionine",
+    "phenylalanine", "threonine", "tryptophan", "histidine",
+  ]);
+  // Net carbs calculado si no hay override
+  const computedNetCarbs =
+    food.netCarbs != null
+      ? food.netCarbs
+      : food.carbs > 0
+        ? Math.max(0, food.carbs - (food.fiber ?? 0))
+        : null;
 
   return (
     <Card
@@ -337,6 +353,67 @@ export default function FoodDetailView({
         </div>
       )}
 
+      {/* Glycemic + Net carbs */}
+      {hasGlycemic && (
+        <div>
+          <SectionTitle>Índice glicémico + net carbs</SectionTitle>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <NutRow
+              label="Índice glicémico"
+              value={food.glycemicIndex}
+              unit=""
+            />
+            <NutRow
+              label="Carga glicémica"
+              value={food.glycemicLoad}
+              unit=""
+            />
+            <NutRow
+              label={food.netCarbs != null ? "Net carbs" : "Net carbs (auto)"}
+              value={computedNetCarbs}
+              unit="g"
+            />
+          </div>
+          {food.glycemicIndex != null && (
+            <p className="text-[10px] text-brand-tan m-0 mt-2">
+              GI{" "}
+              {food.glycemicIndex < 55
+                ? "bajo (buena opción)"
+                : food.glycemicIndex < 70
+                  ? "medio"
+                  : "alto (pico de azúcar rápido)"}{" "}
+              — ref glucosa = 100.
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Aminoácidos esenciales */}
+      {hasAminos && (
+        <div>
+          <SectionTitle>Aminoácidos esenciales (mg)</SectionTitle>
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+            <NutRow label="Leucina" value={food.leucine} unit="mg" highlight={food.leucine != null && food.leucine >= 2500} />
+            <NutRow label="Isoleucina" value={food.isoleucine} unit="mg" />
+            <NutRow label="Valina" value={food.valine} unit="mg" />
+            <NutRow label="Lisina" value={food.lysine} unit="mg" />
+            <NutRow label="Metionina" value={food.methionine} unit="mg" />
+            <NutRow label="Fenilalanina" value={food.phenylalanine} unit="mg" />
+            <NutRow label="Treonina" value={food.threonine} unit="mg" />
+            <NutRow label="Triptófano" value={food.tryptophan} unit="mg" />
+            <NutRow label="Histidina" value={food.histidine} unit="mg" />
+          </div>
+          {food.leucine != null && (
+            <p className="text-[10px] text-brand-tan m-0 mt-2">
+              Leucina {(food.leucine / 1000).toFixed(2)}g —{" "}
+              {food.leucine >= 2500
+                ? "dispara MPS (umbral >2.5g)."
+                : "debajo del umbral anabólico (2.5-3g)."}
+            </p>
+          )}
+        </div>
+      )}
+
       {/* Otros */}
       {hasOthers && (
         <div>
@@ -453,11 +530,13 @@ function NutRow({
   value,
   unit,
   dv,
+  highlight,
 }: {
   label: string;
   value: number | null | undefined;
   unit: string;
   dv?: number | null;
+  highlight?: boolean;
 }) {
   // Si no hay dato, muestra — en gris
   if (value == null || !Number.isFinite(value)) {
@@ -469,8 +548,17 @@ function NutRow({
     );
   }
   return (
-    <div className="flex items-center justify-between px-3 py-2 rounded bg-brand-paper border border-brand-light-cream text-xs">
-      <span className="text-brand-dark">{label}</span>
+    <div
+      className={cn(
+        "flex items-center justify-between px-3 py-2 rounded text-xs border",
+        highlight
+          ? "bg-success/10 border-success"
+          : "bg-brand-paper border-brand-light-cream",
+      )}
+    >
+      <span className={highlight ? "text-success font-semibold" : "text-brand-dark"}>
+        {label}
+      </span>
       <div className="flex items-center gap-2">
         <span className="font-mono text-brand-dark">
           {fmt(value)} {unit}

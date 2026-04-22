@@ -50,6 +50,20 @@ export interface FoodItem {
   vitaminB6?: number | null;  // mg
   folate?: number | null;     // B9 μg
   vitaminB12?: number | null; // μg
+  // Glycemic + net carbs
+  glycemicIndex?: number | null;
+  glycemicLoad?: number | null;
+  netCarbs?: number | null;
+  // Aminoácidos esenciales (mg)
+  leucine?: number | null;
+  isoleucine?: number | null;
+  valine?: number | null;
+  lysine?: number | null;
+  methionine?: number | null;
+  phenylalanine?: number | null;
+  threonine?: number | null;
+  tryptophan?: number | null;
+  histidine?: number | null;
   // Otros
   caffeine?: number | null;   // mg
   alcohol?: number | null;    // g

@@ -33,6 +33,9 @@ const NUT_KEYS = [
   "vitaminA", "vitaminC", "vitaminD", "vitaminE", "vitaminK",
   "thiamin", "riboflavin", "niacin", "vitaminB6", "folate", "vitaminB12",
   "caffeine", "alcohol", "water",
+  "netCarbs",
+  "leucine", "isoleucine", "valine", "lysine", "methionine",
+  "phenylalanine", "threonine", "tryptophan", "histidine",
 ] as const;
 
 export type NutrientKey = (typeof NUT_KEYS)[number];
