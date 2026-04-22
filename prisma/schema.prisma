@@ -995,8 +995,10 @@ model FoodItem {
   userId            String
   name              String
   brand             String?
+  category          String?            // fruta, carne, lácteo, grano, etc.
   servingSize       Float              @default(100)
   servingUnit       String             @default("g")
+  // Macros principales
   calories          Float
   protein           Float              @default(0)
   carbs             Float              @default(0)
@@ -1004,6 +1006,39 @@ model FoodItem {
   fiber             Float              @default(0)
   sugar             Float              @default(0)
   sodium            Float              @default(0)
+  // Macros desglosados (opcionales — Cronometer-level)
+  saturatedFat      Float?
+  transFat          Float?
+  monoFat           Float?
+  polyFat           Float?
+  omega3            Float?
+  omega6            Float?
+  cholesterol       Float?
+  addedSugar        Float?
+  // Minerales (mg)
+  potassium         Float?
+  calcium           Float?
+  iron              Float?
+  magnesium         Float?
+  zinc              Float?
+  phosphorus        Float?
+  // Vitaminas (unidades estándar RDA)
+  vitaminA          Float?             // μg RAE
+  vitaminC          Float?             // mg
+  vitaminD          Float?             // μg
+  vitaminE          Float?             // mg
+  vitaminK          Float?             // μg
+  thiamin           Float?             // B1 mg
+  riboflavin        Float?             // B2 mg
+  niacin            Float?             // B3 mg
+  vitaminB6         Float?             // mg
+  folate            Float?             // B9 μg
+  vitaminB12        Float?             // μg
+  // Otros
+  caffeine          Float?             // mg
+  alcohol           Float?             // g
+  water             Float?             // g
+  notes             String?
   isCustom          Boolean            @default(true)
   barcode           String?
   createdAt         DateTime           @default(now())
@@ -1015,6 +1050,7 @@ model FoodItem {
   @@index([userId])
   @@index([userId, name])
   @@index([userId, barcode])
+  @@index([userId, category])
 }
 
 model MealLog {

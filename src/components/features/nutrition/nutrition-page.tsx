@@ -17,6 +17,8 @@ import HoyHub from "./hubs/hoy-hub";
 import ProgresoHub from "./hubs/progreso-hub";
 import ComposicionHub from "./hubs/composicion-hub";
 import AlimentosHub from "./hubs/alimentos-hub";
+import FoodEditor from "./alimentos/food-editor";
+import FoodDetailView from "./alimentos/food-detail-view";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -416,132 +418,254 @@ export function SummaryTab() {
 }
 
 export function FoodsTab() {
-  const { foodItems, addFoodItem, deleteFoodItem } = useNutritionStore();
-  const [showForm, setShowForm] = useState(false);
+  const { foodItems, addFoodItem, updateFoodItem, deleteFoodItem } =
+    useNutritionStore();
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({
-    name: "", brand: "", calories: "", protein: "", carbs: "", fat: "", fiber: "", servingSize: "100", servingUnit: "g",
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [mode, setMode] = useState<"list" | "new" | "edit" | "detail">("list");
+  const [activeFood, setActiveFood] = useState<FoodItem | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Filtrado: nombre/marca + categoría
+  const filtered = foodItems.filter((f) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      !q ||
+      f.name.toLowerCase().includes(q) ||
+      (f.brand ?? "").toLowerCase().includes(q);
+    const matchCat = !categoryFilter || f.category === categoryFilter;
+    return matchSearch && matchCat;
   });
 
-  const filtered = foodItems.filter((f) => f.name.toLowerCase().includes(search.toLowerCase()));
+  // Categorías únicas presentes en la lista actual del usuario
+  const categories = Array.from(
+    new Set(
+      foodItems
+        .map((f) => f.category)
+        .filter((c): c is string => !!c && c.trim().length > 0),
+    ),
+  ).sort();
 
-  const handleSubmit = async () => {
-    if (!form.name || !form.calories) return;
-    await addFoodItem({
-      name: form.name, brand: form.brand || null,
-      servingSize: parseFloat(form.servingSize) || 100, servingUnit: form.servingUnit,
-      calories: parseFloat(form.calories) || 0, protein: parseFloat(form.protein) || 0,
-      carbs: parseFloat(form.carbs) || 0, fat: parseFloat(form.fat) || 0,
-      fiber: parseFloat(form.fiber) || 0, sugar: 0, sodium: 0,
-    });
-    setForm({ name: "", brand: "", calories: "", protein: "", carbs: "", fat: "", fiber: "", servingSize: "100", servingUnit: "g" });
-    setShowForm(false);
-  };
+  async function handleCreate(
+    patch: Partial<Omit<FoodItem, "id" | "isCustom">>,
+  ) {
+    if (!patch.name || patch.calories == null) return;
+    setSubmitting(true);
+    try {
+      // addFoodItem espera Omit<FoodItem, "id" | "isCustom">. Los campos no
+      // provistos quedan como undefined → null en API.
+      await addFoodItem(patch as Omit<FoodItem, "id" | "isCustom">);
+      setMode("list");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleUpdate(
+    patch: Partial<Omit<FoodItem, "id" | "isCustom">>,
+  ) {
+    if (!activeFood) return;
+    setSubmitting(true);
+    try {
+      await updateFoodItem(activeFood.id, patch);
+      // Refrescar la vista de detalle con el objeto merged
+      const refreshed = useNutritionStore
+        .getState()
+        .foodItems.find((f) => f.id === activeFood.id);
+      if (refreshed) setActiveFood(refreshed);
+      setMode("detail");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("¿Borrar este alimento? Las comidas registradas que lo usen lo conservarán.")) return;
+    await deleteFoodItem(id);
+    if (activeFood?.id === id) {
+      setActiveFood(null);
+      setMode("list");
+    }
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  if (mode === "new") {
+    return (
+      <FoodEditor
+        onSubmit={handleCreate}
+        onCancel={() => setMode("list")}
+        submitting={submitting}
+      />
+    );
+  }
+
+  if (mode === "edit" && activeFood) {
+    return (
+      <FoodEditor
+        initial={activeFood}
+        onSubmit={handleUpdate}
+        onCancel={() => setMode("detail")}
+        submitting={submitting}
+      />
+    );
+  }
+
+  if (mode === "detail" && activeFood) {
+    return (
+      <FoodDetailView
+        food={activeFood}
+        onEdit={() => setMode("edit")}
+        onDelete={() => handleDelete(activeFood.id)}
+        onClose={() => {
+          setActiveFood(null);
+          setMode("list");
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col gap-4">
       {/* Controls */}
-      <div className="flex gap-3">
-        <div className="flex-1 relative">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium" />
+      <div className="flex gap-3 flex-wrap items-center">
+        <div className="flex-1 min-w-[240px] relative">
+          <Search
+            size={16}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-medium"
+          />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar alimentos..."
+            placeholder="Buscar por nombre o marca..."
             className="w-full py-2 pr-2 pl-9 border border-brand-light-tan rounded-lg text-sm text-brand-dark bg-brand-warm-white box-border"
           />
         </div>
+        {categories.length > 0 && (
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value)}
+            className="py-2 px-3 border border-brand-light-tan rounded-lg text-sm text-brand-dark bg-brand-warm-white"
+          >
+            <option value="">Todas las categorías</option>
+            {categories.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        )}
         <button
-          onClick={() => setShowForm(!showForm)}
-          className="flex items-center gap-2 px-4 py-2 bg-accent text-white border-none rounded-lg cursor-pointer"
+          onClick={() => setMode("new")}
+          className="flex items-center gap-2 px-4 py-2 bg-accent text-white border-none rounded-lg cursor-pointer text-sm font-semibold hover:opacity-90"
         >
           <Plus size={16} /> Nuevo alimento
         </button>
       </div>
 
-      {/* Form */}
-      {showForm && (
-        <div className="bg-brand-warm-white rounded-xl p-5 border border-brand-cream">
-          <h4 className="m-0 mb-4 text-brand-dark">Nuevo alimento</h4>
-          <div className="grid [grid-template-columns:repeat(auto-fit,minmax(160px,1fr))] gap-3">
-            {[
-              { key: "name",        label: "Nombre *",       type: "text"   },
-              { key: "brand",       label: "Marca",          type: "text"   },
-              { key: "servingSize", label: "Porción",        type: "number" },
-              { key: "servingUnit", label: "Unidad",         type: "text"   },
-              { key: "calories",    label: "Calorías *",     type: "number" },
-              { key: "protein",     label: "Proteína (g)",   type: "number" },
-              { key: "carbs",       label: "Carbs (g)",      type: "number" },
-              { key: "fat",         label: "Grasa (g)",      type: "number" },
-              { key: "fiber",       label: "Fibra (g)",      type: "number" },
-            ].map(({ key, label, type }) => (
-              <div key={key}>
-                <label className="text-xs text-brand-medium block mb-1">{label}</label>
-                <input
-                  type={type}
-                  value={form[key as keyof typeof form]}
-                  onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-                  className={INP}
-                />
-              </div>
-            ))}
-          </div>
-          <div className="flex gap-3 mt-4 justify-end">
-            <button
-              onClick={() => setShowForm(false)}
-              className="px-4 py-2 border border-brand-light-tan rounded-lg bg-transparent cursor-pointer text-brand-medium"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-5 py-2 bg-accent text-white border-none rounded-lg cursor-pointer"
-            >
-              Guardar
-            </button>
-          </div>
-        </div>
-      )}
+      <p className="text-xs text-brand-warm m-0">
+        {filtered.length} de {foodItems.length}{" "}
+        aliment{foodItems.length === 1 ? "o" : "os"} — click para ver todos los
+        nutrientes · editar · borrar.
+      </p>
 
       {/* Food list */}
-      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(280px,1fr))] gap-3">
+      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))] gap-3">
         {filtered.length === 0 ? (
           <div className="col-span-full text-center p-12 text-brand-medium">
             <Apple size={40} className="mb-3 opacity-40 mx-auto" />
-            <p>No hay alimentos. Agrega uno con el botón &ldquo;Nuevo alimento&rdquo;.</p>
+            <p className="m-0">
+              {foodItems.length === 0
+                ? "Aún no has creado ningún alimento."
+                : "Ningún alimento matches esta búsqueda."}
+            </p>
+            {foodItems.length === 0 && (
+              <button
+                onClick={() => setMode("new")}
+                className="mt-4 px-4 py-2 bg-accent text-white rounded-lg text-sm font-semibold hover:opacity-90"
+              >
+                Crear mi primer alimento
+              </button>
+            )}
           </div>
         ) : (
           filtered.map((food) => (
-            <div
+            <FoodCard
               key={food.id}
-              className="bg-brand-warm-white rounded-[10px] p-4 border border-brand-cream flex flex-col gap-2"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="font-semibold text-brand-dark">{food.name}</div>
-                  {food.brand && <div className="text-xs text-brand-medium">{food.brand}</div>}
-                </div>
-                <button
-                  onClick={() => deleteFoodItem(food.id)}
-                  className="bg-transparent border-none cursor-pointer text-danger p-1"
-                >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <span className="font-bold text-accent">{food.calories} kcal</span>
-                <span className="text-brand-medium">por {food.servingSize}{food.servingUnit}</span>
-              </div>
-              <div className="flex gap-3 text-xs">
-                <span className="text-success">P {food.protein}g</span>
-                <span className="text-accent-light">C {food.carbs}g</span>
-                <span className="text-brand-medium">G {food.fat}g</span>
-              </div>
-            </div>
+              food={food}
+              onOpen={() => {
+                setActiveFood(food);
+                setMode("detail");
+              }}
+            />
           ))
         )}
       </div>
     </div>
+  );
+}
+
+function FoodCard({ food, onOpen }: { food: FoodItem; onOpen: () => void }) {
+  // Contar cuántos nutrientes extendidos registró el usuario (más allá de macros)
+  const extendedCount = [
+    food.saturatedFat,
+    food.transFat,
+    food.cholesterol,
+    food.potassium,
+    food.calcium,
+    food.iron,
+    food.vitaminA,
+    food.vitaminC,
+    food.vitaminD,
+    food.caffeine,
+  ].filter((v) => v != null && Number.isFinite(v)).length;
+
+  return (
+    <button
+      onClick={onOpen}
+      className="text-left bg-brand-warm-white rounded-[10px] p-4 border border-brand-cream flex flex-col gap-2 hover:border-accent transition cursor-pointer"
+      type="button"
+    >
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="font-semibold text-brand-dark truncate">
+            {food.name}
+          </div>
+          <div className="text-xs text-brand-medium flex items-center gap-2 flex-wrap">
+            {food.brand && <span className="truncate">{food.brand}</span>}
+            {food.category && (
+              <span className="px-1.5 py-0.5 rounded-full bg-brand-cream text-[10px] text-brand-medium">
+                {food.category}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="flex gap-3 text-xs items-baseline">
+        <span className="font-bold text-accent text-base font-mono">
+          {food.calories}
+        </span>
+        <span className="text-brand-warm">
+          kcal / {food.servingSize}
+          {food.servingUnit}
+        </span>
+      </div>
+      <div className="flex gap-2 text-[11px] font-mono">
+        <span className="text-success">P {food.protein}g</span>
+        <span className="text-accent-light">C {food.carbs}g</span>
+        <span className="text-brand-medium">G {food.fat}g</span>
+        {food.fiber > 0 && (
+          <span className="text-info">Fi {food.fiber}g</span>
+        )}
+      </div>
+      {extendedCount > 0 && (
+        <div className="text-[10px] text-brand-tan m-0 mt-1 border-t border-brand-light-cream pt-2">
+          + {extendedCount} nutrient{extendedCount === 1 ? "e" : "es"}{" "}
+          extendido{extendedCount === 1 ? "" : "s"} registrado
+          {extendedCount === 1 ? "" : "s"}
+        </div>
+      )}
+    </button>
   );
 }
 

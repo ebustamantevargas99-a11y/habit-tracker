@@ -9,8 +9,12 @@ export interface FoodItem {
   id: string;
   name: string;
   brand: string | null;
+  category?: string | null;
   servingSize: number;
   servingUnit: string;
+  barcode?: string | null;
+  notes?: string | null;
+  // Macros principales (siempre numbers, default 0)
   calories: number;
   protein: number;
   carbs: number;
@@ -18,6 +22,38 @@ export interface FoodItem {
   fiber: number;
   sugar: number;
   sodium: number;
+  // Macros desglosados — nullable (si el usuario no lo sabe, queda NULL)
+  saturatedFat?: number | null;
+  transFat?: number | null;
+  monoFat?: number | null;
+  polyFat?: number | null;
+  omega3?: number | null;
+  omega6?: number | null;
+  cholesterol?: number | null;
+  addedSugar?: number | null;
+  // Minerales (mg)
+  potassium?: number | null;
+  calcium?: number | null;
+  iron?: number | null;
+  magnesium?: number | null;
+  zinc?: number | null;
+  phosphorus?: number | null;
+  // Vitaminas
+  vitaminA?: number | null;   // μg RAE
+  vitaminC?: number | null;   // mg
+  vitaminD?: number | null;   // μg
+  vitaminE?: number | null;   // mg
+  vitaminK?: number | null;   // μg
+  thiamin?: number | null;    // B1 mg
+  riboflavin?: number | null; // B2 mg
+  niacin?: number | null;     // B3 mg
+  vitaminB6?: number | null;  // mg
+  folate?: number | null;     // B9 μg
+  vitaminB12?: number | null; // μg
+  // Otros
+  caffeine?: number | null;   // mg
+  alcohol?: number | null;    // g
+  water?: number | null;      // g
   isCustom: boolean;
 }
 
@@ -97,6 +133,7 @@ interface NutritionState {
 
   // Foods
   addFoodItem: (food: Omit<FoodItem, "id" | "isCustom">) => Promise<void>;
+  updateFoodItem: (id: string, patch: Partial<Omit<FoodItem, "id" | "isCustom">>) => Promise<void>;
   deleteFoodItem: (id: string) => Promise<void>;
 
   // Meals
@@ -152,6 +189,15 @@ export const useNutritionStore = create<NutritionState>((set, get) => ({
   addFoodItem: async (food) => {
     const created = await api.post<FoodItem>("/nutrition/foods", food);
     if (created) set((s) => ({ foodItems: [...s.foodItems, created] }));
+  },
+
+  updateFoodItem: async (id, patch) => {
+    const updated = await api.patch<FoodItem>(`/nutrition/foods/${id}`, patch);
+    if (updated) {
+      set((s) => ({
+        foodItems: s.foodItems.map((f) => (f.id === id ? updated : f)),
+      }));
+    }
   },
 
   deleteFoodItem: async (id) => {

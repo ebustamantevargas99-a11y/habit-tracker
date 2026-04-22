@@ -3,11 +3,19 @@ import { dateSchema, nonNegativeNumber } from "./common";
 
 const name = z.string().trim().min(1).max(200);
 
+// Helper: número no-negativo opcional y nullable (para POST de nutrientes
+// extendidos donde el usuario puede NO saber el valor)
+const optNum = nonNegativeNumber.optional().nullable();
+
 export const foodCreateSchema = z.object({
   name,
   brand: z.string().trim().max(200).optional().nullable(),
+  category: z.string().trim().max(100).optional().nullable(),
   servingSize: nonNegativeNumber.optional(),
   servingUnit: z.string().max(50).optional(),
+  barcode: z.string().trim().max(64).optional().nullable(),
+  notes: z.string().max(2000).optional().nullable(),
+  // Macros principales
   calories: nonNegativeNumber,
   protein: nonNegativeNumber.optional(),
   carbs: nonNegativeNumber.optional(),
@@ -15,7 +23,42 @@ export const foodCreateSchema = z.object({
   fiber: nonNegativeNumber.optional(),
   sugar: nonNegativeNumber.optional(),
   sodium: nonNegativeNumber.optional(),
+  // Macros desglosados
+  saturatedFat: optNum,
+  transFat: optNum,
+  monoFat: optNum,
+  polyFat: optNum,
+  omega3: optNum,
+  omega6: optNum,
+  cholesterol: optNum,
+  addedSugar: optNum,
+  // Minerales
+  potassium: optNum,
+  calcium: optNum,
+  iron: optNum,
+  magnesium: optNum,
+  zinc: optNum,
+  phosphorus: optNum,
+  // Vitaminas
+  vitaminA: optNum,
+  vitaminC: optNum,
+  vitaminD: optNum,
+  vitaminE: optNum,
+  vitaminK: optNum,
+  thiamin: optNum,
+  riboflavin: optNum,
+  niacin: optNum,
+  vitaminB6: optNum,
+  folate: optNum,
+  vitaminB12: optNum,
+  // Otros
+  caffeine: optNum,
+  alcohol: optNum,
+  water: optNum,
 });
+
+// PATCH: todos los campos opcionales
+export const foodUpdateSchema = foodCreateSchema.partial();
 
 export const mealCreateSchema = z.object({
   date: dateSchema.optional(),
