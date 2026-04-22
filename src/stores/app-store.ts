@@ -12,7 +12,7 @@ const VALID_TABS: Record<string, string[]> = {
   plan:         ['today', 'week', 'month'],
   fitness:      ['gym', 'cardio', 'cuerpo', 'programas', 'analisis'],
   finance:      ['panel', 'flow', 'goals', 'investments', 'analysis'],
-  nutrition:    ['pro', 'diario', 'resumen', 'alimentos', 'metas'],
+  nutrition:    ['hoy', 'progreso', 'composicion', 'alimentos'],
   reading:      ['reading', 'want', 'finished', 'paused'],
   organization: ['notas', 'areas', 'revision'],
 };
@@ -87,7 +87,7 @@ export const useAppStore = create<AppState>((set) => ({
   financeTab: 'panel',
   setFinanceTab: (tab) => set({ financeTab: tab }),
 
-  nutritionTab: 'diario',
+  nutritionTab: 'hoy',
   setNutritionTab: (tab) => set({ nutritionTab: tab }),
 
   readingTab: 'reading',

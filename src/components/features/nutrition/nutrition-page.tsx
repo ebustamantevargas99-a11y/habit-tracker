@@ -13,7 +13,10 @@ import { colors } from "@/lib/colors";
 import { useNutritionStore, MealLog, FoodItem } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
 import { cn, ErrorBanner } from "@/components/ui";
-import NutritionPro from "@/components/features/nutrition-v2/nutrition-pro";
+import HoyHub from "./hubs/hoy-hub";
+import ProgresoHub from "./hubs/progreso-hub";
+import ComposicionHub from "./hubs/composicion-hub";
+import AlimentosHub from "./hubs/alimentos-hub";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,7 +56,7 @@ const INP = "w-full px-2 py-2 border border-brand-light-tan rounded-md text-sm t
 
 // ─── Tab Components ───────────────────────────────────────────────────────────
 
-function DiaryTab() {
+export function DiaryTab() {
   const {
     meals, foodItems, dailySummary, goals, selectedDate,
     addMeal, deleteMeal, addItemToMeal, removeItemFromMeal, setDate,
@@ -323,7 +326,7 @@ function DiaryTab() {
   );
 }
 
-function SummaryTab() {
+export function SummaryTab() {
   const [weeklyData, setWeeklyData] = useState<{
     days: { date: string; calories: number; protein: number; carbs: number; fat: number }[];
     averages: { calories: number; protein: number; carbs: number; fat: number };
@@ -412,7 +415,7 @@ function SummaryTab() {
   );
 }
 
-function FoodsTab() {
+export function FoodsTab() {
   const { foodItems, addFoodItem, deleteFoodItem } = useNutritionStore();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
@@ -542,7 +545,7 @@ function FoodsTab() {
   );
 }
 
-function GoalsTab() {
+export function GoalsTab() {
   const { goals, updateGoals } = useNutritionStore();
   const [form, setForm] = useState({
     calories: goals?.calories ?? 2000,
@@ -626,59 +629,77 @@ function GoalsTab() {
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page — router de 4 hubs (Fase 2 redesign) ─────────────────────────
 
-const TABS = [
-  { id: "pro",       label: "Nuevo (Pro)",    icon: Sparkles        },
-  { id: "diario",    label: "Diario",         icon: UtensilsCrossed },
-  { id: "resumen",   label: "Resumen 7d",     icon: BarChart        },
-  { id: "alimentos", label: "Mis Alimentos",  icon: Apple           },
-  { id: "metas",     label: "Metas",          icon: Target          },
+const HUBS = [
+  { id: "hoy",         label: "🍽️ Hoy"          },
+  { id: "progreso",    label: "📈 Progreso"     },
+  { id: "composicion", label: "🧬 Composición"  },
+  { id: "alimentos",   label: "🥗 Alimentos"    },
 ] as const;
+
+type HubId = (typeof HUBS)[number]["id"];
+
+// Migración de IDs legacy (pre-redesign) al hub correspondiente. Así
+// deep-links viejos o sessionStorage obsoleto no rompen la app.
+const LEGACY_TO_HUB: Record<string, HubId> = {
+  pro: "hoy",
+  diario: "hoy",
+  resumen: "progreso",
+  metas: "alimentos",
+};
 
 export default function NutritionPage() {
   const activeTab = useAppStore((s) => s.nutritionTab);
   const setActiveTab = useAppStore((s) => s.setNutritionTab);
-  const { initialize, isLoaded, error, clearError } = useNutritionStore();
+  const { initialize, error, clearError } = useNutritionStore();
 
   useEffect(() => {
     initialize();
   }, [initialize]);
 
+  useEffect(() => {
+    const mapped = LEGACY_TO_HUB[activeTab];
+    if (mapped && mapped !== activeTab) setActiveTab(mapped);
+  }, [activeTab, setActiveTab]);
+
+  const hubId = (HUBS.find((h) => h.id === activeTab)?.id ?? "hoy") as HubId;
+
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 p-6 bg-brand-warm-white min-h-screen">
       <ErrorBanner error={error} onDismiss={clearError} />
-      {/* Tabs */}
-      <div className="flex gap-2 border-b-2 border-brand-cream pb-0">
-        {TABS.map(({ id, label, icon: Icon }) => (
+
+      <div>
+        <h1 className="font-serif text-[36px] text-brand-dark m-0">Nutrición</h1>
+        <p className="text-brand-warm text-sm m-0 mt-2">
+          Log de comidas con macros + progreso histórico + bioimpedancia —
+          al nivel de Cronometer y MyFitnessPal.
+        </p>
+      </div>
+
+      {/* Tabs de hubs */}
+      <div className="flex gap-1 border-b-2 border-brand-cream">
+        {HUBS.map(({ id, label }) => (
           <button
             key={id}
             onClick={() => setActiveTab(id)}
             className={cn(
-              "flex items-center gap-2 px-5 py-[10px] bg-transparent border-none border-b-2 -mb-[2px] cursor-pointer text-sm transition-colors duration-200",
-              activeTab === id
+              "px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
+              hubId === id
                 ? "border-b-accent text-accent font-semibold"
-                : "border-b-transparent text-brand-medium font-normal"
+                : "border-b-transparent text-brand-medium hover:text-brand-dark",
             )}
           >
-            <Icon size={16} /> {label}
+            {label}
           </button>
         ))}
       </div>
 
-      {/* Content */}
-      {activeTab === "pro" ? (
-        <NutritionPro />
-      ) : !isLoaded ? (
-        <div className="text-center p-12 text-brand-medium">Cargando datos...</div>
-      ) : (
-        <>
-          {activeTab === "diario"    && <DiaryTab />}
-          {activeTab === "resumen"   && <SummaryTab />}
-          {activeTab === "alimentos" && <FoodsTab />}
-          {activeTab === "metas"     && <GoalsTab />}
-        </>
-      )}
+      {/* Content — lazy imports para reducir bundle inicial */}
+      {hubId === "hoy"         && <HoyHub />}
+      {hubId === "progreso"    && <ProgresoHub />}
+      {hubId === "composicion" && <ComposicionHub />}
+      {hubId === "alimentos"   && <AlimentosHub />}
     </div>
   );
 }

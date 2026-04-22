@@ -59,10 +59,10 @@ export const NAV_ITEMS = [
     label: "Nutrición",
     icon: "UtensilsCrossed",
     sections: [
-      "Diario",
-      "Resumen 7d",
-      "Mis Alimentos",
-      "Metas",
+      "Hoy",
+      "Progreso",
+      "Composición",
+      "Alimentos",
     ],
   },
   {

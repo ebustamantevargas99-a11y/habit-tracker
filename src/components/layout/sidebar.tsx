@@ -58,10 +58,10 @@ const FINANCE_SECTION_MAP: Record<string, string> = {
 };
 
 const NUTRITION_SECTION_MAP: Record<string, string> = {
-  "Diario":       "diario",
-  "Resumen 7d":   "resumen",
-  "Mis Alimentos":"alimentos",
-  "Metas":        "metas",
+  "Hoy":          "hoy",
+  "Progreso":     "progreso",
+  "Composición":  "composicion",
+  "Alimentos":    "alimentos",
 };
 
 const READING_SECTION_MAP: Record<string, string> = {
