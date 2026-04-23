@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { api } from "@/lib/api-client";
 
 // ─── Sistema de temas 2.2 (2026-04) ──────────────────────────────────────────
 // 8 temas neutros elegantes: 4 claros + 4 oscuros. Sin colores chillones.
@@ -49,6 +50,11 @@ interface ThemeState {
   theme: ThemeId;
   setTheme: (theme: ThemeId) => void;
   initTheme: () => void;
+  /**
+   * Aplica un tema sin persistir al server. Úsalo cuando el user-store
+   * cargó el perfil y quieres sincronizar el tema guardado en DB al UI.
+   */
+  applyFromProfile: (raw: string | null | undefined) => void;
 }
 
 function normalizeTheme(raw: string | null): ThemeId {
@@ -88,6 +94,23 @@ export const useThemeStore = create<ThemeState>((set) => ({
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("app-theme", theme);
     }
+    set({ theme });
+    // Persist al server en background — así el user mantiene su tema
+    // cuando loguea desde otro dispositivo o limpia el browser.
+    // Fire-and-forget: si falla, el localStorage sigue teniendo el valor
+    // y en el próximo refresh se aplicará igual.
+    api.patch("/user/profile", { theme }).catch(() => {
+      // No-op: el user todavía no puede estar logueado (ej. primera
+      // carga antes de session hydrate), o el endpoint está caído.
+    });
+  },
+
+  applyFromProfile: (raw) => {
+    const theme = normalizeTheme(raw ?? null);
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("app-theme", theme);
+    }
+    applyTheme(theme);
     set({ theme });
   },
 }));

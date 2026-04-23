@@ -56,7 +56,19 @@ export const profileUpdateSchema = z.object({
   units: z.enum(["metric", "imperial"]).optional(),
   primaryCurrency: z.string().regex(/^[A-Z]{3}$/, "Moneda ISO").optional(),
   language: z.string().max(10).optional(),
-  theme: z.enum(["warm", "cool", "dark", "light"]).optional(),
+  // 9 temas actuales (sistema 2.2) + legacy IDs aceptados para backward
+  // compatibility. El cliente normaliza legacy → current antes de enviar.
+  theme: z
+    .enum([
+      // Actuales (2.2)
+      "pergamino", "marfil", "perla", "lino",
+      "cafe", "carbon", "pizarra", "onice",
+      // Legacy — se aceptan pero el cliente los migra al actual equivalente
+      "warm", "ocean", "forest", "rose",
+      "zen", "sakura", "lavanda", "menta", "medianoche", "vino",
+      "minimo", "matrix", "nordico", "cyberpunk", "atardecer", "bosque",
+    ])
+    .optional(),
   weekStartsOn: z.number().int().min(0).max(6).optional(),
   stepsGoal: z.number().int().nonnegative().max(100000).optional(),
   waterGoal: nonNegativeNumber.optional(),

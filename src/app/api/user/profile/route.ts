@@ -42,7 +42,7 @@ export async function PATCH(req: NextRequest) {
         timezone: d.timezone ?? "America/Mexico_City",
         units: d.units ?? "metric",
         language: d.language ?? "es",
-        theme: d.theme ?? "warm",
+        theme: d.theme ?? "pergamino",
         weekStartsOn: d.weekStartsOn ?? 1,
         stepsGoal: d.stepsGoal ?? 10000,
         waterGoal: d.waterGoal ?? 2.0,

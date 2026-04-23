@@ -66,8 +66,20 @@ function NotificationScheduler() {
 // ─── Theme Initializer ────────────────────────────────────────────────────────
 
 function ThemeInitializer() {
-  const { initTheme } = useThemeStore();
+  const initTheme = useThemeStore((s) => s.initTheme);
+  const applyFromProfile = useThemeStore((s) => s.applyFromProfile);
+  const profileTheme = useUserStore((s) => s.user?.profile?.theme);
+
+  // Aplica localStorage first (evita flash de tema default).
   useEffect(() => { initTheme(); }, [initTheme]);
+
+  // Cuando carga el profile del server, sincroniza el tema guardado en
+  // DB. Esto hace que el tema viaje con la cuenta del user — al loguear
+  // en otro dispositivo/browser, arranca con el último tema elegido.
+  useEffect(() => {
+    if (profileTheme) applyFromProfile(profileTheme);
+  }, [profileTheme, applyFromProfile]);
+
   return null;
 }
 

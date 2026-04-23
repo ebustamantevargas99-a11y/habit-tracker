@@ -196,7 +196,7 @@ model UserProfile {
   units            String  @default("metric") // "metric" | "imperial"
   primaryCurrency  String  @default("MXN") // ISO 4217 — moneda principal del user
   language         String  @default("es")
-  theme            String  @default("warm") // "warm" | "ocean" | "forest" | "rose"
+  theme            String  @default("pergamino") // Sistema temas 2.2: pergamino/marfil/perla/lino/cafe/carbon/pizarra/onice. Legacy values (warm/ocean/forest/rose/etc) se normalizan en el cliente al leer.
   darkMode         Boolean @default(false)
   weekStartsOn     Int     @default(1)
   stepsGoal        Int     @default(10000)
