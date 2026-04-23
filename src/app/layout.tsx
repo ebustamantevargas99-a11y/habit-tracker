@@ -1,9 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import {
+  Inter,
+  Playfair_Display,
+  Shippori_Mincho,
+  JetBrains_Mono,
+  Crimson_Pro,
+} from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import "./globals.css";
 
+// Fuentes disponibles a nivel global — los temas eligen cuál usar vía
+// CSS variables --font-heading / --font-body / --font-mono en globals.css.
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
@@ -15,6 +23,31 @@ const playfair = Playfair_Display({
   display: "swap",
   variable: "--font-playfair",
   weight: ["400", "500", "600", "700", "800", "900"],
+});
+
+// Serif japonés para temas Zen y Sakura
+const shippori = Shippori_Mincho({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-shippori",
+  weight: ["400", "500", "600", "700", "800"],
+});
+
+// Monospace para temas Matrix y Cyberpunk
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-jetbrains",
+  weight: ["400", "500", "600", "700"],
+});
+
+// Serif editorial ligero para temas elegantes (Sakura italic)
+const crimson = Crimson_Pro({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-crimson",
+  weight: ["400", "500", "600", "700"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
@@ -59,7 +92,7 @@ export default function RootLayout({
   return (
     <html lang="es" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${playfair.variable} font-sans`}
+        className={`${inter.variable} ${playfair.variable} ${shippori.variable} ${jetbrains.variable} ${crimson.variable} font-sans`}
         style={{ backgroundColor: "var(--color-paper)" }}
       >
         <SessionProvider>{children}</SessionProvider>

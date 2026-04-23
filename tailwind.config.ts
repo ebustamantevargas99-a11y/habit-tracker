@@ -53,9 +53,12 @@ const config: Config = {
         },
       },
       fontFamily: {
-        serif:   ["var(--font-playfair)", "Georgia", "Cambria", "Times New Roman", "serif"],
-        display: ["var(--font-playfair)", "Georgia", "serif"],
-        sans:    ["var(--font-inter)", "Inter", "system-ui", "-apple-system", "sans-serif"],
+        // Apuntan a CSS vars themeables — cada tema en globals.css decide
+        // qué fuente real usar (serif, sans, mono o serif japonés).
+        serif:   ["var(--font-heading)"],
+        display: ["var(--font-heading)"],
+        sans:    ["var(--font-body)"],
+        mono:    ["var(--font-mono)"],
       },
       borderRadius: {
         card:   "16px",

@@ -8,7 +8,6 @@ import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { useGamificationStore } from '@/stores/gamification-store';
 import { useUserStore } from '@/stores/user-store';
 import { useHabitStore } from '@/stores/habit-store';
-import { useThemeStore, type ThemeId } from '@/stores/theme-store';
 import { api } from '@/lib/api-client';
 import { cn } from '@/components/ui';
 import ExportSection from './export-section';
@@ -281,7 +280,6 @@ function GamificationTab() {
 function PreferencesTab() {
   const { user, saveProfile } = useUserStore();
   const { streakInsuranceDays } = useGamificationStore();
-  const { theme, setTheme } = useThemeStore();
 
   const [notifications, setNotifications] = useState(false);
   const [reminderTime, setReminderTime] = useState('08:00');
@@ -352,12 +350,8 @@ function PreferencesTab() {
     }
   };
 
-  const THEMES: { id: ThemeId; name: string; colors: string[]; preview: string }[] = [
-    { id: 'warm',   name: 'Cálido',       preview: 'Beige & Dorado',   colors: ['#3D2B1F','#6B4226','#B8860B','#EDE0D4'] },
-    { id: 'ocean',  name: 'Océano',       preview: 'Azul Marino',      colors: ['#0D2137','#1A3A5C','#0A7ABA','#C8E0EC'] },
-    { id: 'forest', name: 'Bosque',       preview: 'Verde Natural',    colors: ['#1A2C1A','#2D4A2D','#27AE60','#C8E8C8'] },
-    { id: 'rose',   name: 'Rosa Pastel',  preview: 'Rosa & Suave',     colors: ['#4A2035','#7A3055','#C45585','#F5D8E8'] },
-  ];
+  // Temas visuales ahora viven en la pestaña "Apariencia" (con su propia
+  // UI rica que incluye preview de fuente, no solo colores).
 
   return (
     <div className="flex flex-col gap-6">
@@ -448,43 +442,6 @@ function PreferencesTab() {
               )}
             >
               {n === 0 ? 'Ninguno' : `${n} día${n > 1 ? 's' : ''}`}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Visual Theme */}
-      <div className={CARD}>
-        <h3 className="font-serif text-brand-dark m-0 mb-1 flex items-center gap-2">
-          <Palette size={20} color={C.accent} /> Tema Visual
-        </h3>
-        <p className="text-[0.85rem] text-brand-warm m-0 mb-4">
-          Cambia la paleta de colores de toda la aplicación al instante
-        </p>
-        <div className="grid grid-cols-4 gap-3">
-          {THEMES.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setTheme(t.id)}
-              className={cn(
-                "px-3 py-4 rounded-[10px] cursor-pointer text-center transition-all duration-200",
-                theme === t.id
-                  ? "bg-accent-glow border-2 border-accent"
-                  : "bg-brand-light-cream border border-brand-tan"
-              )}
-            >
-              <div className="flex justify-center gap-1 mb-2">
-                {t.colors.map((c, i) => (
-                  <div key={i} className="w-[18px] h-[18px] rounded-full" style={{ backgroundColor: c, border: '1px solid rgba(0,0,0,0.1)' }} />
-                ))}
-              </div>
-              <div className="text-[0.85rem] font-semibold text-brand-dark">{t.name}</div>
-              <div className="text-[0.65rem] text-brand-warm mt-[2px]">{t.preview}</div>
-              {theme === t.id && (
-                <div className="text-[0.65rem] text-success mt-1 font-bold flex items-center justify-center gap-[2px]">
-                  <Check size={10} /> Activo
-                </div>
-              )}
             </button>
           ))}
         </div>

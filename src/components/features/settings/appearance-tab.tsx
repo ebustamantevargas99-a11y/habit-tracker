@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { useUserStore } from "@/stores/user-store";
 import Link from "next/link";
+import ThemeSelector from "./theme-selector";
 
 export default function AppearanceTab() {
   const { user, setDarkMode, saveProfile, isSaving } = useUserStore();
@@ -42,6 +43,9 @@ export default function AppearanceTab() {
 
   return (
     <div className="flex flex-col gap-6">
+      {/* Selector de tema visual (9 paletas + tipografía themeable) */}
+      <ThemeSelector />
+
       <div className="bg-brand-paper rounded-xl p-6 border border-brand-tan">
         <h3 className="font-serif text-brand-dark text-xl m-0 mb-4">Apariencia</h3>
 

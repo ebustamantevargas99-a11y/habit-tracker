@@ -2,82 +2,208 @@
 @import "tailwindcss/components";
 @import "tailwindcss/utilities";
 
-/* ─── CSS Variables (warm theme — default) ────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+ * SISTEMA DE TEMAS 2.0 — 2026-04
+ * ───────────────────────────────────────────────────────────────────────────
+ * Cada tema define 12 colores + 3 fuentes (heading/body/mono).
+ * Default: Pergamino (papel cálido tipo manuscrito).
+ * Cambiar tema: <html class="theme-<id>">.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── DEFAULT: Pergamino (papel manuscrito cálido) ─────────────────────────── */
 :root {
-  --color-dark:         #3D2B1F;
-  --color-brown:        #6B4226;
+  --color-dark:         #2E1F14;
+  --color-brown:        #5C3E20;
   --color-medium:       #8B6542;
   --color-warm:         #A0845C;
   --color-tan:          #C4A882;
-  --color-light-tan:    #D4BEA0;
-  --color-cream:        #EDE0D4;
-  --color-light-cream:  #F5EDE3;
-  --color-warm-white:   #FAF7F3;
-  --color-paper:        #FFFDF9;
-  --color-accent:       #B8860B;
-  --color-accent-light: #D4A843;
+  --color-light-tan:    #D9C4A2;
+  --color-cream:        #E8D9BE;
+  --color-light-cream:  #F1E6CF;
+  --color-warm-white:   #F8F1DD;
+  --color-paper:        #F6EEDB;
+  --color-accent:       #A77A39;
+  --color-accent-light: #C79B55;
+
+  --font-heading: var(--font-playfair), "Georgia", "Cambria", serif;
+  --font-body:    var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", "Monaco", monospace;
 }
 
+/* Modo oscuro del tema Pergamino */
 html.dark {
-  --color-dark:         #F5EDE3;
-  --color-brown:        #D4BEA0;
+  --color-dark:         #F1E6CF;
+  --color-brown:        #D9C4A2;
   --color-medium:       #A0845C;
   --color-warm:         #8B6542;
-  --color-tan:          #6B4226;
-  --color-light-tan:    #5A3820;
-  --color-cream:        #3A2818;
-  --color-light-cream:  #2A1F18;
-  --color-warm-white:   #211912;
-  --color-paper:        #1A1411;
-  --color-accent:       #D4A843;
-  --color-accent-light: #E5BF5F;
+  --color-tan:          #5C3E20;
+  --color-light-tan:    #3E2A18;
+  --color-cream:        #2E1F14;
+  --color-light-cream:  #241811;
+  --color-warm-white:   #1E140D;
+  --color-paper:        #17100B;
+  --color-accent:       #C79B55;
+  --color-accent-light: #D9B477;
 }
 
-/* ─── Theme Overrides ─────────────────────────────────────────────────────── */
+/* ─── 1. Zen (Japonés — papel washi + tinta sumi + jade + vermillón) ────── */
+.theme-zen {
+  --color-dark:         #1A1714;
+  --color-brown:        #2E2820;
+  --color-medium:       #4A4238;
+  --color-warm:         #6A5F52;
+  --color-tan:          #9A8E7E;
+  --color-light-tan:    #BCB0A0;
+  --color-cream:        #E2DBC8;
+  --color-light-cream:  #EEE8D6;
+  --color-warm-white:   #F2EDDD;
+  --color-paper:        #F5F1E8;
+  --color-accent:       #4A7A5C;
+  --color-accent-light: #6A9E7E;
 
-.theme-ocean {
-  --color-dark:         #0D2137;
-  --color-brown:        #1A3A5C;
-  --color-medium:       #2C5F8A;
-  --color-warm:         #3A7CB5;
-  --color-tan:          #64A0CC;
-  --color-light-tan:    #94C2E0;
-  --color-cream:        #C8E0EC;
-  --color-light-cream:  #DCF0FA;
-  --color-warm-white:   #F0F6FB;
-  --color-paper:        #F8FBFE;
-  --color-accent:       #0A7ABA;
-  --color-accent-light: #2AA0E0;
+  --font-heading: var(--font-shippori), "Georgia", serif;
+  --font-body:    var(--font-shippori), "Georgia", serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-.theme-forest {
-  --color-dark:         #1A2C1A;
-  --color-brown:        #2D4A2D;
-  --color-medium:       #3D6B3D;
-  --color-warm:         #4A8B4A;
-  --color-tan:          #7AB87A;
-  --color-light-tan:    #A0CFA0;
-  --color-cream:        #C8E8C8;
-  --color-light-cream:  #E0F0E0;
-  --color-warm-white:   #F0F8F0;
-  --color-paper:        #F8FCF8;
-  --color-accent:       #27AE60;
-  --color-accent-light: #48C87A;
+/* ─── 2. Mínimo (Dieter Rams — blanco + negro + un acento rojo) ─────────── */
+.theme-minimo {
+  --color-dark:         #1A1A1A;
+  --color-brown:        #2E2E2E;
+  --color-medium:       #555555;
+  --color-warm:         #888888;
+  --color-tan:          #BBBBBB;
+  --color-light-tan:    #D4D4D4;
+  --color-cream:        #E8E8E8;
+  --color-light-cream:  #F0F0F0;
+  --color-warm-white:   #F8F8F8;
+  --color-paper:        #FFFFFF;
+  --color-accent:       #D10000;
+  --color-accent-light: #E63030;
+
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-.theme-rose {
-  --color-dark:         #4A2035;
-  --color-brown:        #7A3055;
-  --color-medium:       #A06080;
-  --color-warm:         #C080A0;
-  --color-tan:          #E0A0C0;
-  --color-light-tan:    #ECC0D5;
-  --color-cream:        #F5D8E8;
-  --color-light-cream:  #FAE8F0;
-  --color-warm-white:   #FDF0F5;
-  --color-paper:        #FEFAFB;
-  --color-accent:       #C45585;
-  --color-accent-light: #E07AAF;
+/* ─── 3. Matrix (terminal retro — negro + fósforo verde + ámbar) ────────── */
+.theme-matrix {
+  --color-dark:         #00FF41;
+  --color-brown:        #00CC33;
+  --color-medium:       #00A028;
+  --color-warm:         #008020;
+  --color-tan:          #006018;
+  --color-light-tan:    #004012;
+  --color-cream:        #0A1F0D;
+  --color-light-cream:  #06170A;
+  --color-warm-white:   #020A04;
+  --color-paper:        #000000;
+  --color-accent:       #FFB000;
+  --color-accent-light: #FFD040;
+
+  --font-heading: var(--font-jetbrains), "Menlo", monospace;
+  --font-body:    var(--font-jetbrains), "Menlo", monospace;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 4. Sakura (cerezo en flor — rosa washi + ciruela + oro) ───────────── */
+.theme-sakura {
+  --color-dark:         #3E1528;
+  --color-brown:        #5C2A44;
+  --color-medium:       #8F4A6A;
+  --color-warm:         #B07390;
+  --color-tan:          #D49EAB;
+  --color-light-tan:    #E5B9C5;
+  --color-cream:        #F3D8E1;
+  --color-light-cream:  #FAE8EE;
+  --color-warm-white:   #FDF2F5;
+  --color-paper:        #FAF0F4;
+  --color-accent:       #C9A85F;
+  --color-accent-light: #DCBE7A;
+
+  --font-heading: var(--font-crimson), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 5. Nórdico (fiordos + aurora + nieve) ────────────────────────────── */
+.theme-nordico {
+  --color-dark:         #102A43;
+  --color-brown:        #1E3A5F;
+  --color-medium:       #395B7C;
+  --color-warm:         #5B7F9E;
+  --color-tan:          #8BA7C0;
+  --color-light-tan:    #B5C9DC;
+  --color-cream:        #D8E4EE;
+  --color-light-cream:  #E8EFF5;
+  --color-warm-white:   #F0F5F9;
+  --color-paper:        #F4F8FB;
+  --color-accent:       #2BB4A9;
+  --color-accent-light: #4FCEC3;
+
+  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 6. Cyberpunk (púrpura oscuro + neón magenta/cyan) ────────────────── */
+.theme-cyberpunk {
+  --color-dark:         #F2E8FF;
+  --color-brown:        #D4B8E8;
+  --color-medium:       #A878C8;
+  --color-warm:         #8A55B0;
+  --color-tan:          #6B3590;
+  --color-light-tan:    #4A2070;
+  --color-cream:        #2E1048;
+  --color-light-cream:  #1F0833;
+  --color-warm-white:   #15052B;
+  --color-paper:        #0A0120;
+  --color-accent:       #FF00C8;
+  --color-accent-light: #00EAFF;
+
+  --font-heading: var(--font-jetbrains), "Menlo", monospace;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 7. Atardecer (sunset coral + burgundy + naranja quemado) ──────────── */
+.theme-atardecer {
+  --color-dark:         #3E1A14;
+  --color-brown:        #5A2A24;
+  --color-medium:       #8A4236;
+  --color-warm:         #B5644A;
+  --color-tan:          #D68A6A;
+  --color-light-tan:    #E8A98B;
+  --color-cream:        #F5C5A8;
+  --color-light-cream:  #FADBC4;
+  --color-warm-white:   #FDEBDB;
+  --color-paper:        #FDF4E8;
+  --color-accent:       #D76B3F;
+  --color-accent-light: #ED8856;
+
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 8. Bosque (bosque místico — verde profundo + musgo + vela) ────────── */
+.theme-bosque {
+  --color-dark:         #0E1F14;
+  --color-brown:        #1E3522;
+  --color-medium:       #375240;
+  --color-warm:         #557560;
+  --color-tan:          #85A28E;
+  --color-light-tan:    #AFC4B5;
+  --color-cream:        #CFDED5;
+  --color-light-cream:  #DFE9E1;
+  --color-warm-white:   #E9F0EB;
+  --color-paper:        #EEF4EF;
+  --color-accent:       #C69B3B;
+  --color-accent-light: #E2B958;
+
+  --font-heading: var(--font-crimson), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── Base Reset ──────────────────────────────────────────────────────────── */
@@ -96,11 +222,11 @@ body {
   background-color: var(--color-paper);
   color: var(--color-dark);
   line-height: 1.6;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-playfair), 'Georgia', serif;
+  font-family: var(--font-heading);
   font-weight: 600;
   line-height: 1.25;
   color: var(--color-dark);
@@ -127,13 +253,13 @@ a:hover { color: var(--color-accent-light); }
 /* ─── Base Element Styles ─────────────────────────────────────────────────── */
 
 button {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 input, textarea, select {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--font-body);
   border: 1px solid var(--color-light-tan);
   border-radius: 6px;
   padding: 0.5rem 0.75rem;
