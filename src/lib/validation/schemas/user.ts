@@ -4,16 +4,23 @@ import { nonNegativeNumber } from "./common";
 const BIOLOGICAL_SEX = ["male", "female", "intersex", "prefer_not_say"] as const;
 const ACTIVITY_LEVEL = ["sedentary", "light", "moderate", "active", "very_active"] as const;
 const FITNESS_LEVEL = ["beginner", "intermediate", "advanced"] as const;
+// Keys vigentes (post-eliminación de Bienestar y Life OS en 2026-04).
+// Nota: aceptamos keys legacy (mood/sleep/hydration/medications/journal/
+// projects/fasting/pregnancy) en el enum de entrada para no rechazar
+// perfiles viejos en migración, pero el server los filtra al leer.
 const INTEREST_KEYS = [
   "training", "nutrition", "mindfulness", "finance", "productivity",
-  "study", "reading", "sleep", "hydration", "fasting",
-  "menstrualCycle", "pregnancy", "medications", "none",
+  "study", "reading", "fasting", "menstrualCycle", "pregnancy", "none",
+  // legacy — aceptadas por compat, se filtran al leer
+  "sleep", "hydration", "medications",
 ] as const;
 const MODULE_KEYS = [
-  "home", "habits", "mood", "tasks", "settings", "fitness", "nutrition",
-  "fasting", "sleep", "hydration", "finance", "projects", "planner",
-  "meditation", "reading", "medications", "menstrualCycle", "pregnancy",
-  "organization", "gamification", "journal",
+  "home", "habits", "tasks", "settings", "gamification",
+  "fitness", "nutrition", "finance", "planner",
+  "meditation", "reading", "menstrualCycle", "organization",
+  // legacy — aceptadas por compat, se filtran al leer
+  "mood", "sleep", "hydration", "medications",
+  "fasting", "projects", "pregnancy", "journal",
 ] as const;
 
 export const onboardingSchema = z.object({

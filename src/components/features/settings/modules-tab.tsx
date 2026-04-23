@@ -13,6 +13,9 @@ import {
 
 type ModuleMeta = { label: string; emoji: string; description: string };
 
+// Los módulos listados aquí corresponden 1:1 con los items togglables del
+// sidebar. Módulos sin UI propia (journal, pregnancy, fasting, projects)
+// no aparecen — fueron descontinuados o son sub-tabs de otro módulo.
 const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
   fitness: {
     label: "Fitness",
@@ -22,27 +25,17 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
   nutrition: {
     label: "Nutrición",
     emoji: "🍎",
-    description: "Macros, log de comidas, metas",
-  },
-  fasting: {
-    label: "Ayuno intermitente",
-    emoji: "⏰",
-    description: "Ventanas de ayuno e histórico",
+    description: "Macros, log de comidas, metas, bioimpedancia, blood markers",
   },
   finance: {
     label: "Finanzas",
     emoji: "💰",
     description: "Transacciones, presupuestos, metas",
   },
-  projects: {
-    label: "Proyectos",
-    emoji: "📁",
-    description: "Proyectos kanban con tareas",
-  },
   planner: {
-    label: "Planner",
+    label: "Calendar",
     emoji: "📅",
-    description: "Daily/weekly/monthly planner",
+    description: "Hoy / Semana / Mes",
   },
   meditation: {
     label: "Meditación",
@@ -59,20 +52,10 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     emoji: "🌙",
     description: "Ciclo, síntomas, fertilidad",
   },
-  pregnancy: {
-    label: "Embarazo / Lactancia",
-    emoji: "🤰",
-    description: "Seguimiento de embarazo o lactancia",
-  },
   organization: {
     label: "Organización",
     emoji: "📚",
     description: "Notas, life areas, weekly reviews",
-  },
-  journal: {
-    label: "Journaling",
-    emoji: "📝",
-    description: "Prompts diarios y reflexión",
   },
 };
 
@@ -150,7 +133,8 @@ export default function ModulesTab() {
         <h3 className="font-serif text-brand-dark text-xl m-0 mb-1">Módulos activos</h3>
         <p className="text-sm text-brand-warm m-0 mb-6">
           Activa o desactiva los módulos que quieras usar. Los módulos{" "}
-          <strong>Home, Hábitos, Mood, Tareas y Settings</strong> siempre están disponibles.
+          <strong>Home, Hábitos, Productividad y Configuración</strong> siempre
+          están disponibles. Los cambios se reflejan al momento en el sidebar.
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

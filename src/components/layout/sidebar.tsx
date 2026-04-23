@@ -8,15 +8,20 @@ import { NAV_ITEMS, LEVELS } from "@/lib/constants";
 import type { ModuleKey } from "@/lib/onboarding-constants";
 import { cn } from "@/components/ui/cn";
 
+// Mapa nav item → ModuleKey. Si el user desactiva el module, el sidebar
+// oculta su entry. Cores (home/tasks/settings) no se pueden desactivar.
 const NAV_TO_MODULE: Record<string, ModuleKey> = {
-  home: "home",
-  plan: "planner",
-  productivity: "tasks",
-  finance: "finance",
-  fitness: "fitness",
-  nutrition: "nutrition",
-  organization: "organization",
-  settings: "settings",
+  home:          "home",
+  plan:          "planner",
+  productivity:  "tasks",
+  finance:       "finance",
+  fitness:       "fitness",
+  nutrition:     "nutrition",
+  reading:       "reading",
+  meditation:    "meditation",
+  menstrualCycle:"menstrualCycle",
+  organization:  "organization",
+  settings:      "settings",
 };
 
 // ─── Section → tab ID maps ────────────────────────────────────────────────────
