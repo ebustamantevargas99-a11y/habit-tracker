@@ -129,11 +129,15 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
           !isOpen && "justify-center",
         )}
       >
-        <span className="text-2xl shrink-0">🎯</span>
-        {isOpen && (
+        {isOpen ? (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
-            Ultimate <span className="text-hero">TRACKER</span>
+            Ultimate <span className="text-hero tracking-widest">TRACKER</span>
           </h2>
+        ) : (
+          // Collapsed: monograma "UT" — elegante, sin emoji.
+          <span className="font-display text-lg font-bold text-accent-light tracking-widest">
+            UT
+          </span>
         )}
       </div>
 

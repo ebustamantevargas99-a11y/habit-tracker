@@ -4,20 +4,6 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-const COLORS = {
-  paper: "#FFFDF9",
-  dark: "#3D2B1F",
-  brown: "#6B4226",
-  medium: "#8B6542",
-  warm: "#A0845C",
-  tan: "#C4A882",
-  lightTan: "#D4BEA0",
-  cream: "#EDE0D4",
-  accent: "#B8860B",
-  accentLight: "#D4A843",
-  danger: "#C0544F",
-};
-
 export default function LoginPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -88,252 +74,237 @@ export default function LoginPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: COLORS.paper,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "Inter, sans-serif",
-      }}
-    >
+    <div className="min-h-screen relative overflow-hidden flex items-center justify-center px-4 py-12 font-sans">
+      {/* ─── Background layers ─────────────────────────────────────────── */}
+      {/* Base gradient entre Pergamino y Marfil */}
+      <div className="absolute inset-0 bg-[linear-gradient(135deg,#FFF9F0_0%,#F6EEDB_50%,#F1E6CF_100%)]" />
+      {/* Orbe de acento superior derecho — depth + warmth */}
       <div
+        className="absolute inset-0 opacity-[0.25]"
         style={{
-          width: "100%",
-          maxWidth: 400,
-          padding: "48px 40px",
-          backgroundColor: "#fff",
-          borderRadius: 20,
-          border: `1px solid ${COLORS.cream}`,
-          boxShadow: "0 4px 24px rgba(61,43,31,0.10)",
+          background:
+            "radial-gradient(ellipse 60% 50% at 90% 10%, #C79B55 0%, transparent 60%)",
         }}
-      >
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <div style={{ fontSize: 40, marginBottom: 12 }}>🎯</div>
-          <h1
-            style={{
-              fontFamily: "var(--font-playfair), Georgia, serif",
-              fontSize: 30,
-              fontWeight: 700,
-              color: COLORS.dark,
-              margin: 0,
-              letterSpacing: "0.02em",
-            }}
-          >
-            Ultimate <span style={{ letterSpacing: "0.08em" }}>TRACKER</span>
-          </h1>
-          <p
-            style={{
-              color: COLORS.warm,
-              fontSize: 14,
-              marginTop: 6,
-              margin: "6px 0 0",
-            }}
-          >
-            {mode === "login"
-              ? "Inicia sesión para continuar"
-              : "Crea tu cuenta gratuita"}
-          </p>
-        </div>
+      />
+      {/* Orbe de acento inferior izquierdo */}
+      <div
+        className="absolute inset-0 opacity-[0.15]"
+        style={{
+          background:
+            "radial-gradient(ellipse 55% 40% at 5% 95%, #A77A39 0%, transparent 55%)",
+        }}
+      />
+      {/* Línea decorativa art-deco superior */}
+      <div className="absolute top-0 left-0 right-0 h-[3px] bg-[linear-gradient(90deg,transparent,#C79B55,transparent)]" />
 
-        {/* Toggle */}
-        <div
-          style={{
-            display: "flex",
-            backgroundColor: COLORS.paper,
-            borderRadius: 10,
-            padding: 4,
-            marginBottom: 28,
-            border: `1px solid ${COLORS.cream}`,
-          }}
-        >
-          {(["login", "register"] as const).map((m) => (
-            <button
-              key={m}
-              onClick={() => { setMode(m); setError(""); }}
+      {/* Decoraciones de esquina sutiles */}
+      <p className="absolute top-8 left-8 font-display italic text-xs text-brand-warm/50 tracking-wide hidden md:block">
+        Ultimate TRACKER
+      </p>
+      <p className="absolute bottom-8 right-8 font-mono text-[10px] text-brand-warm/50 tracking-widest uppercase hidden md:block">
+        beta · 2026
+      </p>
+
+      {/* ─── Card ───────────────────────────────────────────────────────── */}
+      <div className="relative w-full max-w-md">
+        <div className="bg-white/80 backdrop-blur-sm rounded-[22px] shadow-[0_20px_60px_-15px_rgba(61,43,31,0.25),0_4px_20px_-5px_rgba(61,43,31,0.1)] border border-white p-10 md:p-12">
+          {/* Header */}
+          <header className="text-center mb-8">
+            <h1
+              className="font-display font-bold text-brand-dark m-0 leading-none"
               style={{
-                flex: 1,
-                padding: "8px 0",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "Inter, sans-serif",
-                fontSize: 14,
-                fontWeight: 500,
-                transition: "all 0.2s",
-                backgroundColor: mode === m ? "#fff" : "transparent",
-                color: mode === m ? COLORS.dark : COLORS.warm,
-                boxShadow: mode === m ? "0 1px 4px rgba(61,43,31,0.12)" : "none",
+                fontSize: "clamp(2rem, 5vw, 2.5rem)",
+                letterSpacing: "-0.01em",
               }}
             >
-              {m === "login" ? "Iniciar sesión" : "Registrarse"}
-            </button>
-          ))}
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit}>
-          {/* Honeypot anti-bot (oculto visualmente pero presente para bots) */}
-          {mode === "register" && (
-            <div
-              aria-hidden="true"
-              style={{
-                position: "absolute",
-                left: "-9999px",
-                width: 1,
-                height: 1,
-                overflow: "hidden",
-              }}
-            >
-              <label htmlFor="website_url">Website (déjalo vacío)</label>
-              <input
-                type="text"
-                id="website_url"
-                name="website"
-                tabIndex={-1}
-                autoComplete="off"
-                value={website}
-                onChange={(e) => setWebsite(e.target.value)}
-              />
+              Ultimate{" "}
+              <span className="tracking-[0.12em] font-black">TRACKER</span>
+            </h1>
+            {/* Divisor dorado */}
+            <div className="flex items-center justify-center gap-3 mt-5 mb-4">
+              <span className="h-px w-8 bg-brand-warm/40" />
+              <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+              <span className="h-px w-8 bg-brand-warm/40" />
             </div>
-          )}
+            <p className="font-display italic text-brand-warm text-sm m-0">
+              {mode === "login"
+                ? "Bienvenido de vuelta"
+                : "Crea tu cuenta gratuita"}
+            </p>
+          </header>
 
-          {mode === "register" && (
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>
-                Nombre
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Tu nombre"
-                style={inputStyle}
-              />
-            </div>
-          )}
-
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="tu@email.com"
-              required
-              style={inputStyle}
-            />
+          {/* Tabs login / register */}
+          <div className="flex bg-brand-paper/80 rounded-[10px] p-1 mb-7 border border-brand-cream">
+            {(["login", "register"] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => {
+                  setMode(m);
+                  setError("");
+                }}
+                className={`flex-1 py-2 rounded-[8px] text-sm font-medium transition-all ${
+                  mode === m
+                    ? "bg-white text-brand-dark shadow-[0_1px_4px_rgba(61,43,31,0.12)]"
+                    : "text-brand-warm hover:text-brand-dark"
+                }`}
+                type="button"
+              >
+                {m === "login" ? "Iniciar sesión" : "Registrarse"}
+              </button>
+            ))}
           </div>
 
-          <div style={{ marginBottom: 24 }}>
-            <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>
-              Contraseña
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={mode === "register" ? "Mínimo 8 caracteres" : "••••••••"}
-              required
-              style={inputStyle}
-            />
-          </div>
-
-          {twoFactorRequired && mode === "login" && (
-            <div style={{ marginBottom: 24 }}>
-              <label style={{ display: "block", fontSize: 13, color: COLORS.medium, marginBottom: 6, fontWeight: 500 }}>
-                Código de verificación (2FA)
-              </label>
-              <input
-                type="text"
-                inputMode="numeric"
-                value={twoFactorToken}
-                onChange={(e) => setTwoFactorToken(e.target.value)}
-                placeholder="6 dígitos o código de respaldo XXXX-XXXX"
-                required
-                autoFocus
-                style={{ ...inputStyle, fontFamily: "monospace", letterSpacing: "0.1em" }}
-              />
-              <p style={{ fontSize: 12, color: COLORS.warm, marginTop: 6 }}>
-                Abre tu app autenticadora (Google Authenticator, Authy, 1Password) e ingresa el código.
-              </p>
-            </div>
-          )}
-
-          {error && (
-            <div
-              style={{
-                backgroundColor: "#FFF0EE",
-                border: `1px solid ${COLORS.danger}`,
-                borderRadius: 8,
-                padding: "10px 14px",
-                color: COLORS.danger,
-                fontSize: 13,
-                marginBottom: 16,
-              }}
-            >
-              {error}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: "100%",
-              padding: "12px 0",
-              backgroundColor: loading ? COLORS.tan : COLORS.accent,
-              color: "#fff",
-              border: "none",
-              borderRadius: 10,
-              fontSize: 15,
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              fontFamily: "Inter, sans-serif",
-              transition: "background-color 0.2s",
-            }}
-          >
-            {loading
-              ? "Cargando..."
-              : mode === "login"
-              ? "Iniciar sesión"
-              : "Crear cuenta"}
-          </button>
-
-          {mode === "login" && (
-            <div style={{ textAlign: "center", marginTop: 16 }}>
-              <a
-                href="/forgot-password"
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Honeypot anti-bot */}
+            {mode === "register" && (
+              <div
+                aria-hidden="true"
                 style={{
-                  color: COLORS.warm,
-                  fontSize: 13,
-                  textDecoration: "none",
-                  fontWeight: 500,
+                  position: "absolute",
+                  left: "-9999px",
+                  width: 1,
+                  height: 1,
+                  overflow: "hidden",
                 }}
               >
-                ¿Olvidaste tu contraseña?
-              </a>
+                <label htmlFor="website_url">Website (déjalo vacío)</label>
+                <input
+                  type="text"
+                  id="website_url"
+                  name="website"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                />
+              </div>
+            )}
+
+            {mode === "register" && (
+              <div>
+                <label className="block text-xs font-semibold text-brand-medium mb-1.5 tracking-wide">
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Tu nombre"
+                  className={INPUT}
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-medium mb-1.5 tracking-wide">
+                Email
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="tu@email.com"
+                required
+                className={INPUT}
+              />
             </div>
-          )}
-        </form>
+
+            <div>
+              <label className="block text-xs font-semibold text-brand-medium mb-1.5 tracking-wide">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={
+                  mode === "register" ? "Mínimo 8 caracteres" : "••••••••"
+                }
+                required
+                className={INPUT}
+              />
+            </div>
+
+            {twoFactorRequired && mode === "login" && (
+              <div>
+                <label className="block text-xs font-semibold text-brand-medium mb-1.5 tracking-wide">
+                  Código 2FA
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={twoFactorToken}
+                  onChange={(e) => setTwoFactorToken(e.target.value)}
+                  placeholder="6 dígitos o XXXX-XXXX"
+                  required
+                  autoFocus
+                  className={`${INPUT} font-mono tracking-[0.1em]`}
+                />
+                <p className="text-[11px] text-brand-warm mt-1.5">
+                  Abre tu app autenticadora (Google Authenticator, Authy, 1Password).
+                </p>
+              </div>
+            )}
+
+            {error && (
+              <div className="bg-danger-light/50 border border-danger/30 rounded-lg px-3.5 py-2.5 text-danger text-xs">
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 rounded-[10px] text-white font-semibold text-sm transition-all bg-gradient-to-br from-[#A77A39] to-[#C79B55] hover:from-[#8F6829] hover:to-[#B58B45] disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_-4px_rgba(167,122,57,0.5)]"
+            >
+              {loading
+                ? "Cargando…"
+                : mode === "login"
+                  ? "Iniciar sesión"
+                  : "Crear cuenta"}
+            </button>
+
+            {mode === "login" && (
+              <div className="text-center pt-1">
+                <a
+                  href="/forgot-password"
+                  className="text-brand-warm hover:text-brand-dark text-xs font-medium transition-colors"
+                >
+                  ¿Olvidaste tu contraseña?
+                </a>
+              </div>
+            )}
+          </form>
+        </div>
+
+        {/* Feature strip debajo del card — qué es Ultimate TRACKER */}
+        <div className="mt-8 flex items-center justify-center gap-5 flex-wrap text-[11px] text-brand-warm/80 font-medium tracking-wide">
+          <span className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            Hábitos
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            Fitness
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            Nutrición
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            Finanzas
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            Análisis IA
+          </span>
+        </div>
       </div>
     </div>
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "10px 14px",
-  border: `1px solid ${COLORS.cream}`,
-  borderRadius: 8,
-  fontSize: 14,
-  color: COLORS.dark,
-  backgroundColor: COLORS.paper,
-  fontFamily: "Inter, sans-serif",
-  outline: "none",
-  boxSizing: "border-box",
-};
+const INPUT =
+  "w-full px-3.5 py-2.5 bg-white/70 border border-brand-cream rounded-[10px] text-sm text-brand-dark placeholder:text-brand-warm/50 focus:outline-none focus:border-accent focus:ring-2 focus:ring-accent/10 transition font-sans";

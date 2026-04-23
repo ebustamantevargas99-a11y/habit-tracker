@@ -119,12 +119,19 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center bg-brand-paper px-4">
       <div className="w-full max-w-md bg-white rounded-2xl border border-brand-cream shadow-warm-lg p-8 md:p-10">
         <div className="text-center mb-6">
-          <div className="text-3xl mb-2">🎯</div>
           <h1 className="font-display text-2xl font-bold text-brand-dark m-0">
-            Nueva contraseña
+            Ultimate <span className="tracking-[0.1em]">TRACKER</span>
           </h1>
-          <p className="text-sm text-brand-warm mt-1">
-            Establece tu nueva contraseña
+          <div className="flex items-center justify-center gap-2 my-3">
+            <span className="h-px w-6 bg-brand-warm/40" />
+            <span className="w-1 h-1 rounded-full bg-accent" />
+            <span className="h-px w-6 bg-brand-warm/40" />
+          </div>
+          <p className="font-display italic text-brand-warm text-sm m-0">
+            Nueva contraseña
+          </p>
+          <p className="text-xs text-brand-warm/70 mt-1">
+            Establece una contraseña segura.
           </p>
         </div>
         <Suspense fallback={<p className="text-center text-brand-warm">Cargando…</p>}>
