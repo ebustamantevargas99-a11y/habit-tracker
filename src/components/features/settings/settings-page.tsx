@@ -7,6 +7,7 @@ import { LEVELS, XP_REWARDS } from '@/lib/constants';
 import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { useGamificationStore } from '@/stores/gamification-store';
 import { useUserStore } from '@/stores/user-store';
+import { useHabitStore } from '@/stores/habit-store';
 import { useThemeStore, type ThemeId } from '@/stores/theme-store';
 import { api } from '@/lib/api-client';
 import { cn } from '@/components/ui';
@@ -33,9 +34,28 @@ const SELECT = "px-[14px] py-2 rounded-md border border-brand-tan bg-brand-cream
 // ============== PROFILE TAB ==============
 function ProfileTab() {
   const { user, saveProfile, isSaving, initialize } = useUserStore();
+  const habits = useHabitStore((s) => s.habits);
+  const logs = useHabitStore((s) => s.logs);
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
   const [timezone, setTimezone] = useState('America/Mexico_City');
+
+  // Estadísticas reales derivadas del habit-store + perfil
+  const accountStats = React.useMemo(() => {
+    const habitsCreated = habits.length;
+    // Total completados: cada log con completed=true es una completación
+    const completedLogs = logs.filter((l) => l.completed);
+    const totalCompleted = completedLogs.length;
+    // Días activos = fechas únicas con al menos 1 hábito completado
+    const uniqueDates = new Set(completedLogs.map((l) => l.date));
+    const daysActive = uniqueDates.size;
+    // Mejor racha = max de streakBest entre todos los hábitos
+    const bestStreak = habits.reduce(
+      (max, h) => Math.max(max, h.streakBest ?? 0),
+      0,
+    );
+    return { habitsCreated, totalCompleted, daysActive, bestStreak };
+  }, [habits, logs]);
 
   useEffect(() => { initialize(); }, [initialize]);
 
@@ -93,15 +113,15 @@ function ProfileTab() {
         </div>
       </div>
 
-      {/* Account Stats */}
+      {/* Account Stats — derivadas de datos reales del habit-store */}
       <div className={CARD}>
         <h3 className="font-serif text-brand-dark m-0 mb-4">📊 Estadísticas de Cuenta</h3>
         <div className="grid grid-cols-4 gap-4">
           {[
-            { label: 'Días Activo', value: '127', emoji: '📅' },
-            { label: 'Hábitos Creados', value: '24', emoji: '🔁' },
-            { label: 'Total Completados', value: '2,847', emoji: '✅' },
-            { label: 'Mejor Racha', value: '94 días', emoji: '🔥' },
+            { label: 'Días Activo',       value: String(accountStats.daysActive),                       emoji: '📅' },
+            { label: 'Hábitos Creados',   value: String(accountStats.habitsCreated),                    emoji: '🔁' },
+            { label: 'Total Completados', value: accountStats.totalCompleted.toLocaleString("es-MX"),   emoji: '✅' },
+            { label: 'Mejor Racha',       value: `${accountStats.bestStreak} día${accountStats.bestStreak === 1 ? '' : 's'}`, emoji: '🔥' },
           ].map((s, i) => (
             <div key={i} className="text-center p-4 bg-brand-light-cream rounded-[10px]">
               <div className="text-[1.5rem] mb-1">{s.emoji}</div>
@@ -110,6 +130,11 @@ function ProfileTab() {
             </div>
           ))}
         </div>
+        {accountStats.habitsCreated === 0 && (
+          <p className="text-xs text-brand-warm m-0 mt-3 text-center">
+            Aún no has creado hábitos. Las estadísticas aparecerán conforme uses la app.
+          </p>
+        )}
       </div>
     </div>
   );
@@ -484,25 +509,41 @@ function PreferencesTab() {
 
 // ============== DATA TAB ==============
 function DataTab() {
-  const handleExportAll = () => {
-    const data = {
-      exportDate: new Date().toISOString(),
-      app: 'Ultimate Habit Tracker',
-      version: '1.0.0',
-      profile: { name: 'Eduardo', level: 5, xp: 1200 },
-      stats: { daysActive: 127, habitsCreated: 24, totalCompleted: 2847, bestStreak: 94 },
-    };
-    exportToJSON(data, 'habit-tracker-backup');
+  const habits = useHabitStore((s) => s.habits);
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Export GDPR completo: llama a /api/user/export-data que devuelve TODOS
+  // los datos del user (perfil + hábitos + logs + finanzas + fitness +
+  // nutrición + etc.). Sin mocks, data real de Prisma.
+  const handleExportAll = async () => {
+    setIsExporting(true);
+    try {
+      const data = await api.get<Record<string, unknown>>("/user/export-data");
+      exportToJSON(data, `ultimate-tracker-backup-${new Date().toISOString().slice(0, 10)}`);
+    } catch {
+      alert("Error exportando datos. Intenta de nuevo.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
+  // Export CSV de hábitos: data real del habit-store.
   const handleExportHabits = () => {
-    const habits = [
-      { nombre: 'Meditar', categoria: 'Bienestar', racha: 127, fuerza: '95%', creado: '2026-01-01' },
-      { nombre: 'Ejercicio', categoria: 'Fitness', racha: 94, fuerza: '88%', creado: '2026-01-01' },
-      { nombre: 'Lectura', categoria: 'Organización', racha: 82, fuerza: '82%', creado: '2026-01-05' },
-      { nombre: 'Presupuesto', categoria: 'Finanzas', racha: 43, fuerza: '65%', creado: '2026-01-10' },
-    ];
-    exportToCSV(habits, 'mis-habitos');
+    if (habits.length === 0) {
+      alert("Aún no tienes hábitos para exportar.");
+      return;
+    }
+    const rows = habits.map((h) => ({
+      nombre: h.name,
+      categoria: h.category,
+      frecuencia: h.frequency,
+      racha_actual: h.streakCurrent,
+      mejor_racha: h.streakBest,
+      fuerza: `${h.strength}%`,
+      activo: h.isActive ? "sí" : "no",
+      creado: h.createdAt.slice(0, 10),
+    }));
+    exportToCSV(rows, `habitos-${new Date().toISOString().slice(0, 10)}`);
   };
 
   return (
@@ -516,93 +557,31 @@ function DataTab() {
           <Download size={20} color={C.accent} /> Exportar Datos (Backup)
         </h3>
         <p className="text-[0.85rem] text-brand-warm m-0 mb-5">
-          Descarga una copia de todos tus datos
+          Descarga una copia de todos tus datos — útil para backup o GDPR.
         </p>
         <div className="flex gap-3 flex-wrap">
           <button
-            onClick={handleExportAll}
-            className="px-6 py-3 bg-accent text-brand-paper border-none rounded-lg cursor-pointer font-semibold flex items-center gap-2"
+            onClick={() => void handleExportAll()}
+            disabled={isExporting}
+            className={cn(
+              "px-6 py-3 bg-accent text-brand-paper border-none rounded-lg cursor-pointer font-semibold flex items-center gap-2",
+              isExporting && "opacity-50 cursor-not-allowed",
+            )}
           >
-            <Download size={16} /> Exportar Todo (JSON)
+            <Download size={16} />
+            {isExporting ? "Preparando…" : "Exportar Todo (JSON)"}
           </button>
           <button
             onClick={handleExportHabits}
-            className="px-6 py-3 bg-info text-brand-paper border-none rounded-lg cursor-pointer font-semibold flex items-center gap-2"
+            disabled={habits.length === 0}
+            className="px-6 py-3 bg-info text-brand-paper border-none rounded-lg cursor-pointer font-semibold flex items-center gap-2 disabled:opacity-40"
           >
             <Download size={16} /> Exportar Hábitos (CSV)
           </button>
         </div>
-      </div>
-
-      {/* Storage Info */}
-      <div className={CARD}>
-        <h3 className="font-serif text-brand-dark m-0 mb-4">💾 Uso de Almacenamiento</h3>
-        <div className="flex flex-col gap-3">
-          {[
-            { label: 'Hábitos & Rastreadores', size: '2.4 MB', pct: 30 },
-            { label: 'Fitness & Métricas', size: '1.8 MB', pct: 22 },
-            { label: 'Finanzas', size: '1.2 MB', pct: 15 },
-            { label: 'Diarios & Notas', size: '0.9 MB', pct: 11 },
-            { label: 'Configuración', size: '0.1 MB', pct: 1 },
-          ].map((item, i) => (
-            <div key={i}>
-              <div className="flex justify-between text-[0.85rem] mb-1">
-                <span className="text-brand-dark">{item.label}</span>
-                <span className="text-brand-warm">{item.size}</span>
-              </div>
-              <div className="w-full h-2 bg-brand-light-cream rounded-[4px] overflow-hidden">
-                <div className="h-full bg-accent rounded-[4px]" style={{ width: `${item.pct}%` }} />
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-4 text-[0.85rem] text-brand-warm">
-          Total usado: <strong className="text-brand-dark">6.4 MB</strong> de 50 MB
-        </div>
-      </div>
-
-      {/* Subscription */}
-      <div className="bg-[linear-gradient(135deg,#3D2B1F,#6B4226)] rounded-xl p-6 text-brand-paper border-none">
-        <div className="flex justify-between items-center">
-          <div>
-            <h3 className="font-serif m-0 mb-1 text-accent-glow">⭐ Plan Pro</h3>
-            <p className="text-[0.85rem] text-brand-light-tan m-0">
-              Desbloquea todas las funciones premium
-            </p>
-          </div>
-          <div className="text-right">
-            <div className="text-[1.5rem] font-bold text-accent-glow">$4.99<span className="text-[0.8rem] font-normal">/mes</span></div>
-            <div className="text-[0.75rem] text-brand-light-tan">o $49.99 de por vida</div>
-          </div>
-        </div>
-        <div className="flex gap-3 mt-4 flex-wrap">
-          {['Datos ilimitados', 'Export PDF', 'Temas premium', 'Sin anuncios', 'Soporte prioritario'].map(f => (
-            <span key={f} className="px-[14px] py-[6px] bg-white/10 rounded-[16px] text-[0.75rem] text-accent-glow">
-              ✓ {f}
-            </span>
-          ))}
-        </div>
-        <button className="mt-4 px-8 py-3 bg-[linear-gradient(135deg,#B8860B,#D4A843)] text-brand-paper border-none rounded-lg cursor-pointer font-bold text-[1rem]">
-          Actualizar a Pro
-        </button>
-      </div>
-
-      {/* Danger Zone */}
-      <div className={cn(CARD, "border-danger")}>
-        <h3 className="font-serif text-danger m-0 mb-2 flex items-center gap-2">
-          <Trash2 size={20} color="#C0544F" /> Zona de Peligro
-        </h3>
-        <p className="text-[0.85rem] text-brand-warm m-0 mb-4">
-          Estas acciones son irreversibles. Procede con cuidado.
+        <p className="text-[11px] text-brand-tan m-0 mt-3">
+          Para reset de datos ve a la pestaña <strong>Resetear</strong>.
         </p>
-        <div className="flex gap-3">
-          <button className="px-5 py-[10px] bg-transparent text-danger border border-danger rounded-lg cursor-pointer font-semibold text-[0.85rem]">
-            Reiniciar Progreso
-          </button>
-          <button className="px-5 py-[10px] bg-danger text-brand-paper border-none rounded-lg cursor-pointer font-semibold text-[0.85rem]">
-            Eliminar Cuenta
-          </button>
-        </div>
       </div>
     </div>
   );
