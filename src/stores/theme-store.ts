@@ -1,46 +1,48 @@
 import { create } from "zustand";
 
-// ─── Sistema de temas 2.1 (2026-04) ──────────────────────────────────────────
-// 9 temas con paletas variadas (3 warmth + 3 light delicate + 3 dark elegant).
-// Cada tema define 12 variables CSS de color + 3 de fuente
-// (--font-heading / --font-body / --font-mono) en globals.css.
+// ─── Sistema de temas 2.2 (2026-04) ──────────────────────────────────────────
+// 8 temas neutros elegantes: 4 claros + 4 oscuros. Sin colores chillones.
+// Acentos en bronce / brass / rose gold / oro antiguo.
+// Cada tema define 12 variables de color + 3 de fuente en globals.css.
 
 export type ThemeId =
-  // Cálidos (default + raíz):
-  | "pergamino"   // papel manuscrito cálido + Playfair
-  | "zen"         // washi + sumi + jade + Shippori Mincho (japonés)
-  | "sakura"      // cerezo: rosa + ciruela + oro + Crimson Pro
-  // Claros delicados:
+  // Claros (4):
+  | "pergamino"   // default · papel manuscrito cálido
   | "marfil"      // ivory + durazno + dorado suave
-  | "lavanda"     // lavanda pálida + violeta + oro + Crimson italic
-  | "menta"       // mint fresco + teal profundo + cream
-  // Oscuros elegantes:
-  | "medianoche"  // azul noche + oro antiguo + cream text
-  | "cafe"        // chocolate profundo + cream + dorado
-  | "vino";       // burgundy + rosa cream + oro + Crimson
+  | "perla"       // gris frío elegante + bronce
+  | "lino"        // lino natural avena + sage muted
+  // Oscuros (4):
+  | "cafe"        // chocolate cálido + cream + dorado
+  | "carbon"      // charcoal + bronce
+  | "pizarra"     // slate gris-azulado + brass
+  | "onice";      // casi negro + rose gold
 
 const ALL_THEMES: ThemeId[] = [
-  "pergamino", "zen", "sakura",
-  "marfil", "lavanda", "menta",
-  "medianoche", "cafe", "vino",
+  "pergamino", "marfil", "perla", "lino",
+  "cafe", "carbon", "pizarra", "onice",
 ];
 
-// Migración desde IDs legacy (warm/ocean/forest/rose + themes v2.0
-// descontinuados) → tema equivalente actual.
+// Migración desde IDs legacy (v1.0 + v2.0 + v2.1) → tema actual equivalente.
 const LEGACY_MIGRATION: Record<string, ThemeId> = {
-  // v1.0 legacy
-  warm:       "pergamino",
-  ocean:      "medianoche",
-  forest:     "menta",
-  rose:       "sakura",
-  // v2.0 temas descontinuados (mínimo / matrix / nórdico / cyberpunk /
-  // atardecer / bosque) — mapeados al equivalente estético más cercano
-  minimo:     "marfil",
-  matrix:     "medianoche",
-  nordico:    "menta",
-  cyberpunk:  "vino",
-  atardecer:  "sakura",
-  bosque:     "cafe",
+  // v1.0
+  warm:        "pergamino",
+  ocean:       "pizarra",
+  forest:      "lino",
+  rose:        "perla",
+  // v2.0 (deprecated)
+  minimo:      "perla",
+  matrix:      "onice",
+  nordico:     "pizarra",
+  cyberpunk:   "onice",
+  atardecer:   "pergamino",
+  bosque:      "lino",
+  // v2.1 (deprecated)
+  zen:         "lino",
+  sakura:      "marfil",
+  lavanda:     "perla",
+  menta:       "lino",
+  medianoche:  "pizarra",
+  vino:        "onice",
 };
 
 interface ThemeState {
@@ -76,7 +78,6 @@ export const useThemeStore = create<ThemeState>((set) => ({
     if (typeof localStorage === "undefined") return;
     const raw = localStorage.getItem("app-theme");
     const theme = normalizeTheme(raw);
-    // Si el valor guardado era legacy, persiste el migrado de inmediato.
     if (raw !== theme) localStorage.setItem("app-theme", theme);
     applyTheme(theme);
     set({ theme });

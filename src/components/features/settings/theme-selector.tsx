@@ -1,16 +1,12 @@
 "use client";
 
 /**
- * Theme selector — 9 temas visuales con preview de paleta + tipografía.
+ * Theme selector — 8 temas neutros elegantes en 2 grupos.
  *
- * Cada card muestra:
- *   · Background y texto del tema (preview "real" del look)
- *   · 4 swatches de color (dark, accent, cream, paper)
- *   · Sample del heading en la fuente del tema
- *   · Vibe description
- *   · Badge "CLARO" / "OSCURO" para orientar
- *   · Indicador activo
+ * Claros (4):  Pergamino · Marfil · Perla · Lino
+ * Oscuros (4): Café · Carbón · Pizarra · Ónice
  *
+ * Sin colores chillones — acentos en bronce, brass, rose gold, oro antiguo.
  * Click aplica el tema al instante (CSS vars en html.theme-<id>).
  */
 
@@ -23,47 +19,25 @@ interface ThemeMeta {
   name: string;
   vibe: string;
   emoji: string;
-  group: "warm" | "light" | "dark";
+  group: "light" | "dark";
   preview: {
     bg: string;
     text: string;
     accent: string;
     cream: string;
   };
-  sampleFont: string;
 }
 
 const THEMES: ThemeMeta[] = [
-  // ─── Cálidos (default + raíz) ────────────────────────────────────────
+  // ─── Claros ──────────────────────────────────────────────────────────
   {
     id: "pergamino",
     name: "Pergamino",
-    vibe: "Papel cálido · serif clásico",
+    vibe: "Papel cálido · manuscrito",
     emoji: "🕯️",
-    group: "warm",
+    group: "light",
     preview: { bg: "#F6EEDB", text: "#2E1F14", accent: "#A77A39", cream: "#E8D9BE" },
-    sampleFont: "var(--font-playfair)",
   },
-  {
-    id: "zen",
-    name: "Zen 禅",
-    vibe: "Papel washi · tinta sumi · jade",
-    emoji: "🎋",
-    group: "warm",
-    preview: { bg: "#F5F1E8", text: "#1A1714", accent: "#4A7A5C", cream: "#E2DBC8" },
-    sampleFont: "var(--font-shippori)",
-  },
-  {
-    id: "sakura",
-    name: "Sakura 桜",
-    vibe: "Cerezo · rosa + ciruela + oro",
-    emoji: "🌸",
-    group: "warm",
-    preview: { bg: "#FAF0F4", text: "#3E1528", accent: "#C9A85F", cream: "#F3D8E1" },
-    sampleFont: "var(--font-crimson)",
-  },
-
-  // ─── Claros delicados ────────────────────────────────────────────────
   {
     id: "marfil",
     name: "Marfil",
@@ -71,62 +45,58 @@ const THEMES: ThemeMeta[] = [
     emoji: "🤍",
     group: "light",
     preview: { bg: "#FFF9F0", text: "#3B2E20", accent: "#C99969", cream: "#EDDEC0" },
-    sampleFont: "var(--font-playfair)",
   },
   {
-    id: "lavanda",
-    name: "Lavanda",
-    vibe: "Pálida · violeta · femenina",
-    emoji: "💜",
+    id: "perla",
+    name: "Perla",
+    vibe: "Gris frío · bronce cálido",
+    emoji: "🐚",
     group: "light",
-    preview: { bg: "#F8F3FD", text: "#2D1F3A", accent: "#9678C9", cream: "#D9C7E6" },
-    sampleFont: "var(--font-crimson)",
+    preview: { bg: "#F8F8F9", text: "#2B2B33", accent: "#8B7355", cream: "#D8D8DC" },
   },
   {
-    id: "menta",
-    name: "Menta",
-    vibe: "Fresca · teal · cream",
-    emoji: "🌿",
+    id: "lino",
+    name: "Lino",
+    vibe: "Avena natural · taupe · sage",
+    emoji: "🌾",
     group: "light",
-    preview: { bg: "#F2FAF6", text: "#1F3E2B", accent: "#3E9D7A", cream: "#BCD6C6" },
-    sampleFont: "var(--font-playfair)",
+    preview: { bg: "#F8F2E6", text: "#3E3528", accent: "#7A8B6C", cream: "#E2D8C4" },
   },
 
-  // ─── Oscuros elegantes ───────────────────────────────────────────────
-  {
-    id: "medianoche",
-    name: "Medianoche",
-    vibe: "Azul noche · oro antiguo",
-    emoji: "🌙",
-    group: "dark",
-    preview: { bg: "#0E1220", text: "#E8E8F0", accent: "#D4A85F", cream: "#2A2F4A" },
-    sampleFont: "var(--font-playfair)",
-  },
+  // ─── Oscuros ─────────────────────────────────────────────────────────
   {
     id: "cafe",
     name: "Café",
-    vibe: "Chocolate · cream · dorado",
+    vibe: "Chocolate cálido · cream · dorado",
     emoji: "☕",
     group: "dark",
     preview: { bg: "#1A100A", text: "#EFD9BA", accent: "#D4A843", cream: "#3E2B1C" },
-    sampleFont: "var(--font-playfair)",
   },
   {
-    id: "vino",
-    name: "Vino",
-    vibe: "Burgundy · rosa cream · oro",
-    emoji: "🍷",
+    id: "carbon",
+    name: "Carbón",
+    vibe: "Charcoal cálido · bronce",
+    emoji: "⚫",
     group: "dark",
-    preview: { bg: "#1A0A10", text: "#F0E4EC", accent: "#D4A85F", cream: "#3E2030" },
-    sampleFont: "var(--font-crimson)",
+    preview: { bg: "#151413", text: "#E8E4DE", accent: "#B08C5A", cream: "#2A2825" },
+  },
+  {
+    id: "pizarra",
+    name: "Pizarra",
+    vibe: "Slate gris-azulado · brass",
+    emoji: "🪨",
+    group: "dark",
+    preview: { bg: "#12161C", text: "#DDE4EA", accent: "#C9A46B", cream: "#232830" },
+  },
+  {
+    id: "onice",
+    name: "Ónice",
+    vibe: "Casi negro · cream · rose gold",
+    emoji: "🖤",
+    group: "dark",
+    preview: { bg: "#0A0806", text: "#EEE6E0", accent: "#B8967A", cream: "#1F1A17" },
   },
 ];
-
-const GROUP_LABELS: Record<"warm" | "light" | "dark", string> = {
-  warm:  "Cálidos",
-  light: "Claros delicados",
-  dark:  "Oscuros elegantes",
-};
 
 export default function ThemeSelector() {
   const { theme, setTheme } = useThemeStore();
@@ -137,16 +107,16 @@ export default function ThemeSelector() {
         🎨 Tema visual
       </h3>
       <p className="text-sm text-brand-warm m-0 mb-5">
-        Cambia toda la paleta y la <strong>tipografía</strong> al instante.
-        9 temas en 3 grupos — click para aplicar.
+        Cambia toda la paleta al instante. 8 temas neutros elegantes —
+        4 claros + 4 oscuros. Click para aplicar.
       </p>
 
-      {(["warm", "light", "dark"] as const).map((group) => (
+      {(["light", "dark"] as const).map((group) => (
         <div key={group} className="mb-5 last:mb-0">
           <p className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold m-0 mb-2">
-            {GROUP_LABELS[group]}
+            {group === "light" ? "Claros" : "Oscuros"}
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {THEMES.filter((t) => t.group === group).map((t) => (
               <ThemeCard
                 key={t.id}
@@ -187,11 +157,11 @@ function ThemeCard({
       type="button"
     >
       {/* Emoji + nombre */}
-      <div className="flex items-start justify-between gap-2 mb-2">
+      <div className="flex items-start justify-between gap-2 mb-3">
         <div>
           <p
-            className="text-lg font-semibold m-0"
-            style={{ fontFamily: meta.sampleFont, color: meta.preview.text }}
+            className="text-base font-semibold m-0"
+            style={{ fontFamily: "var(--font-playfair)", color: meta.preview.text }}
           >
             {meta.emoji} {meta.name}
           </p>
@@ -233,9 +203,9 @@ function ThemeCard({
 
       {/* Sample tipográfico */}
       <p
-        className="m-0 text-base italic"
+        className="m-0 text-sm italic"
         style={{
-          fontFamily: meta.sampleFont,
+          fontFamily: "var(--font-playfair)",
           color: meta.preview.accent,
           letterSpacing: "-0.01em",
         }}

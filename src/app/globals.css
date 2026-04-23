@@ -3,14 +3,15 @@
 @import "tailwindcss/utilities";
 
 /* ═══════════════════════════════════════════════════════════════════════════
- * SISTEMA DE TEMAS 2.0 — 2026-04
+ * SISTEMA DE TEMAS 2.2 — 2026-04
  * ───────────────────────────────────────────────────────────────────────────
- * Cada tema define 12 colores + 3 fuentes (heading/body/mono).
+ * 8 temas neutros elegantes: 4 claros + 4 oscuros.
+ * Sin colores chillones — acentos en bronce, brass, rose gold, oro antiguo.
+ * Cada tema: 12 variables de color + 3 de fuente.
  * Default: Pergamino (papel cálido tipo manuscrito).
- * Cambiar tema: <html class="theme-<id>">.
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-/* ─── DEFAULT: Pergamino (papel manuscrito cálido) ─────────────────────────── */
+/* ─── CLARO 1 (DEFAULT): Pergamino — papel manuscrito cálido ─────────────── */
 :root {
   --color-dark:         #2E1F14;
   --color-brown:        #5C3E20;
@@ -30,7 +31,7 @@
   --font-mono:    var(--font-jetbrains), "Menlo", "Monaco", monospace;
 }
 
-/* Modo oscuro del tema Pergamino */
+/* Modo oscuro del tema Pergamino (activado con toggle aparte) */
 html.dark {
   --color-dark:         #F1E6CF;
   --color-brown:        #D9C4A2;
@@ -46,27 +47,7 @@ html.dark {
   --color-accent-light: #D9B477;
 }
 
-/* ─── 1. Zen (Japonés — papel washi + tinta sumi + jade + vermillón) ────── */
-.theme-zen {
-  --color-dark:         #1A1714;
-  --color-brown:        #2E2820;
-  --color-medium:       #4A4238;
-  --color-warm:         #6A5F52;
-  --color-tan:          #9A8E7E;
-  --color-light-tan:    #BCB0A0;
-  --color-cream:        #E2DBC8;
-  --color-light-cream:  #EEE8D6;
-  --color-warm-white:   #F2EDDD;
-  --color-paper:        #F5F1E8;
-  --color-accent:       #4A7A5C;
-  --color-accent-light: #6A9E7E;
-
-  --font-heading: var(--font-shippori), "Georgia", serif;
-  --font-body:    var(--font-shippori), "Georgia", serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
-}
-
-/* ─── 2. Marfil (cream ivory + durazno + dorado suave) ─────────────────── */
+/* ─── CLARO 2: Marfil — ivory + durazno + dorado suave ─────────────────── */
 .theme-marfil {
   --color-dark:         #3B2E20;
   --color-brown:        #5A4730;
@@ -86,87 +67,47 @@ html.dark {
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 3. Sakura (cerezo en flor — rosa washi + ciruela + oro) ───────────── */
-.theme-sakura {
-  --color-dark:         #3E1528;
-  --color-brown:        #5C2A44;
-  --color-medium:       #8F4A6A;
-  --color-warm:         #B07390;
-  --color-tan:          #D49EAB;
-  --color-light-tan:    #E5B9C5;
-  --color-cream:        #F3D8E1;
-  --color-light-cream:  #FAE8EE;
-  --color-warm-white:   #FDF2F5;
-  --color-paper:        #FAF0F4;
-  --color-accent:       #C9A85F;
-  --color-accent-light: #DCBE7A;
-
-  --font-heading: var(--font-crimson), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
-}
-
-/* ─── 5. Lavanda (luz: lavanda pálida + violeta profundo + oro) ──────── */
-.theme-lavanda {
-  --color-dark:         #2D1F3A;
-  --color-brown:        #4B365F;
-  --color-medium:       #684C84;
-  --color-warm:         #8567A0;
-  --color-tan:          #A182BA;
-  --color-light-tan:    #BFA4D3;
-  --color-cream:        #D9C7E6;
-  --color-light-cream:  #E8DDEF;
-  --color-warm-white:   #F2EAF8;
-  --color-paper:        #F8F3FD;
-  --color-accent:       #9678C9;
-  --color-accent-light: #B89ADD;
-
-  --font-heading: var(--font-crimson), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
-}
-
-/* ─── 6. Menta (luz: mint fresco + teal + cream) ──────────────────────── */
-.theme-menta {
-  --color-dark:         #1F3E2B;
-  --color-brown:        #385D44;
-  --color-medium:       #4E7A5D;
-  --color-warm:         #649374;
-  --color-tan:          #7FAB8F;
-  --color-light-tan:    #9DC2AA;
-  --color-cream:        #BCD6C6;
-  --color-light-cream:  #D6E8DD;
-  --color-warm-white:   #E8F4EB;
-  --color-paper:        #F2FAF6;
-  --color-accent:       #3E9D7A;
-  --color-accent-light: #5FB89A;
+/* ─── CLARO 3: Perla — gris frío elegante + bronce cálido ───────────────── */
+.theme-perla {
+  --color-dark:         #2B2B33;
+  --color-brown:        #45454E;
+  --color-medium:       #656570;
+  --color-warm:         #8A8A95;
+  --color-tan:          #A8A8B0;
+  --color-light-tan:    #C0C0C6;
+  --color-cream:        #D8D8DC;
+  --color-light-cream:  #E6E6E9;
+  --color-warm-white:   #F0F0F2;
+  --color-paper:        #F8F8F9;
+  --color-accent:       #8B7355;
+  --color-accent-light: #A68E6B;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 7. Medianoche (oscuro: azul noche + oro antiguo + cream) ──────── */
-.theme-medianoche {
-  --color-dark:         #E8E8F0;
-  --color-brown:        #CCCFE0;
-  --color-medium:       #A6AEC8;
-  --color-warm:         #8089A8;
-  --color-tan:          #5B6084;
-  --color-light-tan:    #3E4363;
-  --color-cream:        #2A2F4A;
-  --color-light-cream:  #1D2138;
-  --color-warm-white:   #15182A;
-  --color-paper:        #0E1220;
-  --color-accent:       #D4A85F;
-  --color-accent-light: #E8C683;
+/* ─── CLARO 4: Lino — lino natural avena + taupe + sage muted ──────────── */
+.theme-lino {
+  --color-dark:         #3E3528;
+  --color-brown:        #5A4E3A;
+  --color-medium:       #7A6B52;
+  --color-warm:         #9A8B72;
+  --color-tan:          #B8A88E;
+  --color-light-tan:    #CFC2AA;
+  --color-cream:        #E2D8C4;
+  --color-light-cream:  #EDE4D3;
+  --color-warm-white:   #F4ECDC;
+  --color-paper:        #F8F2E6;
+  --color-accent:       #7A8B6C;
+  --color-accent-light: #95A385;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 8. Café (oscuro: chocolate + cream + dorado) ───────────────────── */
+/* ─── OSCURO 1: Café — chocolate cálido + cream + dorado ───────────────── */
 .theme-cafe {
   --color-dark:         #EFD9BA;
   --color-brown:        #D4AD82;
@@ -186,22 +127,62 @@ html.dark {
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 9. Vino (oscuro: burgundy profundo + rosa cream + oro) ────────── */
-.theme-vino {
-  --color-dark:         #F0E4EC;
-  --color-brown:        #CDA7BF;
-  --color-medium:       #B584A3;
-  --color-warm:         #9A5F84;
-  --color-tan:          #7A4566;
-  --color-light-tan:    #5A3048;
-  --color-cream:        #3E2030;
-  --color-light-cream:  #2E1822;
-  --color-warm-white:   #22101A;
-  --color-paper:        #1A0A10;
-  --color-accent:       #D4A85F;
-  --color-accent-light: #E8C683;
+/* ─── OSCURO 2: Carbón — charcoal cálido + bronce ──────────────────────── */
+.theme-carbon {
+  --color-dark:         #E8E4DE;
+  --color-brown:        #CCC7BE;
+  --color-medium:       #A5A098;
+  --color-warm:         #807C75;
+  --color-tan:          #5E5A54;
+  --color-light-tan:    #403D37;
+  --color-cream:        #2A2825;
+  --color-light-cream:  #1F1D1B;
+  --color-warm-white:   #1A1917;
+  --color-paper:        #151413;
+  --color-accent:       #B08C5A;
+  --color-accent-light: #C9A876;
 
-  --font-heading: var(--font-crimson), "Georgia", serif;
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── OSCURO 3: Pizarra — slate gris-azulado + brass ───────────────────── */
+.theme-pizarra {
+  --color-dark:         #DDE4EA;
+  --color-brown:        #B8C0C8;
+  --color-medium:       #8B95A0;
+  --color-warm:         #676F78;
+  --color-tan:          #464E56;
+  --color-light-tan:    #343A42;
+  --color-cream:        #232830;
+  --color-light-cream:  #1A1E24;
+  --color-warm-white:   #151920;
+  --color-paper:        #12161C;
+  --color-accent:       #C9A46B;
+  --color-accent-light: #DBB987;
+
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── OSCURO 4: Ónice — casi negro + cream cálido + rose gold ───────── */
+.theme-onice {
+  --color-dark:         #EEE6E0;
+  --color-brown:        #CABAB0;
+  --color-medium:       #9A8A82;
+  --color-warm:         #6D5F58;
+  --color-tan:          #443A35;
+  --color-light-tan:    #2E2521;
+  --color-cream:        #1F1A17;
+  --color-light-cream:  #15110E;
+  --color-warm-white:   #0F0C0A;
+  --color-paper:        #0A0806;
+  --color-accent:       #B8967A;
+  --color-accent-light: #D4AE93;
+
+  --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
