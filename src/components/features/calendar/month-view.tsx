@@ -303,7 +303,7 @@ export default function MonthView({
       )}
 
       <p className="text-[11px] text-brand-tan text-center">
-        💡 Click en un día para crear · click en un evento para editar · click en la flecha ↗ para ver el día completo
+        💡 Clic en un día para crear · clic en un evento para editar · clic en la flecha ↗ para ver el día completo
       </p>
     </div>
   );

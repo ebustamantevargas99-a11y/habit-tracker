@@ -356,7 +356,7 @@ export default function MonthlySummaryModal({ onClose }: MonthlySummaryModalProp
 
       {/* Nutrition Insights */}
       <div className="bg-brand-warm-white border border-brand-cream rounded-lg p-4">
-        <p className="text-sm font-semibold text-brand-dark m-0 mb-3">Insights Nutricionales</p>
+        <p className="text-sm font-semibold text-brand-dark m-0 mb-3">Descubrimientos Nutricionales</p>
         <ul className="m-0 pl-5 text-brand-dark text-[13px] leading-[1.8]">
           <li>Aumento de consumo de proteína: +12%</li>
           <li>Hidratación mejorada y consistente</li>

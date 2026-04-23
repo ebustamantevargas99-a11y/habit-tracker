@@ -500,7 +500,7 @@ export default function NutritionPro() {
                   {MEAL_LABELS[type]}
                 </h4>
                 <p className="text-xs text-brand-warm">
-                  {Math.round(mealCals)} kcal · {meal?.items.length ?? 0} items
+                  {Math.round(mealCals)} kcal · {meal?.items.length ?? 0} alimentos
                 </p>
               </div>
               <div className="flex gap-1">

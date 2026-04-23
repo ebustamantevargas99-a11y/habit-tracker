@@ -59,7 +59,7 @@ export default function OnboardingModal({ onComplete }: Props) {
 
   const steps: Step[] = [
     {
-      title: 'Bienvenido al Ultimate Habit Tracker',
+      title: 'Bienvenido a Ultimate TRACKER',
       subtitle: 'Tu compañero para transformar tu vida, un hábito a la vez',
       icon: <Sparkles size={48} color={C.accentGlow} />,
       bg: `linear-gradient(135deg, ${C.dark} 0%, ${C.brown} 50%, ${C.accent} 100%)`,
@@ -70,7 +70,7 @@ export default function OnboardingModal({ onComplete }: Props) {
             Rastrea 8 áreas de tu vida, visualiza tu progreso con dashboards al estilo Power BI, y desbloquea tu potencial con gamificación.
           </p>
           <div className="flex justify-center gap-6 flex-wrap">
-            {['🎯 50+ Secciones', '📊 Dashboards', '🏆 Gamificación', '🔥 Streaks'].map(f => (
+            {['🎯 50+ Secciones', '📊 Paneles', '🏆 Gamificación', '🔥 Rachas'].map(f => (
               <div key={f} className="py-2.5 px-[18px] bg-white/10 rounded-[20px] text-accent-glow text-[0.9rem] font-semibold">
                 {f}
               </div>

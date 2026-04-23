@@ -485,7 +485,7 @@ export default function WorkoutLogger() {
 
           <div className="grid grid-cols-[28px_64px_1fr_1fr_1fr_28px_28px_28px] gap-1.5 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
             <div className="text-center">#</div>
-            <div className="text-center">Prev</div>
+            <div className="text-center">Ant.</div>
             <div className="text-center">Peso</div>
             <div className="text-center">Reps</div>
             <div className="text-center">RPE</div>

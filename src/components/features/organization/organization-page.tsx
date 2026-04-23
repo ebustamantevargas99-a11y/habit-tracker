@@ -614,7 +614,7 @@ function WeeklyReviewTab() {
 
         {/* Clickable Ratings */}
         <div className="grid grid-cols-1 gap-4">
-          <RatingInput field="overallRating" label="Rating general" />
+          <RatingInput field="overallRating" label="Calificación general" />
           <RatingInput field="energyLevel" label="Nivel de energía" />
           <RatingInput field="productivityScore" label="Productividad" />
         </div>

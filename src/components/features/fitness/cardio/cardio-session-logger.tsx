@@ -17,7 +17,7 @@ import {
 import { paceSecPerKm } from "@/lib/fitness/cardio";
 
 const ACTIVITY_OPTIONS: { id: string; label: string; emoji: string }[] = [
-  { id: "run",        label: "Running",    emoji: "🏃" },
+  { id: "run",        label: "Correr",     emoji: "🏃" },
   { id: "bike",       label: "Bici",       emoji: "🚴" },
   { id: "swim",       label: "Natación",   emoji: "🏊" },
   { id: "row",        label: "Remo",       emoji: "🚣" },

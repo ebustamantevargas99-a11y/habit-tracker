@@ -12,7 +12,7 @@ export const NAV_ITEMS = [
   },
   {
     key: "plan",
-    label: "Calendar",
+    label: "Calendario",
     icon: "Calendar",
     sections: [
       "Hoy",
@@ -27,7 +27,7 @@ export const NAV_ITEMS = [
     sections: [
       "Hábitos",
       "Proyectos",
-      "Deep Work",
+      "Trabajo profundo",
     ],
   },
   {

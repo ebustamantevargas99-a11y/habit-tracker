@@ -121,8 +121,8 @@ export default function MainApp() {
   };
 
   const PAGE_TITLES: Record<string, string> = {
-    home:         "Dashboard",
-    plan:         "Calendar",
+    home:         "Inicio",
+    plan:         "Calendario",
     productivity: "Productividad",
     finance:      "Finanzas",
     fitness:      "Fitness",
@@ -150,7 +150,7 @@ export default function MainApp() {
             <button
               onClick={() => { setSidebarOpen(!sidebarOpen); toggleSidebar(); }}
               className="p-2 text-brand-dark hover:bg-brand-light-cream rounded-lg transition-colors"
-              aria-label="Toggle sidebar"
+              aria-label="Mostrar u ocultar menú"
             >
               <Menu size={24} />
             </button>
@@ -167,7 +167,7 @@ export default function MainApp() {
                   className="btn-primary text-sm"
                   onClick={() => useAppStore.setState({ showMonthlySummary: true })}
                 >
-                  🎬 Rewind del mes
+                  🎬 Resumen del mes
                 </button>
                 <button
                   className="btn btn-md bg-brand-brown text-white hover:bg-brand-medium"
@@ -180,7 +180,7 @@ export default function MainApp() {
 
             <button
               className="p-2 text-brand-dark hover:bg-brand-light-cream rounded-lg transition-colors"
-              aria-label="Notifications"
+              aria-label="Notificaciones"
             >
               <Bell size={20} />
             </button>

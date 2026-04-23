@@ -61,7 +61,7 @@ export default function RewindModal({
       })
       .catch((e) => {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Error cargando rewind");
+        setError(e instanceof Error ? e.message : "Error cargando resumen");
         setLoading(false);
       });
     return () => {
@@ -100,7 +100,7 @@ export default function RewindModal({
               </div>
               <div>
                 <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
-                  Rewind mensual
+                  Resumen mensual
                 </p>
                 <h2 className="font-display text-3xl font-bold text-accent-glow m-0">
                   {monthLabel}
@@ -115,7 +115,7 @@ export default function RewindModal({
           {loading && (
             <div className="p-16 text-center text-brand-warm">
               <Loader2 size={28} className="animate-spin inline mr-3" />
-              Generando tu Rewind…
+              Generando tu resumen…
             </div>
           )}
 
@@ -135,7 +135,7 @@ export default function RewindModal({
                       {data.lifeScore.avg}
                     </div>
                     <div className="text-[10px] uppercase tracking-widest text-brand-warm mt-1">
-                      Life Score avg
+                      Puntuación de Vida prom
                     </div>
                   </div>
                   {data.lifeScore.snapshots.length >= 2 && (
@@ -157,7 +157,7 @@ export default function RewindModal({
                               borderRadius: 8,
                               fontSize: 11,
                             }}
-                            formatter={(v: number) => [`${v}/100`, "Life Score"]}
+                            formatter={(v: number) => [`${v}/100`, "Puntuación de Vida"]}
                           />
                           <Area
                             type="monotone"
@@ -196,7 +196,7 @@ export default function RewindModal({
                 <StatCard
                   icon={<Heart size={20} />}
                   value={data.mood.avg ?? "—"}
-                  label="mood promedio"
+                  label="ánimo promedio"
                   sub={data.mood.count ? `${data.mood.count} registros` : "Sin registros"}
                 />
                 <StatCard
@@ -224,7 +224,7 @@ export default function RewindModal({
                 <StatCard
                   icon={<Star size={20} />}
                   value={data.mood.best ?? "—"}
-                  label="mejor día (mood)"
+                  label="mejor día (ánimo)"
                   sub={data.mood.worst ? `Peor: ${data.mood.worst}/10` : "—"}
                 />
               </div>
@@ -266,13 +266,13 @@ export default function RewindModal({
                     ¿Quieres análisis profundo?
                   </p>
                   <p className="text-xs text-brand-warm mt-0.5">
-                    Exporta este rewind como prompt para tu Claude/ChatGPT personal.
+                    Exporta este resumen como prompt para tu Claude/ChatGPT personal.
                   </p>
                 </div>
                 <AIExportButton
                   scope="monthly"
                   label="Analizar con IA"
-                  title="Rewind mensual"
+                  title="Resumen mensual"
                   variant="primary"
                   size="md"
                 />

@@ -172,7 +172,7 @@ const BBB_531: ProgramTemplate = {
   schedule: [
     {
       dayOfWeek: 1,
-      templateName: "Press Militar day",
+      templateName: "Día de Press Militar",
       exercises: [
         { name: "Press Militar",     sets: 3, repRange: [3, 5],  targetRpe: 9, notes: "5/3/1 main" },
         { name: "Press Militar BBB", sets: 5, repRange: [10, 10], targetRpe: 7, notes: "50-70% 1RM" },
@@ -182,7 +182,7 @@ const BBB_531: ProgramTemplate = {
     },
     {
       dayOfWeek: 2,
-      templateName: "Peso Muerto day",
+      templateName: "Día de Peso Muerto",
       exercises: [
         { name: "Peso Muerto",       sets: 3, repRange: [3, 5],  targetRpe: 9, notes: "5/3/1 main" },
         { name: "Peso Muerto BBB",   sets: 5, repRange: [10, 10], targetRpe: 7, notes: "50-70% 1RM" },
@@ -192,7 +192,7 @@ const BBB_531: ProgramTemplate = {
     },
     {
       dayOfWeek: 4,
-      templateName: "Press Banca day",
+      templateName: "Día de Press Banca",
       exercises: [
         { name: "Press Banca",       sets: 3, repRange: [3, 5],  targetRpe: 9, notes: "5/3/1 main" },
         { name: "Press Banca BBB",   sets: 5, repRange: [10, 10], targetRpe: 7 },
@@ -202,7 +202,7 @@ const BBB_531: ProgramTemplate = {
     },
     {
       dayOfWeek: 5,
-      templateName: "Sentadilla day",
+      templateName: "Día de Sentadilla",
       exercises: [
         { name: "Sentadilla",        sets: 3, repRange: [3, 5],  targetRpe: 9, notes: "5/3/1 main" },
         { name: "Sentadilla BBB",    sets: 5, repRange: [10, 10], targetRpe: 7 },
@@ -312,7 +312,7 @@ const STRONGLIFTS_5X5: ProgramTemplate = {
   schedule: [
     {
       dayOfWeek: 1,
-      templateName: "Workout A",
+      templateName: "Entrenamiento A",
       exercises: [
         { name: "Sentadilla",    sets: 5, repRange: [5, 5], targetRpe: 8 },
         { name: "Press Banca",   sets: 5, repRange: [5, 5], targetRpe: 8 },
@@ -321,7 +321,7 @@ const STRONGLIFTS_5X5: ProgramTemplate = {
     },
     {
       dayOfWeek: 3,
-      templateName: "Workout B",
+      templateName: "Entrenamiento B",
       exercises: [
         { name: "Sentadilla",    sets: 5, repRange: [5, 5], targetRpe: 8 },
         { name: "Press Militar", sets: 5, repRange: [5, 5], targetRpe: 8 },
@@ -330,7 +330,7 @@ const STRONGLIFTS_5X5: ProgramTemplate = {
     },
     {
       dayOfWeek: 5,
-      templateName: "Workout A",
+      templateName: "Entrenamiento A",
       exercises: [
         { name: "Sentadilla",    sets: 5, repRange: [5, 5], targetRpe: 8 },
         { name: "Press Banca",   sets: 5, repRange: [5, 5], targetRpe: 8 },
@@ -368,7 +368,7 @@ const NSUNS: ProgramTemplate = {
   schedule: [
     {
       dayOfWeek: 1,
-      templateName: "Bench + OHP",
+      templateName: "Press Banca + Militar",
       exercises: [
         { name: "Press Banca",       sets: 8, repRange: [3, 8],  targetRpe: 9, notes: "progresión piramidal" },
         { name: "Press Militar",     sets: 6, repRange: [4, 8],  targetRpe: 8, notes: "T2 accesorio" },
@@ -376,7 +376,7 @@ const NSUNS: ProgramTemplate = {
     },
     {
       dayOfWeek: 2,
-      templateName: "Squat + Deadlift",
+      templateName: "Sentadilla + Peso Muerto",
       exercises: [
         { name: "Sentadilla",        sets: 8, repRange: [3, 8],  targetRpe: 9 },
         { name: "Peso Muerto Sumo",  sets: 6, repRange: [3, 5],  targetRpe: 8 },
@@ -384,7 +384,7 @@ const NSUNS: ProgramTemplate = {
     },
     {
       dayOfWeek: 4,
-      templateName: "OHP + Incline",
+      templateName: "Press Militar + Inclinado",
       exercises: [
         { name: "Press Militar",     sets: 8, repRange: [3, 6],  targetRpe: 9 },
         { name: "Press Inclinado",   sets: 6, repRange: [5, 8],  targetRpe: 8 },
@@ -392,7 +392,7 @@ const NSUNS: ProgramTemplate = {
     },
     {
       dayOfWeek: 5,
-      templateName: "Deadlift + Front Squat",
+      templateName: "Peso Muerto + Sentadilla Frontal",
       exercises: [
         { name: "Peso Muerto",       sets: 8, repRange: [1, 5],  targetRpe: 9 },
         { name: "Sentadilla Frontal", sets: 6, repRange: [5, 8], targetRpe: 8 },

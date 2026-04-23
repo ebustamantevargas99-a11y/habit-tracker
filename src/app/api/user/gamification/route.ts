@@ -4,16 +4,16 @@ import { prisma } from "@/lib/prisma";
 
 // Static badge definitions — the source of truth for badge metadata
 const BADGE_DEFINITIONS = [
-  { id: "first-step",    name: "First Step",       emoji: "👣", description: "Completa tu primer hábito" },
-  { id: "week-warrior",  name: "Week Warrior",      emoji: "🔥", description: "Racha de 7 días" },
-  { id: "monthly-master",name: "Monthly Master",    emoji: "🏅", description: "Racha de 30 días" },
-  { id: "pr-hunter",     name: "PR Hunter",         emoji: "⚔️", description: "Rompe 10 récords personales" },
-  { id: "budget-boss",   name: "Budget Boss",       emoji: "💰", description: "Presupuesto 3 meses seguidos" },
-  { id: "sleep-champ",   name: "Sleep Champion",    emoji: "😴", description: "30 noches de +7h de sueño" },
-  { id: "hydration-hero",name: "Hydration Hero",    emoji: "💧", description: "Meta de agua 21 días" },
-  { id: "bookworm",      name: "Bookworm",          emoji: "📚", description: "Leer 12 libros en un año" },
-  { id: "iron-will",     name: "Iron Will",         emoji: "🦾", description: "Racha de 100 días" },
-  { id: "life-score-90", name: "Life Score 90",     emoji: "🌟", description: "Puntuación de Vida ≥ 90" },
+  { id: "first-step",    name: "Primer paso",         emoji: "👣", description: "Completa tu primer hábito" },
+  { id: "week-warrior",  name: "Guerrero semanal",    emoji: "🔥", description: "Racha de 7 días" },
+  { id: "monthly-master",name: "Maestro mensual",     emoji: "🏅", description: "Racha de 30 días" },
+  { id: "pr-hunter",     name: "Cazador de PRs",      emoji: "⚔️", description: "Rompe 10 récords personales" },
+  { id: "budget-boss",   name: "Jefe del presupuesto", emoji: "💰", description: "Presupuesto 3 meses seguidos" },
+  { id: "sleep-champ",   name: "Campeón del sueño",   emoji: "😴", description: "30 noches de +7h de sueño" },
+  { id: "hydration-hero",name: "Héroe de hidratación", emoji: "💧", description: "Meta de agua 21 días" },
+  { id: "bookworm",      name: "Ratón de biblioteca", emoji: "📚", description: "Leer 12 libros en un año" },
+  { id: "iron-will",     name: "Voluntad de hierro",  emoji: "🦾", description: "Racha de 100 días" },
+  { id: "life-score-90", name: "Puntuación de Vida 90", emoji: "🌟", description: "Puntuación de Vida ≥ 90" },
 ];
 
 export async function GET() {

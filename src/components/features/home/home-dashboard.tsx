@@ -422,7 +422,7 @@ export default function HomeDashboard() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-[18px] font-bold text-brand-brown m-0">
-                Life Score — desglose 7d
+                Puntuación de Vida — desglose 7d
               </h2>
               <p className="text-xs text-brand-warm mt-0.5">
                 Promedio ponderado de dimensiones activas. Rojo &lt;40 · Ámbar 40-70 · Verde ≥70.
@@ -475,7 +475,7 @@ export default function HomeDashboard() {
                       fontSize: 12,
                     }}
                     labelFormatter={(v: string) => v}
-                    formatter={(v: number) => [`${v} / 100`, 'Life Score']}
+                    formatter={(v: number) => [`${v} / 100`, 'Puntuación de Vida']}
                   />
                   <Area
                     type="monotone"
@@ -671,7 +671,7 @@ export default function HomeDashboard() {
       {/* Top Streaks + Habit Strength */}
       <div className="grid grid-cols-2 gap-6 mb-8">
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
-          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Top Streaks</h2>
+          <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Mejores rachas</h2>
           {topStreaks.length === 0 ? (
             <div className="text-center p-5 text-brand-tan text-sm">Aún no hay rachas. ¡Completa tu primer hábito!</div>
           ) : topStreaks.map((h, i) => (

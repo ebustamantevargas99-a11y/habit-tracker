@@ -12,7 +12,7 @@ const CARDIO_SUBTABS = [
   { id: "hoy",        label: "🏃 Sesión activa" },
   { id: "historial",  label: "📜 Historial" },
   { id: "zones",      label: "❤️ Zonas HR" },
-  { id: "predictor",  label: "🎯 Race predictor" },
+  { id: "predictor",  label: "🎯 Predictor de carreras" },
   { id: "shoes",      label: "👟 Zapatillas" },
 ];
 
@@ -25,7 +25,7 @@ export default function CardioHub() {
       <header className="mb-5">
         <h2 className="font-serif text-[24px] text-brand-dark m-0">Cardio</h2>
         <p className="text-brand-warm text-sm m-0 mt-1">
-          Running, bici, natación, remo — sesión en vivo, zonas cardíacas
+          Correr, bici, natación, remo — sesión en vivo, zonas cardíacas
           (Karvonen), VO₂max y predictor de carreras (Riegel/Daniels).
         </p>
       </header>

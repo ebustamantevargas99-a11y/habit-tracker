@@ -154,7 +154,7 @@ export default function QuickAddPanel({ tz, onAddFood, onCopied }: Props) {
         className="border-brand-light-tan text-center text-brand-warm text-xs"
       >
         <Loader2 size={12} className="inline animate-spin mr-2" />
-        Cargando quick-add…
+        Cargando atajos rápidos…
       </Card>
     );
   }
@@ -175,10 +175,10 @@ export default function QuickAddPanel({ tz, onAddFood, onCopied }: Props) {
       <div className="flex items-start justify-between gap-3 flex-wrap mb-3">
         <div>
           <h3 className="font-serif text-sm text-brand-dark m-0">
-            Quick-add
+            Añadir rápido
           </h3>
           <p className="text-[11px] text-brand-warm m-0 mt-0.5">
-            Añade comidas repetidas con 1 click.
+            Añade comidas repetidas con un clic.
           </p>
         </div>
         <div className="flex gap-1">

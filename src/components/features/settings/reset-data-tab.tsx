@@ -41,7 +41,7 @@ const SCOPES: ScopeDef[] = [
   {
     id: "cardio",
     emoji: "🏃",
-    label: "Cardio / Running",
+    label: "Cardio / Correr",
     description: "Sesiones de cardio y zapatillas (preserva tu fitness de gym)",
     includes: ["CardioSession", "Shoe"],
   },
@@ -116,7 +116,7 @@ const SCOPES: ScopeDef[] = [
     id: "gamification",
     emoji: "🎮",
     label: "Gamificación",
-    description: "XP, nivel, insignias, snapshots de Life Score",
+    description: "XP, nivel, insignias, snapshots de Puntuación de Vida",
     includes: [
       "Gamification (reset a nivel 1, 0 XP)",
       "UserBadge · LifeScoreSnapshot",

@@ -29,7 +29,7 @@ const NAV_TO_MODULE: Record<string, ModuleKey> = {
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
   "Hábitos":    "habits",
   "Proyectos":  "projects",
-  "Deep Work":  "pomodoro",
+  "Trabajo profundo":  "pomodoro",
 };
 
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {

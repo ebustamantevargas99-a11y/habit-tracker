@@ -140,7 +140,7 @@ export default function OneRMProjections() {
       <Card variant="default" padding="md" className="border-brand-light-tan text-center">
         <p className="text-brand-dark font-semibold m-0">Sin histórico de ejercicios</p>
         <p className="text-brand-warm text-xs mt-1 m-0">
-          Registra algunos workouts en <strong>Gym</strong> para ver la proyección de tu 1RM.
+          Registra algunos entrenamientos en <strong>Gym</strong> para ver la proyección de tu 1RM.
         </p>
       </Card>
     );
@@ -221,7 +221,7 @@ export default function OneRMProjections() {
             </div>
           </div>
           <p className="text-xs text-brand-warm mt-3 m-0">
-            Slope: <strong>{projection.slope >= 0 ? "+" : ""}{projection.slope} kg/sesión</strong> ·
+            Pendiente: <strong>{projection.slope >= 0 ? "+" : ""}{projection.slope} kg/sesión</strong> ·
             Tendencia:{" "}
             <span
               className={cn(

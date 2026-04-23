@@ -110,9 +110,9 @@ function buildPromptForAI(data: YearReviewData): string {
   prompt += `\n🧘 MINDFULNESS\n`;
   prompt += `Meditación: ${m.sessions} sesiones · ${m.totalMinutes} min totales\n`;
   prompt += `Ayuno: ${data.fasting.sessions} sesiones · ${data.fasting.totalHours}h totales\n`;
-  prompt += `Deep Work: ${data.focus.sessions} sesiones · ${Math.round(data.focus.totalMinutes / 60)}h totales\n`;
+  prompt += `Trabajo profundo: ${data.focus.sessions} sesiones · ${Math.round(data.focus.totalMinutes / 60)}h totales\n`;
   if (data.weeklyReviews.avgOverallRating !== null) {
-    prompt += `Weekly Reviews: ${data.weeklyReviews.count} · rating promedio ${data.weeklyReviews.avgOverallRating}/10\n`;
+    prompt += `Revisiones semanales: ${data.weeklyReviews.count} · rating promedio ${data.weeklyReviews.avgOverallRating}/10\n`;
   }
 
   if (data.milestones.length > 0) {
@@ -218,7 +218,7 @@ export default function YearReviewModal({
                   {data.lifeScore.avgOverall}
                 </div>
                 <div className="text-xs uppercase tracking-widest text-brand-light-tan mt-1">
-                  Life Score anual
+                  Puntuación de Vida anual
                 </div>
               </div>
             )}
@@ -242,7 +242,7 @@ export default function YearReviewModal({
                 <Stat icon={<BookOpen size={18} />} value={data.reading.booksFinished} label="Libros terminados" />
                 <Stat icon={<Wind size={18} />} value={data.meditation.sessions} label="Sesiones meditación" />
                 <Stat icon={<Clock size={18} />} value={data.fasting.totalHours + "h"} label="Horas en ayuno" />
-                <Stat icon={<Target size={18} />} value={Math.round(data.focus.totalMinutes / 60) + "h"} label="Deep Work" />
+                <Stat icon={<Target size={18} />} value={Math.round(data.focus.totalMinutes / 60) + "h"} label="Trabajo profundo" />
                 <Stat icon={<Sparkles size={18} />} value={data.calendar.totalEvents} label="Eventos en calendario" />
               </div>
 

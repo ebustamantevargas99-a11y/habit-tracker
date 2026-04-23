@@ -87,7 +87,7 @@ export default function WeeklySummaryModal({ onClose }: Props) {
     { name: "Leer 30 min", completions: 6, streak: 12, icon: "📚" },
     { name: "Ejercicio", completions: 5, streak: 8, icon: "💪" },
     { name: "Agua 2L", completions: 7, streak: 21, icon: "💧" },
-    { name: "Journaling", completions: 4, streak: 4, icon: "✍️" },
+    { name: "Escribir diario", completions: 4, streak: 4, icon: "✍️" },
   ];
 
   const overallPct = Math.round(
@@ -299,7 +299,7 @@ export default function WeeklySummaryModal({ onClose }: Props) {
           {/* Weekly Insights */}
           <div className="bg-brand-paper rounded-xl border border-brand-tan shadow-[0_2px_4px_rgba(0,0,0,0.05)] p-5">
             <h3 className="mt-0 mb-4 font-serif text-brand-dark text-base">
-              💡 Insights de la Semana
+              💡 Descubrimientos de la Semana
             </h3>
             <div className="grid grid-cols-3 gap-3">
               {[

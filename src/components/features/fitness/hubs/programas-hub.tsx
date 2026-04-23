@@ -10,7 +10,7 @@ import ChallengesTab from "../challenges-tab";
 const PROGRAMAS_SUBTABS = [
   { id: "activo",      label: "📋 Plan activo" },
   { id: "biblioteca",  label: "📚 Biblioteca" },
-  { id: "builder",     label: "🛠️ Builder" },
+  { id: "builder",     label: "🛠️ Creador" },
   { id: "retos",       label: "🏅 Retos" },
 ];
 

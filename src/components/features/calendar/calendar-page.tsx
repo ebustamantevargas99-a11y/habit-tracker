@@ -160,7 +160,7 @@ export default function CalendarPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-xs text-brand-medium hover:bg-brand-cream"
               title="Descargar .ics para Google/Apple Calendar"
             >
-              <Download size={12} /> Export
+              <Download size={12} /> Exportar
             </button>
             <button
               onClick={() => setShowYearReview(true)}

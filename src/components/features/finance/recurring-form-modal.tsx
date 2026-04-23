@@ -57,7 +57,7 @@ export default function RecurringFormModal({ onClose }: { onClose: () => void })
       });
       toast.success(
         type === "expense"
-          ? "Recurrente creado. Se agregó a tu Calendar con recordatorio 24h antes."
+          ? "Recurrente creado. Se agregó a tu Calendario con recordatorio 24h antes."
           : "Recurrente creado."
       );
       onClose();
@@ -202,7 +202,7 @@ export default function RecurringFormModal({ onClose }: { onClose: () => void })
 
           {type === "expense" && (
             <p className="text-xs text-brand-warm bg-brand-warm-white rounded p-2 border border-brand-cream">
-              💡 Se agregará automáticamente a tu Calendar con recordatorio push 24h antes.
+              💡 Se agregará automáticamente a tu Calendario con recordatorio push 24h antes.
             </p>
           )}
         </div>

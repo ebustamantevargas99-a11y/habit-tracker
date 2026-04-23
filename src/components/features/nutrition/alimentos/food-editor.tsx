@@ -430,7 +430,7 @@ export default function FoodEditor({
               placeholder="GI × carbs / 100"
             />
           </Field>
-          <Field label="Net carbs (g)">
+          <Field label="Carbohidratos netos (g)">
             <NumInput
               value={form.netCarbs ?? ""}
               onChange={(v) => set("netCarbs", v)}

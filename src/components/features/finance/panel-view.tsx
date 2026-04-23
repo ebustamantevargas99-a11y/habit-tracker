@@ -112,9 +112,9 @@ export default function PanelView({
               {formatMoney(nw.current, currency)}
             </div>
             <div className="mt-3 flex items-center gap-3 text-sm text-brand-light-cream">
-              <span>Assets: <b className="text-accent-glow">{formatMoney(nw.assets, currency)}</b></span>
+              <span>Activos: <b className="text-accent-glow">{formatMoney(nw.assets, currency)}</b></span>
               <span className="text-brand-light-tan">·</span>
-              <span>Liabilities: <b className="text-danger">{formatMoney(nw.liabilities, currency)}</b></span>
+              <span>Pasivos: <b className="text-danger">{formatMoney(nw.liabilities, currency)}</b></span>
             </div>
           </div>
           {netWorth && netWorth.timeline.length >= 2 && (
@@ -137,7 +137,7 @@ export default function PanelView({
                       fontSize: 11,
                     }}
                     labelFormatter={(v: string) => v}
-                    formatter={(v: number) => [formatMoney(v, currency), "Net Worth"]}
+                    formatter={(v: number) => [formatMoney(v, currency), "Patrimonio neto"]}
                   />
                   <Area
                     type="monotone"
@@ -172,14 +172,14 @@ export default function PanelView({
         />
         <KpiCard
           icon={<Sparkles size={16} />}
-          label="Savings rate"
+          label="Tasa de ahorro"
           value={`${cashflow.savingsRate.toFixed(0)}%`}
           sub={`${formatMoney(cashflow.savings, currency)} ahorrados`}
           color={cashflow.savingsRate >= 20 ? "text-success" : cashflow.savingsRate >= 10 ? "text-warning" : "text-danger"}
         />
         <KpiCard
           icon={<Shield size={16} />}
-          label="Emergency fund"
+          label="Fondo de emergencia"
           value={`${runway.months.toFixed(1)}m`}
           sub={`${formatMoney(runway.savingsBalance, currency)} / meta ${runway.target}m`}
           color={runway.months >= runway.target ? "text-success" : runway.months >= 1 ? "text-warning" : "text-danger"}
@@ -190,7 +190,7 @@ export default function PanelView({
       {insights.length > 0 && (
         <div className="space-y-2">
           <p className="text-xs uppercase tracking-widest text-brand-warm font-semibold">
-            Alertas & insights
+            Alertas y descubrimientos
           </p>
           <div className="space-y-1.5">
             {insights.slice(0, 5).map((i) => (
@@ -371,7 +371,7 @@ export default function PanelView({
       {/* Heatmap 90 días */}
       <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
         <h3 className="font-serif text-base font-semibold text-brand-dark mb-3">
-          Heatmap de gasto · últimos 90 días
+          Mapa de calor de gasto · últimos 90 días
         </h3>
         <HeatMap heatmap={heatmap} currency={currency} />
       </div>

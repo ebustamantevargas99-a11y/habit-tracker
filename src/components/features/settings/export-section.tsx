@@ -271,7 +271,7 @@ export default function ExportSection() {
         </div>
 
         <div className="bg-accent-glow border border-accent rounded-lg px-4 py-3 text-[13px] text-brand-brown">
-          💡 <strong>Tip:</strong> Haz click en "Copiar Resumen" y pégalo directamente en Claude o ChatGPT
+          💡 <strong>Consejo:</strong> Haz clic en "Copiar Resumen" y pégalo directamente en Claude o ChatGPT
           para obtener análisis y recomendaciones personalizadas basadas en todos tus datos.
         </div>
       </div>

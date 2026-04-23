@@ -308,11 +308,11 @@ export default function TodayView({
       {/* Timeline */}
       <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
         <h3 className="font-serif text-base font-semibold text-brand-dark mb-4">
-          Timeline del día
+          Agenda del día
         </h3>
         {timeline.length === 0 ? (
           <p className="text-sm text-brand-warm italic text-center py-8">
-            Tu día está libre. Usa el quick-add arriba para agendar algo.
+            Tu día está libre. Usa la barra rápida arriba para agendar algo.
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -485,7 +485,7 @@ function TimelineRow({
       break;
     case "focus":
       icon = <Target size={16} className="text-info" />;
-      title = item.data.task ?? "Deep Work";
+      title = item.data.task ?? "Trabajo profundo";
       subtitle = `${item.data.actualMinutes ?? item.data.plannedMinutes}min${
         item.data.active ? " · en curso" : ""
       }`;

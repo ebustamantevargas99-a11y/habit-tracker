@@ -17,7 +17,7 @@ import {
 export const metadata = {
   title: "Ultimate TRACKER — Trackea toda tu vida en una sola app",
   description:
-    "Hábitos, fitness, nutrición, finanzas, meditación, journal, ciclo menstrual, deep work y más. Exporta todo a tu IA personal (Claude/ChatGPT/Gemini) para análisis. Beta gratuita.",
+    "Hábitos, fitness, nutrición, finanzas, meditación, diario, ciclo menstrual, trabajo profundo y más. Exporta todo a tu IA personal (Claude/ChatGPT/Gemini) para análisis. Beta gratuita.",
 };
 
 export default function LandingPage() {
@@ -58,7 +58,7 @@ export default function LandingPage() {
           <span className="text-accent">en una sola app</span>.
         </h1>
         <p className="text-lg text-brand-warm max-w-2xl mx-auto mb-10 leading-relaxed">
-          Hábitos, fitness, nutrición, finanzas, meditación, sueño, journal,
+          Hábitos, fitness, nutrición, finanzas, meditación, sueño, diario,
           ciclo menstrual y más. Después <strong className="text-brand-dark">exporta todo
           a tu IA personal</strong> (Claude, ChatGPT, Gemini) y recibe análisis
           profundo — sin que te cobremos un centavo de API.
@@ -74,7 +74,7 @@ export default function LandingPage() {
             href="#features"
             className="px-7 py-3 rounded-button border border-brand-cream text-brand-dark text-base font-semibold hover:bg-brand-cream"
           >
-            Ver features
+            Ver funciones
           </a>
         </div>
         <p className="text-xs text-brand-tan mt-6">
@@ -91,7 +91,7 @@ export default function LandingPage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-2">
-                Feature único en el mercado
+                Función única en el mercado
               </p>
               <h2 className="font-display text-3xl font-bold text-accent-glow mb-4">
                 Tu data, tu IA. Sin costos extra.
@@ -123,58 +123,58 @@ export default function LandingPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           <FeatureCard
             icon={<Target />}
-            title="Hábitos + Streaks"
-            description="Checkmark diario, racha con confetti en milestones (7/30/100/365 días), strength calculation."
+            title="Hábitos + Rachas"
+            description="Check diario, racha con confeti en hitos (7/30/100/365 días), cálculo de fortaleza."
           />
           <FeatureCard
             icon={<Dumbbell />}
             title="Fitness Pro"
-            description="Workout logger con RPE, superset, descanso auto, 1RM estimado, volumen por músculo, MEV/MAV/MRV."
+            description="Registro de entrenamientos con RPE, superserie, descanso automático, 1RM estimado, volumen por músculo, MEV/MAV/MRV."
           />
           <FeatureCard
             icon={<Utensils />}
             title="Nutrición pro"
-            description="100+ alimentos seed, macros rings, hidratación quick-add, copy-previous-day, food search por 12 categorías."
+            description="100+ alimentos base, anillos de macros, hidratación con un toque, copiar día anterior, búsqueda por 12 categorías."
           />
           <FeatureCard
             icon={<Heart />}
-            title="Mood + Sleep"
+            title="Ánimo + Sueño"
             description="Registro diario con factores, gráficas, correlación con entrenos y nutrición."
           />
           <FeatureCard
             icon={<Clock />}
-            title="Fasting + Deep Work"
-            description="Timer en vivo de ayuno intermitente (16:8/18:6/OMAD). Bloques de 90min de focus con rating."
+            title="Ayuno + Trabajo profundo"
+            description="Temporizador en vivo de ayuno intermitente (16:8/18:6/OMAD). Bloques de 90 min de foco con rating."
           />
           <FeatureCard
             icon={<Wind />}
             title="Meditación"
-            description="Timer circular con respiración, beep al terminar. Registro de sesiones con tipo y duración."
+            description="Temporizador circular con respiración, aviso sonoro al terminar. Registro de sesiones con tipo y duración."
           />
           <FeatureCard
             icon={<BookOpen />}
             title="Lectura"
-            description="Biblioteca con progress, sesiones de lectura, rating 5★, auto-finish al llegar al total."
+            description="Biblioteca con progreso, sesiones de lectura, calificación 5★, finalización automática al llegar al total."
           />
           <FeatureCard
             icon={<Brain />}
-            title="Life Score 0-100"
-            description="Puntuación multi-dimensión agregada (hábitos + fitness + nutrición + productividad). Chart 30 días."
+            title="Puntuación de Vida 0-100"
+            description="Puntuación multi-dimensión agregada (hábitos + fitness + nutrición + productividad). Gráfica de 30 días."
           />
           <FeatureCard
             icon={<Target />}
             title="Finanzas + OKR"
-            description="Budget tracking, subscripciones, objetivos + key results con projections a 12 meses."
+            description="Seguimiento de presupuesto, suscripciones, objetivos + resultados clave con proyecciones a 12 meses."
           />
           <FeatureCard
             icon={<Shield />}
             title="Seguridad real"
-            description="2FA TOTP, HIBP password check, account lockout, audit log, GDPR export + delete account."
+            description="2FA TOTP, verificación de contraseña en HIBP, bloqueo de cuenta, registro de auditoría, exportación y eliminación de cuenta (GDPR)."
           />
           <FeatureCard
             icon={<Zap />}
             title="Ciclo menstrual"
-            description="Predicción del próximo período, ventana fértil, síntomas correlacionados con mood y energía."
+            description="Predicción del próximo período, ventana fértil, síntomas correlacionados con ánimo y energía."
           />
         </div>
       </section>

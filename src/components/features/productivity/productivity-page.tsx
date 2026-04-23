@@ -10,7 +10,7 @@ import FocusPanel from "@/components/features/productivity/focus-panel";
 const TABS: { id: ProductivityTab; label: string; icon: React.ElementType }[] = [
   { id: "habits",   label: "Hábitos",    icon: CheckSquare },
   { id: "projects", label: "Proyectos",  icon: Target },
-  { id: "pomodoro", label: "Deep Work",  icon: Zap },
+  { id: "pomodoro", label: "Trabajo profundo",  icon: Zap },
 ];
 
 export default function ProductivityPage() {

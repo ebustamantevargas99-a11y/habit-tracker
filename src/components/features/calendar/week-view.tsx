@@ -356,7 +356,7 @@ export default function WeekView({ groups }: WeekViewProps) {
       )}
 
       <p className="text-[11px] text-brand-tan text-center">
-        💡 Click en una celda vacía para crear · click en un evento para editarlo · arrástralos para moverlos
+        💡 Clic en una celda vacía para crear · clic en un evento para editarlo · arrástralos para moverlos
       </p>
     </div>
   );
@@ -585,7 +585,7 @@ function WorkoutBlock({
         "rounded-md border-l-4 border-danger bg-danger/10 px-1.5 py-1 text-[10px] leading-tight overflow-hidden",
         workout.completed && "opacity-60"
       )}
-      title="Workout del día"
+      title="Entrenamiento del día"
     >
       <div className="font-semibold text-danger truncate">💪 {workout.name}</div>
       <div className="text-[9px] text-danger/70">{workout.durationMinutes}min</div>

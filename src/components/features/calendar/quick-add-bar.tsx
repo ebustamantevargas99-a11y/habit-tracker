@@ -52,7 +52,7 @@ export default function QuickAddBar({
       <div className="flex items-center gap-2 mb-2">
         <Sparkles size={14} className="text-accent" />
         <span className="text-xs uppercase tracking-widest text-brand-warm font-semibold">
-          Quick add
+          Añadir rápido
         </span>
       </div>
       <div className="flex gap-2">

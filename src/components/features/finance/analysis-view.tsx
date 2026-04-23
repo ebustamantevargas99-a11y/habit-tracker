@@ -153,7 +153,7 @@ export default function AnalysisView() {
       {/* Cashflow 12 meses */}
       <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
         <h3 className="font-display text-base font-bold text-brand-dark mb-3 flex items-center gap-2">
-          <TrendingUp size={16} className="text-accent" /> Cashflow · últimos 12 meses
+          <TrendingUp size={16} className="text-accent" /> Flujo de efectivo · últimos 12 meses
         </h3>
         <ResponsiveContainer width="100%" height={260}>
           <BarChart data={cashflow}>
@@ -176,7 +176,7 @@ export default function AnalysisView() {
         {/* Savings rate trendline */}
         <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
           <h3 className="font-display text-base font-bold text-brand-dark mb-3 flex items-center gap-2">
-            <Flame size={16} className="text-accent" /> Savings rate · tendencia
+            <Flame size={16} className="text-accent" /> Tasa de ahorro · tendencia
           </h3>
           <ResponsiveContainer width="100%" height={180}>
             <AreaChart data={savingsRateTrend}>
@@ -189,7 +189,7 @@ export default function AnalysisView() {
               <CartesianGrid strokeDasharray="3 3" stroke="#EDE0D4" />
               <XAxis dataKey="month" tick={{ fontSize: 10, fill: "#A0845C" }} />
               <YAxis tick={{ fontSize: 10, fill: "#A0845C" }} domain={[0, 100]} />
-              <Tooltip contentStyle={{ background: "#FFFDF9", border: "1px solid #EDE0D4", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v}%`, "Rate"]} />
+              <Tooltip contentStyle={{ background: "#FFFDF9", border: "1px solid #EDE0D4", borderRadius: 8, fontSize: 11 }} formatter={(v: number) => [`${v}%`, "Tasa"]} />
               <Area type="monotone" dataKey="rate" stroke="#B8860B" strokeWidth={2} fill="url(#srGradient)" />
             </AreaChart>
           </ResponsiveContainer>
@@ -268,10 +268,10 @@ export default function AnalysisView() {
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
             <h3 className="font-display text-xl font-bold text-accent-glow flex items-center gap-2">
-              🔥 FIRE Calculator
+              🔥 Calculadora FIRE
             </h3>
             <p className="text-xs text-brand-light-tan">
-              Financial Independence, Retire Early · regla del 4%
+              Independencia financiera, jubilación anticipada · regla del 4%
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -290,7 +290,7 @@ export default function AnalysisView() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <div className="bg-black/20 rounded-lg p-3">
             <p className="text-[10px] uppercase tracking-widest text-brand-light-tan mb-1">
-              Tu FIRE number
+              Tu meta FIRE
             </p>
             <p className="text-2xl font-bold text-accent-glow">
               {formatCompact(fire.fireNumber)}
@@ -326,7 +326,7 @@ export default function AnalysisView() {
         </div>
 
         <p className="text-[11px] text-brand-light-tan mt-3 italic">
-          💡 FIRE assume 7% real return anual (inflación ajustada). Ajusta tu edad arriba.
+          💡 FIRE asume 7% de rendimiento real anual (ajustado por inflación). Ajusta tu edad arriba.
         </p>
       </div>
 
@@ -393,7 +393,7 @@ export default function AnalysisView() {
                             "font-bold",
                             newRate < 0 ? "text-danger" : newRate < 10 ? "text-warning" : "text-success"
                           )}>
-                            SR {newRate.toFixed(0)}%
+                            Tasa {newRate.toFixed(0)}%
                           </span>
                         </span>
                       </div>
@@ -449,7 +449,7 @@ export default function AnalysisView() {
                   <p className="font-bold text-brand-dark">
                     Ahorro: {formatMoney(whatIfResult.original.savings, primaryCurrency)}
                   </p>
-                  <p className="text-brand-medium">SR: {whatIfResult.original.rate.toFixed(0)}%</p>
+                  <p className="text-brand-medium">Tasa: {whatIfResult.original.rate.toFixed(0)}%</p>
                 </div>
                 <div className="bg-accent/10 rounded-lg p-2 border border-accent/30">
                   <p className="text-[10px] uppercase text-accent">Simulado</p>
@@ -460,7 +460,7 @@ export default function AnalysisView() {
                     "font-bold",
                     whatIfResult.adjusted.rate >= whatIfResult.original.rate ? "text-success" : "text-danger"
                   )}>
-                    SR: {whatIfResult.adjusted.rate.toFixed(0)}%
+                    Tasa: {whatIfResult.adjusted.rate.toFixed(0)}%
                   </p>
                 </div>
               </div>
@@ -472,7 +472,7 @@ export default function AnalysisView() {
                 }}
                 className="mt-3 text-[11px] text-brand-warm hover:text-accent"
               >
-                Reset
+                Reiniciar
               </button>
             </>
           )}

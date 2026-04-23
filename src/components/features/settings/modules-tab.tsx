@@ -33,7 +33,7 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     description: "Transacciones, presupuestos, metas",
   },
   planner: {
-    label: "Calendar",
+    label: "Calendario",
     emoji: "📅",
     description: "Hoy / Semana / Mes",
   },

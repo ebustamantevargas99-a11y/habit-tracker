@@ -69,7 +69,7 @@ export default function FlowView() {
         </div>
         {recurring.length === 0 ? (
           <p className="text-sm text-brand-warm italic text-center py-4">
-            Sin recurrentes. Crea uno para automatizar sueldo, bills, subscripciones. Se vincula con tu Calendar.
+            Sin recurrentes. Crea uno para automatizar sueldo, facturas, suscripciones. Se vincula con tu Calendario.
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -149,7 +149,7 @@ export default function FlowView() {
                   : "bg-brand-cream text-brand-medium hover:bg-brand-light-tan"
               )}
             >
-              {f === "all" ? "Todas" : f === "income" ? "Ingresos" : f === "expense" ? "Gastos" : "Transfers"}
+              {f === "all" ? "Todas" : f === "income" ? "Ingresos" : f === "expense" ? "Gastos" : "Transferencias"}
             </button>
           ))}
         </div>
@@ -171,7 +171,7 @@ export default function FlowView() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar (descripción, categoría, merchant, tag)…"
+            placeholder="Buscar (descripción, categoría, comercio, etiqueta)…"
             className="w-full pl-7 pr-3 py-1.5 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-xs focus:outline-none focus:border-accent"
           />
         </div>

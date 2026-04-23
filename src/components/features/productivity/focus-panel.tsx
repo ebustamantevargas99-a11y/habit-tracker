@@ -78,7 +78,7 @@ export default function FocusPanel() {
       setActive(s);
       setSessions((prev) => [s, ...prev]);
       setTask("");
-      toast.success("Focus iniciado");
+      toast.success("Sesión iniciada");
     } catch {
       toast.error("Error");
     }
@@ -91,7 +91,7 @@ export default function FocusPanel() {
       setActive(null);
       setSessions((prev) => prev.map((x) => (x.id === s.id ? s : x)));
       if (reached) fireConfettiDefault();
-      toast.success(`Focus completado: ${s.actualMinutes}min`);
+      toast.success(`Sesión completada: ${s.actualMinutes}min`);
     } catch {
       toast.error("Error");
     }
@@ -129,7 +129,7 @@ export default function FocusPanel() {
         <div className="bg-gradient-to-br from-info to-brand-dark text-brand-paper rounded-2xl p-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <p className="text-xs uppercase tracking-widest text-white/70">Deep Work activo</p>
+              <p className="text-xs uppercase tracking-widest text-white/70">Trabajo profundo activo</p>
               {active.task && (
                 <p className="font-serif text-lg font-semibold mt-1">{active.task}</p>
               )}
@@ -162,7 +162,7 @@ export default function FocusPanel() {
       ) : (
         <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
           <h3 className="font-serif text-base font-semibold text-brand-dark mb-3">
-            Inicia un bloque de Deep Work
+            Inicia un bloque de Trabajo profundo
           </h3>
           <input
             type="text"
@@ -204,7 +204,7 @@ export default function FocusPanel() {
             onClick={startSession}
             className="w-full px-4 py-2.5 rounded-button bg-info text-white font-semibold hover:bg-info/90 flex items-center justify-center gap-2"
           >
-            <Play size={14} /> Iniciar focus
+            <Play size={14} /> Iniciar sesión
           </button>
         </div>
       )}
@@ -212,7 +212,7 @@ export default function FocusPanel() {
       <div className="grid grid-cols-3 gap-3">
         <StatCard icon={<Target size={18} />} label="Sesiones" value={stats.total} />
         <StatCard icon={<TrendingUp size={18} />} label="Min totales" value={stats.totalMin} />
-        <StatCard icon={<Target size={18} />} label="Avg/sesión" value={`${stats.avg}min`} />
+        <StatCard icon={<Target size={18} />} label="Prom/sesión" value={`${stats.avg}min`} />
       </div>
 
       <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
@@ -221,7 +221,7 @@ export default function FocusPanel() {
         </h3>
         {sessions.length === 0 ? (
           <p className="text-sm text-brand-warm italic text-center py-6">
-            Sin sesiones. Empieza tu primer focus arriba.
+            Sin sesiones. Empieza tu primera sesión arriba.
           </p>
         ) : (
           <div className="space-y-1.5">
@@ -242,7 +242,7 @@ export default function FocusPanel() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-brand-dark truncate">
-                    {s.task ?? "Focus sin título"}
+                    {s.task ?? "Sesión sin título"}
                   </p>
                   <p className="text-[11px] text-brand-warm">
                     {new Date(s.startedAt).toLocaleDateString("es-MX", {

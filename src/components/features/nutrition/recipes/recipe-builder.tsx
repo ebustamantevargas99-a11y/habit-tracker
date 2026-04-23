@@ -226,7 +226,7 @@ export default function RecipeBuilder() {
           </h3>
           <p className="text-brand-warm text-sm m-0 mt-1 max-w-md mx-auto">
             Crea recetas para tus comidas repetidas (&quot;mi bowl&quot;,
-            &quot;smoothie matutino&quot;) y añádelas al diario con 1 click
+            &quot;smoothie matutino&quot;) y añádelas al diario con un clic
             en vez de re-armar los ingredientes cada día.
           </p>
         </Card>

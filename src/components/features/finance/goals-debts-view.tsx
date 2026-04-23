@@ -590,7 +590,7 @@ function GoalFormModal({
               value={name}
               onChange={(e) => setName(e.target.value)}
               autoFocus
-              placeholder="Emergency fund / Viaje a Japón / Enganche casa"
+              placeholder="Fondo de emergencia / Viaje a Japón / Enganche casa"
               className="px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm focus:outline-none focus:border-accent"
             />
             <select

@@ -134,7 +134,7 @@ export default function StepsTab({ stepsLog: storedLog, onAddSteps }: StepsTabPr
 
       {/* Monthly Heatmap */}
       <Card variant="warm" padding="md" className="border-brand-light-cream">
-        <h3 className="text-sm font-semibold text-brand-dark m-0 mb-4">Heatmap Mensual</h3>
+        <h3 className="text-sm font-semibold text-brand-dark m-0 mb-4">Mapa de calor mensual</h3>
         <div className="grid grid-cols-7 gap-1">
           {monthGrid.map((d) => (
             <div

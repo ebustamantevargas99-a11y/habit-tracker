@@ -611,7 +611,7 @@ export function FoodsTab() {
 
       <p className="text-xs text-brand-warm m-0">
         {filtered.length} de {foodItems.length}{" "}
-        aliment{foodItems.length === 1 ? "o" : "os"} — click para ver todos los
+        aliment{foodItems.length === 1 ? "o" : "os"} — clic para ver todos los
         nutrientes · editar · borrar.
       </p>
 
@@ -1003,11 +1003,11 @@ function CustomTargetsEditor() {
 
   return (
     <div className="bg-brand-warm-white rounded-xl p-6 border border-brand-cream">
-      <h3 className="m-0 mb-1 text-brand-dark">Targets personalizados de micronutrientes</h3>
+      <h3 className="m-0 mb-1 text-brand-dark">Objetivos personalizados de micronutrientes</h3>
       <p className="text-xs text-brand-warm m-0 mb-5">
-        Sobrescribe los FDA Daily Values 2020 con tus propios targets. Útil
+        Sobrescribe los FDA Daily Values 2020 con tus propios objetivos. Útil
         si tu médico/nutri te pidió más hierro, potasio específico, etc. Deja
-        en blanco para usar el default FDA.
+        en blanco para usar el valor por defecto de FDA.
       </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {CUSTOM_TARGET_OPTIONS.map((opt) => (

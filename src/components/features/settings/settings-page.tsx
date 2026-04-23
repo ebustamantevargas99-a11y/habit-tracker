@@ -86,7 +86,7 @@ function ProfileTab() {
             <input value={email} readOnly className={cn(INP, "opacity-70 cursor-default")} type="email" />
           </div>
           <div>
-            <label className={LABEL}>Bio</label>
+            <label className={LABEL}>Biografía</label>
             <textarea value={bio} onChange={e => setBio(e.target.value)} className={cn(INP, "min-h-[60px] resize-y")} />
           </div>
           <div>
@@ -194,7 +194,7 @@ function GamificationTab() {
             { action: 'Racha de 30 días', xp: XP_REWARDS.streak30 },
             { action: 'Registrar entrenamiento', xp: XP_REWARDS.logWorkout },
             { action: 'Mes con score ≥ 90', xp: XP_REWARDS.monthAt90 },
-            { action: 'Life Score sube 10+', xp: XP_REWARDS.lifeScoreUp10 },
+            { action: 'Puntuación de Vida sube 10+', xp: XP_REWARDS.lifeScoreUp10 },
           ]).map((r, i) => (
             <div key={i} className="flex items-center justify-between px-4 py-3 bg-brand-light-cream rounded-lg">
               <span className="text-[0.85rem] text-brand-dark">{r.action}</span>
@@ -430,7 +430,7 @@ function PreferencesTab() {
       {/* Streak Insurance */}
       <div className={CARD}>
         <h3 className="font-serif text-brand-dark m-0 mb-1 flex items-center gap-2">
-          <Shield size={20} color={C.accent} /> Streak Insurance
+          <Shield size={20} color={C.accent} /> Protección de rachas
         </h3>
         <p className="text-[0.85rem] text-brand-warm m-0 mb-4">
           Días consecutivos que puedes fallar un hábito programado sin romper tu racha
