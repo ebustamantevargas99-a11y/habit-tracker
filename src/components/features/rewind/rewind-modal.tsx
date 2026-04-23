@@ -87,10 +87,10 @@ export default function RewindModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header banner */}
-          <div className="relative bg-gradient-hero rounded-t-2xl p-8 text-brand-paper overflow-hidden">
+          <div className="relative bg-gradient-hero rounded-t-2xl p-8 text-hero overflow-hidden">
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 text-brand-light-tan hover:bg-white/10 rounded-full"
+              className="absolute top-4 right-4 p-2 text-hero-subtle hover:bg-white/10 rounded-full"
             >
               <X size={18} />
             </button>
@@ -99,13 +99,13 @@ export default function RewindModal({
                 <Sparkles size={26} className="text-brand-dark" />
               </div>
               <div>
-                <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
+                <p className="text-xs uppercase tracking-widest text-hero-subtle mb-1">
                   Resumen mensual
                 </p>
                 <h2 className="font-display text-3xl font-bold text-accent-glow m-0">
                   {monthLabel}
                 </h2>
-                <p className="text-sm text-brand-light-cream mt-1">
+                <p className="text-sm text-hero-subtle mt-1">
                   Tu mes en números. Celebra lo que lograste.
                 </p>
               </div>

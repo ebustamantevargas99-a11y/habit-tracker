@@ -332,14 +332,14 @@ export default function HomeDashboard() {
     <div className="bg-brand-paper">
       <ErrorBanner error={error} onDismiss={clearError} />
       {/* Welcome Banner */}
-      <div className="bg-gradient-hero rounded-[16px] p-8 text-brand-paper mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+      <div className="bg-gradient-hero rounded-[16px] p-8 text-hero mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-start gap-6">
           <div className="flex-1">
-            <div className="text-sm text-brand-light-tan mb-2">{dateFormatted}</div>
+            <div className="text-sm text-hero-subtle mb-2">{dateFormatted}</div>
             <h1 className="font-display text-[36px] font-bold m-0 mb-4 text-accent-glow">
               {greeting}, {displayName}
             </h1>
-            <p className="text-sm text-brand-light-cream m-0 italic max-w-[400px] mb-4">
+            <p className="text-sm text-hero-subtle m-0 italic max-w-[400px] mb-4">
               &ldquo;{quote}&rdquo;
             </p>
             <div className="flex flex-wrap gap-2">
@@ -356,13 +356,13 @@ export default function HomeDashboard() {
                 title="Resumen semanal"
                 variant="outline"
                 size="md"
-                className="!bg-transparent !border-brand-light-tan/40 !text-brand-light-cream hover:!bg-white/10"
+                className="!bg-transparent !border-[var(--color-hero-text-subtle)]/40 !text-hero-subtle hover:!bg-white/10"
               />
             </div>
           </div>
           <div className="flex flex-col items-center gap-3">
             <CircularGauge value={lifeScore} maxValue={100} />
-            <div className="text-xs text-brand-light-tan text-center">Puntuación de Vida</div>
+            <div className="text-xs text-hero-subtle text-center">Puntuación de Vida</div>
           </div>
         </div>
       </div>
@@ -739,14 +739,14 @@ export default function HomeDashboard() {
       <AIAnalysisCard />
 
       {/* Motivational Footer */}
-      <div className="bg-gradient-hero rounded-[16px] p-6 text-brand-paper text-center shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+      <div className="bg-gradient-hero rounded-[16px] p-6 text-hero text-center shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
         <div className="flex justify-center mb-3">
           <Trophy size={32} color={C.accentGlow} />
         </div>
         <h3 className="text-[18px] font-bold m-0 mb-2 text-accent-glow">
           {streakTotal} días de fuego en total — ¡sigue así!
         </h3>
-        <p className="text-[13px] text-brand-light-cream m-0">
+        <p className="text-[13px] text-hero-subtle m-0">
           Tasa de completación: {avgStrength}% · {habits.length} hábito{habits.length !== 1 ? 's' : ''} activo{habits.length !== 1 ? 's' : ''}
         </p>
       </div>

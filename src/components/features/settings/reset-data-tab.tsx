@@ -183,17 +183,17 @@ export default function ResetDataTab() {
       </div>
 
       {/* Reset TODO */}
-      <div className="bg-gradient-hero rounded-xl p-6 text-brand-paper">
+      <div className="bg-gradient-hero rounded-xl p-6 text-hero">
         <div className="flex items-start gap-3">
           <ShieldOff size={24} className="text-danger-light shrink-0 mt-1" />
           <div className="flex-1">
             <h3 className="font-serif m-0 text-lg text-accent-glow">
               {ALL_SCOPE.emoji} Resetear TODO
             </h3>
-            <p className="text-sm m-0 mt-1 text-brand-light-tan">
+            <p className="text-sm m-0 mt-1 text-hero-subtle">
               {ALL_SCOPE.description}
             </p>
-            <p className="text-[11px] m-0 mt-2 text-brand-cream/70">
+            <p className="text-[11px] m-0 mt-2 text-hero-subtle opacity-70">
               Tu cuenta, email, contraseña y preferencias permanecen intactas.
               Solo se borran los datos de los módulos.
             </p>

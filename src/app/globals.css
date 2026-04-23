@@ -26,6 +26,14 @@
   --color-accent:       #A77A39;
   --color-accent-light: #C79B55;
 
+  /* Hero / dark-surface context (siempre debe ser oscuro con texto claro
+     independiente del modo del tema). En temas claros = dark/brown vars.
+     En temas oscuros se sobrescribe abajo. */
+  --color-hero-bg-1:       var(--color-dark);
+  --color-hero-bg-2:       var(--color-brown);
+  --color-hero-text:       var(--color-paper);
+  --color-hero-text-subtle:var(--color-light-cream);
+
   --font-heading: var(--font-playfair), "Georgia", "Cambria", serif;
   --font-body:    var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", "Monaco", monospace;
@@ -185,6 +193,22 @@ html.dark {
   --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── Override hero vars para los 4 temas oscuros ──────────────────────────
+   En temas oscuros, dark/brown son colores CLAROS (usados como texto). El
+   hero necesita superficie DE VERDAD oscura con texto claro. Usamos warm-
+   white/cream como bg (tonos elevados sobre paper) y dark/brown como texto
+   (cream-valued in dark themes). Esto evita el bug "texto claro sobre bg
+   claro" en los hero banners, pricing cards, modales, etc. */
+.theme-cafe,
+.theme-carbon,
+.theme-pizarra,
+.theme-onice {
+  --color-hero-bg-1:        var(--color-warm-white);
+  --color-hero-bg-2:        var(--color-cream);
+  --color-hero-text:        var(--color-dark);
+  --color-hero-text-subtle: var(--color-brown);
 }
 
 /* ─── Base Reset ──────────────────────────────────────────────────────────── */
@@ -372,20 +396,47 @@ input:focus, textarea:focus, select:focus {
     @apply flex flex-col gap-6;
   }
 
-  /* ── Gradientes themeables (antes hardcoded en cada componente) ─────────── */
-  /* Hero banner: gradiente de los colores oscuros del tema actual */
+  /* ── Gradientes themeables ──────────────────────────────────────────────
+     Hero banner: siempre superficie oscura con texto claro — los temas
+     oscuros sobrescriben las vars hero-* para mantener contraste. */
   .bg-gradient-hero {
-    background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-brown) 100%);
+    background: linear-gradient(135deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%);
   }
-  /* Variante vertical (onboarding y modales) */
   .bg-gradient-hero-v {
-    background: linear-gradient(180deg, var(--color-dark) 0%, var(--color-brown) 100%);
+    background: linear-gradient(180deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%);
   }
-  /* Gradiente de acento (avatares, botones llamativos, progress bars) */
+  /* Gradiente de acento (siempre visible: oro/bronce/rose gold) */
   .bg-gradient-accent {
     background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
   }
   .bg-gradient-accent-h {
     background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
   }
+
+  /* ── Colores de texto para superficies hero ────────────────────────────
+     Usados dentro de <div class="bg-gradient-hero ..."> para garantizar
+     que el texto sea legible en ambos modos (light/dark theme). */
+  .text-hero        { color: var(--color-hero-text); }
+  .text-hero-subtle { color: var(--color-hero-text-subtle); }
+}
+
+/* ── Safety net: cualquier text-brand-paper / light-tan / light-cream que
+   viva DENTRO de un bg-gradient-hero se remapea al color hero correcto
+   (evita "texto claro sobre bg claro" en temas oscuros aunque no hayamos
+   actualizado el componente a text-hero explícitamente). ──────────────── */
+.bg-gradient-hero,
+.bg-gradient-hero-v {
+  color: var(--color-hero-text);
+}
+.bg-gradient-hero .text-brand-paper,
+.bg-gradient-hero-v .text-brand-paper {
+  color: var(--color-hero-text);
+}
+.bg-gradient-hero .text-brand-light-tan,
+.bg-gradient-hero-v .text-brand-light-tan,
+.bg-gradient-hero .text-brand-light-cream,
+.bg-gradient-hero-v .text-brand-light-cream,
+.bg-gradient-hero .text-brand-cream,
+.bg-gradient-hero-v .text-brand-cream {
+  color: var(--color-hero-text-subtle);
 }

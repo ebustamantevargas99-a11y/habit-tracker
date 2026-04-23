@@ -159,7 +159,7 @@ function GamificationTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* Level Card */}
-      <div className="bg-gradient-hero rounded-xl p-6 text-brand-paper border-none">
+      <div className="bg-gradient-hero rounded-xl p-6 text-hero border-none">
         <div className="flex items-center gap-6">
           <div className="w-[100px] h-[100px] rounded-full bg-gradient-accent flex items-center justify-center flex-col shrink-0">
             <Zap size={24} color={C.dark} />
@@ -169,7 +169,7 @@ function GamificationTab() {
             <h2 className="font-serif m-0 mb-1 text-[1.4rem] text-accent-glow">
               {LEVELS[currentLevel - 1]?.name || 'Imparable'}
             </h2>
-            <p className="m-0 mb-3 text-[0.85rem] text-brand-light-tan">
+            <p className="m-0 mb-3 text-[0.85rem] text-hero-subtle">
               {currentXP} / {xpForNextLevel} XP · {xpForNextLevel - currentXP} XP para Nivel {currentLevel + 1}
             </p>
             <div className="w-full h-3 bg-white/15 rounded-md overflow-hidden">
