@@ -183,7 +183,7 @@ export default function ResetDataTab() {
       </div>
 
       {/* Reset TODO */}
-      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-xl p-6 text-brand-paper">
+      <div className="bg-gradient-hero rounded-xl p-6 text-brand-paper">
         <div className="flex items-start gap-3">
           <ShieldOff size={24} className="text-danger-light shrink-0 mt-1" />
           <div className="flex-1">

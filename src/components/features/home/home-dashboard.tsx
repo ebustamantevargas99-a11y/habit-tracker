@@ -332,7 +332,7 @@ export default function HomeDashboard() {
     <div className="bg-brand-paper">
       <ErrorBanner error={error} onDismiss={clearError} />
       {/* Welcome Banner */}
-      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-[16px] p-8 text-brand-paper mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+      <div className="bg-gradient-hero rounded-[16px] p-8 text-brand-paper mb-8 shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
         <div className="flex justify-between items-start gap-6">
           <div className="flex-1">
             <div className="text-sm text-brand-light-tan mb-2">{dateFormatted}</div>
@@ -739,7 +739,7 @@ export default function HomeDashboard() {
       <AIAnalysisCard />
 
       {/* Motivational Footer */}
-      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-[16px] p-6 text-brand-paper text-center shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
+      <div className="bg-gradient-hero rounded-[16px] p-6 text-brand-paper text-center shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
         <div className="flex justify-center mb-3">
           <Trophy size={32} color={C.accentGlow} />
         </div>

@@ -242,7 +242,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
               {/* Dynamic width — must stay inline */}
               <div
                 className="h-full rounded-full transition-[width] duration-500"
-                style={{ width: `${xpProgress}%`, background: "linear-gradient(90deg, #B8860B, #D4A843)" }}
+                style={{
+                  width: `${xpProgress}%`,
+                  background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-light))",
+                }}
               />
             </div>
             <p className="text-[0.625rem] text-brand-light-tan/50 mt-1 text-center">

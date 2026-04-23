@@ -72,7 +72,7 @@ function ProfileTab() {
     <div className="flex flex-col gap-6">
       {/* Avatar + Basic Info */}
       <div className={cn(CARD, "flex gap-6 items-start")}>
-        <div className="w-[100px] h-[100px] rounded-full bg-[linear-gradient(135deg,#B8860B,#D4A843)] flex items-center justify-center text-[2.5rem] text-brand-paper font-serif font-bold shrink-0">
+        <div className="w-[100px] h-[100px] rounded-full bg-gradient-accent flex items-center justify-center text-[2.5rem] text-brand-paper font-serif font-bold shrink-0">
           {name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 flex flex-col gap-4">
@@ -159,9 +159,9 @@ function GamificationTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* Level Card */}
-      <div className="bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-xl p-6 text-brand-paper border-none">
+      <div className="bg-gradient-hero rounded-xl p-6 text-brand-paper border-none">
         <div className="flex items-center gap-6">
-          <div className="w-[100px] h-[100px] rounded-full bg-[linear-gradient(135deg,#B8860B,#F0D78C)] flex items-center justify-center flex-col shrink-0">
+          <div className="w-[100px] h-[100px] rounded-full bg-gradient-accent flex items-center justify-center flex-col shrink-0">
             <Zap size={24} color={C.dark} />
             <span className="text-[1.8rem] font-bold text-brand-dark font-serif">{currentLevel}</span>
           </div>
@@ -174,7 +174,7 @@ function GamificationTab() {
             </p>
             <div className="w-full h-3 bg-white/15 rounded-md overflow-hidden">
               <div
-                className="h-full rounded-md bg-[linear-gradient(90deg,#B8860B,#F0D78C)] transition-[width] duration-500"
+                className="h-full rounded-md bg-gradient-accent-h transition-[width] duration-500"
                 style={{ width: `${pct}%` }}
               />
             </div>

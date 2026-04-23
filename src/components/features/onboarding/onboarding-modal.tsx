@@ -193,7 +193,7 @@ export default function OnboardingModal({ onComplete }: Props) {
         </div>
 
         {/* Content */}
-        <div className="px-10 py-[30px] pb-5 min-h-[280px] flex items-center justify-center bg-[linear-gradient(180deg,#3D2B1F_0%,#2A1D15_100%)]">
+        <div className="px-10 py-[30px] pb-5 min-h-[280px] flex items-center justify-center bg-gradient-hero-v">
           {step.content}
         </div>
 

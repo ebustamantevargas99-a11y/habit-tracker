@@ -66,47 +66,27 @@ html.dark {
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 2. Mínimo (Dieter Rams — blanco + negro + un acento rojo) ─────────── */
-.theme-minimo {
-  --color-dark:         #1A1A1A;
-  --color-brown:        #2E2E2E;
-  --color-medium:       #555555;
-  --color-warm:         #888888;
-  --color-tan:          #BBBBBB;
-  --color-light-tan:    #D4D4D4;
-  --color-cream:        #E8E8E8;
-  --color-light-cream:  #F0F0F0;
-  --color-warm-white:   #F8F8F8;
-  --color-paper:        #FFFFFF;
-  --color-accent:       #D10000;
-  --color-accent-light: #E63030;
+/* ─── 2. Marfil (cream ivory + durazno + dorado suave) ─────────────────── */
+.theme-marfil {
+  --color-dark:         #3B2E20;
+  --color-brown:        #5A4730;
+  --color-medium:       #7E6A4C;
+  --color-warm:         #A08863;
+  --color-tan:          #C6A876;
+  --color-light-tan:    #D9BF97;
+  --color-cream:        #EDDEC0;
+  --color-light-cream:  #F5EBD5;
+  --color-warm-white:   #FBF3E4;
+  --color-paper:        #FFF9F0;
+  --color-accent:       #C99969;
+  --color-accent-light: #E2B888;
 
-  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 3. Matrix (terminal retro — negro + fósforo verde + ámbar) ────────── */
-.theme-matrix {
-  --color-dark:         #00FF41;
-  --color-brown:        #00CC33;
-  --color-medium:       #00A028;
-  --color-warm:         #008020;
-  --color-tan:          #006018;
-  --color-light-tan:    #004012;
-  --color-cream:        #0A1F0D;
-  --color-light-cream:  #06170A;
-  --color-warm-white:   #020A04;
-  --color-paper:        #000000;
-  --color-accent:       #FFB000;
-  --color-accent-light: #FFD040;
-
-  --font-heading: var(--font-jetbrains), "Menlo", monospace;
-  --font-body:    var(--font-jetbrains), "Menlo", monospace;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
-}
-
-/* ─── 4. Sakura (cerezo en flor — rosa washi + ciruela + oro) ───────────── */
+/* ─── 3. Sakura (cerezo en flor — rosa washi + ciruela + oro) ───────────── */
 .theme-sakura {
   --color-dark:         #3E1528;
   --color-brown:        #5C2A44;
@@ -126,80 +106,100 @@ html.dark {
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 5. Nórdico (fiordos + aurora + nieve) ────────────────────────────── */
-.theme-nordico {
-  --color-dark:         #102A43;
-  --color-brown:        #1E3A5F;
-  --color-medium:       #395B7C;
-  --color-warm:         #5B7F9E;
-  --color-tan:          #8BA7C0;
-  --color-light-tan:    #B5C9DC;
-  --color-cream:        #D8E4EE;
-  --color-light-cream:  #E8EFF5;
-  --color-warm-white:   #F0F5F9;
-  --color-paper:        #F4F8FB;
-  --color-accent:       #2BB4A9;
-  --color-accent-light: #4FCEC3;
+/* ─── 5. Lavanda (luz: lavanda pálida + violeta profundo + oro) ──────── */
+.theme-lavanda {
+  --color-dark:         #2D1F3A;
+  --color-brown:        #4B365F;
+  --color-medium:       #684C84;
+  --color-warm:         #8567A0;
+  --color-tan:          #A182BA;
+  --color-light-tan:    #BFA4D3;
+  --color-cream:        #D9C7E6;
+  --color-light-cream:  #E8DDEF;
+  --color-warm-white:   #F2EAF8;
+  --color-paper:        #F8F3FD;
+  --color-accent:       #9678C9;
+  --color-accent-light: #B89ADD;
 
-  --font-heading: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-crimson), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 6. Cyberpunk (púrpura oscuro + neón magenta/cyan) ────────────────── */
-.theme-cyberpunk {
-  --color-dark:         #F2E8FF;
-  --color-brown:        #D4B8E8;
-  --color-medium:       #A878C8;
-  --color-warm:         #8A55B0;
-  --color-tan:          #6B3590;
-  --color-light-tan:    #4A2070;
-  --color-cream:        #2E1048;
-  --color-light-cream:  #1F0833;
-  --color-warm-white:   #15052B;
-  --color-paper:        #0A0120;
-  --color-accent:       #FF00C8;
-  --color-accent-light: #00EAFF;
-
-  --font-heading: var(--font-jetbrains), "Menlo", monospace;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
-}
-
-/* ─── 7. Atardecer (sunset coral + burgundy + naranja quemado) ──────────── */
-.theme-atardecer {
-  --color-dark:         #3E1A14;
-  --color-brown:        #5A2A24;
-  --color-medium:       #8A4236;
-  --color-warm:         #B5644A;
-  --color-tan:          #D68A6A;
-  --color-light-tan:    #E8A98B;
-  --color-cream:        #F5C5A8;
-  --color-light-cream:  #FADBC4;
-  --color-warm-white:   #FDEBDB;
-  --color-paper:        #FDF4E8;
-  --color-accent:       #D76B3F;
-  --color-accent-light: #ED8856;
+/* ─── 6. Menta (luz: mint fresco + teal + cream) ──────────────────────── */
+.theme-menta {
+  --color-dark:         #1F3E2B;
+  --color-brown:        #385D44;
+  --color-medium:       #4E7A5D;
+  --color-warm:         #649374;
+  --color-tan:          #7FAB8F;
+  --color-light-tan:    #9DC2AA;
+  --color-cream:        #BCD6C6;
+  --color-light-cream:  #D6E8DD;
+  --color-warm-white:   #E8F4EB;
+  --color-paper:        #F2FAF6;
+  --color-accent:       #3E9D7A;
+  --color-accent-light: #5FB89A;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
   --font-mono:    var(--font-jetbrains), "Menlo", monospace;
 }
 
-/* ─── 8. Bosque (bosque místico — verde profundo + musgo + vela) ────────── */
-.theme-bosque {
-  --color-dark:         #0E1F14;
-  --color-brown:        #1E3522;
-  --color-medium:       #375240;
-  --color-warm:         #557560;
-  --color-tan:          #85A28E;
-  --color-light-tan:    #AFC4B5;
-  --color-cream:        #CFDED5;
-  --color-light-cream:  #DFE9E1;
-  --color-warm-white:   #E9F0EB;
-  --color-paper:        #EEF4EF;
-  --color-accent:       #C69B3B;
-  --color-accent-light: #E2B958;
+/* ─── 7. Medianoche (oscuro: azul noche + oro antiguo + cream) ──────── */
+.theme-medianoche {
+  --color-dark:         #E8E8F0;
+  --color-brown:        #CCCFE0;
+  --color-medium:       #A6AEC8;
+  --color-warm:         #8089A8;
+  --color-tan:          #5B6084;
+  --color-light-tan:    #3E4363;
+  --color-cream:        #2A2F4A;
+  --color-light-cream:  #1D2138;
+  --color-warm-white:   #15182A;
+  --color-paper:        #0E1220;
+  --color-accent:       #D4A85F;
+  --color-accent-light: #E8C683;
+
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 8. Café (oscuro: chocolate + cream + dorado) ───────────────────── */
+.theme-cafe {
+  --color-dark:         #EFD9BA;
+  --color-brown:        #D4AD82;
+  --color-medium:       #BA9065;
+  --color-warm:         #9B744D;
+  --color-tan:          #7B5838;
+  --color-light-tan:    #5A3F28;
+  --color-cream:        #3E2B1C;
+  --color-light-cream:  #2A1D14;
+  --color-warm-white:   #211610;
+  --color-paper:        #1A100A;
+  --color-accent:       #D4A843;
+  --color-accent-light: #E5BF5F;
+
+  --font-heading: var(--font-playfair), "Georgia", serif;
+  --font-body:    var(--font-inter), system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+}
+
+/* ─── 9. Vino (oscuro: burgundy profundo + rosa cream + oro) ────────── */
+.theme-vino {
+  --color-dark:         #F0E4EC;
+  --color-brown:        #CDA7BF;
+  --color-medium:       #B584A3;
+  --color-warm:         #9A5F84;
+  --color-tan:          #7A4566;
+  --color-light-tan:    #5A3048;
+  --color-cream:        #3E2030;
+  --color-light-cream:  #2E1822;
+  --color-warm-white:   #22101A;
+  --color-paper:        #1A0A10;
+  --color-accent:       #D4A85F;
+  --color-accent-light: #E8C683;
 
   --font-heading: var(--font-crimson), "Georgia", serif;
   --font-body:    var(--font-inter), system-ui, sans-serif;
@@ -389,5 +389,22 @@ input:focus, textarea:focus, select:focus {
   /* ── Page wrapper ────────────────────────────────────────────────────────── */
   .page-content {
     @apply flex flex-col gap-6;
+  }
+
+  /* ── Gradientes themeables (antes hardcoded en cada componente) ─────────── */
+  /* Hero banner: gradiente de los colores oscuros del tema actual */
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, var(--color-dark) 0%, var(--color-brown) 100%);
+  }
+  /* Variante vertical (onboarding y modales) */
+  .bg-gradient-hero-v {
+    background: linear-gradient(180deg, var(--color-dark) 0%, var(--color-brown) 100%);
+  }
+  /* Gradiente de acento (avatares, botones llamativos, progress bars) */
+  .bg-gradient-accent {
+    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+  }
+  .bg-gradient-accent-h {
+    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
   }
 }

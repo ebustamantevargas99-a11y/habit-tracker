@@ -87,7 +87,7 @@ export default function RewindModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header banner */}
-          <div className="relative bg-[linear-gradient(135deg,#3D2B1F_0%,#6B4226_100%)] rounded-t-2xl p-8 text-brand-paper overflow-hidden">
+          <div className="relative bg-gradient-hero rounded-t-2xl p-8 text-brand-paper overflow-hidden">
             <button
               onClick={onClose}
               className="absolute top-4 right-4 p-2 text-brand-light-tan hover:bg-white/10 rounded-full"
