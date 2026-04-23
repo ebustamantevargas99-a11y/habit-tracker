@@ -102,7 +102,7 @@ export default function PanelView({
   return (
     <div className="space-y-5">
       {/* Hero: Net Worth + chart 12m */}
-      <div className="bg-gradient-to-br from-brand-dark via-brand-brown to-accent rounded-2xl p-6 text-brand-paper">
+      <div className="bg-gradient-hero-accent rounded-2xl p-6 text-brand-paper">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">

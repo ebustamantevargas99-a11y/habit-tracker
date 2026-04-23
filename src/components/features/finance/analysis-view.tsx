@@ -264,7 +264,7 @@ export default function AnalysisView() {
       )}
 
       {/* FIRE Calculator */}
-      <div className="bg-gradient-to-br from-brand-dark to-brand-brown text-brand-paper rounded-xl p-6">
+      <div className="bg-gradient-hero text-brand-paper rounded-xl p-6">
         <div className="flex items-start justify-between gap-3 mb-4 flex-wrap">
           <div>
             <h3 className="font-display text-xl font-bold text-accent-glow flex items-center gap-2">

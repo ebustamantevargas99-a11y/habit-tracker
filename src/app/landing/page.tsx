@@ -83,7 +83,7 @@ export default function LandingPage() {
       </section>
 
       {/* Diferenciador IA */}
-      <section className="bg-gradient-to-br from-brand-dark to-brand-brown text-brand-paper py-20">
+      <section className="bg-gradient-hero text-brand-paper py-20">
         <div className="max-w-4xl mx-auto px-6">
           <div className="flex items-start gap-6 flex-wrap md:flex-nowrap">
             <div className="shrink-0 w-16 h-16 bg-accent-glow rounded-2xl flex items-center justify-center">

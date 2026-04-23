@@ -115,7 +115,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   return (
     <aside
       className={cn(
-        "flex flex-col bg-brand-dark text-brand-cream shrink-0 overflow-y-auto overflow-x-hidden",
+        // bg-[var(...)] + text-[var(...)]: usa las mismas vars que el hero
+        // para garantizar superficie oscura + texto claro en todos los temas.
+        "flex flex-col bg-[var(--color-hero-bg-1)] text-[var(--color-hero-text)] shrink-0 overflow-y-auto overflow-x-hidden",
         "border-r border-white/10 transition-[width,min-width] duration-300",
         isOpen ? "w-[260px] min-w-[260px]" : "w-[68px] min-w-[68px]",
       )}
@@ -130,7 +132,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
         <span className="text-2xl shrink-0">🎯</span>
         {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
-            Ultimate <span className="text-brand-cream">TRACKER</span>
+            Ultimate <span className="text-hero">TRACKER</span>
           </h2>
         )}
       </div>
@@ -154,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                   "hover:bg-white/10",
                   isActive
                     ? "bg-accent/15 text-accent-light border-l-accent"
-                    : "text-brand-cream border-l-transparent",
+                    : "text-hero border-l-transparent",
                   !isOpen && "justify-center",
                 )}
               >
@@ -193,7 +195,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         "border-l-[3px] transition-all duration-200",
                         isActive
                           ? "bg-accent/25 text-accent-light border-l-accent font-medium"
-                          : "text-brand-light-tan border-l-transparent hover:bg-white/5",
+                          : "text-hero-subtle border-l-transparent hover:bg-white/5",
                       )}
                     >
                       {section}
@@ -222,7 +224,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
           </div>
           {isOpen && (
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-brand-cream truncate">{displayName}</p>
+              <p className="text-sm font-semibold text-hero truncate">{displayName}</p>
               <p className="text-[0.6875rem] text-accent-light font-semibold flex items-center gap-1">
                 <span>⭐</span>
                 Nivel {currentLevel} — {levelName}
@@ -234,7 +236,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
         {/* XP bar */}
         {isOpen && (
           <div className="mt-1">
-            <div className="flex justify-between text-[0.625rem] text-brand-light-tan/70 mb-1">
+            <div className="flex justify-between text-[0.625rem] text-hero-subtle/70 mb-1">
               <span>{totalXP.toLocaleString()} XP</span>
               <span>{xpForNextLevel.toLocaleString()} XP</span>
             </div>
@@ -248,7 +250,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                 }}
               />
             </div>
-            <p className="text-[0.625rem] text-brand-light-tan/50 mt-1 text-center">
+            <p className="text-[0.625rem] text-hero-subtle/50 mt-1 text-center">
               {(xpForNextLevel - totalXP).toLocaleString()} XP para Nivel {currentLevel + 1}
             </p>
 
@@ -274,8 +276,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
           onClick={() => signOut({ callbackUrl: "/login" })}
           className={cn(
             "mt-3 w-full py-2 px-3 flex items-center gap-1.5 text-xs",
-            "text-brand-light-tan/60 border border-white/20 rounded-md",
-            "hover:text-brand-cream hover:border-white/50 transition-all duration-200 bg-transparent",
+            "text-hero-subtle/60 border border-white/20 rounded-md",
+            "hover:text-hero hover:border-white/50 transition-all duration-200 bg-transparent",
             !isOpen && "justify-center",
           )}
         >

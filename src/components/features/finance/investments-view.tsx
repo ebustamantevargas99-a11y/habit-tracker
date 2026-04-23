@@ -63,7 +63,7 @@ export default function InvestmentsView() {
   return (
     <div className="space-y-5">
       {/* Hero */}
-      <div className="bg-gradient-to-br from-brand-dark to-brand-brown rounded-2xl p-6 text-brand-paper">
+      <div className="bg-gradient-hero rounded-2xl p-6 text-brand-paper">
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
@@ -86,7 +86,7 @@ export default function InvestmentsView() {
               setEditing(null);
               setShowForm(true);
             }}
-            className="px-4 py-2 rounded-button bg-accent-glow text-brand-dark text-sm font-bold hover:bg-accent flex items-center gap-2"
+            className="px-4 py-2 rounded-button bg-accent-glow text-[#2E1F14] text-sm font-bold hover:bg-accent flex items-center gap-2"
           >
             <Plus size={14} /> Nueva inversión
           </button>

@@ -405,6 +405,15 @@ input:focus, textarea:focus, select:focus {
   .bg-gradient-hero-v {
     background: linear-gradient(180deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%);
   }
+  /* Hero con accent final (cards hero con glow dorado al terminar) */
+  .bg-gradient-hero-accent {
+    background: linear-gradient(
+      135deg,
+      var(--color-hero-bg-1) 0%,
+      var(--color-hero-bg-2) 50%,
+      var(--color-accent) 100%
+    );
+  }
   /* Gradiente de acento (siempre visible: oro/bronce/rose gold) */
   .bg-gradient-accent {
     background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
@@ -420,23 +429,28 @@ input:focus, textarea:focus, select:focus {
   .text-hero-subtle { color: var(--color-hero-text-subtle); }
 }
 
-/* ── Safety net: cualquier text-brand-paper / light-tan / light-cream que
-   viva DENTRO de un bg-gradient-hero se remapea al color hero correcto
-   (evita "texto claro sobre bg claro" en temas oscuros aunque no hayamos
-   actualizado el componente a text-hero explícitamente). ──────────────── */
+/* ── Safety net: cualquier text-brand-paper / light-tan / light-cream /
+   cream que viva DENTRO de un .bg-gradient-hero* se remapea al color
+   hero correcto (evita "texto claro sobre bg claro" en temas oscuros
+   aunque no hayamos actualizado el componente a text-hero explícitamente). */
 .bg-gradient-hero,
-.bg-gradient-hero-v {
+.bg-gradient-hero-v,
+.bg-gradient-hero-accent {
   color: var(--color-hero-text);
 }
 .bg-gradient-hero .text-brand-paper,
-.bg-gradient-hero-v .text-brand-paper {
+.bg-gradient-hero-v .text-brand-paper,
+.bg-gradient-hero-accent .text-brand-paper {
   color: var(--color-hero-text);
 }
 .bg-gradient-hero .text-brand-light-tan,
 .bg-gradient-hero-v .text-brand-light-tan,
+.bg-gradient-hero-accent .text-brand-light-tan,
 .bg-gradient-hero .text-brand-light-cream,
 .bg-gradient-hero-v .text-brand-light-cream,
+.bg-gradient-hero-accent .text-brand-light-cream,
 .bg-gradient-hero .text-brand-cream,
-.bg-gradient-hero-v .text-brand-cream {
+.bg-gradient-hero-v .text-brand-cream,
+.bg-gradient-hero-accent .text-brand-cream {
   color: var(--color-hero-text-subtle);
 }

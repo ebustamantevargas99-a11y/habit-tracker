@@ -187,7 +187,7 @@ export default function CyclePage() {
       ) : (
         <>
           {/* Hero — día de ciclo + fase */}
-          <div className="bg-gradient-to-br from-brand-dark to-brand-brown rounded-2xl p-8 text-brand-paper">
+          <div className="bg-gradient-hero rounded-2xl p-8 text-brand-paper">
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
@@ -227,7 +227,7 @@ export default function CyclePage() {
                 )}
                 <button
                   onClick={startNewCycle}
-                  className="mt-4 px-4 py-2 rounded-button bg-accent-glow text-brand-dark text-xs font-semibold hover:bg-accent"
+                  className="mt-4 px-4 py-2 rounded-button bg-accent-glow text-[#2E1F14] text-xs font-semibold hover:bg-accent"
                 >
                   Marcar inicio de nuevo período
                 </button>

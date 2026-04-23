@@ -136,7 +136,7 @@ export default function FocusPanel() {
             </div>
             <button
               onClick={endSession}
-              className="px-5 py-2.5 rounded-button bg-accent-glow text-brand-dark text-sm font-bold hover:bg-accent flex items-center gap-2"
+              className="px-5 py-2.5 rounded-button bg-accent-glow text-[#2E1F14] text-sm font-bold hover:bg-accent flex items-center gap-2"
             >
               <Square size={14} /> Terminar
             </button>

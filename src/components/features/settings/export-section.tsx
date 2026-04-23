@@ -216,7 +216,7 @@ export default function ExportSection() {
               className={cn(
                 "py-1.5 px-3.5 rounded-md cursor-pointer text-[13px] border transition-colors",
                 days === d
-                  ? "border-accent bg-accent-glow text-brand-dark font-bold"
+                  ? "border-accent bg-accent-glow text-[#2E1F14] font-bold"
                   : "border-brand-tan bg-transparent text-brand-warm font-normal"
               )}
             >
@@ -270,7 +270,7 @@ export default function ExportSection() {
           </button>
         </div>
 
-        <div className="bg-accent-glow border border-accent rounded-lg px-4 py-3 text-[13px] text-brand-brown">
+        <div className="bg-accent-glow border border-accent rounded-lg px-4 py-3 text-[13px] text-[#2E1F14]">
           💡 <strong>Consejo:</strong> Haz clic en "Copiar Resumen" y pégalo directamente en Claude o ChatGPT
           para obtener análisis y recomendaciones personalizadas basadas en todos tus datos.
         </div>

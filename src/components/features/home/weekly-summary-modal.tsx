@@ -114,7 +114,7 @@ export default function WeeklySummaryModal({ onClose }: Props) {
       >
         {/* Header */}
         <div
-          className="bg-gradient-to-br from-brand-brown to-accent px-[30px] py-6 rounded-t-2xl flex justify-between items-center"
+          className="bg-gradient-hero-accent px-[30px] py-6 rounded-t-2xl flex justify-between items-center"
         >
           <div>
             <h2 className="m-0 text-brand-paper font-serif text-[1.6rem]">

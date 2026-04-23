@@ -211,7 +211,7 @@ export default function MeditationPage() {
       </div>
 
       {/* Timer */}
-      <div className="bg-gradient-to-br from-brand-dark to-brand-brown rounded-2xl p-10 text-center text-brand-paper">
+      <div className="bg-gradient-hero rounded-2xl p-10 text-center text-brand-paper">
         <div className="mb-6 flex justify-center gap-2 flex-wrap">
           {TYPES.map((t) => (
             <button
@@ -221,7 +221,7 @@ export default function MeditationPage() {
               className={cn(
                 "px-3 py-1.5 rounded-full text-xs font-medium transition",
                 type === t.id
-                  ? "bg-accent-glow text-brand-dark"
+                  ? "bg-accent-glow text-[#2E1F14]"
                   : "bg-white/10 text-brand-light-tan hover:bg-white/20",
                 running && "opacity-40 cursor-not-allowed"
               )}
@@ -269,7 +269,7 @@ export default function MeditationPage() {
                 className={cn(
                   "px-3 py-1.5 rounded-full text-xs font-medium transition",
                   targetSec === p.minutes * 60
-                    ? "bg-accent-glow text-brand-dark"
+                    ? "bg-accent-glow text-[#2E1F14]"
                     : "bg-white/10 text-brand-light-tan hover:bg-white/20"
                 )}
               >
@@ -283,7 +283,7 @@ export default function MeditationPage() {
           {!running ? (
             <button
               onClick={start}
-              className="px-8 py-3 rounded-button bg-accent-glow text-brand-dark font-bold hover:bg-accent flex items-center gap-2"
+              className="px-8 py-3 rounded-button bg-accent-glow text-[#2E1F14] font-bold hover:bg-accent flex items-center gap-2"
             >
               <Play size={16} /> Comenzar
             </button>

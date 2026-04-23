@@ -163,7 +163,7 @@ export default function FastingPage() {
 
       {/* Timer en vivo */}
       {active ? (
-        <div className="bg-gradient-to-br from-brand-dark to-brand-brown rounded-2xl p-8 text-brand-paper">
+        <div className="bg-gradient-hero rounded-2xl p-8 text-brand-paper">
           <div className="flex items-start justify-between mb-6">
             <div>
               <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
@@ -175,7 +175,7 @@ export default function FastingPage() {
             </div>
             <button
               onClick={endFast}
-              className="px-5 py-2.5 rounded-button bg-accent-glow text-brand-dark text-sm font-bold hover:bg-accent flex items-center gap-2"
+              className="px-5 py-2.5 rounded-button bg-accent-glow text-[#2E1F14] text-sm font-bold hover:bg-accent flex items-center gap-2"
             >
               <Square size={14} /> Romper ayuno
             </button>

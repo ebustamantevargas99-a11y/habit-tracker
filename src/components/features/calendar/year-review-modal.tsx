@@ -184,7 +184,7 @@ export default function YearReviewModal({
           onClick={(e) => e.stopPropagation()}
         >
           {/* Hero */}
-          <div className="relative bg-gradient-to-br from-brand-dark via-brand-brown to-accent rounded-t-2xl p-8 text-brand-paper overflow-hidden">
+          <div className="relative bg-gradient-hero-accent rounded-t-2xl p-8 text-brand-paper overflow-hidden">
             <button
               onClick={onClose}
               className="absolute top-4 right-4 p-2 text-brand-light-tan hover:bg-white/10 rounded-full"
