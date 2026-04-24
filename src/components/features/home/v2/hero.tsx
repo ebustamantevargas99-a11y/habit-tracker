@@ -37,25 +37,29 @@ export default function Hero({
       style={{
         padding: "44px 40px",
         background:
-          "linear-gradient(135deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%)",
+          "linear-gradient(140deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%)",
       }}
     >
       <HeroNoise />
+      {/* Variante B: Life Score a la izquierda, texto a la derecha.
+          Layout revista — la mirada entra por el número grande y
+          continúa hacia el saludo serif. */}
       <div
         className="hero-grid-v2 relative grid items-center gap-12"
-        style={{ gridTemplateColumns: "1fr auto" }}
+        style={{ gridTemplateColumns: "auto 1fr" }}
       >
+        <LifeScoreRing score={score} prev={scorePrev} size={200} />
         <div className="flex flex-col gap-4">
           <div
             className="ht-eyebrow"
-            style={{ color: "var(--color-hero-text)", opacity: 0.58 }}
+            style={{ color: "var(--color-hero-text)", opacity: 0.6 }}
           >
             {dateStr}
           </div>
           <h1
-            className="ht-serif leading-[1.04] m-0"
+            className="ht-serif leading-[1.05] m-0"
             style={{
-              fontSize: "clamp(30px, 4.2vw, 56px)",
+              fontSize: "clamp(30px, 4vw, 52px)",
               color: "var(--color-hero-text)",
               letterSpacing: "-0.02em",
               fontWeight: 700,
@@ -66,11 +70,11 @@ export default function Hero({
           <p
             className="ht-serif italic m-0"
             style={{
-              fontSize: "clamp(17px, 1.6vw, 21px)",
+              fontSize: "clamp(18px, 1.8vw, 22px)",
               color: "var(--color-hero-text)",
-              opacity: 0.75,
-              maxWidth: 540,
-              lineHeight: 1.45,
+              opacity: 0.78,
+              maxWidth: 520,
+              lineHeight: 1.4,
             }}
           >
             {msg}
@@ -110,7 +114,6 @@ export default function Hero({
             </button>
           </div>
         </div>
-        <LifeScoreRing score={score} prev={scorePrev} size={200} />
       </div>
     </section>
   );
