@@ -125,15 +125,28 @@ export default function QuickEventPopover({
   const initial = useMemo(() => {
     if (mode.kind === "edit") {
       const e = mode.event;
+      // Para ocurrencias expandidas de series recurrentes, `startAt` es
+      // la ocurrencia clickeada. Usamos `originalStartAt` (el seed) para
+      // los campos de fecha/hora — así si el user solo cambia título,
+      // no movemos la serie entera al día clickeado.
+      const baseStart = e.originalStartAt ?? e.startAt;
+      const baseEnd = e.originalStartAt && e.endAt
+        ? new Date(
+            new Date(e.originalStartAt).getTime() +
+              (new Date(e.endAt).getTime() - new Date(e.startAt).getTime()),
+          ).toISOString()
+        : e.endAt;
       return {
         title: e.title,
         type: e.type,
         category: e.category ?? "",
         color: e.color ?? "",
         groupId: e.groupId ?? "",
-        dateStr: yyyymmdd(e.startAt),
-        startTime: hhmm(e.startAt),
-        endTime: e.endAt ? hhmm(e.endAt) : hhmm(new Date(new Date(e.startAt).getTime() + 3600000).toISOString()),
+        dateStr: yyyymmdd(baseStart),
+        startTime: hhmm(baseStart),
+        endTime: baseEnd
+          ? hhmm(baseEnd)
+          : hhmm(new Date(new Date(baseStart).getTime() + 3600000).toISOString()),
         description: e.description ?? "",
         location: e.location ?? "",
         reminderMinutes: e.reminderMinutes,
@@ -381,6 +394,17 @@ export default function QuickEventPopover({
 
       {/* Body */}
       <div className="px-4 py-3 flex flex-col gap-3">
+        {/* Banner para ocurrencias recurrentes — avisa que se edita la serie. */}
+        {isEdit && mode.kind === "edit" && mode.event.recurrence && (
+          <div className="flex items-start gap-2 bg-accent/10 border border-accent/30 rounded-md px-2.5 py-2 text-[11px] text-brand-dark">
+            <Repeat size={12} className="text-accent shrink-0 mt-0.5" />
+            <span>
+              <strong>Serie recurrente.</strong> Los cambios aplican a <em>todas</em>{" "}
+              las ocurrencias. Cambiar la fecha mueve la serie completa.
+            </span>
+          </div>
+        )}
+
         {/* Selector de calendario/grupo (si el user tiene grupos creados) */}
         {groups && groups.length > 0 && (
           <div className="flex items-center gap-2">

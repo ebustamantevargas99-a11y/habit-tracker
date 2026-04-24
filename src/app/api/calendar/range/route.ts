@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { expandRecurrence } from "@/lib/calendar/recurrence";
 
 // GET /api/calendar/range?from=YYYY-MM-DD&to=YYYY-MM-DD
-// Devuelve eventos custom + workouts + meals agrupados por día
-// Útil para vistas Semana/Mes donde cada día muestra un resumen
+// Devuelve eventos custom + workouts + meals agrupados por día.
+// Los eventos recurrentes se expanden server-side: una serie con
+// RRULE="FREQ=WEEKLY;BYDAY=MO,TH" produce una fila por cada lunes
+// y jueves dentro del rango. Cada ocurrencia comparte `id` con el
+// seed, así que el cliente usa `${id}-${startAt}` como React key.
 export async function GET(req: NextRequest) {
   return withAuth(async (userId) => {
     const { searchParams } = new URL(req.url);
@@ -18,9 +22,29 @@ export async function GET(req: NextRequest) {
     const fromDate = new Date(`${from}T00:00:00Z`);
     const toDate = new Date(`${to}T23:59:59Z`);
 
-    const [events, workouts, meals, habitLogs, milestones] = await Promise.all([
+    const [rawEvents, workouts, meals, habitLogs, milestones] = await Promise.all([
       prisma.calendarEvent.findMany({
-        where: { userId, startAt: { gte: fromDate, lte: toDate } },
+        where: {
+          userId,
+          OR: [
+            // (a) No recurrente: su seed cae en el rango
+            { recurrence: null, startAt: { gte: fromDate, lte: toDate } },
+            // (b) Recurrente: seed antes del fin del rango y recurrenceEnd
+            //     null o después del inicio del rango (la serie aún está viva).
+            {
+              AND: [
+                { recurrence: { not: null } },
+                { startAt: { lte: toDate } },
+                {
+                  OR: [
+                    { recurrenceEnd: null },
+                    { recurrenceEnd: { gte: fromDate } },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
         orderBy: { startAt: "asc" },
       }),
       prisma.workout.findMany({
@@ -47,7 +71,38 @@ export async function GET(req: NextRequest) {
       }),
     ]);
 
-    // Densidad por día (para heatmap)
+    // Expandir recurrencias en instancias concretas dentro del rango.
+    // Tope de seguridad: cada serie está limitada a 100 ocurrencias
+    // internamente por expandRecurrence(). `originalStartAt` guarda el
+    // startAt del seed — el cliente lo usa para editar la serie sin
+    // mover accidentalmente la fecha base al clickear una ocurrencia.
+    const events: Array<(typeof rawEvents)[number] & { originalStartAt?: Date }> = [];
+    for (const ev of rawEvents) {
+      if (!ev.recurrence) {
+        events.push(ev);
+        continue;
+      }
+      const occs = expandRecurrence(
+        ev.startAt,
+        ev.endAt,
+        ev.recurrence,
+        fromDate,
+        toDate,
+        ev.recurrenceEnd,
+      );
+      for (const occ of occs) {
+        events.push({
+          ...ev,
+          startAt: occ.startAt,
+          endAt: occ.endAt,
+          originalStartAt: ev.startAt,
+        });
+      }
+    }
+    events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
+
+    // Densidad por día (para heatmap) — usa el array expandido para
+    // que los días con eventos recurrentes se marquen correctamente.
     const density: Record<string, number> = {};
     for (const e of events) {
       const d = e.startAt.toISOString().split("T")[0];

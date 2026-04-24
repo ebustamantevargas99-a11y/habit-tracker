@@ -283,6 +283,12 @@ export default function MonthView({
           groups={groups}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
+            // Recurrentes → refresh del server para re-expandir todas
+            // las ocurrencias; no podemos reconstruirlas en cliente.
+            if (saved.recurrence) {
+              void refresh();
+              return;
+            }
             setData((prev) => {
               if (!prev) return prev;
               const exists = prev.events.some((e) => e.id === saved.id);
@@ -418,7 +424,7 @@ function MonthCell({
                 : "Click para editar";
           return (
             <div
-              key={ev.id}
+              key={`${ev.id}-${ev.startAt}`}
               onClick={(e) => handleEventClick(ev, e)}
               style={
                 effectiveColor
@@ -436,6 +442,7 @@ function MonthCell({
               title={title}
             >
               {ev.icon ?? meta.emoji} {ev.title}
+              {ev.recurrence && <span className="ml-1 opacity-60">🔁</span>}
             </div>
           );
         })}

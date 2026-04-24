@@ -135,7 +135,10 @@ export default function WeekView({ groups }: WeekViewProps) {
 
   async function handleDragEnd(e: DragEndEvent) {
     if (!e.over || !e.active) return;
-    const eventId = e.active.id as string;
+    // Los eventos no recurrentes usan `${id}` como dnd-id. No emitimos
+    // listeners para recurrentes (disabled en useDraggable), así que
+    // aquí sólo llegan no-recurrentes.
+    const eventId = String(e.active.id);
     const overId = e.over.id as string; // formato "cell-YYYY-MM-DD-H.H"
 
     const event = data?.events.find((ev) => ev.id === eventId);
@@ -336,6 +339,13 @@ export default function WeekView({ groups }: WeekViewProps) {
           groups={groups}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
+            // Si el evento es recurrente, las ocurrencias expandidas
+            // viven sólo en el server — tenemos que re-fetch para que
+            // aparezcan todos los días correctamente.
+            if (saved.recurrence) {
+              void refresh();
+              return;
+            }
             setData((prev) => {
               if (!prev) return prev;
               const exists = prev.events.some((e) => e.id === saved.id);
@@ -401,10 +411,11 @@ function DayColumn({
         />
       ))}
 
-      {/* Eventos custom (draggable) */}
+      {/* Eventos custom (draggable) — los recurrentes emiten una fila
+          por ocurrencia con mismo id. Composite key evita colisiones. */}
       {events.map((ev) => (
         <EventBlock
-          key={ev.id}
+          key={`${ev.id}-${ev.startAt}`}
           event={ev}
           group={ev.groupId ? groupsById.get(ev.groupId) ?? null : null}
           onClick={(anchor) => onEventClick(ev, anchor)}
@@ -478,8 +489,13 @@ function EventBlock({
   group: CalendarGroup | null;
   onClick: (anchor: AnchorRect) => void;
 }) {
+  const isRecurring = !!event.recurrence;
+  // Para eventos recurrentes deshabilitamos drag: cada ocurrencia
+  // comparte id con el seed, y mover una ocurrencia no crea excepción
+  // (feature pendiente). Mejor forzar que el user edite la serie.
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: event.id,
+    disabled: isRecurring,
   });
   const elRef = useRef<HTMLDivElement | null>(null);
 
@@ -550,6 +566,7 @@ function EventBlock({
       <div className="flex items-center gap-1">
         {event.icon && <span>{event.icon}</span>}
         <span className="font-semibold truncate">{event.title}</span>
+        {isRecurring && <span className="ml-auto text-[9px] opacity-70" title="Evento recurrente">🔁</span>}
       </div>
       {label && (
         <div className="text-[9px] uppercase tracking-widest opacity-70 truncate">

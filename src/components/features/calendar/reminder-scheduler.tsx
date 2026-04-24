@@ -6,6 +6,13 @@ import type { CalendarEvent } from "./types";
 
 const NOTIFIED_KEY = "ut-notified-events";
 
+// Clave única por ocurrencia: `${eventId}@${startAtISO}`. Para eventos
+// recurrentes el id se repite entre ocurrencias, así que sin el sufijo
+// de fecha la notificación del lunes bloquearía la del jueves.
+function notifyKey(ev: CalendarEvent): string {
+  return `${ev.id}@${ev.startAt}`;
+}
+
 function getNotifiedIds(): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
@@ -18,9 +25,9 @@ function getNotifiedIds(): Set<string> {
   }
 }
 
-function addNotifiedId(id: string) {
+function addNotifiedId(key: string) {
   const current = getNotifiedIds();
-  current.add(id);
+  current.add(key);
   // Trimar a últimos 500 para no explotar localStorage
   const arr = Array.from(current).slice(-500);
   try {
@@ -51,7 +58,8 @@ export default function ReminderScheduler() {
         for (const ev of events) {
           if (ev.reminderMinutes === null || ev.reminderMinutes === undefined) continue;
           if (ev.completed) continue;
-          if (notified.has(ev.id)) continue;
+          const key = notifyKey(ev);
+          if (notified.has(key)) continue;
 
           const eventTime = new Date(ev.startAt).getTime();
           const reminderTime = eventTime - ev.reminderMinutes * 60 * 1000;
@@ -65,9 +73,9 @@ export default function ReminderScheduler() {
                   : `En ${ev.reminderMinutes} min`) +
                 (ev.location ? ` · ${ev.location}` : ""),
               icon: "/favicon.ico",
-              tag: ev.id,
+              tag: key,
             });
-            addNotifiedId(ev.id);
+            addNotifiedId(key);
           }
         }
       } catch {

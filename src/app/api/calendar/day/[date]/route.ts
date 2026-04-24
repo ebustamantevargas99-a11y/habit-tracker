@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { expandRecurrence } from "@/lib/calendar/recurrence";
 
 // GET /api/calendar/day/[date] — agregación completa del día cross-módulo
 // Devuelve todos los "bloques" que el calendario debe mostrar:
@@ -27,7 +28,7 @@ export async function GET(
     const dayEnd = new Date(`${date}T23:59:59Z`);
 
     const [
-      events,
+      rawEvents,
       dailyPlan,
       workouts,
       meals,
@@ -37,10 +38,27 @@ export async function GET(
       habitLogs,
       cycle,
     ] = await Promise.all([
+      // Eventos del día: directos (seed dentro del día) + recurrentes
+      // cuyo seed comenzó antes y siguen vigentes. La expansión ocurre
+      // después para emitir una fila por cada ocurrencia que cae en el día.
       prisma.calendarEvent.findMany({
         where: {
           userId,
-          startAt: { gte: dayStart, lte: dayEnd },
+          OR: [
+            { recurrence: null, startAt: { gte: dayStart, lte: dayEnd } },
+            {
+              AND: [
+                { recurrence: { not: null } },
+                { startAt: { lte: dayEnd } },
+                {
+                  OR: [
+                    { recurrenceEnd: null },
+                    { recurrenceEnd: { gte: dayStart } },
+                  ],
+                },
+              ],
+            },
+          ],
         },
         orderBy: { startAt: "asc" },
       }),
@@ -90,6 +108,32 @@ export async function GET(
         orderBy: { startDate: "desc" },
       }),
     ]);
+
+    // Expandir recurrencias — emite una fila por cada ocurrencia del día.
+    const events: Array<(typeof rawEvents)[number] & { originalStartAt?: Date }> = [];
+    for (const ev of rawEvents) {
+      if (!ev.recurrence) {
+        events.push(ev);
+        continue;
+      }
+      const occs = expandRecurrence(
+        ev.startAt,
+        ev.endAt,
+        ev.recurrence,
+        dayStart,
+        dayEnd,
+        ev.recurrenceEnd,
+      );
+      for (const occ of occs) {
+        events.push({
+          ...ev,
+          startAt: occ.startAt,
+          endAt: occ.endAt,
+          originalStartAt: ev.startAt,
+        });
+      }
+    }
+    events.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
 
     // Filtrar hábitos del día según frecuencia/targetDays
     const dayOfWeek = new Date(date + "T12:00:00Z").getUTCDay(); // 0=domingo

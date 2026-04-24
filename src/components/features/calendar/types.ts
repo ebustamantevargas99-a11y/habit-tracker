@@ -17,6 +17,11 @@ export type CalendarEvent = {
   sourceModule: string | null;
   sourceId: string | null;
   completed: boolean;
+  // Sólo presente en ocurrencias expandidas de series recurrentes.
+  // El popover de edición lo usa para mostrar la fecha/hora del seed
+  // (no la de la ocurrencia clickeada), evitando mover la serie por
+  // accidente cuando el user sólo cambia el título o la duración.
+  originalStartAt?: string;
 };
 
 export type CalendarGroup = {
