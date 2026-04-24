@@ -454,3 +454,99 @@ input:focus, textarea:focus, select:focus {
 .bg-gradient-hero-accent .text-brand-cream {
   color: var(--color-hero-text-subtle);
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * HOME V2 — additions 2026-04
+ * Variables de semáforo (good/danger) y sombras. Se declaran por tema.
+ * Los componentes del nuevo dashboard (src/components/features/home/v2/)
+ * dependen de estas vars. No se rompen los temas antiguos porque solo
+ * agregan props nuevas a los :root y .theme-* existentes.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Defaults para :root (Pergamino) */
+:root {
+  --color-good:    #6E7F49;
+  --color-danger:  #9A4938;
+  --shadow-soft:   0 1px 2px rgba(46, 31, 20, .05), 0 8px 24px -12px rgba(46, 31, 20, .14);
+  --shadow-hover:  0 2px 4px rgba(46, 31, 20, .07), 0 16px 40px -18px rgba(46, 31, 20, .22);
+}
+
+html.dark {
+  /* Pergamino oscuro — mismas buenas/malas pero ajustadas */
+  --color-good:    #ADB98A;
+  --color-danger:  #C88673;
+  --shadow-soft:   0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -10px rgba(0, 0, 0, .55);
+  --shadow-hover:  0 2px 4px rgba(0, 0, 0, .45), 0 16px 40px -14px rgba(0, 0, 0, .65);
+}
+
+.theme-marfil  { --color-good: #6B7F4C; --color-danger: #9B4A3E;
+                 --shadow-soft: 0 1px 2px rgba(58, 50, 38, .04), 0 8px 24px -12px rgba(58, 50, 38, .12);
+                 --shadow-hover: 0 2px 4px rgba(58, 50, 38, .06), 0 16px 40px -18px rgba(58, 50, 38, .18); }
+.theme-perla   { --color-good: #6B7A52; --color-danger: #914D40;
+                 --shadow-soft: 0 1px 2px rgba(62, 58, 48, .05), 0 8px 24px -12px rgba(62, 58, 48, .13);
+                 --shadow-hover: 0 2px 4px rgba(62, 58, 48, .07), 0 16px 40px -18px rgba(62, 58, 48, .18); }
+.theme-lino    { --color-good: #70814F; --color-danger: #944A3C;
+                 --shadow-soft: 0 1px 2px rgba(59, 51, 35, .05), 0 8px 24px -12px rgba(59, 51, 35, .13);
+                 --shadow-hover: 0 2px 4px rgba(59, 51, 35, .07), 0 16px 40px -18px rgba(59, 51, 35, .2); }
+.theme-cafe    { --color-good: #ADB98A; --color-danger: #C88673;
+                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .5);
+                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 40px -14px rgba(0, 0, 0, .6); }
+.theme-carbon  { --color-good: #AFBA8D; --color-danger: #CC8775;
+                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .5);
+                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 40px -14px rgba(0, 0, 0, .6); }
+.theme-pizarra { --color-good: #A8B38C; --color-danger: #C68979;
+                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -10px rgba(0, 0, 0, .55);
+                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .45), 0 16px 40px -14px rgba(0, 0, 0, .65); }
+.theme-onice   { --color-good: #B0BB8F; --color-danger: #CE8876;
+                 --shadow-soft: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px -10px rgba(0, 0, 0, .6);
+                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .5), 0 16px 40px -14px rgba(0, 0, 0, .7); }
+
+/* Keyframes compartidos */
+@keyframes ht-fadeUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes ht-grow     { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
+@keyframes ht-breathe  { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
+@keyframes ht-drawLine { from { stroke-dashoffset: var(--ht-dash, 1000); } to { stroke-dashoffset: 0; } }
+
+.ht-fade-up { animation: ht-fadeUp .55s cubic-bezier(.2, .7, .2, 1) both; }
+
+/* Tipografía utility para home v2 */
+.ht-serif { font-family: var(--font-heading); font-feature-settings: 'lnum'; }
+.ht-mono  { font-family: var(--font-mono); }
+.ht-num-big {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--color-brown);
+  font-variant-numeric: lining-nums tabular-nums;
+}
+.ht-eyebrow {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-warm);
+}
+
+/* Card primitive para home v2 — se aplica como clase */
+.ht-card {
+  background: var(--color-warm-white);
+  border: 1px solid var(--color-cream);
+  border-radius: 18px;
+  box-shadow: var(--shadow-soft);
+  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+}
+.ht-card-interactive:hover {
+  box-shadow: var(--shadow-hover);
+  transform: translateY(-2px);
+  border-color: var(--color-tan);
+}
+
+/* Scrollbar horizontal fino para scroll-x */
+.ht-scroll-x {
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-tan) transparent;
+}
+.ht-scroll-x::-webkit-scrollbar { height: 8px; }
+.ht-scroll-x::-webkit-scrollbar-thumb { background: var(--color-tan); border-radius: 4px; }
+.ht-scroll-x::-webkit-scrollbar-track { background: transparent; }

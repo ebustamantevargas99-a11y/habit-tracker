@@ -4,6 +4,8 @@ import { useAppStore } from "@/stores/app-store";
 import Sidebar from "./sidebar";
 import PlaceholderPage from "./placeholder-page";
 import HomeDashboard from "@/components/features/home/home-dashboard";
+import HomeV2 from "@/components/features/home/v2";
+import { useHomeV2Flag } from "@/hooks/use-home-v2-flag";
 import ProductivityPage from "@/components/features/productivity/productivity-page";
 import CalendarPage from "@/components/features/calendar/calendar-page";
 import FinancePage from "@/components/features/finance/finance-page";
@@ -109,9 +111,11 @@ export default function MainApp() {
     initNutrition();
   }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition]);
 
+  const homeV2 = useHomeV2Flag();
+
   const renderPage = () => {
     switch (activePage) {
-      case "home":         return <HomeDashboard />;
+      case "home":         return homeV2 ? <HomeV2 /> : <HomeDashboard />;
       case "productivity": return <ProductivityPage />;
       case "plan":         return <CalendarPage />;
       case "finance":      return <FinancePage />;
