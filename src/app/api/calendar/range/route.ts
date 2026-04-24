@@ -29,7 +29,14 @@ export async function GET(req: NextRequest) {
           OR: [
             // (a) No recurrente: su seed cae en el rango
             { recurrence: null, startAt: { gte: fromDate, lte: toDate } },
-            // (b) Recurrente: seed antes del fin del rango y recurrenceEnd
+            // (b) No recurrente overnight: arrancó antes del rango pero
+            //     su endAt cae dentro (sleep del domingo → lunes).
+            {
+              recurrence: null,
+              startAt: { lt: fromDate },
+              endAt: { gte: fromDate, lte: toDate },
+            },
+            // (c) Recurrente: seed antes del fin del rango y recurrenceEnd
             //     null o después del inicio del rango (la serie aún está viva).
             {
               AND: [

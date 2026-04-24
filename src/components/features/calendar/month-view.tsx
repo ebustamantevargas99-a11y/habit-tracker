@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ChevronLeft, ChevronRight, Loader2, ArrowUpRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, ArrowUpRight, Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
@@ -442,7 +442,14 @@ function MonthCell({
               title={title}
             >
               {ev.icon ?? meta.emoji} {ev.title}
-              {ev.recurrence && <span className="ml-1 opacity-60">🔁</span>}
+              {ev.recurrence && (
+                <Repeat
+                  size={8}
+                  strokeWidth={1.5}
+                  className="ml-1 inline-block opacity-55 align-middle"
+                  aria-label="Evento recurrente"
+                />
+              )}
             </div>
           );
         })}

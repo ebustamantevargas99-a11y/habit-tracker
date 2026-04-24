@@ -10,7 +10,7 @@ import {
   useDroppable,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, Repeat, Moon, CornerDownRight } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
@@ -302,9 +302,21 @@ export default function WeekView({ groups }: WeekViewProps) {
             {/* Columnas de días */}
             {weekDays.map((d) => {
               const dateStr = toDateStr(d, tz);
-              const dayEvents = data?.events.filter(
-                (e) => toDateStr(new Date(e.startAt), tz) === dateStr && isEventVisible(e),
-              ) ?? [];
+              // Eventos que empiezan en este día + continuaciones de
+              // overnight que arrancaron el día anterior. Un evento
+              // "dormir 22:30 → 05:30" aparece como bloque en lunes
+              // (hasta medianoche) y otro bloque en martes (de 00:00
+              // a 05:30) vía isContinuation.
+              const dayEvents = data?.events.filter((e) => {
+                if (!isEventVisible(e)) return false;
+                const startDate = toDateStr(new Date(e.startAt), tz);
+                if (startDate === dateStr) return true;
+                // Overnight continuation: endAt cae en este día y startAt
+                // es de un día anterior.
+                if (!e.endAt) return false;
+                const endDate = toDateStr(new Date(e.endAt), tz);
+                return endDate === dateStr && startDate < dateStr;
+              }) ?? [];
               const dayWorkouts = data?.workouts.filter((w) => w.date === dateStr) ?? [];
               return (
                 <DayColumn
@@ -314,6 +326,7 @@ export default function WeekView({ groups }: WeekViewProps) {
                   events={dayEvents}
                   workouts={dayWorkouts}
                   groupsById={groupsById}
+                  tz={tz ?? null}
                   onCellClick={(hour, anchor) =>
                     setEditing({ mode: "create", dateStr, hour, anchor })
                   }
@@ -380,6 +393,7 @@ function DayColumn({
   events,
   workouts,
   groupsById,
+  tz,
   onCellClick,
   onEventClick,
 }: {
@@ -388,6 +402,7 @@ function DayColumn({
   events: CalendarEvent[];
   workouts: Array<{ id: string; name: string; durationMinutes: number; completed: boolean }>;
   groupsById: Map<string, CalendarGroup>;
+  tz: string | null;
   onCellClick: (hour: number, anchor: AnchorRect) => void;
   onEventClick: (ev: CalendarEvent, anchor: AnchorRect) => void;
 }) {
@@ -412,15 +427,22 @@ function DayColumn({
       ))}
 
       {/* Eventos custom (draggable) — los recurrentes emiten una fila
-          por ocurrencia con mismo id. Composite key evita colisiones. */}
-      {events.map((ev) => (
-        <EventBlock
-          key={`${ev.id}-${ev.startAt}`}
-          event={ev}
-          group={ev.groupId ? groupsById.get(ev.groupId) ?? null : null}
-          onClick={(anchor) => onEventClick(ev, anchor)}
-        />
-      ))}
+          por ocurrencia con mismo id. Composite key evita colisiones.
+          isContinuation = true cuando este día recibe la cola de un
+          evento overnight que arrancó el día anterior. */}
+      {events.map((ev) => {
+        const startDate = toDateStr(new Date(ev.startAt), tz);
+        const isContinuation = startDate !== dateStr;
+        return (
+          <EventBlock
+            key={`${ev.id}-${ev.startAt}-${isContinuation ? "cont" : "seed"}`}
+            event={ev}
+            group={ev.groupId ? groupsById.get(ev.groupId) ?? null : null}
+            isContinuation={isContinuation}
+            onClick={(anchor) => onEventClick(ev, anchor)}
+          />
+        );
+      })}
 
       {/* Workouts (read-only) */}
       {workouts.map((w) => (
@@ -483,19 +505,21 @@ function DropCell({
 function EventBlock({
   event,
   group,
+  isContinuation,
   onClick,
 }: {
   event: CalendarEvent;
   group: CalendarGroup | null;
+  isContinuation: boolean;
   onClick: (anchor: AnchorRect) => void;
 }) {
   const isRecurring = !!event.recurrence;
-  // Para eventos recurrentes deshabilitamos drag: cada ocurrencia
-  // comparte id con el seed, y mover una ocurrencia no crea excepción
-  // (feature pendiente). Mejor forzar que el user edite la serie.
+  // Para eventos recurrentes o continuaciones overnight deshabilitamos
+  // drag: cada ocurrencia comparte id con el seed, y mover una
+  // continuación mueve el seed completo al día siguiente (confuso).
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: event.id,
-    disabled: isRecurring,
+    disabled: isRecurring || isContinuation,
   });
   const elRef = useRef<HTMLDivElement | null>(null);
 
@@ -507,10 +531,45 @@ function EventBlock({
     [setNodeRef],
   );
 
-  const hourStart = hourFromDate(event.startAt);
+  // Detectar overnight: si el endAt está en un día distinto al startAt,
+  // el evento cruza medianoche y lo renderizamos en dos bloques.
+  const startDate = new Date(event.startAt);
+  const endDate = event.endAt ? new Date(event.endAt) : null;
+  const crossesMidnight =
+    endDate !== null &&
+    (endDate.getFullYear() !== startDate.getFullYear() ||
+      endDate.getMonth() !== startDate.getMonth() ||
+      endDate.getDate() !== startDate.getDate());
+
+  let hourStart: number;
+  let height: number;
   const dur = durationHours(event);
-  const top = (hourStart - HOUR_START) * HOUR_HEIGHT;
-  const height = Math.max(20, dur * HOUR_HEIGHT);
+
+  if (isContinuation) {
+    // Bloque en el día siguiente: desde el inicio visible del día
+    // (HOUR_START=6) hasta endAt. Si endAt cae antes de HOUR_START
+    // (p.ej. sleep hasta 05:30), renderizamos un chip mínimo arriba
+    // para que el user vea que hubo algo de madrugada.
+    hourStart = HOUR_START;
+    const endHour = endDate ? endDate.getHours() + endDate.getMinutes() / 60 : HOUR_START;
+    if (endHour >= HOUR_START) {
+      height = Math.max(20, (endHour - HOUR_START) * HOUR_HEIGHT);
+    } else {
+      height = 20;
+    }
+  } else if (crossesMidnight) {
+    // Bloque en el día de inicio: desde startAt hasta medianoche (clip).
+    hourStart = hourFromDate(event.startAt);
+    const hoursToMidnight = 24 - hourStart;
+    height = Math.max(20, hoursToMidnight * HOUR_HEIGHT);
+  } else {
+    hourStart = hourFromDate(event.startAt);
+    height = Math.max(20, dur * HOUR_HEIGHT);
+  }
+
+  const top = isContinuation
+    ? 0
+    : Math.max(0, (hourStart - HOUR_START) * HOUR_HEIGHT);
 
   const meta = TYPE_META[event.type] ?? TYPE_META.custom;
   // Prioridad de color: custom explícito > color del grupo > default del type
@@ -564,9 +623,17 @@ function EventBlock({
       )}
     >
       <div className="flex items-center gap-1">
+        {isContinuation && (
+          <CornerDownRight size={9} strokeWidth={1.5} className="opacity-60 shrink-0" aria-label="Continuación del día anterior" />
+        )}
         {event.icon && <span>{event.icon}</span>}
         <span className="font-semibold truncate">{event.title}</span>
-        {isRecurring && <span className="ml-auto text-[9px] opacity-70" title="Evento recurrente">🔁</span>}
+        {isRecurring && (
+          <Repeat size={9} strokeWidth={1.5} className="ml-auto opacity-60 shrink-0" aria-label="Evento recurrente" />
+        )}
+        {crossesMidnight && !isContinuation && (
+          <Moon size={9} strokeWidth={1.5} className="ml-auto opacity-60 shrink-0" aria-label="Termina al día siguiente" />
+        )}
       </div>
       {label && (
         <div className="text-[9px] uppercase tracking-widest opacity-70 truncate">
@@ -575,10 +642,12 @@ function EventBlock({
       )}
       {height > 30 && (
         <div className="text-[9px] opacity-70 font-mono">
-          {new Date(event.startAt).toLocaleTimeString("es-MX", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+          {isContinuation
+            ? `→ ${endDate ? endDate.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : ""}`
+            : new Date(event.startAt).toLocaleTimeString("es-MX", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
         </div>
       )}
     </div>

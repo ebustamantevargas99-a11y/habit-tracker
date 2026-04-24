@@ -449,7 +449,7 @@ function TimelineRow({
       icon = <span className="text-base">{item.data.icon ?? meta.emoji}</span>;
       title = item.data.title;
       subtitle = [
-        item.data.recurrence ? "🔁 Recurrente" : null,
+        item.data.recurrence ? "Recurrente" : null,
         item.data.location,
         item.data.description?.slice(0, 60),
       ]

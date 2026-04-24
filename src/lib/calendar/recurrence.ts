@@ -66,24 +66,34 @@ export function expandRecurrence(
   recurrenceEnd: Date | null = null
 ): Array<{ startAt: Date; endAt: Date | null }> {
   const rule = parseRecurrence(rrule);
+  const dur = endAt ? endAt.getTime() - startAt.getTime() : 0;
   if (!rule) {
-    // No recurrencia → solo la instancia original si está en rango
-    if (startAt >= rangeStart && startAt <= rangeEnd) {
+    // No recurrencia → solo la instancia si intersecta el rango.
+    // Overnight events (endAt al día siguiente) se incluyen cuando el
+    // endAt cae en rango aunque startAt quede justo antes.
+    const effectiveEnd = endAt ?? startAt;
+    if (effectiveEnd >= rangeStart && startAt <= rangeEnd) {
       return [{ startAt, endAt }];
     }
     return [];
   }
-
-  const dur = endAt ? endAt.getTime() - startAt.getTime() : 0;
   const interval = Math.max(1, rule.interval ?? 1);
   const stopAt = recurrenceEnd ?? rangeEnd;
   const out: Array<{ startAt: Date; endAt: Date | null }> = [];
   const MAX = 100;
 
+  // Una ocurrencia es "visible" si su [start, end] intersecta el rango.
+  // Para eventos overnight (dur > 0) la ocurrencia puede comenzar antes
+  // del rango pero terminar dentro — necesitamos incluirla.
+  const intersectsRange = (occStart: Date): boolean => {
+    const occEnd = new Date(occStart.getTime() + dur);
+    return occEnd >= rangeStart && occStart <= rangeEnd;
+  };
+
   if (rule.freq === "DAILY") {
     let current = new Date(startAt);
     while (current <= stopAt && out.length < MAX) {
-      if (current >= rangeStart && current <= rangeEnd) {
+      if (intersectsRange(current)) {
         out.push({
           startAt: new Date(current),
           endAt: endAt ? new Date(current.getTime() + dur) : null,
@@ -106,7 +116,7 @@ export function expandRecurrence(
         const occ = new Date(weekStart);
         occ.setDate(occ.getDate() + offset);
         occ.setHours(startAt.getHours(), startAt.getMinutes(), startAt.getSeconds());
-        if (occ >= startAt && occ <= stopAt && occ >= rangeStart && occ <= rangeEnd) {
+        if (occ >= startAt && occ <= stopAt && intersectsRange(occ)) {
           out.push({
             startAt: new Date(occ),
             endAt: endAt ? new Date(occ.getTime() + dur) : null,
@@ -119,7 +129,7 @@ export function expandRecurrence(
   } else if (rule.freq === "MONTHLY") {
     let current = new Date(startAt);
     while (current <= stopAt && out.length < MAX) {
-      if (current >= rangeStart && current <= rangeEnd) {
+      if (intersectsRange(current)) {
         out.push({
           startAt: new Date(current),
           endAt: endAt ? new Date(current.getTime() + dur) : null,

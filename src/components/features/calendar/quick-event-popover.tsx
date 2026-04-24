@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Trash2, X, MapPin, FileText, Bell, Repeat, Palette, Check, Folder } from "lucide-react";
+import { Trash2, X, MapPin, FileText, Bell, Repeat, Palette, Check, Folder, Moon } from "lucide-react";
 import { toast } from "sonner";
 import { api, ApiError } from "@/lib/api-client";
 import { cn } from "@/components/ui";
@@ -100,6 +100,14 @@ function combineDateAndTime(dateStr: string, hhmmStr: string): string {
   const d = new Date(`${dateStr}T00:00:00`);
   d.setHours(hh, mm, 0, 0);
   return d.toISOString();
+}
+
+/** True si la hora "end" cae antes o igual a la "start" — evento que
+ *  cruza medianoche (p.ej. dormir 22:30 → 05:30). */
+function isOvernight(startTime: string, endTime: string): boolean {
+  const [sh, sm] = startTime.split(":").map((n) => parseInt(n, 10) || 0);
+  const [eh, em] = endTime.split(":").map((n) => parseInt(n, 10) || 0);
+  return eh * 60 + em <= sh * 60 + sm;
 }
 
 function formatDateLong(dateStr: string): string {
@@ -271,7 +279,14 @@ export default function QuickEventPopover({
     setSaving(true);
     try {
       const startAt = combineDateAndTime(dateStr, startTime);
-      const endAt = combineDateAndTime(dateStr, endTime);
+      let endAt = combineDateAndTime(dateStr, endTime);
+      // Evento que cruza medianoche (dormir 22:30 → 05:30 del día
+      // siguiente). Si endTime <= startTime, asumimos +1 día en endAt.
+      if (isOvernight(startTime, endTime)) {
+        const e = new Date(endAt);
+        e.setDate(e.getDate() + 1);
+        endAt = e.toISOString();
+      }
       const payload = {
         title: title.trim(),
         description: description.trim() || null,
@@ -513,13 +528,37 @@ export default function QuickEventPopover({
             className="w-[88px] px-2 py-1.5 rounded border border-brand-cream bg-brand-warm-white text-xs text-brand-dark font-mono focus:outline-none focus:border-accent"
           />
           <span className="text-brand-warm text-xs">→</span>
-          <input
-            type="time"
-            value={endTime}
-            onChange={(e) => setEndTime(e.target.value)}
-            className="w-[88px] px-2 py-1.5 rounded border border-brand-cream bg-brand-warm-white text-xs text-brand-dark font-mono focus:outline-none focus:border-accent"
-          />
+          <div className="relative">
+            <input
+              type="time"
+              value={endTime}
+              onChange={(e) => setEndTime(e.target.value)}
+              className="w-[88px] px-2 py-1.5 rounded border border-brand-cream bg-brand-warm-white text-xs text-brand-dark font-mono focus:outline-none focus:border-accent"
+            />
+            {isOvernight(startTime, endTime) && (
+              <span
+                className="absolute -top-2 -right-1.5 bg-accent text-white text-[9px] font-semibold px-1.5 py-0.5 rounded-full shadow-sm"
+                title="El evento termina al día siguiente"
+              >
+                +1d
+              </span>
+            )}
+          </div>
         </div>
+        {isOvernight(startTime, endTime) && (
+          <p className="text-[11px] text-brand-warm italic m-0 flex items-center gap-1.5">
+            <Moon size={11} strokeWidth={1.5} className="shrink-0 text-brand-warm" />
+            <span>
+              Este evento termina al día siguiente (
+              {(() => {
+                const d = new Date(dateStr + "T00:00:00");
+                d.setDate(d.getDate() + 1);
+                return d.toLocaleDateString("es-MX", { weekday: "long", day: "numeric", month: "long" });
+              })()}{" "}
+              a las {endTime})
+            </span>
+          </p>
+        )}
 
         <div className="flex items-center gap-2">
           <MapPin size={14} className="text-brand-warm shrink-0" />

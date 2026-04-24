@@ -165,6 +165,59 @@ describe("expandRecurrence", () => {
     const occs = expandRecurrence(seed, null, "monthly", rangeStart, rangeEnd);
     expect(occs).toHaveLength(3); // Abril, Mayo, Junio
   });
+
+  // ─── Overnight events ──────────────────────────────────────────
+  // El usuario necesita eventos que cruzan medianoche (p.ej. dormir
+  // de 22:30 a 05:30 del día siguiente). El rango debe incluir
+  // ocurrencias cuyo seed empezó fuera del rango pero cuyo endAt
+  // cae dentro.
+
+  it("overnight sin recurrencia: seed antes del rango, endAt en rango", () => {
+    const seed = d("2026-04-19T22:30:00Z"); // Domingo 22:30
+    const end = d("2026-04-20T05:30:00Z");  // Lunes 05:30
+    const rangeStart = d("2026-04-20T00:00:00Z"); // Lunes 00:00
+    const rangeEnd = d("2026-04-26T23:59:59Z");   // Domingo
+
+    const occs = expandRecurrence(seed, end, null, rangeStart, rangeEnd);
+    expect(occs).toHaveLength(1);
+    expect(occs[0].startAt.toISOString()).toBe("2026-04-19T22:30:00.000Z");
+    expect(occs[0].endAt?.toISOString()).toBe("2026-04-20T05:30:00.000Z");
+  });
+
+  it("overnight recurrente WEEKLY BYDAY=SU: incluye ocurrencia anterior al rango", () => {
+    // Dormir cada domingo 22:30 → lunes 05:30
+    const seed = d("2026-04-19T22:30:00Z"); // Domingo 22:30
+    const end = d("2026-04-20T05:30:00Z");  // Lunes 05:30
+    // Rango = semana Lun-Dom
+    const rangeStart = d("2026-04-20T00:00:00Z");
+    const rangeEnd = d("2026-04-26T23:59:59Z");
+
+    const occs = expandRecurrence(
+      seed,
+      end,
+      "FREQ=WEEKLY;BYDAY=SU",
+      rangeStart,
+      rangeEnd,
+    );
+
+    // Esperamos 2: la del domingo 19 (continuación en lunes 20) y la
+    // del domingo 26 (continuación en lunes 27, fuera de rango pero la
+    // ocurrencia comienza dentro).
+    expect(occs.length).toBeGreaterThanOrEqual(1);
+    // Primera ocurrencia: su endAt debe estar dentro del rango
+    const first = occs[0];
+    expect(first.endAt!.getTime()).toBeGreaterThanOrEqual(rangeStart.getTime());
+  });
+
+  it("NO incluye eventos que terminan antes del rango", () => {
+    const seed = d("2026-04-18T22:30:00Z"); // Sábado 22:30
+    const end = d("2026-04-19T05:30:00Z");  // Domingo 05:30 (antes del rango)
+    const rangeStart = d("2026-04-20T00:00:00Z"); // Lunes
+    const rangeEnd = d("2026-04-26T23:59:59Z");
+
+    const occs = expandRecurrence(seed, end, null, rangeStart, rangeEnd);
+    expect(occs).toHaveLength(0);
+  });
 });
 
 describe("humanReadableRecurrence", () => {

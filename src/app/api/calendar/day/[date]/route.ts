@@ -45,7 +45,16 @@ export async function GET(
         where: {
           userId,
           OR: [
+            // No recurrente: seed cae en el día
             { recurrence: null, startAt: { gte: dayStart, lte: dayEnd } },
+            // No recurrente overnight: arrancó la noche anterior y
+            // termina en este día (p.ej. dormir 22:30 → 05:30).
+            {
+              recurrence: null,
+              startAt: { lt: dayStart },
+              endAt: { gte: dayStart },
+            },
+            // Recurrente: seed antes del fin del día, serie viva
             {
               AND: [
                 { recurrence: { not: null } },
