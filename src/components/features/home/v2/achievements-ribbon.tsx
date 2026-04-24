@@ -11,6 +11,30 @@ const QUOTES = [
   { text: "Los pequeños pasos se vuelven paisajes.", author: "—" },
 ] as const;
 
+// Hitos alineados con src/lib/habit-utils.ts (MILESTONES). Cada hito
+// mapea a un label amigable y —opcionalmente— la fase de arraigo que
+// representa. Cuando el user cruza un hito, celebramos con confetti;
+// aquí solo mostramos "el próximo".
+const MILESTONES: Array<{ days: number; label: string; phase?: string }> = [
+  { days: 7,    label: "1 semana consecutiva",   phase: "Iniciando"       },
+  { days: 21,   label: "3 semanas consecutivas", phase: "Formándose"      },
+  { days: 66,   label: "2 meses consecutivos",   phase: "Fortaleciéndose" },
+  { days: 92,   label: "Hábito arraigado",       phase: "Casi arraigado"  },
+  { days: 100,  label: "100 días consecutivos"                            },
+  { days: 365,  label: "1 año de constancia"                              },
+  { days: 500,  label: "500 días"                                         },
+  { days: 1000, label: "1000 días"                                        },
+];
+
+function nextMilestoneFor(streak: number): { days: number; label: string; remaining: number } {
+  const next = MILESTONES.find((m) => m.days > streak);
+  if (!next) {
+    // Superó todos los hitos — celebración indefinida.
+    return { days: streak, label: "Más allá de los hitos", remaining: 0 };
+  }
+  return { days: next.days, label: next.label, remaining: next.days - streak };
+}
+
 interface Props {
   data: HomeV2Data;
 }
@@ -18,6 +42,7 @@ interface Props {
 export default function AchievementsRibbon({ data }: Props) {
   const quote = QUOTES[new Date().getDate() % QUOTES.length];
   const pct = data.badge.done / data.badge.total;
+  const milestone = nextMilestoneFor(data.habitsToday.topStreak);
 
   return (
     <section>
@@ -112,7 +137,7 @@ export default function AchievementsRibbon({ data }: Props) {
             </div>
           </div>
 
-          {/* Milestone */}
+          {/* Milestone dinámico basado en el streak actual */}
           <div className="flex items-center gap-4 justify-end">
             <div className="flex flex-col gap-1 items-end text-right">
               <div className="ht-eyebrow" style={{ fontSize: 10 }}>
@@ -127,10 +152,12 @@ export default function AchievementsRibbon({ data }: Props) {
                   fontWeight: 500,
                 }}
               >
-                50 días de constancia
+                {milestone.label}
               </div>
               <div className="ht-mono" style={{ fontSize: 11, color: "var(--color-warm)" }}>
-                faltan 3 días
+                {milestone.remaining > 0
+                  ? `faltan ${milestone.remaining} día${milestone.remaining === 1 ? "" : "s"}`
+                  : "meta alcanzada"}
               </div>
             </div>
             <div

@@ -211,31 +211,48 @@ const DIMENSION_LABELS: Record<LifeDimension, string> = {
   productivity: "Productividad",
 };
 
+// Módulos que habilitan cada dimensión. Mantener alineado con
+// src/lib/scoring/life-score.ts DIMENSION_MODULES.
+const DIMENSION_MODULES: Record<LifeDimension, string[]> = {
+  habits: ["habits"],
+  fitness: ["fitness"],
+  nutrition: ["nutrition"],
+  productivity: ["productivity", "tasks", "projects", "planner"],
+};
+
 function deriveRadar(
   current: LifeScoreResult | null,
   prev: LifeScoreResult | null,
+  enabledModules: string[],
 ): RadarData {
+  const dims: LifeDimension[] = ["habits", "fitness", "nutrition", "productivity"];
   const cats: string[] = [];
   const now: number[] = [];
   const last: number[] = [];
-  const dims: LifeDimension[] = ["habits", "fitness", "nutrition", "productivity"];
 
+  // Incluir un eje cuando su módulo esté activado, aunque el score sea
+  // null (sin logs aún) → muestra 0. Así Hábitos siempre aparece si el
+  // user tiene el módulo on, incluso si no registró hoy.
   for (const dim of dims) {
-    const cScore = current?.breakdown[dim]?.score;
-    if (cScore == null) continue;
+    const required = DIMENSION_MODULES[dim];
+    // habits es módulo core — siempre true. Para el resto, chequear.
+    const enabled = dim === "habits" ? true : required.some((m) => enabledModules.includes(m));
+    if (!enabled) continue;
+
     cats.push(DIMENSION_LABELS[dim]);
-    now.push(Math.round(cScore));
+    const cScore = current?.breakdown[dim]?.score;
+    now.push(cScore != null ? Math.round(cScore) : 0);
     const pScore = prev?.breakdown[dim]?.score;
-    last.push(pScore != null ? Math.round(pScore) : Math.round(cScore));
+    last.push(pScore != null ? Math.round(pScore) : 0);
   }
 
-  // Si todo está vacío (user nuevo), mostramos estructura mínima de 4 ejes con ceros
-  // para que el chart renderice algo en vez de colapsar.
+  // Fallback paranoico (nunca debería ocurrir porque habits siempre
+  // está incluido), pero evita crash si la lista queda vacía.
   if (cats.length === 0) {
     return {
-      categories: ["Hábitos", "Fitness", "Nutrición", "Productividad"],
-      thisWeek: [0, 0, 0, 0],
-      lastWeek: [0, 0, 0, 0],
+      categories: ["Hábitos"],
+      thisWeek: [0],
+      lastWeek: [0],
     };
   }
 
@@ -532,7 +549,7 @@ export function useHomeV2Data(): HomeV2Data {
     const cycleData = { day: 0, phase: "—", length: 28 };
 
     // ── Radar: 4 dimensiones reales desde life-score ──
-    const radar = deriveRadar(lifeScoreNow, lifeScorePrev);
+    const radar = deriveRadar(lifeScoreNow, lifeScorePrev, enabledList);
 
     // ── Habits Forest ──
     const habitsV2: HabitV2[] = habits

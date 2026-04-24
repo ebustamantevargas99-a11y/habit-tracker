@@ -12,6 +12,8 @@ interface Props {
 
 type LaneItem = { start: number; end: number; label: string };
 
+const LANE_LABEL_WIDTH = 92; // px — cabe "COMIDAS" y "AGENDA" sin truncar
+
 /**
  * Timeline del día por carriles (laned). Cada tipo de tiempo —sueño,
  * foco, gym, comidas, agenda— vive en su propia fila horizontal. Se
@@ -62,7 +64,7 @@ export default function Timeline({
           {/* Fila de horas arriba */}
           <div
             className="relative"
-            style={{ height: 20, marginLeft: 72, marginBottom: 8 }}
+            style={{ height: 20, marginLeft: LANE_LABEL_WIDTH, marginBottom: 8 }}
           >
             {hours.map((h) => (
               <div
@@ -212,7 +214,7 @@ export default function Timeline({
           {/* Etiqueta AHORA debajo de todos los carriles */}
           <div
             style={{
-              marginLeft: 72,
+              marginLeft: LANE_LABEL_WIDTH,
               marginTop: 6,
               fontSize: 10,
               color: "var(--color-accent)",
@@ -246,14 +248,18 @@ function Lane({
     <div className="flex items-stretch mb-1.5">
       <div
         style={{
-          width: 72,
-          fontSize: 10.5,
+          width: LANE_LABEL_WIDTH,
+          paddingRight: 10,
+          fontSize: 10,
           color: "var(--color-warm)",
           textTransform: "uppercase",
-          letterSpacing: "0.08em",
+          letterSpacing: "0.06em",
           fontWeight: 600,
           display: "flex",
           alignItems: "center",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
         }}
       >
         {label}
