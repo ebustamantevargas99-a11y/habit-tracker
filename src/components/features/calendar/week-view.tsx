@@ -21,11 +21,18 @@ import { TYPE_META } from "./types";
 import { useUserStore } from "@/stores/user-store";
 import { toLocalDateStr } from "@/lib/date/local";
 
-// Configuración del grid
-const HOUR_START = 6;  // 6am
-const HOUR_END = 23;   // 11pm
-const HOUR_HEIGHT = 56; // px por hora
-const TOTAL_HOURS = HOUR_END - HOUR_START;
+// Configuración del grid — vista semanal completa de 24 horas. Antes
+// solo mostraba 06:00–23:00, así que los eventos de madrugada y las
+// continuaciones overnight (dormir 22:30 → 05:30) se sobreponían
+// todos en la primera fila. Ahora arrancamos en 00:00.
+const HOUR_START = 0;
+const HOUR_END = 23;
+const HOUR_HEIGHT = 44; // px por hora — 44 × 24 = 1056, similar al alto anterior (56 × 18 = 1008)
+const TOTAL_HOURS = HOUR_END - HOUR_START; // 23 → renderiza 24 filas (00–23)
+
+// Al montar la vista, auto-scrolleamos a esta hora para que los
+// usuarios no aterricen a las 00:00 y tengan que scrollear.
+const AUTO_SCROLL_HOUR = 6;
 
 type WeekData = {
   events: CalendarEvent[];
@@ -88,6 +95,8 @@ export default function WeekView({ groups }: WeekViewProps) {
   const [data, setData] = useState<WeekData | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<Editing | null>(null);
+  const gridScrollRef = useRef<HTMLDivElement | null>(null);
+  const didAutoScrollRef = useRef(false);
 
   // Índice id→group para lookups rápidos (color, visible)
   const groupsById = useMemo(() => {
@@ -130,6 +139,16 @@ export default function WeekView({ groups }: WeekViewProps) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // Auto-scroll del contenedor horario a AUTO_SCROLL_HOUR tras primer
+  // render con data. Se hace una sola vez para no interrumpir el scroll
+  // manual del usuario al cambiar de semana.
+  useEffect(() => {
+    if (didAutoScrollRef.current) return;
+    if (!gridScrollRef.current || loading) return;
+    gridScrollRef.current.scrollTop = AUTO_SCROLL_HOUR * HOUR_HEIGHT;
+    didAutoScrollRef.current = true;
+  }, [loading]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -241,10 +260,11 @@ export default function WeekView({ groups }: WeekViewProps) {
         }}
       />
 
-      {/* Grid semanal */}
+      {/* Grid semanal — contenedor con scroll interno que muestra las 24h.
+          Auto-scroll al montar para aterrizar en AUTO_SCROLL_HOUR. */}
       <div className="bg-brand-paper border border-brand-cream rounded-xl overflow-hidden">
         <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          {/* Header días */}
+          {/* Header días — fuera del scroll, siempre visible arriba */}
           <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-brand-cream bg-brand-warm-white">
             <div />
             {weekDays.map((d) => {
@@ -284,8 +304,11 @@ export default function WeekView({ groups }: WeekViewProps) {
             })}
           </div>
 
-          {/* Grid horario */}
-          <div className="grid grid-cols-[60px_repeat(7,1fr)] relative">
+          {/* Grid horario — scrollable verticalmente */}
+          <div
+            ref={gridScrollRef}
+            className="grid grid-cols-[60px_repeat(7,1fr)] relative max-h-[calc(100vh-280px)] min-h-[500px] overflow-y-auto"
+          >
             {/* Columna de horas */}
             <div>
               {Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => (
