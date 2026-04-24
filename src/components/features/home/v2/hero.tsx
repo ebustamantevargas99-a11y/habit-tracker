@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { Sparkles, ArrowUpRight } from "lucide-react";
 import LifeScoreRing from "./primitives/life-score-ring";
 import { formatFechaLarga, greetingFor, lifeScoreMessage } from "./primitives/helpers";
+import AIExportModal from "@/components/features/ai-export/ai-export-modal";
+import type { ExportScope } from "@/lib/ai-export/types";
 
 interface Props {
   hour: number;
@@ -10,8 +13,6 @@ interface Props {
   scorePrev: number;
   userName: string;
   showCierre: boolean;
-  onCierreClick?: () => void;
-  onResumenClick?: () => void;
 }
 
 /**
@@ -24,12 +25,11 @@ export default function Hero({
   scorePrev,
   userName,
   showCierre,
-  onCierreClick,
-  onResumenClick,
 }: Props) {
   const greeting = greetingFor(hour, userName);
   const dateStr = formatFechaLarga(new Date());
   const msg = lifeScoreMessage(score);
+  const [aiModalScope, setAiModalScope] = useState<ExportScope | null>(null);
 
   return (
     <section
@@ -83,7 +83,7 @@ export default function Hero({
             {showCierre && (
               <button
                 type="button"
-                onClick={onCierreClick}
+                onClick={() => setAiModalScope("daily")}
                 className="inline-flex items-center gap-2 rounded-[14px] transition"
                 style={{
                   background: "var(--color-dark)",
@@ -99,7 +99,7 @@ export default function Hero({
             )}
             <button
               type="button"
-              onClick={onResumenClick}
+              onClick={() => setAiModalScope("weekly")}
               className="inline-flex items-center gap-2 rounded-[14px] transition"
               style={{
                 background: "transparent",
@@ -115,6 +115,13 @@ export default function Hero({
           </div>
         </div>
       </div>
+
+      <AIExportModal
+        open={aiModalScope !== null}
+        onClose={() => setAiModalScope(null)}
+        initialScope={aiModalScope ?? "daily"}
+        title={aiModalScope === "weekly" ? "Resumen semanal" : "Cierre del día"}
+      />
     </section>
   );
 }

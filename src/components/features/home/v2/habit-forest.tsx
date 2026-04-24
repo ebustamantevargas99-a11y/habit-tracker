@@ -7,7 +7,7 @@ import TreeSVG, { STATE_LABEL } from "./primitives/tree-svg";
 import type { HabitState, HabitV2 } from "./types";
 
 const ORDER: readonly HabitState[] = [
-  "no_started",
+  "not_started",
   "starting",
   "forming",
   "strengthening",

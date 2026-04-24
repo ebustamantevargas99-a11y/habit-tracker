@@ -2,7 +2,7 @@
 // Mantén el shape estable — el hook use-home-v2-data devuelve exactamente esto.
 
 export type HabitState =
-  | "no_started"
+  | "not_started"
   | "starting"
   | "forming"
   | "strengthening"
@@ -71,4 +71,12 @@ export interface HomeV2Data {
   timeline: TimelineData;
   compound52: CompoundData;
   heatmap90: number[];
+  /**
+   * True cuando aún estamos cargando al menos una fuente remota
+   * (life-score, calendar/day). Los componentes pueden elegir mostrar
+   * placeholders; por ahora los números muestran 0 mientras cargan —
+   * la UI lo absorbe bien porque las animaciones de count-up
+   * arrancan desde 0 igualmente.
+   */
+  isLoading: boolean;
 }

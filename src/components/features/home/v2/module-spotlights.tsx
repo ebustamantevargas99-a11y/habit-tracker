@@ -30,38 +30,57 @@ export default function ModuleSpotlights({ modules, data }: Props) {
   const slides: Slide[] = [];
 
   if (modules.nutrition) {
+    const goal = data.nutrition.goal || 2000;
+    const pctGoal = Math.round((data.nutrition.kcal / goal) * 100);
     slides.push({
       key: "nutrition",
       eyebrow: "Nutrición",
       title: "Tus macros de hoy",
-      kpi: `${data.nutrition.kcal} / ${data.nutrition.goal} kcal`,
-      detail: `${Math.round((data.nutrition.kcal / data.nutrition.goal) * 100)}% del objetivo diario`,
+      kpi: `${data.nutrition.kcal} / ${goal} kcal`,
+      detail:
+        data.nutrition.kcal > 0
+          ? `${pctGoal}% del objetivo diario`
+          : "Aún no registras comidas hoy",
       art: <NutritionArt data={data.nutrition} />,
     });
   }
   if (modules.finance) {
+    const delta = data.finance.pct - data.finance.pctPrev;
+    const sign = delta >= 0 ? "+" : "";
     slides.push({
       key: "finance",
       eyebrow: "Finanzas",
       title: "Ahorro de este mes",
       kpi: `$${data.finance.savedMonth.toLocaleString("es-MX")}`,
-      detail: `${data.finance.pct}% del ingreso · +${data.finance.pct - data.finance.pctPrev}pp vs. mes anterior`,
+      detail:
+        data.finance.savedMonth > 0
+          ? `${data.finance.pct}% del ingreso · ${sign}${delta}pp vs. mes anterior`
+          : "Sin movimientos este mes aún",
       art: <FinanceArt pct={data.finance.pct} />,
     });
   }
   if (modules.fitness) {
+    // Guard contra división por cero cuando no hay workouts previos.
+    const prev = data.fitness.volumePrev;
+    const deltaPct =
+      prev > 0
+        ? Math.round(((data.fitness.volumeKg - prev) / prev) * 100)
+        : null;
     slides.push({
       key: "fitness",
       eyebrow: "Fitness",
       title: "Volumen semanal",
       kpi: `${data.fitness.volumeKg.toLocaleString("es-MX")} kg`,
-      detail: `${data.fitness.sessionsWeek} sesiones esta semana · +${Math.round(
-        ((data.fitness.volumeKg - data.fitness.volumePrev) / data.fitness.volumePrev) * 100,
-      )}%`,
+      detail:
+        data.fitness.sessionsWeek > 0
+          ? `${data.fitness.sessionsWeek} sesión${
+              data.fitness.sessionsWeek === 1 ? "" : "es"
+            } esta semana${deltaPct != null ? ` · ${deltaPct >= 0 ? "+" : ""}${deltaPct}%` : ""}`
+          : "Aún no entrenas esta semana",
       art: <FitnessArt vol={data.fitness.volumeKg} />,
     });
   }
-  if (modules.menstrualCycle) {
+  if (modules.menstrualCycle && data.cycle.day > 0) {
     slides.push({
       key: "cycle",
       eyebrow: "Ciclo",
@@ -72,12 +91,14 @@ export default function ModuleSpotlights({ modules, data }: Props) {
     });
   }
   if (modules.reading) {
+    // Placeholder: aún no tenemos agregador en el store.
+    // Mostramos la ilustración + un CTA hacia la tab.
     slides.push({
       key: "reading",
       eyebrow: "Lectura",
-      title: "Lectura en curso",
-      kpi: "20 min de hoy",
-      detail: "17 días consecutivos",
+      title: "Lectura",
+      kpi: "Revisa tu progreso",
+      detail: "Ve a Productividad → Lectura para registrar una sesión.",
       art: <ReadingArt />,
     });
   }

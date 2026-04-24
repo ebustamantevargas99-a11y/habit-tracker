@@ -89,35 +89,52 @@ export default function Vitals({ modules, data }: Props) {
     suffix: "",
   });
 
+  // Delta de hábitos hoy vs promedio últimos 7d — aproximación desde el
+  // sparkline (penúltimos 7 días vs hoy).
+  const habitsSpark = data.sparks.habits;
+  const habitsAvg7 =
+    habitsSpark.length >= 8
+      ? habitsSpark.slice(-8, -1).reduce((a, b) => a + b, 0) / 7
+      : 0;
+  const habitsDelta = Math.round(data.habitsToday.done - habitsAvg7);
+
   tiles.push({
     label: "Hábitos hoy",
     value: data.habitsToday.done,
     unit: `/ ${data.habitsToday.total}`,
     spark: data.sparks.habits,
-    delta: 1,
+    delta: habitsSpark.length > 0 ? habitsDelta : null,
     suffix: "",
   });
 
   if (modules.fitness) {
+    const prev = data.fitness.volumePrev;
+    const deltaPct =
+      prev > 0
+        ? Math.round(((data.fitness.volumeKg - prev) / prev) * 100)
+        : null;
     tiles.push({
       label: "Volumen semana",
       value: data.fitness.volumeKg,
       unit: "kg",
       spark: data.sparks.volume,
-      delta: Math.round(
-        ((data.fitness.volumeKg - data.fitness.volumePrev) / data.fitness.volumePrev) * 100,
-      ),
+      delta: deltaPct,
       suffix: "%",
     });
   }
 
   if (modules.nutrition) {
+    const goal = data.nutrition.goal || 2000;
+    const kcalDelta =
+      data.nutrition.kcal > 0
+        ? Math.round(((data.nutrition.kcal - goal) / goal) * 100)
+        : null;
     tiles.push({
       label: "Calorías hoy",
       value: data.nutrition.kcal,
-      unit: `/ ${data.nutrition.goal}`,
+      unit: `/ ${goal}`,
       spark: data.sparks.kcal,
-      delta: Math.round((data.nutrition.kcal - data.nutrition.goal) / data.nutrition.goal * 100),
+      delta: kcalDelta,
       suffix: "%",
     });
   }

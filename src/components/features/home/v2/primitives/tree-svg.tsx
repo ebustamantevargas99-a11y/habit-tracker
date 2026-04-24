@@ -30,7 +30,7 @@ export default function TreeSVG({ state }: Props) {
     />
   );
 
-  if (state === "no_started") {
+  if (state === "not_started") {
     return (
       <svg viewBox="0 0 80 140" width="100%" height="100%" aria-hidden>
         {ground}
@@ -137,7 +137,7 @@ export default function TreeSVG({ state }: Props) {
 }
 
 export const STATE_LABEL: Record<HabitState, string> = {
-  no_started: "por plantar",
+  not_started: "por plantar",
   starting: "germinando",
   forming: "formándose",
   strengthening: "fortaleciendo",
