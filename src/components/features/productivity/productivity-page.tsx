@@ -1,16 +1,18 @@
 "use client";
 
-import { CheckSquare, Target, Zap } from "lucide-react";
+import { CheckSquare, Target, Zap, BookOpen } from "lucide-react";
 import { cn } from "@/components/ui";
 import { useAppStore, type ProductivityTab } from "@/stores/app-store";
 import HabitTrackerPage from "@/components/features/habits/habit-tracker-page";
 import KanbanView from "@/components/features/projects/kanban-view";
 import FocusPanel from "@/components/features/productivity/focus-panel";
+import ReadingPage from "@/components/features/reading/reading-page";
 
 const TABS: { id: ProductivityTab; label: string; icon: React.ElementType }[] = [
-  { id: "habits",   label: "Hábitos",    icon: CheckSquare },
-  { id: "projects", label: "Proyectos",  icon: Target },
-  { id: "pomodoro", label: "Trabajo profundo",  icon: Zap },
+  { id: "habits",   label: "Hábitos",            icon: CheckSquare },
+  { id: "projects", label: "Proyectos",          icon: Target      },
+  { id: "pomodoro", label: "Trabajo profundo",   icon: Zap         },
+  { id: "reading",  label: "Lectura",            icon: BookOpen    },
 ];
 
 export default function ProductivityPage() {
@@ -41,10 +43,11 @@ export default function ProductivityPage() {
         })}
       </div>
 
-      {activeTab === "habits" && <HabitTrackerPage />}
+      {activeTab === "habits"   && <HabitTrackerPage />}
       {activeTab === "projects" && <KanbanView />}
       {activeTab === "pomodoro" && <FocusPanel />}
-      {activeTab === "command" && <HabitTrackerPage />}
+      {activeTab === "reading"  && <ReadingPage />}
+      {activeTab === "command"    && <HabitTrackerPage />}
       {activeTab === "projection" && <KanbanView />}
     </div>
   );

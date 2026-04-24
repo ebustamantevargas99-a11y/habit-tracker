@@ -74,21 +74,15 @@ model User {
   mealLogs      MealLog[]
   nutritionGoal NutritionGoal?
 
-  // ── Organization ───────────────────────────────────────────────────────────
-  notes         Note[]
-  lifeAreas     LifeArea[]
-  weeklyReviews WeeklyReview[]
-
   // ── Scoring ────────────────────────────────────────────────────────────────
   lifeScoreSnapshots LifeScoreSnapshot[]
 
-  // ── Reading ────────────────────────────────────────────────────────────────
+  // ── Reading (ahora sub-tab de Productividad) ────────────────────────────────
   books           Book[]
   readingSessions ReadingSession[]
 
   // ── Fase 5 extras ──────────────────────────────────────────────────────────
   fastingSessions    FastingSession[]
-  meditationSessions MeditationSession[]
   menstrualCycles    MenstrualCycle[]
   periodLogs         PeriodLog[]
   focusSessions      FocusSession[]
@@ -1056,61 +1050,7 @@ model NutritionGoal {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ─── Organization ─────────────────────────────────────────────────────────────
-
-model Note {
-  id        String   @id @default(cuid())
-  userId    String
-  title     String
-  content   String   @db.Text
-  category  String   @default("general")
-  tags      String[]
-  isPinned  Boolean  @default(false)
-  color     String   @default("#FEFCE8")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([userId, category])
-}
-
-model LifeArea {
-  id          String   @id @default(cuid())
-  userId      String
-  name        String
-  emoji       String   @default("🎯")
-  score       Int      @default(5) // 1-10
-  description String?
-  color       String   @default("#B8860B")
-  orderIndex  Int      @default(0)
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, name])
-  @@index([userId])
-}
-
-model WeeklyReview {
-  id                String   @id @default(cuid())
-  userId            String
-  weekStart         String // ISO date of Monday
-  wins              String[] @default([])
-  challenges        String[] @default([])
-  learnings         String[] @default([])
-  nextWeekGoals     String[] @default([])
-  gratitude         String[] @default([])
-  overallRating     Int      @default(5) // 1-10
-  energyLevel       Int      @default(5)
-  productivityScore Int      @default(5)
-  notes             String?  @db.Text
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, weekStart])
-  @@index([userId])
-}
+// Organización (Note / LifeArea / WeeklyReview) eliminada 2026-04.
 
 // ─── Life Score snapshots (para histórico visual) ─────────────────────────────
 
@@ -1183,22 +1123,7 @@ model FastingSession {
   @@index([userId, startedAt])
 }
 
-// ─── Meditation ───────────────────────────────────────────────────────────────
-
-model MeditationSession {
-  id              String   @id @default(cuid())
-  userId          String
-  date            String // YYYY-MM-DD
-  durationMinutes Int
-  type            String   @default("mindfulness") // breathing | guided | mindfulness | yoga | body-scan
-  moodBefore      Int?
-  moodAfter       Int?
-  notes           String?
-  createdAt       DateTime @default(now())
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, date])
-}
+// Meditación eliminada 2026-04.
 
 // ─── Menstrual Cycle ──────────────────────────────────────────────────────────
 

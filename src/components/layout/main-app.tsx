@@ -9,10 +9,7 @@ import CalendarPage from "@/components/features/calendar/calendar-page";
 import FinancePage from "@/components/features/finance/finance-page";
 import FitnessPage from "@/components/features/fitness/fitness-page";
 import NutritionPage from "@/components/features/nutrition/nutrition-page";
-import ReadingPage from "@/components/features/reading/reading-page";
-import MeditationPage from "@/components/features/meditation/meditation-page";
 import CyclePage from "@/components/features/cycle/cycle-page";
-import OrganizationPage from "@/components/features/organization/organization-page";
 import RewindModal from "@/components/features/rewind/rewind-modal";
 import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal";
 import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
@@ -30,7 +27,6 @@ import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { useThemeStore } from "@/stores/theme-store";
 import { useNutritionStore } from "@/stores/nutrition-store";
-import { useOrganizationStore } from "@/stores/organization-store";
 
 // ─── Notification Scheduler ───────────────────────────────────────────────────
 
@@ -103,7 +99,6 @@ export default function MainApp() {
   const initGamification = useGamificationStore((s) => s.initialize);
   const initUser         = useUserStore((s) => s.initialize);
   const initNutrition    = useNutritionStore((s) => s.initialize);
-  const initOrganization = useOrganizationStore((s) => s.initialize);
 
   useEffect(() => {
     initHabits();
@@ -112,8 +107,7 @@ export default function MainApp() {
     initGamification();
     initUser();
     initNutrition();
-    initOrganization();
-  }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition, initOrganization]);
+  }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition]);
 
   const renderPage = () => {
     switch (activePage) {
@@ -123,10 +117,7 @@ export default function MainApp() {
       case "finance":      return <FinancePage />;
       case "fitness":      return <FitnessPage />;
       case "nutrition":    return <NutritionPage />;
-      case "reading":      return <ReadingPage />;
-      case "meditation":   return <MeditationPage />;
       case "menstrualCycle": return <CyclePage />;
-      case "organization": return <OrganizationPage />;
       case "settings":     return <SettingsPage />;
       default:             return <PlaceholderPage />;
     }
@@ -139,10 +130,7 @@ export default function MainApp() {
     finance:      "Finanzas",
     fitness:      "Fitness",
     nutrition:    "Nutrición",
-    reading:      "Lectura",
-    meditation:   "Meditación",
     menstrualCycle: "Ciclo menstrual",
-    organization: "Organización",
     settings:     "Configuración",
   };
 

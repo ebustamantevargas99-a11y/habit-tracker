@@ -1,18 +1,22 @@
 import { create } from "zustand";
 import type { PageKey } from "@/lib/constants";
 
-export type ProductivityTab = 'command' | 'habits' | 'projects' | 'pomodoro' | 'projection';
+export type ProductivityTab =
+  | 'command'
+  | 'habits'
+  | 'projects'
+  | 'pomodoro'
+  | 'reading'    // Integrado desde el módulo Lectura standalone
+  | 'projection';
 export type PlanTab = "today" | "week" | "month";
 
 // Valid tab values per page (used by setPageFromURL for validation)
 const VALID_TABS: Record<string, string[]> = {
-  productivity: ['command', 'habits', 'projects', 'pomodoro', 'projection'],
+  productivity: ['command', 'habits', 'projects', 'pomodoro', 'reading', 'projection'],
   plan:         ['today', 'week', 'month'],
   fitness:      ['gym', 'cardio', 'cuerpo', 'programas', 'analisis'],
   finance:      ['panel', 'flow', 'goals', 'investments', 'analysis'],
   nutrition:    ['hoy', 'progreso', 'composicion', 'alimentos'],
-  reading:      ['reading', 'want', 'finished', 'paused'],
-  organization: ['notas', 'areas', 'revision'],
 };
 
 interface AppState {
@@ -41,14 +45,6 @@ interface AppState {
   // Nutrition deep-link
   nutritionTab: string;
   setNutritionTab: (tab: string) => void;
-
-  // Reading deep-link
-  readingTab: string;
-  setReadingTab: (tab: string) => void;
-
-  // Organization deep-link
-  organizationTab: string;
-  setOrganizationTab: (tab: string) => void;
 
   // Apply URL state without pushing to history (called by useRouteSync)
   setPageFromURL: (page: PageKey, tab?: string) => void;
@@ -81,12 +77,6 @@ export const useAppStore = create<AppState>((set) => ({
   nutritionTab: 'hoy',
   setNutritionTab: (tab) => set({ nutritionTab: tab }),
 
-  readingTab: 'reading',
-  setReadingTab: (tab) => set({ readingTab: tab }),
-
-  organizationTab: 'notas',
-  setOrganizationTab: (tab) => set({ organizationTab: tab }),
-
   setPageFromURL: (page, tab) => {
     const update: Partial<AppState> = { activePage: page };
 
@@ -108,12 +98,6 @@ export const useAppStore = create<AppState>((set) => ({
             break;
           case 'nutrition':
             update.nutritionTab = tab;
-            break;
-          case 'reading':
-            update.readingTab = tab;
-            break;
-          case 'organization':
-            update.organizationTab = tab;
             break;
         }
       }

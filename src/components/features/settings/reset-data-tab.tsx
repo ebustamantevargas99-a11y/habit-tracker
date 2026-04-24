@@ -29,13 +29,13 @@ const SCOPES: ScopeDef[] = [
     id: "fitness",
     emoji: "💪",
     label: "Fitness (gym)",
-    description: "Workouts, PRs, volumen, métricas corporales, programas, fotos, ayuno y meditación",
+    description: "Workouts, PRs, volumen, métricas corporales, programas, fotos y ayuno",
     includes: [
       "Workout, WorkoutExercise, WorkoutSet",
       "PersonalRecord · BodyMetric · WeightLog · StepsLog",
       "TrainingProgram, ProgramPhase, ReadinessCheck",
       "BodyComposition · BodyPhoto · FitnessChallenge",
-      "FastingSession · MeditationSession",
+      "FastingSession",
     ],
   },
   {
@@ -76,13 +76,6 @@ const SCOPES: ScopeDef[] = [
       "PomodoroSession · DailyPlan, TimeBlock",
       "FocusSession",
     ],
-  },
-  {
-    id: "organization",
-    emoji: "📚",
-    label: "Organización",
-    description: "Notas, áreas de vida, weekly reviews",
-    includes: ["Note · LifeArea · WeeklyReview"],
   },
   {
     id: "calendar",

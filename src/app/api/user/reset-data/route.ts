@@ -44,10 +44,9 @@ async function resetFitness(userId: string, counts: DeleteCounts) {
   const readiness = await prisma.readinessCheck.deleteMany({ where: { userId } });
   const bodyComp = await prisma.bodyComposition.deleteMany({ where: { userId } });
   const photos = await prisma.bodyPhoto.deleteMany({ where: { userId } });
-  // Fasting y Meditation sobrevivieron al drop de lifeos; los agrupamos en fitness
-  // para que queden cubiertos por el wipe completo.
+  // Fasting sobrevivió al drop de lifeos; lo agrupamos en fitness para
+  // que quede cubierto por el wipe completo.
   const fasting = await prisma.fastingSession.deleteMany({ where: { userId } });
-  const meditation = await prisma.meditationSession.deleteMany({ where: { userId } });
   counts.workouts = workouts.count;
   counts.personalRecords = prs.count;
   counts.bodyMetrics = bodyMetrics.count;
@@ -59,7 +58,6 @@ async function resetFitness(userId: string, counts: DeleteCounts) {
   counts.bodyCompositions = bodyComp.count;
   counts.bodyPhotos = photos.count;
   counts.fastingSessions = fasting.count;
-  counts.meditationSessions = meditation.count;
 }
 
 async function resetCardio(userId: string, counts: DeleteCounts) {
@@ -118,15 +116,6 @@ async function resetProductivity(userId: string, counts: DeleteCounts) {
   counts.pomodoroSessions = pomodoros.count;
   counts.dailyPlans = plans.count;
   counts.focusSessions = focus.count;
-}
-
-async function resetOrganization(userId: string, counts: DeleteCounts) {
-  const notes = await prisma.note.deleteMany({ where: { userId } });
-  const lifeAreas = await prisma.lifeArea.deleteMany({ where: { userId } });
-  const reviews = await prisma.weeklyReview.deleteMany({ where: { userId } });
-  counts.notes = notes.count;
-  counts.lifeAreas = lifeAreas.count;
-  counts.weeklyReviews = reviews.count;
 }
 
 async function resetCalendar(userId: string, counts: DeleteCounts) {
@@ -188,7 +177,6 @@ const SCOPE_EXECUTORS: Record<
   finance: resetFinance,
   nutrition: resetNutrition,
   productivity: resetProductivity,
-  organization: resetOrganization,
   calendar: resetCalendar,
   reading: resetReading,
   cycle: resetCycle,

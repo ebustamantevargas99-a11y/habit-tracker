@@ -10,7 +10,6 @@ export type AreaKey =
   | "vision"
   | "plan"
   | "productivity"
-  | "organization"
   | "finance"
   | "fitness"
   | "nutrition";

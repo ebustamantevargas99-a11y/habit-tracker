@@ -39,7 +39,6 @@ export const areaColors = {
   vision: "#D4A843",
   plan: "#A0845C",
   productivity: "#5A8FA8",
-  organization: "#7A9E3E",
   finance: "#B8860B",
   fitness: "#C0544F",
   nutrition: "#7A9E3E",

@@ -10,7 +10,6 @@ export const resetScopeEnum = z.enum([
   "finance",
   "nutrition",
   "productivity",
-  "organization",
   "calendar",
   "reading",
   "cycle",

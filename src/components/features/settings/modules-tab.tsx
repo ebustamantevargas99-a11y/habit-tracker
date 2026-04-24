@@ -37,25 +37,10 @@ const MODULE_META: Partial<Record<ModuleKey, ModuleMeta>> = {
     emoji: "📅",
     description: "Hoy / Semana / Mes",
   },
-  meditation: {
-    label: "Meditación",
-    emoji: "🧘",
-    description: "Sesiones y mindfulness",
-  },
-  reading: {
-    label: "Lectura",
-    emoji: "📖",
-    description: "Tracker de libros",
-  },
   menstrualCycle: {
     label: "Ciclo menstrual",
     emoji: "🌙",
     description: "Ciclo, síntomas, fertilidad",
-  },
-  organization: {
-    label: "Organización",
-    emoji: "📚",
-    description: "Notas, life areas, weekly reviews",
   },
 };
 

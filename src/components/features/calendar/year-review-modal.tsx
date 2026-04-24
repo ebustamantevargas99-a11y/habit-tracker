@@ -8,7 +8,6 @@ import {
   Dumbbell,
   Utensils,
   BookOpen,
-  Wind,
   Clock,
   Trophy,
   Target,
@@ -47,10 +46,8 @@ type YearReviewData = {
     top: Array<{ name: string; icon: string | null; completed: number; total: number; rate: number; bestStreak: number }>;
   };
   reading: { booksFinished: number; books: Array<{ title: string; author: string | null; rating: number | null; finishedAt: string | null; totalPages: number | null }>; pagesRead: number; readingMinutes: number };
-  meditation: { sessions: number; totalMinutes: number };
   fasting: { sessions: number; totalHours: number };
   focus: { sessions: number; totalMinutes: number };
-  weeklyReviews: { count: number; avgOverallRating: number | null };
   milestones: Array<{ date: string; type: string; title: string; icon: string | null }>;
   lifeScore: { avgOverall: number | null; snapshotCount: number };
 };
@@ -60,7 +57,6 @@ function buildPromptForAI(data: YearReviewData): string {
   const n = data.nutrition;
   const h = data.habits;
   const r = data.reading;
-  const m = data.meditation;
 
   let prompt = `Eres mi coach holístico personal. Analiza mi año ${data.year} completo basado en la data real abajo. Sé directo, detecta patrones, y dame 5 accionables concretas para ${data.year + 1}.\n\n`;
   prompt += `━━━ RESUMEN DEL AÑO ${data.year} ━━━\n\n`;
@@ -107,13 +103,9 @@ function buildPromptForAI(data: YearReviewData): string {
     });
   }
 
-  prompt += `\n🧘 MINDFULNESS\n`;
-  prompt += `Meditación: ${m.sessions} sesiones · ${m.totalMinutes} min totales\n`;
+  prompt += `\n🧘 MINDFULNESS & FOCUS\n`;
   prompt += `Ayuno: ${data.fasting.sessions} sesiones · ${data.fasting.totalHours}h totales\n`;
   prompt += `Trabajo profundo: ${data.focus.sessions} sesiones · ${Math.round(data.focus.totalMinutes / 60)}h totales\n`;
-  if (data.weeklyReviews.avgOverallRating !== null) {
-    prompt += `Revisiones semanales: ${data.weeklyReviews.count} · rating promedio ${data.weeklyReviews.avgOverallRating}/10\n`;
-  }
 
   if (data.milestones.length > 0) {
     prompt += `\n🏆 HITOS DEL AÑO (${data.milestones.length} registrados):\n`;
@@ -240,7 +232,6 @@ export default function YearReviewModal({
                 <Stat icon={<Trophy size={18} />} value={data.fitness.totalPRs} label="PRs nuevos" />
                 <Stat icon={<Utensils size={18} />} value={data.nutrition.mealsLogged} label="Comidas registradas" />
                 <Stat icon={<BookOpen size={18} />} value={data.reading.booksFinished} label="Libros terminados" />
-                <Stat icon={<Wind size={18} />} value={data.meditation.sessions} label="Sesiones meditación" />
                 <Stat icon={<Clock size={18} />} value={data.fasting.totalHours + "h"} label="Horas en ayuno" />
                 <Stat icon={<Target size={18} />} value={Math.round(data.focus.totalMinutes / 60) + "h"} label="Trabajo profundo" />
                 <Stat icon={<Sparkles size={18} />} value={data.calendar.totalEvents} label="Eventos en calendario" />

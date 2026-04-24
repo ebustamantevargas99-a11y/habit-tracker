@@ -13,7 +13,6 @@ const PAGE_TO_SCOPE: Record<string, ExportScope> = {
   finance: "finance",
   productivity: "habits",
   plan: "weekly",
-  organization: "holistic",
   settings: "holistic",
 };
 
@@ -24,7 +23,6 @@ const PAGE_TITLE: Record<string, string> = {
   finance: "Análisis financiero",
   productivity: "Análisis de hábitos",
   plan: "Resumen semanal",
-  organization: "Análisis holístico",
   settings: "Exportar perfil completo",
 };
 

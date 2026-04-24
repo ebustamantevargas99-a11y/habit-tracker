@@ -8,7 +8,6 @@ import { prisma } from "@/lib/prisma";
 // - Workout del día (si existe y está planeado/completado)
 // - Meals del día con hora (breakfast, lunch, dinner, snack)
 // - Focus sessions del día
-// - Meditation sessions del día
 // - Fasting window (si hay una activa que cruza el día)
 // - Habits del día (chips)
 // - Cycle info (fase actual)
@@ -33,7 +32,6 @@ export async function GET(
       workouts,
       meals,
       focusSessions,
-      meditations,
       activeFasting,
       habits,
       habitLogs,
@@ -62,9 +60,6 @@ export async function GET(
           userId,
           startedAt: { gte: dayStart, lte: dayEnd },
         },
-      }),
-      prisma.meditationSession.findMany({
-        where: { userId, date },
       }),
       prisma.fastingSession.findFirst({
         where: {
@@ -169,12 +164,6 @@ export async function GET(
           plannedMinutes: f.plannedMinutes,
           actualMinutes: f.actualMinutes,
           active: f.endedAt === null,
-        })),
-        meditations: meditations.map((m) => ({
-          id: m.id,
-          type: "meditation",
-          durationMinutes: m.durationMinutes,
-          meditationType: m.type,
         })),
         fasting: activeFasting
           ? {

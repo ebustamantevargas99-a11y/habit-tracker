@@ -9,7 +9,6 @@ beforeEach(() => {
     fitnessTab: 'entrenamiento',
     financeTab: 'resumen',
     nutritionTab: 'diario',
-    organizationTab: 'notas',
     productivitySubTab: 'habits',
     planTab: 'today',
     showMonthlySummary: false,
@@ -39,8 +38,8 @@ describe('useAppStore — setActivePage()', () => {
 
   it('successive calls update the page', () => {
     useAppStore.getState().setActivePage('finance');
-    useAppStore.getState().setActivePage('organization');
-    expect(useAppStore.getState().activePage).toBe('organization');
+    useAppStore.getState().setActivePage('fitness');
+    expect(useAppStore.getState().activePage).toBe('fitness');
   });
 });
 

@@ -17,19 +17,17 @@ const NAV_TO_MODULE: Record<string, ModuleKey> = {
   finance:       "finance",
   fitness:       "fitness",
   nutrition:     "nutrition",
-  reading:       "reading",
-  meditation:    "meditation",
   menstrualCycle:"menstrualCycle",
-  organization:  "organization",
   settings:      "settings",
 };
 
 // ─── Section → tab ID maps ────────────────────────────────────────────────────
 
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
-  "Hábitos":    "habits",
-  "Proyectos":  "projects",
+  "Hábitos":           "habits",
+  "Proyectos":         "projects",
   "Trabajo profundo":  "pomodoro",
+  "Lectura":           "reading",
 };
 
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {
@@ -61,19 +59,6 @@ const NUTRITION_SECTION_MAP: Record<string, string> = {
   "Alimentos":    "alimentos",
 };
 
-const READING_SECTION_MAP: Record<string, string> = {
-  "Leyendo":      "reading",
-  "Quiero leer":  "want",
-  "Terminados":   "finished",
-  "En pausa":     "paused",
-};
-
-const ORGANIZATION_SECTION_MAP: Record<string, string> = {
-  "Notas":            "notas",
-  "Áreas de Vida":    "areas",
-  "Revisión Semanal": "revision",
-};
-
 // ─── Component ────────────────────────────────────────────────────────────────
 
 import * as LucideIcons from "lucide-react";
@@ -88,7 +73,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
   const {
     activePage, setActivePage,
     setProductivitySubTab, setPlanTab,
-    setFitnessTab, setFinanceTab, setNutritionTab, setReadingTab, setOrganizationTab,
+    setFitnessTab, setFinanceTab, setNutritionTab,
   } = useAppStore();
   const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
   const { user, isModuleEnabled } = useUserStore();
@@ -191,8 +176,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);
                         if (item.key === "finance"       && FINANCE_SECTION_MAP[section])       setFinanceTab(FINANCE_SECTION_MAP[section]);
                         if (item.key === "nutrition"     && NUTRITION_SECTION_MAP[section])     setNutritionTab(NUTRITION_SECTION_MAP[section]);
-                        if (item.key === "reading"       && READING_SECTION_MAP[section])       setReadingTab(READING_SECTION_MAP[section]);
-                        if (item.key === "organization"  && ORGANIZATION_SECTION_MAP[section])  setOrganizationTab(ORGANIZATION_SECTION_MAP[section]);
                       }}
                       className={cn(
                         "w-full pl-10 pr-4 py-2 text-[0.8125rem] flex items-center",

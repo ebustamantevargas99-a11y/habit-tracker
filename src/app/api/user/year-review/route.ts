@@ -28,13 +28,11 @@ export async function GET(req: NextRequest) {
       habitLogs,
       booksFinished,
       readingSessions,
-      meditations,
       fastings,
       focusSessions,
       milestones,
       lifeScoreSnapshots,
       bodyMetrics,
-      weeklyReviews,
     ] = await Promise.all([
       prisma.calendarEvent.count({
         where: { userId, startAt: { gte: startDate, lte: endDate } },
@@ -75,10 +73,6 @@ export async function GET(req: NextRequest) {
         where: { userId, date: { gte: startISO, lte: endISO } },
         select: { pagesRead: true, minutes: true },
       }),
-      prisma.meditationSession.findMany({
-        where: { userId, date: { gte: startISO, lte: endISO } },
-        select: { durationMinutes: true, type: true },
-      }),
       prisma.fastingSession.findMany({
         where: { userId, startedAt: { gte: startDate, lte: endDate } },
         select: { targetHours: true, endedAt: true, startedAt: true },
@@ -101,10 +95,6 @@ export async function GET(req: NextRequest) {
         where: { userId, date: { gte: startISO, lte: endISO }, type: "weight" },
         orderBy: { date: "asc" },
         select: { date: true, value: true },
-      }),
-      prisma.weeklyReview.findMany({
-        where: { userId, weekStart: { gte: startISO, lte: endISO } },
-        orderBy: { weekStart: "asc" },
       }),
     ]);
 
@@ -149,7 +139,6 @@ export async function GET(req: NextRequest) {
 
     const pagesRead = readingSessions.reduce((s, r) => s + r.pagesRead, 0);
     const readingMinutes = readingSessions.reduce((s, r) => s + (r.minutes ?? 0), 0);
-    const meditationMinutes = meditations.reduce((s, m) => s + m.durationMinutes, 0);
     const fastingHours = fastings
       .filter((f) => f.endedAt)
       .reduce(
@@ -206,10 +195,6 @@ export async function GET(req: NextRequest) {
         pagesRead,
         readingMinutes,
       },
-      meditation: {
-        sessions: meditations.length,
-        totalMinutes: meditationMinutes,
-      },
       fasting: {
         sessions: fastings.length,
         totalHours: Math.round(fastingHours),
@@ -217,14 +202,6 @@ export async function GET(req: NextRequest) {
       focus: {
         sessions: focusSessions.length,
         totalMinutes: focusMinutes,
-      },
-      weeklyReviews: {
-        count: weeklyReviews.length,
-        avgOverallRating: weeklyReviews.length
-          ? +(
-              weeklyReviews.reduce((s, r) => s + r.overallRating, 0) / weeklyReviews.length
-            ).toFixed(1)
-          : null,
       },
       milestones: milestones.slice(0, 30),
       lifeScore: {

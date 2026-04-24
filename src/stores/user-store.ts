@@ -2,14 +2,14 @@ import { create } from "zustand";
 import { api } from "@/lib/api-client";
 import { CORE_MODULES, type ModuleKey } from "@/lib/onboarding-constants";
 
-// ModuleKeys válidos actualmente (post-eliminación Bienestar + LifeOS).
+// ModuleKeys válidos actualmente (post-eliminación Bienestar + LifeOS + Organización + Meditación).
 // Cualquier key en el profile que no esté aquí se filtra al cargar —
 // legacy leak de wellness (mood/sleep/hydration/medications), journal,
-// pregnancy, projects, fasting, planner dup, etc.
+// pregnancy, projects, fasting, planner dup, meditation, organization, etc.
 const VALID_MODULE_KEYS = new Set<ModuleKey>([
   "home", "habits", "tasks", "settings", "gamification",
   "fitness", "nutrition", "finance", "planner",
-  "meditation", "reading", "menstrualCycle", "organization",
+  "menstrualCycle",
 ]);
 
 function sanitizeModules(list: string[] | null | undefined): ModuleKey[] {

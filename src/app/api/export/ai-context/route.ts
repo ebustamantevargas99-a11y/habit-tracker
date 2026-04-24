@@ -157,29 +157,14 @@ export async function GET(req: NextRequest) {
     }),
   ]);
 
-  // ── Second batch: nutrition + organization ─────────────────────────────────
-  const [mealLogs, nutritionGoal, lifeAreasList, weeklyReviewsList, notesList] = await Promise.all([
+  // ── Second batch: nutrition ─────────────────────────────────
+  const [mealLogs, nutritionGoal] = await Promise.all([
     prisma.mealLog.findMany({
       where: { userId, date: { gte: from } },
       include: { items: true },
       orderBy: { date: "desc" },
     }),
     prisma.nutritionGoal.findUnique({ where: { userId } }),
-    prisma.lifeArea.findMany({
-      where: { userId },
-      select: { name: true, emoji: true, score: true },
-      orderBy: { orderIndex: "asc" },
-    }),
-    prisma.weeklyReview.findMany({
-      where: { userId },
-      orderBy: { weekStart: "desc" },
-      take: 4,
-    }),
-    prisma.note.findMany({
-      where: { userId },
-      select: { title: true, category: true, tags: true, isPinned: true, updatedAt: true },
-      orderBy: [{ isPinned: "desc" }, { updatedAt: "desc" }],
-    }),
   ]);
 
   // ════════════════════════════════════════════════════════
@@ -709,53 +694,6 @@ export async function GET(req: NextRequest) {
   };
 
   // ════════════════════════════════════════════════════════
-  //  ORGANIZATION
-  // ════════════════════════════════════════════════════════
-
-  const avgLifeScore =
-    lifeAreasList.length > 0
-      ? Math.round((lifeAreasList.reduce((s, a) => s + a.score, 0) / lifeAreasList.length) * 10) / 10
-      : 0;
-
-  const gapAreas = lifeAreasList.filter((a) => a.score <= 4).map((a) => `${a.emoji} ${a.name} (${a.score}/10)`);
-  const strongAreas = lifeAreasList.filter((a) => a.score >= 8).map((a) => `${a.emoji} ${a.name} (${a.score}/10)`);
-
-  const noteCategoryCount: Record<string, number> = {};
-  for (const n of notesList) {
-    noteCategoryCount[n.category] = (noteCategoryCount[n.category] ?? 0) + 1;
-  }
-
-  const avgReviewRating =
-    weeklyReviewsList.length > 0
-      ? Math.round((weeklyReviewsList.reduce((s, r) => s + r.overallRating, 0) / weeklyReviewsList.length) * 10) / 10
-      : null;
-
-  const organizationSection = {
-    notes: {
-      total: notesList.length,
-      pinned: notesList.filter((n) => n.isPinned).length,
-      byCategory: noteCategoryCount,
-    },
-    lifeAreas: {
-      areas: lifeAreasList,
-      averageScore: avgLifeScore,
-      gapAreas,
-      strongAreas,
-    },
-    weeklyReviews: {
-      lastFour: weeklyReviewsList.map((r) => ({
-        weekStart: r.weekStart,
-        overallRating: r.overallRating,
-        energyLevel: r.energyLevel,
-        productivityScore: r.productivityScore,
-        winsCount: r.wins.length,
-        challengesCount: r.challenges.length,
-      })),
-      averageOverallRating: avgReviewRating,
-    },
-  };
-
-  // ════════════════════════════════════════════════════════
   //  CROSS-MODULE INSIGHTS
   // ════════════════════════════════════════════════════════
 
@@ -830,7 +768,6 @@ export async function GET(req: NextRequest) {
     finance: financeSection,
     productivity: productivitySection,
     nutrition: nutritionSection,
-    organization: organizationSection,
     gamification: gamificationSection,
     crossModuleInsights,
   };
@@ -842,7 +779,7 @@ export async function GET(req: NextRequest) {
   if (format === "markdown") {
     const userName = user?.name ?? "Usuario";
     const { overall, breakdown } = crossModuleInsights.lifeScore;
-    const { habits: hs, fitness: fs, finance: fn, productivity: ps, nutrition: ns, organization: os } = pkg;
+    const { habits: hs, fitness: fs, finance: fn, productivity: ps, nutrition: ns } = pkg;
 
     const md = `# Resumen Ejecutivo — ${userName}
 ## Generado: ${new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })}
@@ -925,20 +862,6 @@ ${ps.projects.active.map((p) => `- ${p.name}: ${p.completedTasks}/${p.totalTasks
 
 ---
 
-### 📋 Organización
-- Notas totales: ${os.notes.total} (${os.notes.pinned} fijadas)
-- Categorías de notas: ${Object.entries(os.notes.byCategory).map(([k, v]) => `${k}: ${v}`).join(", ") || "—"}
-- Puntuación promedio Rueda de la Vida: ${os.lifeAreas.averageScore}/10
-- Áreas fuertes (≥8): ${os.lifeAreas.strongAreas.join(", ") || "—"}
-- Áreas de atención (≤4): ${os.lifeAreas.gapAreas.join(", ") || "—"}
-${os.weeklyReviews.averageOverallRating !== null ? `- Rating promedio revisión semanal: ${os.weeklyReviews.averageOverallRating}/10` : ""}
-
-Rueda de la Vida:
-${os.lifeAreas.areas.map((a) => `- ${a.emoji} ${a.name}: ${a.score}/10`).join("\n") || "Sin áreas configuradas"}
-
----
-
----
 *Generado por Habit Tracker AI Context Engine v1 · Período: ${days} días*
 `;
 

@@ -3,7 +3,9 @@
 
 // Módulos wellness (mood/sleep/hydration/medications) fueron eliminados en
 // 2026-04. Hidratación vive ahora en nutrición. Medicamentos/suplementos se
-// loggean como alimentos custom. Sleep y mood quedaron descontinuados.
+// loggean como alimentos custom.
+// Organización, Meditación descontinuados. Lectura integrada a Productividad
+// como sub-tab (ya no es módulo standalone).
 export type ModuleKey =
   | "home"
   | "habits"
@@ -15,22 +17,18 @@ export type ModuleKey =
   | "finance"
   | "projects"
   | "planner"
-  | "meditation"
-  | "reading"
   | "menstrualCycle"
   | "pregnancy"
-  | "organization"
   | "gamification"
   | "journal";
 
 export type InterestKey =
   | "training"
   | "nutrition"
-  | "mindfulness"
   | "finance"
   | "productivity"
   | "study"
-  | "reading"
+  | "reading"      // sigue siendo interés, pero activa Productividad (tab Lectura)
   | "fasting"
   | "menstrualCycle"
   | "pregnancy"
@@ -73,12 +71,9 @@ export const MODULE_ACTIVATION: Record<
   finance: ["finance"],
   projects: ["productivity"],
   planner: ["productivity", "study"],
-  meditation: ["mindfulness"],
-  reading: ["reading"],
   menstrualCycle: ["menstrualCycle"],
   pregnancy: ["pregnancy"],
-  organization: [],
-  journal: ["mindfulness"],
+  journal: [],
 };
 
 // Módulos con restricción por sexo biológico
@@ -97,11 +92,6 @@ export const INTEREST_LABELS: Record<InterestKey, { label: string; emoji: string
     label: "Nutrición",
     emoji: "🍎",
     description: "Macros, calorías, recipes, log de comidas",
-  },
-  mindfulness: {
-    label: "Mindfulness / Meditación",
-    emoji: "🧘",
-    description: "Sesiones, journal guiado, respiración",
   },
   finance: {
     label: "Finanzas",

@@ -5,14 +5,11 @@ import {
   Dumbbell,
   Utensils,
   Target,
-  Wind,
   Droplet,
-  Flame,
   CheckCircle2,
   Circle,
   Trash2,
   Loader2,
-  Sparkles,
   Bookmark,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,7 +28,6 @@ type TimelineItem =
   | { kind: "workout"; data: DayAgenda["agenda"]["workouts"][number]; hourStart: number; hourEnd: number }
   | { kind: "meal"; data: DayAgenda["agenda"]["meals"][number]; hourStart: number; hourEnd: number }
   | { kind: "focus"; data: DayAgenda["agenda"]["focus"][number]; hourStart: number; hourEnd: number }
-  | { kind: "meditation"; data: DayAgenda["agenda"]["meditations"][number]; hourStart: number; hourEnd: number }
   | { kind: "timeblock"; data: DayAgenda["dailyPlan"]["timeBlocks"][number]; hourStart: number; hourEnd: number };
 
 // Meal default hours si no hay hora explícita
@@ -178,11 +174,6 @@ export default function TodayView({
       const hourStart = hourOfDate(f.startedAt);
       const dur = (f.actualMinutes ?? f.plannedMinutes) / 60;
       items.push({ kind: "focus", data: f, hourStart, hourEnd: hourStart + dur });
-    }
-    for (const m of data.agenda.meditations) {
-      // Sin hora, asumimos 7am si no se sabe
-      const hourStart = 7;
-      items.push({ kind: "meditation", data: m, hourStart, hourEnd: hourStart + m.durationMinutes / 60 });
     }
     for (const tb of data.dailyPlan.timeBlocks) {
       items.push({ kind: "timeblock", data: tb, hourStart: tb.startTime, hourEnd: tb.endTime });
@@ -491,13 +482,6 @@ function TimelineRow({
       }`;
       colorClass = item.data.active ? "bg-info/10 border-info" : "bg-info/5 border-info/30";
       completed = !item.data.active;
-      break;
-    case "meditation":
-      icon = <Wind size={16} className="text-accent" />;
-      title = "Meditación";
-      subtitle = `${item.data.durationMinutes}min · ${item.data.meditationType}`;
-      colorClass = "bg-accent/5 border-accent/30";
-      completed = true;
       break;
     case "timeblock":
       icon = <Circle size={14} className="text-brand-medium" />;

@@ -28,6 +28,7 @@ export const NAV_ITEMS = [
       "Hábitos",
       "Proyectos",
       "Trabajo profundo",
+      "Lectura",
     ],
   },
   {
@@ -65,33 +66,8 @@ export const NAV_ITEMS = [
       "Alimentos",
     ],
   },
-  {
-    key: "reading",
-    label: "Lectura",
-    icon: "BookOpen",
-    sections: [
-      "Leyendo",
-      "Quiero leer",
-      "Terminados",
-      "En pausa",
-    ],
-  },
-  {
-    key: "organization",
-    label: "Organización",
-    icon: "BookOpen",
-    sections: [
-      "Notas",
-      "Áreas de Vida",
-      "Revisión Semanal",
-    ],
-  },
-  {
-    key: "meditation",
-    label: "Meditación",
-    icon: "Wind",
-    sections: [],
-  },
+  // Lectura se integró como sub-tab de Productividad (2026-04).
+  // Organización y Meditación fueron eliminados en la misma fecha.
   {
     key: "menstrualCycle",
     label: "Ciclo",

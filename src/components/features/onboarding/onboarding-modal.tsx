@@ -43,15 +43,13 @@ export default function OnboardingModal({ onComplete }: Props) {
     { id: 'finance', label: 'Controlar mis finanzas', emoji: '💰' },
     { id: 'productivity', label: 'Ser más productivo', emoji: '⚡' },
     { id: 'nutrition', label: 'Comer más saludable', emoji: '🥗' },
-    { id: 'organization', label: 'Organizar mi vida', emoji: '📋' },
     { id: 'vision', label: 'Definir mi visión de vida', emoji: '🌟' },
   ];
 
   const areas = [
     { id: 'vision', label: 'Visión', emoji: '🌟', desc: 'Define tu vida soñada' },
     { id: 'plan', label: 'Planificación', emoji: '📅', desc: 'Organiza tu tiempo' },
-    { id: 'productivity', label: 'Productividad', emoji: '⚡', desc: 'Pomodoro, Kanban, Tareas' },
-    { id: 'organization', label: 'Organización', emoji: '🏠', desc: 'Hogar, relaciones, lectura' },
+    { id: 'productivity', label: 'Productividad', emoji: '⚡', desc: 'Pomodoro, Kanban, Lectura' },
     { id: 'finance', label: 'Finanzas', emoji: '💰', desc: 'Presupuesto y ahorro' },
     { id: 'fitness', label: 'Fitness', emoji: '💪', desc: 'Entrenamiento y métricas' },
     { id: 'nutrition', label: 'Nutrición', emoji: '🥗', desc: 'Comidas y recetas' },

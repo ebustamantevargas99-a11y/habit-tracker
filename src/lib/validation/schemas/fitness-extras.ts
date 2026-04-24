@@ -20,7 +20,6 @@ export const timelineMilestoneCreateSchema = z.object({
     "pr",
     "weight",
     "book_finished",
-    "meditation",
     "fasting",
     "custom",
   ]),

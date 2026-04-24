@@ -41,23 +41,17 @@ async function main() {
           units: "metric",
           language: "es",
           timezone: "America/Mexico_City",
-          interests: ["training", "nutrition", "mindfulness", "productivity", "sleep"],
+          interests: ["training", "nutrition", "productivity"],
           enabledModules: [
             "home",
             "habits",
-            "mood",
             "tasks",
             "settings",
             "gamification",
             "fitness",
             "nutrition",
-            "meditation",
-            "sleep",
-            "okr",
             "projects",
             "planner",
-            "organization",
-            "journal",
           ],
           primaryGoals: ["ganar 3kg de masa muscular", "dormir 8h constantes", "leer 12 libros"],
         },
@@ -204,24 +198,7 @@ async function main() {
     },
   });
 
-  console.log("[seed] Sembrando nota + life areas + tareas…");
-  await prisma.note.create({
-    data: {
-      userId: user.id,
-      title: "Ideas para el fin de semana",
-      content: "Probar ruta nueva en bici. Cocinar el nuevo libro de recetas.",
-      category: "personal",
-      tags: ["ideas", "weekend"],
-    },
-  });
-  await prisma.lifeArea.createMany({
-    data: [
-      { userId: user.id, name: "Salud", emoji: "💪", score: 7, orderIndex: 0 },
-      { userId: user.id, name: "Carrera", emoji: "🚀", score: 6, orderIndex: 1 },
-      { userId: user.id, name: "Relaciones", emoji: "❤️", score: 8, orderIndex: 2 },
-    ],
-  });
-
+  console.log("[seed] Sembrando tareas…");
   const project = await prisma.project.create({
     data: {
       userId: user.id,

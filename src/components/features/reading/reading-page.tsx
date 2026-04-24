@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useReadingStore, type Book, type BookStatus } from "@/stores/reading-store";
-import { useAppStore } from "@/stores/app-store";
 import { cn, ErrorBanner } from "@/components/ui";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
@@ -47,8 +46,7 @@ export default function ReadingPage() {
     logSession,
   } = useReadingStore();
 
-  const activeTab = useAppStore((s) => s.readingTab) as BookStatus;
-  const setActiveTab = useAppStore((s) => s.setReadingTab);
+  const [activeTab, setActiveTab] = useState<BookStatus>("reading");
 
   useEffect(() => {
     initialize();

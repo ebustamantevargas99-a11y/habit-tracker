@@ -8,7 +8,7 @@ import type { PageKey } from "@/lib/constants";
 
 const VALID_PAGES: string[] = [
   "home", "plan", "productivity", "finance",
-  "fitness", "nutrition", "settings", "organization", "vision",
+  "fitness", "nutrition", "settings", "menstrualCycle",
 ];
 
 // (PLAN_TABS legacy removido — ahora planTab es string "today"|"week"|"month")
@@ -43,7 +43,6 @@ function tabForPage(
     fitnessTab: string;
     financeTab: string;
     nutritionTab: string;
-    organizationTab: string;
   }
 ): string | undefined {
   switch (page) {
@@ -52,7 +51,6 @@ function tabForPage(
     case "fitness":       return state.fitnessTab;
     case "finance":       return state.financeTab;
     case "nutrition":     return state.nutritionTab;
-    case "organization":  return state.organizationTab;
     default:              return undefined;
   }
 }
@@ -66,7 +64,6 @@ export function useRouteSync() {
   const fitnessTab       = useAppStore((s) => s.fitnessTab);
   const financeTab       = useAppStore((s) => s.financeTab);
   const nutritionTab     = useAppStore((s) => s.nutritionTab);
-  const organizationTab  = useAppStore((s) => s.organizationTab);
   const setPageFromURL   = useAppStore((s) => s.setPageFromURL);
 
   /**
@@ -126,7 +123,6 @@ export function useRouteSync() {
       fitnessTab,
       financeTab,
       nutritionTab,
-      organizationTab,
     });
 
     const url = buildURL(activePage, tab);
@@ -135,5 +131,5 @@ export function useRouteSync() {
     if (url !== currentURL()) {
       window.history.pushState(null, "", url);
     }
-  }, [activePage, productivitySubTab, planTab, fitnessTab, financeTab, nutritionTab, organizationTab]);
+  }, [activePage, productivitySubTab, planTab, fitnessTab, financeTab, nutritionTab]);
 }

@@ -71,12 +71,6 @@ export type DayAgenda = {
       actualMinutes: number | null;
       active: boolean;
     }>;
-    meditations: Array<{
-      id: string;
-      type: "meditation";
-      durationMinutes: number;
-      meditationType: string;
-    }>;
     fasting: {
       id: string;
       type: "fasting";

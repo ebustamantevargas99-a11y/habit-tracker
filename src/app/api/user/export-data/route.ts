@@ -41,9 +41,6 @@ export async function GET(req: NextRequest) {
       foodItems,
       mealLogs,
       nutritionGoal,
-      notes,
-      lifeAreas,
-      weeklyReviews,
       dailyPlans,
       badges,
       gamification,
@@ -96,9 +93,6 @@ export async function GET(req: NextRequest) {
         include: { items: true },
       }),
       prisma.nutritionGoal.findUnique({ where: { userId } }),
-      prisma.note.findMany({ where: { userId } }),
-      prisma.lifeArea.findMany({ where: { userId } }),
-      prisma.weeklyReview.findMany({ where: { userId } }),
       prisma.dailyPlan.findMany({
         where: { userId },
         include: { timeBlocks: true },
@@ -145,9 +139,6 @@ export async function GET(req: NextRequest) {
       foodItems,
       mealLogs,
       nutritionGoal,
-      notes,
-      lifeAreas,
-      weeklyReviews,
       dailyPlans,
     };
 
