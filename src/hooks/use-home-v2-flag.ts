@@ -6,15 +6,16 @@ const LS_KEY = "ut-home-v2";
 
 /**
  * Feature flag para el nuevo dashboard Home v2.
+ * Default: ON (durante beta). Se puede desactivar con ?home=v1.
  * Activación:
- *   - URL `?home=v2` → activa y persiste en localStorage
- *   - URL `?home=v1` → desactiva y persiste
- *   - localStorage `ut-home-v2 = "on"` → activa
- * Mientras esté en beta, se controla así. Más adelante habrá toggle en
- * Ajustes → Apariencia.
+ *   - URL `?home=v2` → activa explícitamente y persiste
+ *   - URL `?home=v1` → desactiva y persiste en localStorage
+ *   - localStorage `ut-home-v2 = "off"` → forzar v1
+ * Más adelante, cuando v2 esté con data real, se remueve el flag
+ * y el v1 se borra del código.
  */
 export function useHomeV2Flag(): boolean {
-  const [enabled, setEnabled] = useState(false);
+  const [enabled, setEnabled] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -31,9 +32,12 @@ export function useHomeV2Flag(): boolean {
         setEnabled(false);
         return;
       }
-      setEnabled(localStorage.getItem(LS_KEY) === "on");
+      // Sin query param → respetar localStorage. Default = ON si nunca
+      // se desactivó manualmente.
+      const stored = localStorage.getItem(LS_KEY);
+      setEnabled(stored !== "off");
     } catch {
-      // localStorage puede fallar en modo privado — noop.
+      // localStorage puede fallar en modo privado — default ON.
     }
   }, []);
 
