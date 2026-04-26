@@ -3,20 +3,20 @@ import { prisma } from "@/lib/prisma";
 import { consumeEmailVerificationToken } from "@/lib/password-reset";
 import { logSecurityEvent } from "@/lib/security-log";
 import { logger } from "@/lib/logger";
+import { appUrl } from "@/lib/app-url";
 
 // GET /api/auth/verify-email?token=XXX — verifica email desde link en email
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const token = searchParams.get("token");
-  const appUrl = process.env.NEXTAUTH_URL ?? "https://habit-tracker-two-flame.vercel.app";
 
   if (!token) {
-    return NextResponse.redirect(`${appUrl}/login?error=missing_token`);
+    return NextResponse.redirect(appUrl("/login?error=missing_token"));
   }
 
   const result = await consumeEmailVerificationToken(token);
   if ("error" in result) {
-    return NextResponse.redirect(`${appUrl}/login?error=verify_${result.error}`);
+    return NextResponse.redirect(appUrl(`/login?error=verify_${result.error}`));
   }
 
   try {
@@ -33,11 +33,11 @@ export async function GET(req: NextRequest) {
       request: req,
     });
 
-    return NextResponse.redirect(`${appUrl}/login?verified=1`);
+    return NextResponse.redirect(appUrl("/login?verified=1"));
   } catch (e) {
     logger.error("verify-email:failed", {
       error: e instanceof Error ? e.message : "unknown",
     });
-    return NextResponse.redirect(`${appUrl}/login?error=verify_failed`);
+    return NextResponse.redirect(appUrl("/login?error=verify_failed"));
   }
 }

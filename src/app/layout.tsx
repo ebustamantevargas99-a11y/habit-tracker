@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
+import { appBaseUrl } from "@/lib/app-url";
 import "./globals.css";
 
 // Fuentes disponibles a nivel global — los temas eligen cuál usar vía
@@ -28,10 +29,19 @@ const jetbrains = JetBrains_Mono({
   weight: ["400", "500", "600", "700"],
 });
 
+// metadataBase es requerida por Next 14 para resolver URLs absolutas en
+// Open Graph, canonical, y manifest. Se evalúa en build time + en cada
+// request server-side. Resuelve desde NEXT_PUBLIC_APP_URL → NEXTAUTH_URL
+// → VERCEL_URL → fallback histórico (ver src/lib/app-url.ts).
 export const metadata: Metadata = {
-  title: "Ultimate TRACKER",
+  metadataBase: new URL(appBaseUrl()),
+  title: {
+    default: "Ultimate TRACKER",
+    template: "%s · Ultimate TRACKER",
+  },
   description:
     "Trackea toda tu vida en una sola app: hábitos, fitness, nutrición, finanzas, wellness y más. Exporta tu contexto a la IA de tu preferencia para análisis.",
+  applicationName: "Ultimate TRACKER",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -49,7 +59,21 @@ export const metadata: Metadata = {
     title: "Ultimate TRACKER",
     description: "La única app que necesitas para trackear tu vida.",
     type: "website",
+    locale: "es_MX",
+    siteName: "Ultimate TRACKER",
   },
+  twitter: {
+    card: "summary_large_image",
+    title: "Ultimate TRACKER",
+    description: "La única app que necesitas para trackear tu vida.",
+  },
+  // Indica a buscadores y stores que la app es legítima.
+  robots: {
+    index: true,
+    follow: true,
+  },
+  // Categoría que algunas tiendas (Microsoft Store, Web App stores) leen.
+  category: "lifestyle",
 };
 
 export const viewport: Viewport = {

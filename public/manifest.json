@@ -1,16 +1,19 @@
 {
   "name": "Ultimate TRACKER",
   "short_name": "TRACKER",
-  "description": "Trackea toda tu vida en una sola app. Exporta a la IA de tu preferencia para análisis.",
-  "start_url": "/",
+  "description": "Trackea hábitos, fitness, nutrición, finanzas, productividad y más. Exporta tu contexto a la IA de tu preferencia.",
+  "id": "/?source=pwa",
+  "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "browser"],
   "orientation": "portrait-primary",
-  "background_color": "#FFFDF9",
-  "theme_color": "#3D2B1F",
+  "background_color": "#F6EEDB",
+  "theme_color": "#2E1F14",
   "lang": "es",
   "dir": "ltr",
-  "categories": ["lifestyle", "health", "productivity"],
+  "categories": ["lifestyle", "health", "productivity", "fitness", "finance"],
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon.svg",
@@ -19,10 +22,85 @@
       "purpose": "any"
     },
     {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/apple-icon.png",
       "sizes": "180x180",
       "type": "image/png",
       "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Hábitos de hoy",
+      "short_name": "Hábitos",
+      "description": "Marca tus hábitos completados de hoy",
+      "url": "/?page=home",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Calendario",
+      "short_name": "Agenda",
+      "description": "Vista del día",
+      "url": "/?page=plan&tab=today",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    },
+    {
+      "name": "Cierre del día",
+      "short_name": "Cierre",
+      "description": "Resumen del día listo para tu IA favorita",
+      "url": "/?page=home&action=cierre",
+      "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshots/home-wide.png",
+      "sizes": "1280x800",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Dashboard de inicio con vitales y radar"
+    },
+    {
+      "src": "/screenshots/home-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Vista móvil del dashboard"
     }
   ]
 }

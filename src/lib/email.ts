@@ -1,4 +1,5 @@
 import { logger } from "./logger";
+import { appBaseUrl } from "./app-url";
 
 type SendEmailParams = {
   to: string;
@@ -9,7 +10,11 @@ type SendEmailParams = {
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const FROM_EMAIL = process.env.EMAIL_FROM ?? "Ultimate TRACKER <noreply@ultimatetracker.app>";
-const APP_URL = process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "https://habit-tracker-two-flame.vercel.app";
+// Resuelto al render (no en module load) para que un cambio de env
+// var en runtime se respete y para que tests puedan stubear.
+function APP_URL(): string {
+  return appBaseUrl();
+}
 
 export async function sendEmail(params: SendEmailParams): Promise<{ ok: boolean; error?: string }> {
   if (!RESEND_API_KEY) {
@@ -105,7 +110,7 @@ export function securityAlertEmail(name: string | null, event: string, ipAddress
       <p>Hola ${escapeHtml(safeName)},</p>
       <p>Detectamos esta actividad en tu cuenta:</p>
       <p style="background:#F5EDE3;padding:12px;border-radius:8px;"><strong>${escapeHtml(event)}</strong>${ipAddress ? `<br><span style="color:#8B6542;font-size:13px;">desde IP ${escapeHtml(ipAddress)}</span>` : ""}</p>
-      <p>Si no fuiste tú, <a href="${APP_URL}/forgot-password">restablece tu contraseña inmediatamente</a>.</p>
+      <p>Si no fuiste tú, <a href="${APP_URL()}/forgot-password">restablece tu contraseña inmediatamente</a>.</p>
     `),
     text: `${event}${ipAddress ? ` (IP ${ipAddress})` : ""}`,
   };
@@ -123,7 +128,7 @@ function layout(content: string): string {
     ${content}
     <hr style="margin:32px 0;border:0;border-top:1px solid #EDE0D4;">
     <p style="color:#A0845C;font-size:12px;text-align:center;">
-      Ultimate TRACKER · <a href="${APP_URL}" style="color:#B8860B;">${APP_URL.replace(/https?:\/\//, "")}</a>
+      Ultimate TRACKER · <a href="${APP_URL()}" style="color:#B8860B;">${APP_URL().replace(/https?:\/\//, "")}</a>
     </p>
   </div>
 </body></html>`;
@@ -138,7 +143,7 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export function appUrl(path: string): string {
-  const base = APP_URL.replace(/\/$/, "");
-  return `${base}${path.startsWith("/") ? path : `/${path}`}`;
-}
+// Re-export para mantener compat con call-sites existentes que importan
+// `appUrl` desde "@/lib/email". El helper canónico vive en
+// "@/lib/app-url" (preferido para nuevos imports).
+export { appUrl } from "./app-url";
