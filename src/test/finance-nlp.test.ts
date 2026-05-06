@@ -89,3 +89,49 @@ describe("parseQuickAddTxn · confianza", () => {
     expect(r.confidence).toBe("low");
   });
 });
+
+describe("parseQuickAddTxn · sign override (+/−)", () => {
+  it("`+800 sueldo extra` → income con monto correcto", () => {
+    const r = parseQuickAddTxn("+800 sueldo extra", NOW);
+    expect(r.type).toBe("income");
+    expect(r.amount).toBe(800);
+  });
+
+  it("`-50 café` → expense forzado", () => {
+    const r = parseQuickAddTxn("-50 café", NOW);
+    expect(r.type).toBe("expense");
+    expect(r.amount).toBe(50);
+  });
+
+  it("`+$45,000 hoy` → income con monto y fecha correctos", () => {
+    const r = parseQuickAddTxn("+$45,000 hoy", NOW);
+    expect(r.type).toBe("income");
+    expect(r.amount).toBe(45000);
+    expect(r.date).toBe("2026-04-23");
+  });
+
+  it("sign explícito vence keyword contradictoria", () => {
+    // "Sueldo" normalmente fuerza income, pero `-` lo forza a expense
+    // (caso raro pero válido: "−500 sueldo devuelto").
+    const r = parseQuickAddTxn("-500 sueldo devuelto", NOW);
+    expect(r.type).toBe("expense");
+    expect(r.amount).toBe(500);
+  });
+
+  it("sin sign explícito → heurística de keywords sigue intacta", () => {
+    expect(parseQuickAddTxn("Uber 50", NOW).type).toBe("expense");
+    expect(parseQuickAddTxn("Sueldo 5000", NOW).type).toBe("income");
+  });
+
+  it("`+ S/ 200` (con espacios y símbolo de sol) detecta correctamente", () => {
+    const r = parseQuickAddTxn("+ S/ 200 freelance", NOW);
+    expect(r.type).toBe("income");
+    expect(r.amount).toBe(200);
+  });
+
+  it("sign sube confidence a high incluso sin merchant", () => {
+    const r = parseQuickAddTxn("+800", NOW);
+    expect(r.type).toBe("income");
+    expect(r.confidence).toBe("high");
+  });
+});

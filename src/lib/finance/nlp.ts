@@ -5,6 +5,13 @@
 //   "Starbucks $85"                 → expense 85, café
 //   "Supermercado $1,200 ayer"      → expense 1200, alimentación
 //   "Netflix $249 mensual"          → expense 249 recurring
+//
+// Sign override (+/-) — el user puede forzar el tipo escribiendo:
+//   "+800 sueldo extra"             → income 800 (forzado por +)
+//   "-50 café"                      → expense 50 (forzado por −)
+//   "+$45,000"                      → income 45000
+// El signo solo aplica cuando aparece pegado al monto (con o sin `$`/`S/`).
+// Si no hay signo explícito, se usa la heurística de keywords.
 
 export type ParsedTxn = {
   amount: number;
@@ -112,14 +119,25 @@ function normalize(s: string): string {
   return s.toLowerCase().trim();
 }
 
-function extractAmount(text: string): { amount: number; match: string } | null {
-  // "1,200" | "1,200.50" | "1200" | "1500.50" | "$45" | "$1,200.50"
-  const m = text.match(/\$?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/);
+function extractAmount(text: string): {
+  amount: number;
+  match: string;
+  sign?: "+" | "-";
+} | null {
+  // Captura opcional `+` o `-` antes del monto, opcional `$` o `S/` antes
+  // del número, y el número en formato "1,200" / "1,200.50" / "45" / "$45".
+  const m = text.match(
+    /([+-])?\s*(?:\$|s\/)?\s*(\d{1,3}(?:,\d{3})+(?:\.\d{1,2})?|\d+(?:\.\d{1,2})?)/i,
+  );
   if (!m) return null;
-  const raw = m[1].replace(/,/g, "");
+  const sign = (m[1] === "+" || m[1] === "-" ? m[1] : undefined) as
+    | "+"
+    | "-"
+    | undefined;
+  const raw = m[2].replace(/,/g, "");
   const val = parseFloat(raw);
   if (!Number.isFinite(val) || val <= 0) return null;
-  return { amount: val, match: m[0] };
+  return { amount: val, match: m[0], sign };
 }
 
 function extractDate(text: string, now: Date): { date: string; match: string } {
@@ -184,6 +202,18 @@ export function parseQuickAddTxn(input: string, now: Date = new Date()): ParsedT
     }
   }
 
+  // Sign override — si el user puso `+` o `−` antes del monto, forzar
+  // el tipo independientemente de las keywords detectadas. Esto le da
+  // control explícito al user para casos donde la heurística falla
+  // (ej. "venta" puede ser ingreso o gasto según contexto).
+  if (amountPart?.sign === "+") {
+    type = "income";
+    hints.push("tipo forzado: ingreso (+)");
+  } else if (amountPart?.sign === "-") {
+    type = "expense";
+    hints.push("tipo forzado: gasto (−)");
+  }
+
   // Descripción: limpiamos lo que parseamos
   let description = raw;
   if (amountPart) description = description.replace(amountPart.match, "").trim();
@@ -193,8 +223,10 @@ export function parseQuickAddTxn(input: string, now: Date = new Date()): ParsedT
   description = description.replace(/\s{2,}/g, " ").trim();
   if (!description) description = merchantGuess ?? category;
 
+  // Confianza: si el user usó signo explícito (+/-), subimos un nivel.
+  const hasSign = !!amountPart?.sign;
   const confidence: ParsedTxn["confidence"] =
-    amountPart && merchantGuess ? "high" :
+    amountPart && (merchantGuess || hasSign) ? "high" :
     amountPart ? "medium" : "low";
 
   return {

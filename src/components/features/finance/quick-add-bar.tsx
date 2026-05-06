@@ -124,52 +124,77 @@ export default function QuickAddBar({
 
   return (
     <div className="bg-brand-paper border border-brand-cream rounded-xl p-4">
-      <div className="flex items-center gap-2 mb-2 flex-wrap">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Sparkles size={14} className="text-accent" />
         <span className="text-xs uppercase tracking-widest text-brand-warm font-semibold">
           Agregar rápido
         </span>
-        <div className="ml-auto relative" ref={menuRef}>
+      </div>
+
+      <div className="flex gap-2 items-stretch">
+        {/* Selector de cuenta — botón prominente al lado del input */}
+        <div className="relative" ref={menuRef}>
           <button
             type="button"
             onClick={() => setAccountMenuOpen((v) => !v)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] border border-brand-cream bg-brand-warm-white hover:border-brand-tan transition"
+            className={cn(
+              "h-full flex items-center gap-2 px-3 py-2 rounded-button border-2 transition",
+              "bg-brand-warm-white border-brand-tan hover:border-accent hover:bg-brand-cream",
+              accountMenuOpen && "border-accent bg-brand-cream",
+            )}
             title="Cambiar cuenta destino"
+            aria-label="Seleccionar cuenta"
           >
-            <span className="text-brand-warm">→</span>
-            <span>{selectedAccount?.icon ?? "💳"}</span>
-            <span className="font-semibold text-brand-dark">
-              {selectedAccount?.name ?? "Cuenta"}
-            </span>
-            <span className="text-brand-tan font-mono">
+            <span className="text-base">{selectedAccount?.icon ?? "💳"}</span>
+            <div className="flex flex-col items-start text-left leading-tight">
+              <span className="text-[9px] uppercase tracking-widest text-brand-warm font-semibold">
+                Cuenta
+              </span>
+              <span className="text-xs font-semibold text-brand-dark">
+                {selectedAccount?.name ?? "Elegir"}
+              </span>
+            </div>
+            <span className="text-[10px] font-mono text-brand-tan ml-1">
               {selectedAccount?.currency}
             </span>
-            <ChevronDown size={11} className="text-brand-warm" />
+            <ChevronDown
+              size={14}
+              className={cn(
+                "text-brand-warm transition-transform",
+                accountMenuOpen && "rotate-180",
+              )}
+            />
           </button>
           {accountMenuOpen && (
-            <div className="absolute right-0 top-full mt-1 z-20 min-w-[220px] bg-brand-paper rounded-lg border border-brand-tan shadow-warm py-1 max-h-[280px] overflow-y-auto">
+            <div className="absolute left-0 top-full mt-1 z-20 min-w-[260px] bg-brand-paper rounded-lg border border-brand-tan shadow-warm-lg py-1 max-h-[320px] overflow-y-auto">
+              <div className="px-3 py-1.5 text-[10px] uppercase tracking-widest text-brand-warm font-semibold border-b border-brand-cream">
+                Mandar a…
+              </div>
               {activeAccounts.map((a) => (
                 <button
                   key={a.id}
                   type="button"
                   onClick={() => pickAccount(a.id)}
                   className={cn(
-                    "w-full text-left px-3 py-1.5 text-xs hover:bg-brand-cream flex items-center gap-2 transition",
+                    "w-full text-left px-3 py-2 text-xs hover:bg-brand-cream flex items-center gap-2 transition",
                     a.id === selectedAccount?.id && "bg-brand-cream font-semibold",
                   )}
                 >
-                  <span>{a.icon ?? "💳"}</span>
-                  <span className="flex-1 truncate">{a.name}</span>
-                  <span className="text-brand-tan font-mono text-[10px]">
+                  <span className="text-base">{a.icon ?? "💳"}</span>
+                  <span className="flex-1 truncate text-sm">{a.name}</span>
+                  <span className="text-brand-tan font-mono text-[10px] uppercase">
                     {a.currency}
                   </span>
+                  {a.id === selectedAccount?.id && (
+                    <span className="text-accent text-xs">✓</span>
+                  )}
                 </button>
               ))}
             </div>
           )}
         </div>
-      </div>
-      <div className="flex gap-2">
+
+        {/* Input principal */}
         <input
           type="text"
           value={input}
@@ -187,6 +212,18 @@ export default function QuickAddBar({
           {submitting ? <Loader2 size={14} className="animate-spin" /> : "Agregar"}
         </button>
       </div>
+
+      {/* Tip helper — siempre visible debajo */}
+      <p className="text-[11px] text-brand-warm mt-2 leading-relaxed">
+        <span className="font-semibold text-brand-medium">Tip:</span>{" "}
+        usa <code className="px-1 rounded bg-brand-cream text-success font-mono">+</code>{" "}
+        antes del monto para <strong className="text-success">ingreso</strong>
+        {" "}o{" "}
+        <code className="px-1 rounded bg-brand-cream text-danger font-mono">−</code>{" "}
+        para <strong className="text-danger">gasto</strong>. Ej:{" "}
+        <code className="text-brand-dark font-mono">+800 sueldo</code>,{" "}
+        <code className="text-brand-dark font-mono">−45 café</code>.
+      </p>
       {preview && preview.confidence !== "low" && (
         <div className="mt-2 text-xs text-brand-warm flex items-center gap-2 flex-wrap">
           {preview.type === "income" ? (
