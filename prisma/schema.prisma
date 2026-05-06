@@ -632,6 +632,15 @@ model FinancialAccount {
   color         String?
   icon          String?
   archived      Boolean                @default(false)
+  // ─── Específico para credit / loan ────────────────────────────────────
+  // Día del mes (1-31) en que cierra el corte mensual.
+  statementDay    Int?
+  // Día del mes (1-31) en que vence el pago.
+  dueDay          Int?
+  // Día del mes (1-31) en que la institución reporta al buró de crédito.
+  bureauReportDay Int?
+  // Pago mínimo informado en el último corte (snapshot manual del user).
+  minPaymentLast  Float?
   createdAt     DateTime               @default(now())
   updatedAt     DateTime               @updatedAt
   user          User                   @relation(fields: [userId], references: [id], onDelete: Cascade)

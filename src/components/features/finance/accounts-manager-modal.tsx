@@ -18,6 +18,7 @@ import { toast } from "sonner";
 import { useFinanceStore, type AccountType, type FinancialAccount } from "@/stores/finance-store";
 import { formatMoney } from "@/lib/finance/format";
 import { cn } from "@/components/ui";
+import PayCardModal from "./pay-card-modal";
 
 const TYPE_META: Record<AccountType, { label: string; icon: React.ElementType; color: string }> = {
   checking:   { label: "Débito",       icon: Wallet,      color: "bg-info/10 text-info" },
@@ -39,6 +40,7 @@ export default function AccountsManagerModal({
   const { accounts, createAccount, updateAccount, deleteAccount } = useFinanceStore();
   const [showCreate, setShowCreate] = useState(false);
   const [editing, setEditing] = useState<FinancialAccount | null>(null);
+  const [paying, setPaying] = useState<FinancialAccount | null>(null);
 
   const activeAccounts = accounts.filter((a) => !a.archived);
   const archivedAccounts = accounts.filter((a) => a.archived);
@@ -136,6 +138,7 @@ export default function AccountsManagerModal({
                 await deleteAccount(a.id);
                 toast.success("Cuenta eliminada");
               }}
+              onPay={() => setPaying(a)}
             />
           ))}
 
@@ -160,6 +163,10 @@ export default function AccountsManagerModal({
           )}
         </div>
       </div>
+
+      {/* Modal de pago anidado — la tarjeta a pagar se setea desde
+          el botón de cada AccountRow tipo credit/loan. */}
+      <PayCardModal card={paying} onClose={() => setPaying(null)} />
     </div>
   );
 }
@@ -168,14 +175,18 @@ function AccountRow({
   account,
   onEdit,
   onDelete,
+  onPay,
 }: {
   account: FinancialAccount;
   onEdit: () => void;
   onDelete: () => void;
+  onPay?: () => void;
 }) {
   const meta = TYPE_META[account.type];
   const Icon = meta.icon;
   const isLiability = account.type === "credit" || account.type === "loan";
+  // Mostrar "Pagar" solo si es credit/loan, no archivada y tiene saldo deudor.
+  const canPay = isLiability && !account.archived && account.balance > 0 && !!onPay;
 
   return (
     <div
@@ -218,6 +229,18 @@ function AccountRow({
           </p>
         )}
       </div>
+      {canPay && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onPay?.();
+          }}
+          className="shrink-0 px-2.5 py-1 rounded-button text-xs font-semibold bg-accent text-white hover:bg-brand-brown"
+          title={`Pagar saldo de ${formatMoney(account.balance, account.currency)}`}
+        >
+          Pagar
+        </button>
+      )}
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -248,13 +271,25 @@ function AccountForm({
   const [institution, setInstitution] = useState(account?.institution ?? "");
   const [creditLimit, setCreditLimit] = useState(String(account?.creditLimit ?? ""));
   const [interestRate, setInterestRate] = useState(String(account?.interestRate ?? ""));
+  const [statementDay, setStatementDay] = useState(String(account?.statementDay ?? ""));
+  const [dueDay, setDueDay] = useState(String(account?.dueDay ?? ""));
+  const [bureauReportDay, setBureauReportDay] = useState(String(account?.bureauReportDay ?? ""));
+  const [minPaymentLast, setMinPaymentLast] = useState(String(account?.minPaymentLast ?? ""));
   const [saving, setSaving] = useState(false);
+
+  function parseDay(v: string): number | null {
+    if (!v.trim()) return null;
+    const n = parseInt(v, 10);
+    if (!Number.isFinite(n) || n < 1 || n > 31) return null;
+    return n;
+  }
 
   async function handleSave() {
     if (!name.trim()) {
       toast.error("Nombre requerido");
       return;
     }
+    const isCredit = type === "credit" || type === "loan";
     setSaving(true);
     await onSave({
       name: name.trim(),
@@ -265,6 +300,12 @@ function AccountForm({
       institution: institution.trim() || null,
       creditLimit: creditLimit ? parseFloat(creditLimit) : null,
       interestRate: interestRate ? parseFloat(interestRate) : null,
+      // Solo enviamos los días de ciclo si el tipo lo amerita —
+      // si no, los limpiamos por si el user cambió el tipo.
+      statementDay: isCredit ? parseDay(statementDay) : null,
+      dueDay: isCredit ? parseDay(dueDay) : null,
+      bureauReportDay: isCredit ? parseDay(bureauReportDay) : null,
+      minPaymentLast: isCredit && minPaymentLast ? parseFloat(minPaymentLast) : null,
     });
     setSaving(false);
   }
@@ -353,23 +394,107 @@ function AccountForm({
       />
 
       {(type === "credit" || type === "loan") && (
-        <div className="grid grid-cols-2 gap-2">
-          <input
-            type="number"
-            step="0.01"
-            value={creditLimit}
-            onChange={(e) => setCreditLimit(e.target.value)}
-            placeholder={type === "credit" ? "Límite" : "Monto original"}
-            className="px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
-          />
-          <input
-            type="number"
-            step="0.01"
-            value={interestRate}
-            onChange={(e) => setInterestRate(e.target.value)}
-            placeholder="% APR"
-            className="px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
-          />
+        <div className="space-y-2 border-t border-brand-cream pt-3 mt-2">
+          <p className="text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
+            Detalles de la tarjeta
+          </p>
+
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-brand-warm block mb-1">
+                {type === "credit" ? "Línea de crédito" : "Monto original"}
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={creditLimit}
+                onChange={(e) => setCreditLimit(e.target.value)}
+                placeholder={type === "credit" ? "ej. 50,000" : "ej. 200,000"}
+                className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-brand-warm block mb-1">
+                Tasa anual (APR %)
+              </label>
+              <input
+                type="number"
+                step="0.01"
+                value={interestRate}
+                onChange={(e) => setInterestRate(e.target.value)}
+                placeholder="ej. 24.5"
+                className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <div>
+              <label className="text-[10px] text-brand-warm block mb-1">
+                Día de corte
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={statementDay}
+                onChange={(e) => setStatementDay(e.target.value)}
+                placeholder="ej. 15"
+                title="Día del mes en que cierra el corte mensual (1-31)"
+                className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-brand-warm block mb-1">
+                Día de pago
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={dueDay}
+                onChange={(e) => setDueDay(e.target.value)}
+                placeholder="ej. 5"
+                title="Día del mes en que vence el pago (1-31)"
+                className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] text-brand-warm block mb-1">
+                Reporte buró
+              </label>
+              <input
+                type="number"
+                min="1"
+                max="31"
+                value={bureauReportDay}
+                onChange={(e) => setBureauReportDay(e.target.value)}
+                placeholder="ej. 18"
+                title="Día del mes que reporta al buró de crédito (1-31)"
+                className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] text-brand-warm block mb-1">
+              Pago mínimo del último corte
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              value={minPaymentLast}
+              onChange={(e) => setMinPaymentLast(e.target.value)}
+              placeholder="ej. 250"
+              title="Pago mínimo informado en el estado de cuenta más reciente"
+              className="w-full px-3 py-2 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-sm font-mono focus:outline-none focus:border-accent"
+            />
+          </div>
+
+          <p className="text-[11px] text-brand-warm italic">
+            Tip: el día de corte es cuando cierra el periodo, el día de pago
+            es cuando vence. Pagar antes del corte mejora tu reporte al buró.
+          </p>
         </div>
       )}
 

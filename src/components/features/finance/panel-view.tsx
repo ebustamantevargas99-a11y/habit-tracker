@@ -13,6 +13,7 @@ import { api } from "@/lib/api-client";
 import { formatMoney, formatCompact } from "@/lib/finance/format";
 import QuickAddBar from "./quick-add-bar";
 import RecentTransactions from "./recent-transactions";
+import CreditCardsDue from "./credit-cards-due";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
 type DashboardData = {
@@ -227,6 +228,10 @@ export default function PanelView({
           </div>
         </div>
       )}
+
+      {/* Próximos pagos de tarjetas — solo aparece si hay credit cards
+          con balance > 0 configuradas. Botón "Pagar" abre el modal. */}
+      <CreditCardsDue />
 
       {/* Quick-add */}
       <QuickAddBar onAdded={refresh} />

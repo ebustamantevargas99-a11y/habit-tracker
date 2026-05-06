@@ -17,6 +17,10 @@ const accountTypeEnum = z.enum([
   "cash",
 ]);
 
+// Día del mes 1-31 — usado para statementDay/dueDay/bureauReportDay
+// (ciclos de tarjetas de crédito).
+const monthDay = z.number().int().min(1).max(31);
+
 export const accountCreateSchema = z.object({
   name: z.string().trim().min(1).max(100),
   type: accountTypeEnum,
@@ -27,10 +31,28 @@ export const accountCreateSchema = z.object({
   institution: z.string().trim().max(100).optional().nullable(),
   color: z.string().trim().max(20).optional().nullable(),
   icon: z.string().trim().max(10).optional().nullable(),
+  // Solo aplica a credit/loan — null/omitido si no es tarjeta.
+  statementDay: monthDay.optional().nullable(),
+  dueDay: monthDay.optional().nullable(),
+  bureauReportDay: monthDay.optional().nullable(),
+  minPaymentLast: positiveMoney.optional().nullable(),
 });
 
 export const accountUpdateSchema = accountCreateSchema.partial().extend({
   archived: z.boolean().optional(),
+});
+
+/**
+ * Schema para `POST /api/finance/accounts/[id]/pay` — pagar una
+ * tarjeta de crédito (o préstamo) desde otra cuenta. Crea una
+ * transferencia atómica: descuenta `amount` de `fromAccountId` y
+ * reduce el balance del crédito en el mismo monto.
+ */
+export const accountPaySchema = z.object({
+  fromAccountId: z.string().min(1).max(64),
+  amount: z.number().positive().max(1_000_000_000),
+  date: dateSchema.optional(),
+  notes: z.string().trim().max(500).optional().nullable(),
 });
 
 // ─── Transactions ────────────────────────────────────────────────────────────

@@ -26,6 +26,11 @@ export interface FinancialAccount {
   color: string | null;
   icon: string | null;
   archived: boolean;
+  // Específico para credit/loan — null si no aplica
+  statementDay: number | null;
+  dueDay: number | null;
+  bureauReportDay: number | null;
+  minPaymentLast: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -162,6 +167,14 @@ interface FinanceState {
   createAccount: (data: Partial<FinancialAccount> & { name: string; type: AccountType }) => Promise<FinancialAccount | null>;
   updateAccount: (id: string, patch: Partial<FinancialAccount>) => Promise<void>;
   deleteAccount: (id: string) => Promise<void>;
+  /** Pagar una tarjeta de crédito desde otra cuenta. Crea transferencia atómica. */
+  payCreditAccount: (params: {
+    creditAccountId: string;
+    fromAccountId: string;
+    amount: number;
+    date?: string;
+    notes?: string;
+  }) => Promise<boolean>;
 
   // Transactions
   createTransaction: (data: Partial<Transaction> & { accountId: string; amount: number; type: TransactionType; category: string }) => Promise<Transaction | null>;
@@ -256,6 +269,23 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   deleteAccount: async (id) => {
     await api.delete(`/finance/accounts/${id}`);
     await get().refresh();
+  },
+
+  payCreditAccount: async ({ creditAccountId, fromAccountId, amount, date, notes }) => {
+    try {
+      await api.post(`/finance/accounts/${creditAccountId}/pay`, {
+        fromAccountId,
+        amount,
+        date,
+        notes: notes ?? null,
+      });
+      // Refresh para ver los nuevos balances + la transacción creada.
+      await get().refresh();
+      return true;
+    } catch (e) {
+      set({ error: e instanceof Error ? e.message : "Error procesando pago" });
+      return false;
+    }
   },
 
   // Transactions
