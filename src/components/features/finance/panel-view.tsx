@@ -12,12 +12,14 @@ import { cn } from "@/components/ui";
 import { api } from "@/lib/api-client";
 import { formatMoney, formatCompact } from "@/lib/finance/format";
 import QuickAddBar from "./quick-add-bar";
+import RecentTransactions from "./recent-transactions";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
 type DashboardData = {
   currency: string;
   isMultiCurrency: boolean;
   fxLastUpdated: string;
+  fxSource: "live" | "static";
   month: string;
   netWorth: { current: number; assets: number; liabilities: number };
   cashflow: {
@@ -57,6 +59,9 @@ export default function PanelView({
   const [data, setData] = useState<DashboardData | null>(null);
   const [netWorth, setNetWorth] = useState<NetWorthData | null>(null);
   const [insights, setInsights] = useState<Insight[]>([]);
+  // Bumpeamos cada vez que se agrega una tx para que RecentTransactions
+  // re-fetch del store sin necesidad de prop drilling de listeners.
+  const [txRefreshKey, setTxRefreshKey] = useState(0);
 
   const refresh = useCallback(async () => {
     const [dash, nw, ins] = await Promise.all([
@@ -67,6 +72,7 @@ export default function PanelView({
     setData(dash);
     setNetWorth(nw);
     setInsights(ins.insights ?? []);
+    setTxRefreshKey((k) => k + 1);
   }, []);
 
   useEffect(() => {
@@ -126,10 +132,16 @@ export default function PanelView({
             {isMultiCurrency && (
               <p
                 className="text-[11px] mt-2 text-brand-light-cream/80 italic"
-                title={`Cuentas en ${distinctCurrencies.join(", ")} convertidas a ${currency} usando tasas estáticas (actualizadas ${data.fxLastUpdated}).`}
+                title={
+                  data.fxSource === "live"
+                    ? `Tasas en vivo desde open.er-api.com · actualizadas ${data.fxLastUpdated}`
+                    : `Tasas estáticas (la API en vivo falló o aún no respondió) · ${data.fxLastUpdated}`
+                }
               >
-                Convertido a {currency} desde {distinctCurrencies.join(", ")} ·
-                tasa aprox.
+                Convertido a {currency} desde {distinctCurrencies.join(", ")} ·{" "}
+                {data.fxSource === "live"
+                  ? `tasa del ${data.fxLastUpdated}`
+                  : "tasa aprox."}
               </p>
             )}
           </div>
@@ -218,6 +230,9 @@ export default function PanelView({
 
       {/* Quick-add */}
       <QuickAddBar onAdded={refresh} />
+
+      {/* Últimas transacciones — agregar / editar / borrar */}
+      <RecentTransactions limit={8} refreshKey={txRefreshKey} />
 
       {/* Grid: Cuentas + Upcoming + Top categories */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

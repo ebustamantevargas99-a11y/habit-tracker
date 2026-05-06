@@ -1,9 +1,12 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
 import {
   convertAmount,
+  convertWithRates,
   isSingleCurrency,
   isSupportedCurrency,
   FX_RATES_PER_USD,
+  getLiveRates,
+  __resetLiveRatesCache,
 } from "@/lib/finance/currency";
 
 describe("convertAmount", () => {
@@ -119,5 +122,101 @@ describe("FX_RATES_PER_USD sanity", () => {
       expect(rate, `rate for ${code}`).toBeGreaterThan(0);
       expect(Number.isFinite(rate), `rate for ${code} is finite`).toBe(true);
     }
+  });
+});
+
+describe("convertWithRates", () => {
+  it("usa la tabla de rates pasada explícitamente", () => {
+    const customRates = { USD: 1, PEN: 4.0, EUR: 0.95 };
+    expect(convertWithRates(100, "USD", "PEN", customRates)).toBe(400);
+    expect(convertWithRates(100, "PEN", "USD", customRates)).toBe(25);
+  });
+
+  it("from === to devuelve amount", () => {
+    expect(convertWithRates(50, "USD", "USD", FX_RATES_PER_USD)).toBe(50);
+  });
+
+  it("currency desconocida en la tabla → fallback amount", () => {
+    expect(convertWithRates(100, "XYZ", "USD", FX_RATES_PER_USD)).toBe(100);
+  });
+});
+
+describe("getLiveRates", () => {
+  beforeEach(() => {
+    __resetLiveRatesCache();
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    __resetLiveRatesCache();
+  });
+
+  it("retorna source='live' cuando la API responde correctamente", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          result: "success",
+          base_code: "USD",
+          time_last_update_unix: 1714003200, // 2024-04-25 UTC
+          rates: { USD: 1, EUR: 0.93, PEN: 3.79, MXN: 17.1 },
+        }),
+      }),
+    );
+
+    const result = await getLiveRates();
+    expect(result.source).toBe("live");
+    expect(result.rates.PEN).toBe(3.79);
+    expect(result.rates.USD).toBe(1);
+    expect(result.fetchedAt).toBe("2024-04-25");
+  });
+
+  it("cachea entre llamadas dentro del TTL (24h)", async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        result: "success",
+        time_last_update_unix: 1714003200,
+        rates: { USD: 1, PEN: 3.8 },
+      }),
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await getLiveRates();
+    await getLiveRates();
+    await getLiveRates();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("fallback a estáticas si la API tira error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
+
+    const result = await getLiveRates();
+    expect(result.source).toBe("static");
+    expect(result.rates).toBe(FX_RATES_PER_USD);
+  });
+
+  it("fallback a estáticas si la API responde con result: error", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ result: "error", "error-type": "unsupported-code" }),
+      }),
+    );
+
+    const result = await getLiveRates();
+    expect(result.source).toBe("static");
+  });
+
+  it("fallback a estáticas si HTTP status no es 2xx", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+    );
+
+    const result = await getLiveRates();
+    expect(result.source).toBe("static");
   });
 });

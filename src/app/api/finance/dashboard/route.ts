@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { convertAmount, FX_LAST_UPDATED } from "@/lib/finance/currency";
+import { convertWithRates, getLiveRates } from "@/lib/finance/currency";
 
 // GET /api/finance/dashboard — todo lo que el Panel necesita en un solo hit.
 //
@@ -17,11 +17,16 @@ export async function GET(_req: NextRequest) {
     prevDate.setMonth(prevDate.getMonth() - 1);
     const prevMonth = prevDate.toISOString().slice(0, 7);
 
-    const profile = await prisma.userProfile.findUnique({
-      where: { userId },
-      select: { primaryCurrency: true },
-    });
+    const [profile, fx] = await Promise.all([
+      prisma.userProfile.findUnique({
+        where: { userId },
+        select: { primaryCurrency: true },
+      }),
+      getLiveRates(),
+    ]);
     const primary = profile?.primaryCurrency ?? "MXN";
+    const convert = (amount: number, from: string, to: string) =>
+      convertWithRates(amount, from, to, fx.rates);
 
     const today = now.toISOString().split("T")[0];
     const in7days = new Date(now);
@@ -68,7 +73,7 @@ export async function GET(_req: NextRequest) {
 
     // Helper: monto en la moneda del account, convertido a primary.
     const txInPrimary = (t: { amount: number; account: { currency: string } | null }): number =>
-      convertAmount(t.amount, t.account?.currency ?? primary, primary);
+      convert(t.amount, t.account?.currency ?? primary, primary);
 
     // ── Totales del mes (convertidos a primary) ─────────────────────
     const incomeMonth = thisMonthTxns
@@ -97,16 +102,16 @@ export async function GET(_req: NextRequest) {
       currenciesPresent.add(cur);
       const isLiab = a.type === "credit" || a.type === "loan";
       if (isLiab) {
-        liabilities += convertAmount(Math.max(0, a.balance), cur, primary);
+        liabilities += convert(Math.max(0, a.balance), cur, primary);
       } else {
-        assets += convertAmount(a.balance, cur, primary);
+        assets += convert(a.balance, cur, primary);
       }
     }
     for (const inv of investments) {
       const cur = inv.currency || primary;
       currenciesPresent.add(cur);
       const val = inv.quantity * (inv.lastPrice ?? inv.averageCost);
-      assets += convertAmount(val, cur, primary);
+      assets += convert(val, cur, primary);
     }
     for (const d of activeDebts) {
       // Schema de debts no tiene currency — asumimos primary.
@@ -119,7 +124,7 @@ export async function GET(_req: NextRequest) {
     const avgMonthlyExpense = (expenseMonth + expensePrev) / 2 || 1;
     const savingsBalance = accounts
       .filter((a) => a.type === "savings")
-      .reduce((s, a) => s + convertAmount(a.balance, a.currency || primary, primary), 0);
+      .reduce((s, a) => s + convert(a.balance, a.currency || primary, primary), 0);
     const runwayMonths = +(savingsBalance / avgMonthlyExpense).toFixed(1);
 
     // ── Top categorías del mes (convertidas) ────────────────────────
@@ -163,7 +168,8 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({
       currency: primary,
       isMultiCurrency,
-      fxLastUpdated: FX_LAST_UPDATED,
+      fxLastUpdated: fx.fetchedAt,
+      fxSource: fx.source,
       month: thisMonth,
       netWorth: {
         current: +netWorth.toFixed(2),
@@ -195,7 +201,7 @@ export async function GET(_req: NextRequest) {
         // tal cual viene de la cuenta.
         amount: r.amount,
         currency: r.account?.currency ?? primary,
-        amountInPrimary: +convertAmount(r.amount, r.account?.currency ?? primary, primary).toFixed(2),
+        amountInPrimary: +convert(r.amount, r.account?.currency ?? primary, primary).toFixed(2),
         nextDate: r.nextDate,
         type: r.type,
         category: r.category,
@@ -206,7 +212,7 @@ export async function GET(_req: NextRequest) {
         type: a.type,
         currency: a.currency,
         balance: +a.balance.toFixed(2),
-        balanceInPrimary: +convertAmount(a.balance, a.currency || primary, primary).toFixed(2),
+        balanceInPrimary: +convert(a.balance, a.currency || primary, primary).toFixed(2),
         icon: a.icon,
         color: a.color,
       })),

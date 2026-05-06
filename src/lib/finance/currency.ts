@@ -1,15 +1,18 @@
 /**
  * Conversión de monedas para totales agregados (patrimonio neto, gastos
- * del mes, runway, etc.). Mientras no haya un endpoint en vivo conectado
- * a un proveedor de FX (exchangerate.host / openexchangerates), usamos
- * tipos de cambio estáticos actualizados periódicamente.
+ * del mes, runway, etc.). Combinamos:
+ *
+ *   1. Tasas estáticas (FX_RATES_PER_USD) — fallback siempre disponible.
+ *   2. Tasas en vivo via getLiveRates() — fetch lazy a open.er-api.com,
+ *      con cache en memoria de 24h. La primera request de cada día las
+ *      refresca; el resto del día sirve del cache.
  *
  * Convención: rates expresan "cuánto vale 1 USD en la moneda dada", así
  * que para convertir A → B hacemos `amount * rates[B] / rates[A]`.
  *
  * Si una moneda no está en la tabla, asumimos paridad 1:1 (mejor mostrar
  * algo aproximado que crashear). El UI debe mostrar un disclaimer cuando
- * haya conversión activa para que el user entienda que es una estimación.
+ * haya conversión activa.
  */
 
 export const FX_RATES_PER_USD: Record<string, number> = {
@@ -65,4 +68,108 @@ export function isSingleCurrency(currencies: ReadonlyArray<string>): boolean {
 /** True si la currency está cubierta por la tabla de rates. */
 export function isSupportedCurrency(c: string | null | undefined): boolean {
   return !!c && c in FX_RATES_PER_USD;
+}
+
+// ─── Tasas en vivo (open.er-api.com) ─────────────────────────────────────
+//
+// open.er-api.com es la versión gratuita y open-source de exchangerate-api.
+// No requiere API key, soporta todas las monedas latam (PEN, MXN, COP,
+// ARS, BRL, CLP, UYU, etc.), y ofrece datos actualizados diariamente.
+//
+// Cache en memoria de 24h con fallback al estático cuando la API falla.
+
+const LIVE_RATES_TTL_MS = 24 * 60 * 60 * 1000;
+const LIVE_API_URL = "https://open.er-api.com/v6/latest/USD";
+
+let cachedRates: Record<string, number> | null = null;
+let cachedAtMs = 0;
+let cachedSource: "live" | "static" = "static";
+let cachedFetchedAtISO: string = FX_LAST_UPDATED;
+
+interface OpenERApiResponse {
+  result: "success" | "error";
+  base_code?: string;
+  time_last_update_unix?: number;
+  rates?: Record<string, number>;
+}
+
+export interface LiveRatesResult {
+  rates: Record<string, number>;
+  source: "live" | "static";
+  /** ISO date or fallback FX_LAST_UPDATED. Lo que el UI muestra como disclaimer. */
+  fetchedAt: string;
+}
+
+/**
+ * Devuelve las tasas más recientes disponibles. Hace fetch en vivo si el
+ * cache expiró (24h). Si la API falla, devuelve las estáticas con
+ * `source: "static"`. Nunca lanza — siempre devuelve algo usable.
+ */
+export async function getLiveRates(): Promise<LiveRatesResult> {
+  const now = Date.now();
+  if (cachedRates && now - cachedAtMs < LIVE_RATES_TTL_MS) {
+    return { rates: cachedRates, source: cachedSource, fetchedAt: cachedFetchedAtISO };
+  }
+
+  try {
+    // Next.js fetch con revalidate: el runtime cacheará la respuesta
+    // entre invocaciones del mismo deployment, además de nuestro cache
+    // en memoria por instancia.
+    const res = await fetch(LIVE_API_URL, {
+      next: { revalidate: 60 * 60 * 12 }, // 12h en el cache de Next
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) throw new Error(`status ${res.status}`);
+    const data = (await res.json()) as OpenERApiResponse;
+    if (data.result !== "success" || !data.rates) {
+      throw new Error("invalid response");
+    }
+    // Asegurar USD === 1 (el endpoint devuelve "USD": 1 pero por si las moscas).
+    const rates = { ...data.rates, USD: 1 };
+    const fetchedAtISO = data.time_last_update_unix
+      ? new Date(data.time_last_update_unix * 1000).toISOString().split("T")[0]
+      : new Date().toISOString().split("T")[0];
+
+    cachedRates = rates;
+    cachedAtMs = now;
+    cachedSource = "live";
+    cachedFetchedAtISO = fetchedAtISO;
+    return { rates, source: "live", fetchedAt: fetchedAtISO };
+  } catch (e) {
+    // Fallback al estático. No tirar el endpoint completo por culpa de FX.
+    if (process.env.NODE_ENV !== "test") {
+      console.warn("[currency] Live FX fetch failed, using static rates:", e);
+    }
+    cachedRates = FX_RATES_PER_USD;
+    cachedAtMs = now;
+    cachedSource = "static";
+    cachedFetchedAtISO = FX_LAST_UPDATED;
+    return { rates: FX_RATES_PER_USD, source: "static", fetchedAt: FX_LAST_UPDATED };
+  }
+}
+
+/**
+ * Versión de convertAmount que acepta una tabla de rates explícita.
+ * Útil cuando ya hiciste `getLiveRates()` y querés convertir varios
+ * valores con la misma snapshot de tasas.
+ */
+export function convertWithRates(
+  amount: number,
+  from: string,
+  to: string,
+  rates: Record<string, number>,
+): number {
+  if (!from || !to || from === to) return amount;
+  const fromRate = rates[from];
+  const toRate = rates[to];
+  if (fromRate == null || toRate == null) return amount;
+  return (amount / fromRate) * toRate;
+}
+
+/** Reset interno usado por tests. NO usar en código de producción. */
+export function __resetLiveRatesCache(): void {
+  cachedRates = null;
+  cachedAtMs = 0;
+  cachedSource = "static";
+  cachedFetchedAtISO = FX_LAST_UPDATED;
 }

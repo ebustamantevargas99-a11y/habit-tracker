@@ -1,22 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { convertAmount, FX_LAST_UPDATED } from "@/lib/finance/currency";
+import { convertWithRates, getLiveRates } from "@/lib/finance/currency";
 
 // GET /api/finance/net-worth?months=12 — calcula net worth actual y devuelve
 // timeline de snapshots. Si no hay snapshot para el mes actual, lo crea (upsert).
 //
 // Multi-currency: convertimos cada balance/inversión/deuda a la moneda
 // primaria del user (UserProfile.primaryCurrency, default MXN) usando
-// tasas estáticas en src/lib/finance/currency.ts. La response incluye
-// `breakdown.byCurrency` para que el UI muestre los originales si hay
-// más de una moneda.
+// tasas en vivo desde open.er-api.com (cache 24h, fallback estático).
+// La response incluye `breakdown.byCurrency`, `fxSource` ("live"/"static")
+// y `fxLastUpdated` (ISO date) para que el UI muestre la información.
 export async function GET(req: NextRequest) {
   return withAuth(async (userId) => {
     const { searchParams } = new URL(req.url);
     const months = Math.min(60, Math.max(1, parseInt(searchParams.get("months") ?? "12", 10)));
 
-    const [profile, accounts, investments, debts] = await Promise.all([
+    const [profile, accounts, investments, debts, fx] = await Promise.all([
       prisma.userProfile.findUnique({
         where: { userId },
         select: { primaryCurrency: true },
@@ -34,9 +34,12 @@ export async function GET(req: NextRequest) {
         // Las debts no tienen currency en el schema — asumimos primaryCurrency.
         select: { id: true, name: true, type: true, balance: true },
       }),
+      getLiveRates(),
     ]);
 
     const primary = profile?.primaryCurrency ?? "MXN";
+    const convert = (amount: number, from: string, to: string) =>
+      convertWithRates(amount, from, to, fx.rates);
 
     // Acumuladores en primaryCurrency + breakdown por moneda original.
     let assets = 0;
@@ -63,7 +66,7 @@ export async function GET(req: NextRequest) {
       const isLiab = a.type === "credit" || a.type === "loan";
       if (isLiab) {
         const debtAmount = Math.max(0, a.balance);
-        const inPrimary = convertAmount(debtAmount, cur, primary);
+        const inPrimary = convert(debtAmount, cur, primary);
         liabilities += inPrimary;
         bumpByCurrency(cur, "liabilities", debtAmount);
         if (debtAmount > 0) {
@@ -77,7 +80,7 @@ export async function GET(req: NextRequest) {
           });
         }
       } else {
-        const inPrimary = convertAmount(a.balance, cur, primary);
+        const inPrimary = convert(a.balance, cur, primary);
         assets += inPrimary;
         bumpByCurrency(cur, "assets", a.balance);
         assetBreakdown.push({
@@ -95,7 +98,7 @@ export async function GET(req: NextRequest) {
     for (const inv of investments) {
       const val = inv.quantity * (inv.lastPrice ?? inv.averageCost);
       const cur = inv.currency || primary;
-      const inPrimary = convertAmount(val, cur, primary);
+      const inPrimary = convert(val, cur, primary);
       assets += inPrimary;
       bumpByCurrency(cur, "assets", val);
       assetBreakdown.push({
@@ -172,7 +175,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       currency: primary,
       isMultiCurrency,
-      fxLastUpdated: FX_LAST_UPDATED,
+      fxLastUpdated: fx.fetchedAt,
+      fxSource: fx.source,
       current: {
         assets: +assets.toFixed(2),
         liabilities: +liabilities.toFixed(2),
