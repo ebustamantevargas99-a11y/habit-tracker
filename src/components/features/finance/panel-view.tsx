@@ -16,6 +16,8 @@ import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
 type DashboardData = {
   currency: string;
+  isMultiCurrency: boolean;
+  fxLastUpdated: string;
   month: string;
   netWorth: { current: number; assets: number; liabilities: number };
   cashflow: {
@@ -28,8 +30,8 @@ type DashboardData = {
   };
   runway: { months: number; savingsBalance: number; avgMonthlyExpense: number; target: number };
   topCategories: Array<{ category: string; amount: number; prevAmount: number; deltaPercent: number | null }>;
-  upcoming: Array<{ id: string; name: string; amount: number; nextDate: string; type: string; category: string }>;
-  accounts: Array<{ id: string; name: string; type: string; currency: string; balance: number; icon: string | null; color: string | null }>;
+  upcoming: Array<{ id: string; name: string; amount: number; currency?: string; amountInPrimary?: number; nextDate: string; type: string; category: string }>;
+  accounts: Array<{ id: string; name: string; type: string; currency: string; balance: number; balanceInPrimary?: number; icon: string | null; color: string | null }>;
   goals: Array<{ id: string; name: string; emoji: string | null; target: number; current: number; targetDate: string | null; priority: string | null }>;
   heatmap: Record<string, number>;
 };
@@ -96,8 +98,13 @@ export default function PanelView({
   }
 
   const {
-    currency, netWorth: nw, cashflow, runway, topCategories, upcoming, accounts, goals, heatmap,
+    currency, isMultiCurrency, netWorth: nw, cashflow, runway, topCategories, upcoming, accounts, goals, heatmap,
   } = data;
+
+  // Conjunto único de monedas presentes — para el disclaimer.
+  const distinctCurrencies = Array.from(
+    new Set(accounts.map((a) => a.currency).filter(Boolean)),
+  );
 
   return (
     <div className="space-y-5">
@@ -116,6 +123,15 @@ export default function PanelView({
               <span className="text-brand-light-tan">·</span>
               <span>Pasivos: <b className="text-danger">{formatMoney(nw.liabilities, currency)}</b></span>
             </div>
+            {isMultiCurrency && (
+              <p
+                className="text-[11px] mt-2 text-brand-light-cream/80 italic"
+                title={`Cuentas en ${distinctCurrencies.join(", ")} convertidas a ${currency} usando tasas estáticas (actualizadas ${data.fxLastUpdated}).`}
+              >
+                Convertido a {currency} desde {distinctCurrencies.join(", ")} ·
+                tasa aprox.
+              </p>
+            )}
           </div>
           {netWorth && netWorth.timeline.length >= 2 && (
             <div className="shrink-0 w-56 h-24">
@@ -276,7 +292,7 @@ export default function PanelView({
                       )}
                     >
                       {isIncome ? "+" : "−"}
-                      {formatMoney(u.amount, currency)}
+                      {formatMoney(u.amount, u.currency ?? currency)}
                     </span>
                   </div>
                 );
