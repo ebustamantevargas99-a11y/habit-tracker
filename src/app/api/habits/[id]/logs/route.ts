@@ -12,6 +12,7 @@ import {
   checkStreakBadges,
 } from "@/lib/gamification-utils";
 import { parseJson, habitLogCreateSchema } from "@/lib/validation";
+import { todayLocal } from "@/lib/date/local";
 
 export async function GET(
   req: NextRequest,
@@ -65,10 +66,18 @@ export async function POST(
         { status: 404 }
       );
 
+    // TZ del usuario para anclar "hoy" al día civil correcto (la racha se
+    // calcula server-side; sin esto rompe de noche en Lima).
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { timezone: true },
+    });
+    const tz = profile?.timezone ?? null;
+
     const parsed = await parseJson(req, habitLogCreateSchema);
     if (!parsed.ok) return parsed.response;
 
-    const date = parsed.data.date ?? new Date().toISOString().split("T")[0];
+    const date = parsed.data.date ?? todayLocal(tz);
     const completed = parsed.data.completed ?? true;
     const previousStreak = habit.streakCurrent;
 
@@ -81,6 +90,7 @@ export async function POST(
     const streakResult = await recalculateStreak(params.id, habit.targetDays, {
       estimatedMinutes: habit.estimatedMinutes,
       currentRootedAt: habit.rootedAt,
+      tz,
     });
 
     const bestStreak = Math.max(streakResult.streakBest, habit.streakBest);

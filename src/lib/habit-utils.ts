@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { todayLocal } from "@/lib/date/local";
 
 // ─── Sistema de arraigo ──────────────────────────────────────────────────────
 
@@ -85,7 +86,19 @@ export type StreakResult = {
 export async function recalculateStreak(
   habitId: string,
   targetDays: number[],
-  options?: { estimatedMinutes?: number | null; currentRootedAt?: Date | null }
+  options?: {
+    estimatedMinutes?: number | null;
+    currentRootedAt?: Date | null;
+    /**
+     * TZ del usuario (ej. "America/Lima"). Sin esto, "hoy" se calcula con
+     * la hora del servidor (UTC en Vercel): después de las 19:00 en Lima
+     * el server cree que ya es mañana → evalúa el día local en curso como
+     * perdido, gasta la gracia semanal y rompe rachas un día antes. Con tz
+     * anclamos "hoy" al día civil del usuario (mediodía UTC para evitar
+     * cruces de fecha y obtener el día de semana correcto en UTC).
+     */
+    tz?: string | null;
+  }
 ): Promise<StreakResult> {
   const logs = await prisma.habitLog.findMany({
     where: { habitId },
@@ -95,8 +108,13 @@ export async function recalculateStreak(
   });
 
   const logMap = new Map(logs.map((l) => [l.date, l.completed]));
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  let today: Date;
+  if (options?.tz) {
+    today = new Date(`${todayLocal(options.tz)}T12:00:00Z`);
+  } else {
+    today = new Date();
+    today.setHours(0, 0, 0, 0);
+  }
   const activeDays = targetDays.length > 0 ? targetDays : [0, 1, 2, 3, 4, 5, 6];
   const thisWeekMonday = mondayOfWeek(today);
 
