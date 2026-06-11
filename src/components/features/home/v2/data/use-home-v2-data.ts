@@ -9,6 +9,13 @@ import { useNutritionStore } from "@/stores/nutrition-store";
 import { useFinanceStore } from "@/stores/finance-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { phaseFromStreak } from "@/lib/habit-utils";
+import {
+  todayLocal,
+  shiftDaysLocal,
+  toLocalDateStr,
+  startOfWeekLocal,
+  parseLocalDateStr,
+} from "@/lib/date/local";
 import type {
   CompoundData,
   EnabledModulesV2,
@@ -96,29 +103,25 @@ function genCompound(weeks: number, realGrowthPerWeek = 0.003): CompoundData {
   return { real, best, abandon };
 }
 
-// ─── Helpers de fecha ────────────────────────────────────────────────────
+// ─── Helpers de fecha (TZ del usuario, no UTC del navegador) ─────────────
+// Antes usaban toISOString() (UTC): después de las 19:00 en Lima pedían el
+// día de mañana → "hábitos hoy" salía 0/N, timeline corrido, sparks
+// desfasados. Ahora delegan en lib/date/local con la tz del perfil.
 
-function todayISO(): string {
-  return new Date().toISOString().split("T")[0];
+function todayISO(tz?: string | null): string {
+  return todayLocal(tz);
 }
 
-function daysAgoISO(n: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().split("T")[0];
+function daysAgoISO(n: number, tz?: string | null): string {
+  return shiftDaysLocal(-n, new Date(), tz);
 }
 
-function startOfWeekISO(date = new Date()): string {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().split("T")[0];
+function startOfWeekISO(tz?: string | null): string {
+  return toLocalDateStr(startOfWeekLocal(new Date(), tz), tz);
 }
 
-function startOfMonthISO(date = new Date()): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-01`;
+function startOfMonthISO(tz?: string | null): string {
+  return `${todayLocal(tz).slice(0, 7)}-01`;
 }
 
 // ─── Sparkline padding: si hay pocos puntos reales, completa con 0s ──────
@@ -264,13 +267,11 @@ function deriveRadar(
 function deriveHabitsSpark(
   habits: Array<{ id: string; targetDays?: number[] | null }>,
   logs: Array<{ habitId: string; date: string; completed: boolean }>,
+  tz?: string | null,
 ): number[] {
   const out: number[] = [];
-  const today = new Date();
   for (let i = 29; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split("T")[0];
+    const dateStr = shiftDaysLocal(-i, new Date(), tz);
     const dayLogs = logs.filter((l) => l.date === dateStr && l.completed);
     out.push(dayLogs.length);
   }
@@ -295,32 +296,29 @@ interface TransactionLike {
   type: "income" | "expense" | "transfer";
 }
 
-function deriveFinance(transactions: TransactionLike[]): {
+function deriveFinance(transactions: TransactionLike[], tz?: string | null): {
   savedMonth: number;
   pct: number;
   pctPrev: number;
 } {
-  const monthStart = startOfMonthISO();
-  const prevMonthStart = (() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return startOfMonthISO(d);
-  })();
+  const monthStart = startOfMonthISO(tz);
+  // Último día del mes anterior = un día antes del inicio de este mes.
   const prevMonthEnd = (() => {
-    const d = new Date();
-    d.setDate(1);
+    const d = parseLocalDateStr(monthStart);
     d.setDate(d.getDate() - 1);
-    return d.toISOString().split("T")[0];
+    return toLocalDateStr(d, tz);
   })();
+  const prevMonthStart = `${prevMonthEnd.slice(0, 7)}-01`;
 
   const inRange = (t: TransactionLike, from: string, to: string): boolean =>
     t.date >= from && t.date <= to;
 
+  const today = todayISO(tz);
   const thisIncome = transactions
-    .filter((t) => t.type === "income" && inRange(t, monthStart, todayISO()))
+    .filter((t) => t.type === "income" && inRange(t, monthStart, today))
     .reduce((s, t) => s + t.amount, 0);
   const thisExpense = transactions
-    .filter((t) => t.type === "expense" && inRange(t, monthStart, todayISO()))
+    .filter((t) => t.type === "expense" && inRange(t, monthStart, today))
     .reduce((s, t) => s + t.amount, 0);
 
   const prevIncome = transactions
@@ -345,12 +343,12 @@ interface WorkoutLike {
   totalVolume: number;
 }
 
-function deriveFitness(workouts: WorkoutLike[]): {
+function deriveFitness(workouts: WorkoutLike[], tz?: string | null): {
   sessionsWeek: number;
   volumeKg: number;
   volumePrev: number;
 } {
-  const thisMonday = startOfWeekISO();
+  const thisMonday = startOfWeekISO(tz);
   const lastMondayDate = new Date(thisMonday + "T00:00:00Z");
   lastMondayDate.setDate(lastMondayDate.getDate() - 7);
   const lastMonday = lastMondayDate.toISOString().split("T")[0];
@@ -412,6 +410,7 @@ function deriveBadge(badges: GamificationBadge[], topStreak: number): {
 export function useHomeV2Data(): HomeV2Data {
   const user = useUserStore((s) => s.user);
   const enabledList = user?.profile?.enabledModules ?? [];
+  const tz = user?.profile?.timezone ?? null;
 
   const habits = useHabitStore((s) => s.habits);
   const logs = useHabitStore((s) => s.logs);
@@ -439,7 +438,7 @@ export function useHomeV2Data(): HomeV2Data {
     async function run() {
       setLoading(true);
       try {
-        const prevDate = daysAgoISO(7);
+        const prevDate = daysAgoISO(7, tz);
         const [now, prev, agenda] = await Promise.all([
           api
             .get<LifeScoreResult>("/user/life-score?window=7&history=30")
@@ -448,7 +447,7 @@ export function useHomeV2Data(): HomeV2Data {
             .get<LifeScoreResult>(`/user/life-score?date=${prevDate}&window=7`)
             .catch(() => null),
           api
-            .get<DayAgendaResponse>(`/calendar/day/${todayISO()}`)
+            .get<DayAgendaResponse>(`/calendar/day/${todayISO(tz)}`)
             .catch(() => null),
         ]);
         if (cancelled) return;
@@ -463,7 +462,7 @@ export function useHomeV2Data(): HomeV2Data {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [tz]);
 
   const modules: EnabledModulesV2 = useMemo(() => {
     const has = (k: string) => enabledList.includes(k);
@@ -493,8 +492,8 @@ export function useHomeV2Data(): HomeV2Data {
     // `total` = hábitos agendados para hoy según su frequency + targetDays.
     // `done` = completados hoy que pertenecen a ese subset.
     // Mismo criterio que usa /api/calendar/day/[date] para no divergir.
-    const today = todayISO();
-    const dayOfWeek = new Date().getDay(); // 0 = domingo
+    const today = todayISO(tz);
+    const dayOfWeek = parseLocalDateStr(today).getDay(); // 0 = domingo, día civil del user
     const scheduledHabitIds = new Set(
       habits
         .filter((h) => {
@@ -512,10 +511,10 @@ export function useHomeV2Data(): HomeV2Data {
       active: habits.length,
       topStreak: habits.reduce((m, h) => Math.max(m, h.streakCurrent ?? 0), 0),
     };
-    const habitsSpark = deriveHabitsSpark(habits, logs);
+    const habitsSpark = deriveHabitsSpark(habits, logs, tz);
 
     // ── Fitness ──
-    const fitnessStats = deriveFitness(workouts);
+    const fitnessStats = deriveFitness(workouts, tz);
     // Volume sparkline aproximado: distribuimos weeklyVolume del store
     // como una sola barra; si querés ver evolución real habría que pedir
     // historical. Por ahora, una serie plana con valor actual.
@@ -542,7 +541,7 @@ export function useHomeV2Data(): HomeV2Data {
     const kcalSpark = padSpark([nutritionData.kcal], 30);
 
     // ── Finanzas ──
-    const financeData = deriveFinance(transactions);
+    const financeData = deriveFinance(transactions, tz);
     const savingSpark = padSpark([financeData.pct], 30);
 
     // ── Cycle: placeholder por ahora (módulo aparte) ──
@@ -594,6 +593,7 @@ export function useHomeV2Data(): HomeV2Data {
     };
   }, [
     user,
+    tz,
     modules,
     lifeScoreNow,
     lifeScorePrev,

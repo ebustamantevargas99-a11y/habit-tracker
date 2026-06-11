@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useId, useMemo, useRef } from "react";
 
 interface Props {
   data: number[];
@@ -42,7 +42,9 @@ export default function Sparkline({
   }, [data, w, h]);
 
   const pathRef = useRef<SVGPathElement | null>(null);
-  const gradId = useMemo(() => `ht-spark-grad-${Math.random().toString(36).slice(2, 8)}`, []);
+  // useId garantiza el mismo id en servidor y cliente (Math.random()
+  // generaba ids distintos → warning de hidratación en cada Sparkline).
+  const gradId = `ht-spark-grad-${useId().replace(/:/g, "")}`;
 
   useEffect(() => {
     const el = pathRef.current;
