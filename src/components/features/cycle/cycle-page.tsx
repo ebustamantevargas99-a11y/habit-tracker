@@ -1,5 +1,5 @@
 "use client";
-import { todayLocal } from "@/lib/date/local";
+import { todayLocal, parseLocalDateStr, shiftDaysLocal } from "@/lib/date/local";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -44,9 +44,12 @@ const COMMON_SYMPTOMS = [
 ];
 
 function daysSince(dateStr: string): number {
-  const d = new Date(dateStr + "T00:00:00Z").getTime();
-  const now = Date.now();
-  return Math.floor((now - d) / (1000 * 60 * 60 * 24));
+  // Diferencia en días civiles locales — antes mezclaba medianoche UTC con
+  // Date.now(), así que después de las 19:00 en Lima el día del ciclo
+  // saltaba +1 antes de tiempo.
+  const from = parseLocalDateStr(dateStr).getTime();
+  const today = parseLocalDateStr(todayLocal()).getTime();
+  return Math.round((today - from) / (1000 * 60 * 60 * 24));
 }
 
 export default function CyclePage() {
@@ -215,7 +218,7 @@ export default function CyclePage() {
                   <>
                     <p className="text-xs text-brand-light-tan mb-1">Próximo período estimado</p>
                     <p className="text-lg font-semibold text-accent-glow">
-                      {new Date(predictedNextStart.date).toLocaleDateString("es-MX", {
+                      {parseLocalDateStr(predictedNextStart.date).toLocaleDateString("es-MX", {
                         day: "numeric",
                         month: "short",
                       })}
@@ -244,11 +247,11 @@ export default function CyclePage() {
                   Ventana fértil estimada
                 </p>
                 <p className="text-xs text-brand-warm">
-                  {new Date(ovulationWindow.start).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                  {parseLocalDateStr(ovulationWindow.start).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                   {" – "}
-                  {new Date(ovulationWindow.end).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                  {parseLocalDateStr(ovulationWindow.end).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                   {" · ovulación ~"}
-                  {new Date(ovulationWindow.day).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
+                  {parseLocalDateStr(ovulationWindow.day).toLocaleDateString("es-MX", { day: "numeric", month: "short" })}
                 </p>
               </div>
               <span className="text-xs text-brand-tan italic">Solo estimación</span>
@@ -282,9 +285,11 @@ export default function CyclePage() {
             </h3>
             <div className="flex gap-1.5 overflow-x-auto pb-2">
               {Array.from({ length: 14 }).map((_, i) => {
-                const d = new Date();
-                d.setDate(d.getDate() - (13 - i));
-                const ds = d.toISOString().split("T")[0];
+                // Fecha civil local — la clave `ds` debe coincidir con cómo
+                // se guardan los logs (todayLocal), si no la celda "hoy"
+                // buscaba la fecha UTC de mañana de noche.
+                const ds = shiftDaysLocal(-(13 - i));
+                const d = parseLocalDateStr(ds);
                 const log = cycles
                   .flatMap((c) => c.periodLogs)
                   .find((l) => l.date === ds);
