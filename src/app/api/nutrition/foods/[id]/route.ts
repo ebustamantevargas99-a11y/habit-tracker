@@ -73,6 +73,20 @@ export async function DELETE(
     if (!food)
       return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
+    // MealItem.foodItem es una relación requerida (RESTRICT): borrar un
+    // alimento usado en comidas lanzaba P2003 → 500. Respondemos 409 con
+    // un mensaje claro en vez de romper.
+    const inUse = await prisma.mealItem.count({ where: { foodItemId: id } });
+    if (inUse > 0) {
+      return NextResponse.json(
+        {
+          error: `Este alimento está en ${inUse} comida${inUse === 1 ? "" : "s"} registrada${inUse === 1 ? "" : "s"}. Elimínalo de esas comidas antes de borrarlo.`,
+          code: "FOOD_IN_USE",
+        },
+        { status: 409 }
+      );
+    }
+
     await prisma.foodItem.delete({ where: { id } });
     return new NextResponse(null, { status: 204 });
   });
