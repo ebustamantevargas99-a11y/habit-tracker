@@ -39,7 +39,7 @@ type Task = {
   projectId: string;
   title: string;
   description: string | null;
-  status: "todo" | "inProgress" | "done";
+  status: "todo" | "in_progress" | "done" | "blocked";
   priority: "low" | "medium" | "high" | null;
   dueDate: string | null;
   objectiveId: string | null;
@@ -58,9 +58,9 @@ type Project = {
 };
 
 const COLUMNS: { id: Task["status"]; label: string; color: string }[] = [
-  { id: "todo",       label: "Por hacer",   color: "border-t-brand-medium" },
-  { id: "inProgress", label: "En progreso", color: "border-t-accent" },
-  { id: "done",       label: "Listo",       color: "border-t-success" },
+  { id: "todo",        label: "Por hacer",   color: "border-t-brand-medium" },
+  { id: "in_progress", label: "En progreso", color: "border-t-accent" },
+  { id: "done",        label: "Listo",       color: "border-t-success" },
 ];
 
 const PRIORITY_META: Record<string, { label: string; class: string }> = {
@@ -124,7 +124,7 @@ export default function KanbanView() {
     if (!e.over || !e.active) return;
     const taskId = e.active.id as string;
     const newStatus = e.over.id as Task["status"];
-    if (!["todo", "inProgress", "done"].includes(newStatus)) return;
+    if (!["todo", "in_progress", "done"].includes(newStatus)) return;
 
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
@@ -239,9 +239,12 @@ export default function KanbanView() {
   }
 
   const tasksByStatus = useMemo(() => {
-    const m: Record<Task["status"], Task[]> = { todo: [], inProgress: [], done: [] };
+    // Solo renderizamos 3 columnas; cualquier estado desconocido del
+    // backend (p.ej. "blocked") cae en "todo" en vez de crashear con
+    // m[undefined].push.
+    const m: Record<string, Task[]> = { todo: [], in_progress: [], done: [] };
     for (const t of tasks) {
-      m[t.status].push(t);
+      (m[t.status] ?? m.todo).push(t);
     }
     return m;
   }, [tasks]);
