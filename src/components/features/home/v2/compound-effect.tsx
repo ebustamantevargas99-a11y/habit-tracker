@@ -50,7 +50,7 @@ export default function CompoundEffect({ data }: Props) {
   return (
     <section>
       <SectionHeader
-        eyebrow="Efecto compuesto"
+        eyebrow="Efecto compuesto · ejemplo ilustrativo"
         title="El 1% que todo lo cambia"
         subtitle="1% cada día compone en 37× al año. 2% abandonado te deja en 0.03×."
       />
@@ -161,7 +161,7 @@ export default function CompoundEffect({ data }: Props) {
           >
             <span className="flex items-center gap-2">
               <span style={{ width: 18, height: 2, background: "var(--color-accent)", borderRadius: 2 }} />
-              Tu ritmo real
+              +1%/día
             </span>
             <span className="flex items-center gap-2">
               <span
@@ -191,7 +191,7 @@ export default function CompoundEffect({ data }: Props) {
           {hoverI != null && (
             <div className="ht-mono flex items-center gap-4" style={{ fontSize: 11.5 }}>
               <span style={{ color: "var(--color-warm)" }}>S{hoverI + 1}</span>
-              <span style={{ color: "var(--color-accent)" }}>real {real[hoverI].toFixed(2)}×</span>
+              <span style={{ color: "var(--color-accent)" }}>+1% {real[hoverI].toFixed(2)}×</span>
               <span style={{ color: "var(--color-tan)" }}>máx {best[hoverI].toFixed(2)}×</span>
               <span style={{ color: "var(--color-warm)" }}>aband {abandon[hoverI].toFixed(2)}×</span>
             </div>
