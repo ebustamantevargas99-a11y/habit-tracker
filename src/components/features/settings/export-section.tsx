@@ -105,23 +105,32 @@ export default function ExportSection() {
   });
 
   const exportFinanceJSON = () => withLoading('finance-json', async () => {
-    const [transactions, budgets, bills, subscriptions, wishlist] = await Promise.all([
-      api.get('/finance/transactions'),
-      api.get('/finance/budgets'),
-      api.get('/finance/bills'),
-      api.get('/finance/subscriptions'),
-      api.get('/finance/wishlist'),
-    ]);
-    exportToJSON({ transactions, budgets, bills, subscriptions, wishlist }, 'finanzas');
+    // Endpoints reales (antes apuntaba a /bills /subscriptions /wishlist
+    // que no existen → el export fallaba siempre).
+    const [accounts, transactions, budgets, goals, debts, investments, recurring] =
+      await Promise.all([
+        api.get('/finance/accounts'),
+        api.get('/finance/transactions'),
+        api.get('/finance/budgets'),
+        api.get('/finance/goals'),
+        api.get('/finance/debts'),
+        api.get('/finance/investments'),
+        api.get('/finance/recurring'),
+      ]);
+    exportToJSON(
+      { accounts, transactions, budgets, goals, debts, investments, recurring },
+      'finanzas',
+    );
   });
 
   const exportProductivityJSON = () => withLoading('productivity-json', async () => {
-    const [pomodoro, projects, okr] = await Promise.all([
-      api.get('/productivity/pomodoro?days=90'),
+    // /productivity/okr no existe; pomodoro es dato muerto. Usamos los
+    // endpoints reales: proyectos (con tareas) y sesiones de foco.
+    const [projects, focusSessions] = await Promise.all([
       api.get('/productivity/projects'),
-      api.get('/productivity/okr'),
+      api.get('/productivity/focus/sessions').catch(() => []),
     ]);
-    exportToJSON({ pomodoro, projects, okr }, 'productividad');
+    exportToJSON({ projects, focusSessions }, 'productividad');
   });
 
   const downloadAIJson = () => withLoading('ai-json', async () => {
