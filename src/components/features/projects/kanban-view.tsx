@@ -129,14 +129,24 @@ export default function KanbanView() {
     const task = tasks.find((t) => t.id === taskId);
     if (!task || task.status === newStatus) return;
 
+    // La tarjeta movida va al final de la columna destino. Persistimos el
+    // orderIndex para que el orden sobreviva recargas (antes solo cambiaba
+    // el status y el orden se perdía).
+    const maxOrder = tasks
+      .filter((t) => t.status === newStatus)
+      .reduce((m, t) => Math.max(m, t.orderIndex ?? 0), -1);
+    const newOrderIndex = maxOrder + 1;
+
     // Optimistic
     setTasks((prev) =>
-      prev.map((t) => (t.id === taskId ? { ...t, status: newStatus } : t))
+      prev.map((t) =>
+        t.id === taskId ? { ...t, status: newStatus, orderIndex: newOrderIndex } : t
+      )
     );
 
     try {
       await api.patch(`/productivity/projects/${activeProjectId}/tasks`, {
-        tasks: [{ id: taskId, status: newStatus }],
+        tasks: [{ id: taskId, status: newStatus, orderIndex: newOrderIndex }],
       });
     } catch {
       toast.error("Error moviendo tarea");
@@ -245,6 +255,10 @@ export default function KanbanView() {
     const m: Record<string, Task[]> = { todo: [], in_progress: [], done: [] };
     for (const t of tasks) {
       (m[t.status] ?? m.todo).push(t);
+    }
+    // Orden estable por orderIndex dentro de cada columna.
+    for (const key of Object.keys(m)) {
+      m[key].sort((a, b) => (a.orderIndex ?? 0) - (b.orderIndex ?? 0));
     }
     return m;
   }, [tasks]);
