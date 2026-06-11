@@ -47,6 +47,9 @@ async function resetFitness(userId: string, counts: DeleteCounts) {
   // Fasting sobrevivió al drop de lifeos; lo agrupamos en fitness para
   // que quede cubierto por el wipe completo.
   const fasting = await prisma.fastingSession.deleteMany({ where: { userId } });
+  // Ejercicios custom del usuario (los del catálogo global tienen userId null).
+  const exercises = await prisma.exercise.deleteMany({ where: { userId } });
+  counts.customExercises = exercises.count;
   counts.workouts = workouts.count;
   counts.personalRecords = prs.count;
   counts.bodyMetrics = bodyMetrics.count;
@@ -97,11 +100,16 @@ async function resetNutrition(userId: string, counts: DeleteCounts) {
   const foods = await prisma.foodItem.deleteMany({ where: { userId } });
   // NutritionGoal es único por user; lo borramos también
   const goal = await prisma.nutritionGoal.deleteMany({ where: { userId } });
+  // Datos médicos/diarios que antes sobrevivían a un "borrar todo".
+  const bloodMarkers = await prisma.bloodMarker.deleteMany({ where: { userId } });
+  const hydration = await prisma.hydrationLog.deleteMany({ where: { userId } });
   counts.mealLogs = meals.count;
   counts.mealTemplates = templates.count;
   counts.recipes = recipes.count;
   counts.foodItems = foods.count;
   counts.nutritionGoals = goal.count;
+  counts.bloodMarkers = bloodMarkers.count;
+  counts.hydrationLogs = hydration.count;
 }
 
 async function resetProductivity(userId: string, counts: DeleteCounts) {
