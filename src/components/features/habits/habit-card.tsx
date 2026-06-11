@@ -56,26 +56,42 @@ export default function HabitCard({
       )}
     >
       <div className="flex items-start gap-3">
-        {/* Toggle circular */}
+        {/* Toggle circular — checkbox CLARO. Antes mostraba el emoji del
+            hábito cuando estaba sin marcar, así que parecía un ícono
+            decorativo y los usuarios no encontraban "el botón" para
+            completarlo. Ahora siempre se ve como una casilla: check tenue
+            cuando está pendiente (con hint al pasar el mouse) y verde
+            relleno cuando está hecho. */}
         <button
           onClick={onToggle}
+          aria-pressed={completedToday}
           className={cn(
-            "shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center transition",
+            "group shrink-0 w-11 h-11 rounded-full border-2 flex items-center justify-center transition",
             completedToday
               ? "bg-success border-success text-white"
-              : "border-brand-cream hover:border-accent bg-brand-paper"
+              : "border-brand-tan bg-brand-paper hover:border-success hover:bg-success/10"
           )}
           title={completedToday ? "Marcar como no hecho" : "Marcar como hecho"}
         >
-          {completedToday ? <Check size={20} strokeWidth={3} /> : <span className="text-2xl">{habit.icon}</span>}
+          <Check
+            size={20}
+            strokeWidth={3}
+            className={cn(
+              "transition",
+              completedToday
+                ? "text-white"
+                : "text-brand-tan/60 group-hover:text-success"
+            )}
+          />
         </button>
 
         {/* Main info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <h4 className="font-serif text-base font-semibold text-brand-dark m-0 truncate">
-                {habit.name}
+              <h4 className="font-serif text-base font-semibold text-brand-dark m-0 truncate flex items-center gap-1.5">
+                <span className="text-lg shrink-0" aria-hidden>{habit.icon}</span>
+                <span className="truncate">{habit.name}</span>
               </h4>
               <p className="text-[11px] text-brand-warm truncate">
                 {habit.category}
