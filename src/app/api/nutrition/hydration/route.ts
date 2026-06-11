@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { parseJson } from "@/lib/validation";
+import { checkHydrationHeroBadge } from "@/lib/gamification-utils";
 import { z } from "zod";
 
 const hydrationSchema = z.object({
@@ -78,6 +79,10 @@ export async function PATCH(req: NextRequest) {
       create: { userId, date: targetDate, amountMl: newAmount, goalMl: 2500 },
       update: { amountMl: newAmount },
     });
+    // Badge "hydration-hero" al alcanzar la meta del día.
+    if (log.goalMl > 0 && log.amountMl >= log.goalMl) {
+      await checkHydrationHeroBadge(prisma, userId);
+    }
     return NextResponse.json(log);
   });
 }

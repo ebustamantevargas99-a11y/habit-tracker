@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
+import { prisma } from "@/lib/prisma";
+import { checkLifeScore90Badge } from "@/lib/gamification-utils";
 import {
   computeLifeScore,
   getLifeScoreHistory,
@@ -25,6 +27,11 @@ export async function GET(req: NextRequest) {
 
     try {
       const current = await computeLifeScore(userId, { date, windowDays });
+
+      // Badge "life-score-90" cuando la puntuación llega a 90+.
+      if (typeof current.overall === "number" && current.overall >= 90) {
+        await checkLifeScore90Badge(prisma, userId, current.overall);
+      }
 
       let history: LifeScorePoint[] | undefined;
       if (historyDays > 0) {

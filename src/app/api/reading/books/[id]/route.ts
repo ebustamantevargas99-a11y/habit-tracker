@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { parseJson, bookUpdateSchema } from "@/lib/validation";
+import { checkBookwormBadge } from "@/lib/gamification-utils";
 
 export async function GET(
   _req: NextRequest,
@@ -60,6 +61,12 @@ export async function PATCH(
         ...(finishedAt !== undefined ? { finishedAt: finishedAt ?? null } : {}),
       },
     });
+
+    // Badge "bookworm" al terminar un libro.
+    if (d.status === "finished") {
+      await checkBookwormBadge(prisma, userId);
+    }
+
     return NextResponse.json(updated);
   });
 }

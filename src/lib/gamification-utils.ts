@@ -95,3 +95,37 @@ export async function checkPRHunterBadge(prisma: PrismaClient, userId: string) {
     await awardBadge(prisma, userId, "pr-hunter");
   }
 }
+
+/** "bookworm": 12 libros terminados. */
+export async function checkBookwormBadge(prisma: PrismaClient, userId: string) {
+  const count = await prisma.book.count({
+    where: { userId, status: "finished" },
+  });
+  if (count >= 12) {
+    await awardBadge(prisma, userId, "bookworm");
+  }
+}
+
+/** "hydration-hero": 21 días alcanzando la meta de agua. */
+export async function checkHydrationHeroBadge(prisma: PrismaClient, userId: string) {
+  // Prisma no compara columna-vs-columna en where; traemos y contamos en JS.
+  const logs = await prisma.hydrationLog.findMany({
+    where: { userId },
+    select: { amountMl: true, goalMl: true },
+  });
+  const daysHit = logs.filter((l) => l.goalMl > 0 && l.amountMl >= l.goalMl).length;
+  if (daysHit >= 21) {
+    await awardBadge(prisma, userId, "hydration-hero");
+  }
+}
+
+/** "life-score-90": Puntuación de Vida ≥ 90. */
+export async function checkLifeScore90Badge(
+  prisma: PrismaClient,
+  userId: string,
+  overall: number,
+) {
+  if (overall >= 90) {
+    await awardBadge(prisma, userId, "life-score-90");
+  }
+}
