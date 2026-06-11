@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { parseJson, transactionCreateSchema } from "@/lib/validation";
+import { sourceBalanceDelta, destinationBalanceDelta } from "@/lib/finance/balance";
 
 export async function GET(req: NextRequest) {
   return withAuth(async (userId) => {
@@ -60,7 +61,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Cuenta no encontrada" }, { status: 404 });
     }
 
-    // Si es transfer, verificar la cuenta destino
+    // Si es transfer, verificar la cuenta destino (y obtener su tipo para
+    // aplicar el signo correcto: transferir hacia una tarjeta reduce deuda).
+    let toAccountType: string | null = null;
     if (d.type === "transfer") {
       if (!d.transferToAccountId || d.transferToAccountId === d.accountId) {
         return NextResponse.json(
@@ -70,11 +73,12 @@ export async function POST(req: NextRequest) {
       }
       const toAccount = await prisma.financialAccount.findFirst({
         where: { id: d.transferToAccountId, userId },
-        select: { id: true },
+        select: { id: true, type: true },
       });
       if (!toAccount) {
         return NextResponse.json({ error: "Cuenta destino no encontrada" }, { status: 404 });
       }
+      toAccountType = toAccount.type;
     }
 
     const today = new Date().toISOString().split("T")[0];
@@ -103,23 +107,24 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Para credit/loan, el signo del balance es inverso: un "expense" aumenta la deuda.
-      const isLiability = account.type === "credit" || account.type === "loan";
-      const delta =
-        d.type === "income" ? d.amount :
-        d.type === "expense" ? -d.amount :
-        -d.amount; // transfer out
-      const appliedDelta = isLiability ? -delta : delta;
-
+      // Impacto sobre la cuenta origen (helper único respeta activo/pasivo).
       await tx.financialAccount.update({
         where: { id: d.accountId },
-        data: { balance: { increment: appliedDelta } },
+        data: {
+          balance: {
+            increment: sourceBalanceDelta(account.type, d.type, d.amount),
+          },
+        },
       });
 
+      // Cuenta destino de la transferencia: respeta el tipo del destino
+      // (transferir hacia una tarjeta reduce la deuda, no la aumenta).
       if (d.type === "transfer" && d.transferToAccountId) {
         await tx.financialAccount.update({
           where: { id: d.transferToAccountId },
-          data: { balance: { increment: d.amount } },
+          data: {
+            balance: { increment: destinationBalanceDelta(toAccountType, d.amount) },
+          },
         });
       }
 
