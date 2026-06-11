@@ -86,21 +86,5 @@
       "url": "/?page=home&action=cierre",
       "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
     }
-  ],
-  "screenshots": [
-    {
-      "src": "/screenshots/home-wide.png",
-      "sizes": "1280x800",
-      "type": "image/png",
-      "form_factor": "wide",
-      "label": "Dashboard de inicio con vitales y radar"
-    },
-    {
-      "src": "/screenshots/home-narrow.png",
-      "sizes": "750x1334",
-      "type": "image/png",
-      "form_factor": "narrow",
-      "label": "Vista móvil del dashboard"
-    }
   ]
 }

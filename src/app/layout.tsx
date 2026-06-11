@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
 import { SessionProvider } from "next-auth/react";
 import { Toaster } from "sonner";
 import { appBaseUrl } from "@/lib/app-url";
+import ServiceWorkerRegister from "@/components/pwa/sw-register";
 import "./globals.css";
 
 // Fuentes disponibles a nivel global — los temas eligen cuál usar vía
@@ -98,6 +99,7 @@ export default function RootLayout({
         style={{ backgroundColor: "var(--color-paper)" }}
       >
         <SessionProvider>{children}</SessionProvider>
+        <ServiceWorkerRegister />
         <Toaster position="top-right" richColors closeButton />
       </body>
     </html>
