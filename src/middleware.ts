@@ -5,7 +5,19 @@ import { appBaseUrl } from "@/lib/app-url";
 
 const AUTH_SECRET = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
 
-const PUBLIC_PATHS = ["/login", "/terms", "/privacy", "/cookies"];
+// Rutas accesibles sin sesión. Incluye recuperación de contraseña
+// (forgot/reset) y la landing comercial — antes faltaban, así que el
+// usuario deslogueado que necesitaba resetear su clave o ver la landing
+// era redirigido a /login (las features estaban completas pero muertas).
+const PUBLIC_PATHS = [
+  "/login",
+  "/forgot-password",
+  "/reset-password",
+  "/landing",
+  "/terms",
+  "/privacy",
+  "/cookies",
+];
 
 // ─── CORS para wrappers nativos ──────────────────────────────────────────
 // Patrones de Origin permitidos para hacer requests al backend desde
