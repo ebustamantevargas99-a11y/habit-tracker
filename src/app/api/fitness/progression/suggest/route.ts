@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { suggestNextWeight, bestEstimated1RM, weightForTargetRpe } from "@/lib/fitness/progression";
+import { EXERCISES_SEED } from "@/lib/fitness/exercises-seed";
 
 /**
  * GET /api/fitness/progression/suggest?exerciseId=xxx&repMin=5&repMax=8&targetRpe=8
@@ -31,27 +32,57 @@ export async function GET(req: NextRequest) {
     const repMax = Math.max(repMin, Number(url.searchParams.get("repMax")) || 8);
     const targetRpe = Math.max(6, Math.min(10, Number(url.searchParams.get("targetRpe")) || 8));
 
-    // Ownership: el Exercise puede ser global (userId=null) o propio del user.
-    const exercise = await prisma.exercise.findFirst({
-      where: {
-        id: exerciseId,
-        OR: [{ userId }, { userId: null }],
-      },
-      select: { id: true, name: true, muscleGroup: true, primaryMuscle: true },
-    });
-    if (!exercise) {
-      return NextResponse.json({ error: "Ejercicio no encontrado" }, { status: 404 });
+    // El catálogo entrega ids "seed:<slug>" para ejercicios del seed que aún
+    // no se materializaron en DB. Los resolvemos: si ya existe un Exercise
+    // con ese nombre (porque el user lo usó antes) usamos su id real; si no,
+    // devolvemos una sugerencia vacía (aún sin historial) en vez de 404.
+    let resolvedId = exerciseId;
+    let exercise: { id: string; name: string; muscleGroup: string; primaryMuscle: string | null } | null = null;
+
+    if (exerciseId.startsWith("seed:")) {
+      const slug = exerciseId.slice(5);
+      const seed = EXERCISES_SEED.find((e) => e.slug === slug);
+      if (!seed) {
+        return NextResponse.json({ error: "Ejercicio no encontrado" }, { status: 404 });
+      }
+      const real = await prisma.exercise.findFirst({
+        where: { name: seed.name, OR: [{ userId }, { userId: null }] },
+        select: { id: true, name: true, muscleGroup: true, primaryMuscle: true },
+      });
+      if (real) {
+        resolvedId = real.id;
+        exercise = real;
+      } else {
+        // Sin materializar → sin historial. Sugerencia vacía y limpia.
+        return NextResponse.json({
+          exercise: { id: exerciseId, name: seed.name, muscleGroup: seed.muscleGroup, primaryMuscle: null },
+          historyCount: 0,
+          estimated1RM: null,
+          suggestion: suggestNextWeight([], { repRange: [repMin, repMax], targetRpe }),
+          alternativeFromRpe: null,
+          params: { repMin, repMax, targetRpe },
+        });
+      }
+    } else {
+      // Ownership: el Exercise puede ser global (userId=null) o propio del user.
+      exercise = await prisma.exercise.findFirst({
+        where: { id: exerciseId, OR: [{ userId }, { userId: null }] },
+        select: { id: true, name: true, muscleGroup: true, primaryMuscle: true },
+      });
+      if (!exercise) {
+        return NextResponse.json({ error: "Ejercicio no encontrado" }, { status: 404 });
+      }
     }
 
     // Últimas 8 sesiones del ejercicio para este user.
     const workouts = await prisma.workout.findMany({
       where: {
         userId,
-        exercises: { some: { exerciseId } },
+        exercises: { some: { exerciseId: resolvedId } },
       },
       include: {
         exercises: {
-          where: { exerciseId },
+          where: { exerciseId: resolvedId },
           include: { sets: true },
         },
       },

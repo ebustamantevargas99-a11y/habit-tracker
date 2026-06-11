@@ -26,7 +26,12 @@ export async function GET(req: NextRequest) {
       take: 500,
     });
 
+    // Nombres ya materializados en DB (normalizados) — para no listar el
+    // seed Y su copia DB como dos entradas distintas (el duplicado clásico).
+    const dbNames = new Set(custom.map((e) => e.name.trim().toLowerCase()));
+
     const seed = EXERCISES_SEED.filter((ex) => {
+      if (dbNames.has(ex.name.trim().toLowerCase())) return false; // ya existe en DB
       if (muscle && ex.muscleGroup !== muscle) return false;
       if (query) {
         return (
