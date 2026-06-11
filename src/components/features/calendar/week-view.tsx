@@ -375,10 +375,13 @@ export default function WeekView({ groups }: WeekViewProps) {
           groups={groups}
           onClose={() => setEditing(null)}
           onSaved={(saved) => {
-            // Si el evento es recurrente, las ocurrencias expandidas
-            // viven sólo en el server — tenemos que re-fetch para que
-            // aparezcan todos los días correctamente.
-            if (saved.recurrence) {
+            // Si el evento es (o era) recurrente, las ocurrencias expandidas
+            // viven sólo en el server — re-fetch para que aparezcan o
+            // desaparezcan en todos los días. Sin el caso "era recurrente",
+            // quitar la repetición dejaba N copias apiladas con el mismo id.
+            const wasRecurring =
+              editing.mode === "edit" && !!editing.event.recurrence;
+            if (saved.recurrence || wasRecurring) {
               void refresh();
               return;
             }
@@ -569,10 +572,9 @@ function EventBlock({
   const dur = durationHours(event);
 
   if (isContinuation) {
-    // Bloque en el día siguiente: desde el inicio visible del día
-    // (HOUR_START=6) hasta endAt. Si endAt cae antes de HOUR_START
-    // (p.ej. sleep hasta 05:30), renderizamos un chip mínimo arriba
-    // para que el user vea que hubo algo de madrugada.
+    // Bloque en el día siguiente: desde las 00:00 (la grilla ahora
+    // cubre las 24 horas) hasta endAt, con un alto mínimo de 20px
+    // para que micro-continuaciones sigan siendo visibles/clickeables.
     hourStart = HOUR_START;
     const endHour = endDate ? endDate.getHours() + endDate.getMinutes() / 60 : HOUR_START;
     if (endHour >= HOUR_START) {
@@ -627,12 +629,40 @@ function EventBlock({
         ? group.name
         : null;
 
+  // Layout adaptativo según el alto real del bloque. Un evento de 1h
+  // mide 44px y NO le caben 3 líneas (título + grupo + hora ≈ 45px),
+  // así que la hora salía recortada a la mitad. Reglas:
+  //   < 32px  → solo título, padding mínimo
+  //   ≥ 32px  → título + hora
+  //   ≥ 52px  → título + grupo + hora
+  const showTime = height >= 32;
+  const showLabel = !!label && height >= 52;
+  const fmtTime = (d: Date) =>
+    d.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit", hour12: false });
+  const timeText = isContinuation
+    ? `→ ${endDate ? fmtTime(endDate) : ""}`
+    : endDate
+      ? `${fmtTime(startDate)}–${fmtTime(endDate)}`
+      : fmtTime(startDate);
+  const tooltip = [
+    event.title,
+    label,
+    isContinuation
+      ? `termina ${endDate ? fmtTime(endDate) : ""}`
+      : endDate
+        ? `${fmtTime(startDate)} – ${fmtTime(endDate)}${crossesMidnight ? " (+1d)" : ""}`
+        : fmtTime(startDate),
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
     <div
       ref={combinedRef}
       style={style}
       {...attributes}
       {...listeners}
+      title={tooltip}
       onClick={(e) => {
         e.stopPropagation();
         if (!elRef.current) return;
@@ -640,7 +670,8 @@ function EventBlock({
         onClick({ left: r.left, top: r.top, width: r.width, height: r.height });
       }}
       className={cn(
-        "rounded-md border-l-4 px-1.5 py-1 cursor-grab active:cursor-grabbing text-[10px] leading-tight overflow-hidden",
+        "rounded-md border-l-4 px-1.5 cursor-grab active:cursor-grabbing text-[10px] leading-tight overflow-hidden",
+        height < 32 ? "py-0.5" : "py-1",
         !effectiveColor && meta.bgClass,
         event.completed && "line-through opacity-60"
       )}
@@ -658,20 +689,13 @@ function EventBlock({
           <Moon size={9} strokeWidth={1.5} className="ml-auto opacity-60 shrink-0" aria-label="Termina al día siguiente" />
         )}
       </div>
-      {label && (
+      {showLabel && (
         <div className="text-[9px] uppercase tracking-widest opacity-70 truncate">
           {label}
         </div>
       )}
-      {height > 30 && (
-        <div className="text-[9px] opacity-70 font-mono">
-          {isContinuation
-            ? `→ ${endDate ? endDate.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" }) : ""}`
-            : new Date(event.startAt).toLocaleTimeString("es-MX", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-        </div>
+      {showTime && (
+        <div className="text-[9px] opacity-70 font-mono truncate">{timeText}</div>
       )}
     </div>
   );

@@ -232,12 +232,23 @@ export default function QuickEventPopover({
     if (!isEdit) titleInputRef.current?.select();
   }, [isEdit]);
 
+  // Reposicionar ante CUALQUIER cambio de tamaño del contenido (nota
+  // overnight, "más opciones", editor de recurrencia, título que se
+  // envuelve…). Antes solo se recalculaba con deps fijas, así que al
+  // aparecer la nota "+1d" el popover crecía hacia abajo y el botón
+  // "Crear" quedaba fuera del viewport — imposible crear el evento.
   useLayoutEffect(() => {
-    if (!popoverRef.current) return;
-    const h = popoverRef.current.offsetHeight;
-    const p = computePosition(anchor, h);
-    setPos({ left: p.left, top: p.top });
-  }, [anchor, showMore, customRecOpen, type]);
+    const el = popoverRef.current;
+    if (!el) return;
+    const reposition = () => {
+      const p = computePosition(anchor, el.offsetHeight);
+      setPos({ left: p.left, top: p.top });
+    };
+    reposition();
+    const ro = new ResizeObserver(reposition);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [anchor]);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -353,13 +364,18 @@ export default function QuickEventPopover({
       className="fixed z-50 bg-brand-paper rounded-2xl shadow-warm-lg border border-brand-tan flex flex-col"
       style={{
         width: POPOVER_WIDTH,
+        // Red de seguridad: si aun así el contenido excede el viewport,
+        // el body interno scrollea y el footer (Crear/Cancelar) queda
+        // siempre visible y clickeable.
+        maxWidth: "calc(100vw - 24px)",
+        maxHeight: "calc(100vh - 24px)",
         left: pos?.left ?? anchor.left,
         top: pos?.top ?? anchor.top,
         visibility: pos ? "visible" : "hidden",
       }}
     >
       {/* Header: tipo + close */}
-      <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-brand-light-cream">
+      <div className="shrink-0 flex items-center gap-2 px-4 pt-3 pb-2 border-b border-brand-light-cream">
         <div className="relative">
           <button
             onClick={() => setTypeMenuOpen((v) => !v)}
@@ -407,8 +423,8 @@ export default function QuickEventPopover({
         </button>
       </div>
 
-      {/* Body */}
-      <div className="px-4 py-3 flex flex-col gap-3">
+      {/* Body — scrollea si el popover toca el límite del viewport */}
+      <div className="px-4 py-3 flex flex-col gap-3 flex-1 min-h-0 overflow-y-auto">
         {/* Banner para ocurrencias recurrentes — avisa que se edita la serie. */}
         {isEdit && mode.kind === "edit" && mode.event.recurrence && (
           <div className="flex items-start gap-2 bg-accent/10 border border-accent/30 rounded-md px-2.5 py-2 text-[11px] text-brand-dark">
@@ -744,7 +760,7 @@ export default function QuickEventPopover({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-2.5 border-t border-brand-light-cream flex items-center justify-between">
+      <div className="shrink-0 px-4 py-2.5 border-t border-brand-light-cream flex items-center justify-between">
         {isEdit ? (
           <button
             onClick={remove}
