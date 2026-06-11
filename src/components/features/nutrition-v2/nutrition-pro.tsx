@@ -1,5 +1,5 @@
 "use client";
-import { todayLocal } from "@/lib/date/local";
+import { todayLocal, shiftDaysLocal } from "@/lib/date/local";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
@@ -107,6 +107,7 @@ const DEFAULT_GOAL: NutritionGoal = {
 };
 
 type HydrationLog = {
+  date?: string;
   amountMl: number;
   goalMl: number;
 };
@@ -144,10 +145,13 @@ export default function NutritionPro() {
       setMeals(mealsRes);
       setTemplates(templatesRes);
       if (goalRes) setGoal({ ...DEFAULT_GOAL, ...goalRes });
-      if (hydrationRes.length > 0) {
+      // Tomar el log de HOY específicamente, no el más reciente: si hoy aún
+      // no hay registro, [0] traía el de ayer y mostraba agua equivocada.
+      const todayHydration = hydrationRes.find((l) => l.date === today);
+      if (todayHydration) {
         setHydration({
-          amountMl: hydrationRes[0].amountMl ?? 0,
-          goalMl: hydrationRes[0].goalMl ?? goalRes?.waterMl ?? 2500,
+          amountMl: todayHydration.amountMl ?? 0,
+          goalMl: todayHydration.goalMl ?? goalRes?.waterMl ?? 2500,
         });
       } else if (goalRes?.waterMl) {
         setHydration({ amountMl: 0, goalMl: goalRes.waterMl });
@@ -227,7 +231,10 @@ export default function NutritionPro() {
       amountMl: Math.max(0, prev.amountMl + deltaMl),
     }));
     try {
-      const updated = await api.patch<HydrationLog>("/nutrition/hydration", { deltaMl });
+      const updated = await api.patch<HydrationLog>("/nutrition/hydration", {
+        deltaMl,
+        date: todayLocal(),
+      });
       setHydration({ amountMl: updated.amountMl, goalMl: updated.goalMl });
       if (deltaMl > 0) {
         toast.success(`+${deltaMl}ml · ${updated.amountMl}ml / ${updated.goalMl}ml`);
@@ -316,9 +323,9 @@ export default function NutritionPro() {
 
   async function copyPrevious(type: MealType) {
     try {
-      const yesterday = new Date();
-      yesterday.setDate(yesterday.getDate() - 1);
-      const yday = yesterday.toISOString().split("T")[0];
+      // Ayer en día civil local. Con toISOString() (UTC), después de las
+      // 19:00 en Lima "ayer" = hoy → copiaba la comida de hoy sobre hoy.
+      const yday = shiftDaysLocal(-1);
       const yMeals = await api.get<MealLog[]>(`/nutrition/meals?date=${yday}`);
       const match = yMeals.find((m) => m.mealType === type);
       if (!match || match.items.length === 0) {
