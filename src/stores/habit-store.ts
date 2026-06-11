@@ -1,6 +1,20 @@
 import { create } from "zustand";
 import type { Habit, HabitLog } from "@/types";
 import { api } from "@/lib/api-client";
+import { todayLocal, toLocalDateStr } from "@/lib/date/local";
+import { useUserStore } from "@/stores/user-store";
+
+/**
+ * Fecha civil del usuario (TZ de su perfil). Reemplaza el viejo
+ * `new Date().toISOString().split("T")[0]` que devolvía UTC: en Lima
+ * (UTC-5), después de las 19:00 ese patrón daba el día de MAÑANA, así que
+ * al marcar un hábito de noche el log se guardaba en otra fecha y la UI
+ * —que filtra por fecha local— nunca lo mostraba como hecho. Ese era el
+ * bug de "no puedo marcar mi hábito".
+ */
+function userTz(): string | null {
+  return useUserStore.getState().user?.profile?.timezone ?? null;
+}
 
 interface HabitState {
   habits: Habit[];
@@ -65,7 +79,7 @@ export const useHabitStore = create<HabitState>((set, get) => ({
   },
 
   toggleHabitToday: async (habitId) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocal(userTz());
     const { logs } = get();
 
     // Optimistic update
@@ -202,21 +216,21 @@ export const useHabitStore = create<HabitState>((set, get) => ({
   },
 
   getTodayLogs: () => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = todayLocal(userTz());
     return get().logs.filter((l) => l.date === today);
   },
 
   getHabitLogs: (habitId, days = 30) => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const cutoffStr = toLocalDateStr(cutoff, userTz());
     return get().logs.filter((l) => l.habitId === habitId && l.date >= cutoffStr);
   },
 
   getCompletionRate: (days) => {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - days);
-    const cutoffStr = cutoff.toISOString().split("T")[0];
+    const cutoffStr = toLocalDateStr(cutoff, userTz());
     const relevantLogs = get().logs.filter((l) => l.date >= cutoffStr);
     if (relevantLogs.length === 0) return 0;
     const completed = relevantLogs.filter((l) => l.completed).length;
@@ -225,13 +239,14 @@ export const useHabitStore = create<HabitState>((set, get) => ({
 
   getHeatmapData: (days = 90) => {
     const { habits, logs } = get();
+    const tz = userTz();
     const today = new Date();
     const data = [];
 
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split("T")[0];
+      const dateStr = toLocalDateStr(date, tz);
       const dayLogs = logs.filter((l) => l.date === dateStr);
       const completed = dayLogs.filter((l) => l.completed).length;
       const total = habits.length;
