@@ -3,6 +3,7 @@ import type { Habit, HabitLog } from "@/types";
 import { api } from "@/lib/api-client";
 import { todayLocal, toLocalDateStr } from "@/lib/date/local";
 import { useUserStore } from "@/stores/user-store";
+import { useGamificationStore } from "@/stores/gamification-store";
 
 /**
  * Fecha civil del usuario (TZ de su perfil). Reemplaza el viejo
@@ -121,6 +122,12 @@ export const useHabitStore = create<HabitState>((set, get) => ({
           h.id === habitId ? { ...h, ...result.habit } : h
         ),
       }));
+
+      // El server otorga XP/badges al completar. Refrescar gamificación
+      // para que el sidebar (Nivel/XP) se actualice sin recargar la página.
+      if (newCompleted) {
+        useGamificationStore.getState().addXP(0, "habit_completed");
+      }
 
       // Celebrate streak milestones (7, 30, 100, 365)
       const newStreak = result.habit.streakCurrent ?? 0;
