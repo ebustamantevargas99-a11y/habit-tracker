@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { parseJson, bookUpdateSchema } from "@/lib/validation";
 import { checkBookwormBadge } from "@/lib/gamification-utils";
+import { todayLocal } from "@/lib/date/local";
 
 export async function GET(
   _req: NextRequest,
@@ -39,11 +40,16 @@ export async function PATCH(
 
     const d = parsed.data;
 
-    // Auto-stamp finishedAt si cambia status a "finished" y no se especificó
-    const finishedAt =
-      d.status === "finished" && d.finishedAt === undefined
-        ? new Date().toISOString().split("T")[0]
-        : d.finishedAt;
+    // Auto-stamp finishedAt en día civil del usuario (antes UTC → de noche
+    // en Lima fechaba el libro como terminado mañana).
+    let finishedAt = d.finishedAt;
+    if (d.status === "finished" && d.finishedAt === undefined) {
+      const profile = await prisma.userProfile.findUnique({
+        where: { userId },
+        select: { timezone: true },
+      });
+      finishedAt = todayLocal(profile?.timezone ?? null);
+    }
 
     const updated = await prisma.book.update({
       where: { id },

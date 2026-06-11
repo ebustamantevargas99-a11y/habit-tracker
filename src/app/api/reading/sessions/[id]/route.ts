@@ -13,14 +13,28 @@ export async function DELETE(
     });
     if (!session) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
-    // Transaction: borrar sesión + rebajar currentPage del libro
-    await prisma.$transaction([
-      prisma.readingSession.delete({ where: { id } }),
-      prisma.book.update({
+    await prisma.$transaction(async (db) => {
+      await db.readingSession.delete({ where: { id } });
+      const book = await db.book.findUnique({
         where: { id: session.bookId },
-        data: { currentPage: { decrement: session.pagesRead } },
-      }),
-    ]);
+        select: { currentPage: true, totalPages: true, status: true },
+      });
+      if (!book) return;
+      // Clamp a 0 (antes podía quedar negativo) y, si el libro estaba
+      // "terminado" pero ya no llega al total, revertir a "leyendo".
+      const newPage = Math.max(0, book.currentPage - session.pagesRead);
+      const unfinish =
+        book.status === "finished" &&
+        book.totalPages != null &&
+        newPage < book.totalPages;
+      await db.book.update({
+        where: { id: session.bookId },
+        data: {
+          currentPage: newPage,
+          ...(unfinish ? { status: "reading", finishedAt: null } : {}),
+        },
+      });
+    });
     return new NextResponse(null, { status: 204 });
   });
 }
