@@ -7,28 +7,14 @@ import Link from "next/link";
 import ThemeSelector from "./theme-selector";
 
 export default function AppearanceTab() {
-  const { user, setDarkMode, saveProfile, isSaving } = useUserStore();
-  const [darkOn, setDarkOn] = useState(false);
+  const { user, saveProfile, isSaving } = useUserStore();
   const [units, setUnits] = useState<"metric" | "imperial">("metric");
 
   useEffect(() => {
     if (user?.profile) {
-      setDarkOn(user.profile.darkMode ?? false);
       setUnits((user.profile.units as "metric" | "imperial") ?? "metric");
     }
   }, [user?.profile]);
-
-  async function toggleDark() {
-    const next = !darkOn;
-    setDarkOn(next);
-    try {
-      await setDarkMode(next);
-      toast.success(next ? "Modo oscuro activado" : "Modo claro activado");
-    } catch {
-      toast.error("Error guardando preferencia");
-      setDarkOn(!next);
-    }
-  }
 
   async function saveUnits() {
     try {
@@ -49,26 +35,13 @@ export default function AppearanceTab() {
       <div className="bg-brand-paper rounded-xl p-6 border border-brand-tan">
         <h3 className="font-serif text-brand-dark text-xl m-0 mb-4">Apariencia</h3>
 
-        <div className="flex items-center justify-between py-3 border-b border-brand-light-cream">
-          <div>
-            <p className="text-sm font-semibold text-brand-dark">Modo oscuro</p>
-            <p className="text-xs text-brand-warm mt-0.5">
-              Cambia el tema a colores invertidos, mejor para la noche.
-            </p>
-          </div>
-          <button
-            onClick={toggleDark}
-            disabled={isSaving}
-            className={`relative w-12 h-7 rounded-full transition ${
-              darkOn ? "bg-accent" : "bg-brand-cream"
-            }`}
-          >
-            <span
-              className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-warm transition-all ${
-                darkOn ? "left-[22px]" : "left-0.5"
-              }`}
-            />
-          </button>
+        <div className="py-3 border-b border-brand-light-cream">
+          <p className="text-sm font-semibold text-brand-dark">Modo oscuro</p>
+          <p className="text-xs text-brand-warm mt-0.5">
+            Elige uno de los 4 temas oscuros del selector de arriba (Café,
+            Carbón, Pizarra u Ónice). Tu elección se guarda en tu cuenta y te
+            sigue en todos tus dispositivos.
+          </p>
         </div>
 
         <div className="flex items-center justify-between py-3 border-b border-brand-light-cream">

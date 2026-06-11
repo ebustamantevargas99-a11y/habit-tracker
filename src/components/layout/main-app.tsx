@@ -89,11 +89,9 @@ export default function MainApp() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const userName = useUserStore((s) => s.user?.name ?? "U");
-  const darkMode = useUserStore((s) => s.user?.profile?.darkMode ?? false);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", Boolean(darkMode));
-  }, [darkMode]);
+  // El modo oscuro lo maneja el sistema de 8 temas (theme-store), no una
+  // clase .dark aparte: aplicar html.dark encima del tema elegido lo
+  // sobreescribía (un tema claro + darkMode=true mostraba mezcla rota).
 
   const initHabits       = useHabitStore((s) => s.initialize);
   const initFinance      = useFinanceStore((s) => s.initialize);
