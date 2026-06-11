@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { fetchWeightPoints } from "@/lib/nutrition/weight-source";
 
 /**
  * GET /nutrition/export?format=csv&days=30
@@ -53,10 +54,9 @@ export async function GET(req: NextRequest) {
         include: { items: { include: { foodItem: true } } },
         orderBy: [{ date: "asc" }, { mealType: "asc" }],
       }),
-      prisma.weightLog.findMany({
-        where: { userId, date: { gte: cutoffStr } },
-        orderBy: { date: "asc" },
-      }),
+      fetchWeightPoints(prisma, userId, cutoffStr).then((pts) =>
+        pts.map((p) => ({ date: p.date, weight: p.weightKg })),
+      ),
       prisma.bodyComposition.findMany({
         where: { userId, date: { gte: cutoffStr } },
         orderBy: { date: "asc" },

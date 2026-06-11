@@ -9,6 +9,7 @@ import {
   movingAverage,
 } from "@/lib/nutrition/weight-projection";
 import { classifyWeeklyRate } from "@/lib/nutrition/bmr-tdee";
+import { fetchWeightPoints } from "@/lib/nutrition/weight-source";
 
 /**
  * GET /api/nutrition/weight-projection?days=60
@@ -31,16 +32,12 @@ export async function GET(req: NextRequest) {
     since.setDate(since.getDate() - days);
     const sinceStr = since.toISOString().split("T")[0];
 
-    const [goal, logs] = await Promise.all([
+    // El peso real vive en BodyMetric (type="weight") y BodyComposition;
+    // WeightLog está huérfana. fetchWeightPoints unifica ambas fuentes.
+    const [goal, points] = await Promise.all([
       prisma.nutritionGoal.findUnique({ where: { userId } }),
-      prisma.weightLog.findMany({
-        where: { userId, date: { gte: sinceStr } },
-        orderBy: { date: "asc" },
-        select: { date: true, weight: true },
-      }),
+      fetchWeightPoints(prisma, userId, sinceStr),
     ]);
-
-    const points = logs.map((l) => ({ date: l.date, weightKg: l.weight }));
     const trend = computeWeightTrend(points);
     const smoothed = movingAverage(points, 7);
 

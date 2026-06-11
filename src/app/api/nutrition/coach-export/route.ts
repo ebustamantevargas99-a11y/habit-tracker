@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { computeWeightTrend, eta, etaDate } from "@/lib/nutrition/weight-projection";
 import { analyzeProgress } from "@/lib/nutrition/body-composition";
 import { analyzeOmegaRatio } from "@/lib/nutrition/omega-ratio";
+import { fetchWeightPoints } from "@/lib/nutrition/weight-source";
 
 /**
  * GET /api/nutrition/coach-export?days=30
@@ -91,11 +92,9 @@ export async function GET(req: NextRequest) {
         include: { items: { include: { foodItem: true } } },
         orderBy: { date: "asc" },
       }),
-      prisma.weightLog.findMany({
-        where: { userId, date: { gte: sinceStr } },
-        orderBy: { date: "asc" },
-        select: { date: true, weight: true },
-      }),
+      fetchWeightPoints(prisma, userId, sinceStr).then((pts) =>
+        pts.map((p) => ({ date: p.date, weight: p.weightKg })),
+      ),
       prisma.bodyComposition.findMany({
         where: { userId },
         orderBy: { date: "desc" },
