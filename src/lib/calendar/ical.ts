@@ -1,5 +1,6 @@
 // Generador de archivos iCalendar (.ics) según RFC 5545.
 // Compatible con Google Calendar, Apple Calendar, Outlook, etc.
+import { parseRecurrence, formatRecurrence } from "@/lib/calendar/recurrence";
 
 type EventForICal = {
   id: string;
@@ -82,11 +83,12 @@ export function generateICal(events: EventForICal[], calendarName = "Ultimate TR
       lines.push(foldLine(`LOCATION:${escapeText(ev.location)}`));
     }
     if (ev.recurrence) {
-      const rrule = ev.recurrence.toUpperCase().startsWith("FREQ=")
-        ? ev.recurrence.toUpperCase()
-        : null;
-      if (rrule) {
-        let rule = rrule;
+      // Normalizar presets ("daily"/"weekly"/"weekdays"/"monthly") a RRULE
+      // canónico — antes solo se exportaba si empezaba con FREQ=, así que
+      // los presets se importaban como evento único en Google/Apple.
+      const parsed = parseRecurrence(ev.recurrence);
+      if (parsed) {
+        let rule = formatRecurrence(parsed);
         if (ev.recurrenceEnd) {
           rule += `;UNTIL=${formatICalDate(ev.recurrenceEnd, false)}`;
         }

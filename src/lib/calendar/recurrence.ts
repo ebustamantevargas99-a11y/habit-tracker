@@ -164,16 +164,23 @@ export function expandRecurrence(
       weekStart.setDate(weekStart.getDate() + 7 * interval);
     }
   } else if (rule.freq === "MONTHLY") {
-    let current = new Date(startAt);
-    while (current <= stopAt && out.length < MAX) {
-      if (intersectsRange(current)) {
+    // Calcular cada ocurrencia desde el seed (mes + k*interval) clampeando
+    // el día al último del mes. Antes setMonth() acumulativo desbordaba:
+    // seed 31-ene → 3-mar, 3-abr… (se saltaba febrero y fijaba el día 3).
+    const seedDay = startAt.getDate();
+    for (let k = 0; out.length < MAX && k < 400; k++) {
+      const occ = new Date(startAt);
+      occ.setDate(1); // evita overflow al cambiar de mes
+      occ.setMonth(startAt.getMonth() + k * interval);
+      const daysInMonth = new Date(occ.getFullYear(), occ.getMonth() + 1, 0).getDate();
+      occ.setDate(Math.min(seedDay, daysInMonth));
+      if (occ > stopAt) break;
+      if (intersectsRange(occ)) {
         out.push({
-          startAt: new Date(current),
-          endAt: endAt ? new Date(current.getTime() + dur) : null,
+          startAt: new Date(occ),
+          endAt: endAt ? new Date(occ.getTime() + dur) : null,
         });
       }
-      current = new Date(current);
-      current.setMonth(current.getMonth() + interval);
     }
   }
 
