@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { expandRecurrence } from "@/lib/calendar/recurrence";
+import { zonedStartOfDayUTC, zonedEndOfDayUTC } from "@/lib/date/local";
 
 // GET /api/calendar/day/[date] — agregación completa del día cross-módulo
 // Devuelve todos los "bloques" que el calendario debe mostrar:
@@ -24,8 +25,16 @@ export async function GET(
       return NextResponse.json({ error: "date debe ser YYYY-MM-DD" }, { status: 400 });
     }
 
-    const dayStart = new Date(`${date}T00:00:00Z`);
-    const dayEnd = new Date(`${date}T23:59:59Z`);
+    // Ventana del día en la TZ del usuario (no UTC): una sesión de foco o
+    // evento a las 20:00 Lima cae en 01:00Z del día siguiente; con ventana
+    // UTC desaparecía del día solicitado.
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { timezone: true },
+    });
+    const tz = profile?.timezone ?? null;
+    const dayStart = zonedStartOfDayUTC(date, tz);
+    const dayEnd = zonedEndOfDayUTC(date, tz);
 
     const [
       rawEvents,
@@ -132,6 +141,7 @@ export async function GET(
         dayStart,
         dayEnd,
         ev.recurrenceEnd,
+        tz,
       );
       for (const occ of occs) {
         events.push({

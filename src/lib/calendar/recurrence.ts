@@ -1,5 +1,6 @@
 // RRULE simplificada. Formato: "FREQ=DAILY|WEEKLY|MONTHLY;BYDAY=MO,WE,FR;INTERVAL=2"
 // Preset shortcuts: "daily" | "weekdays" | "weekly" | "monthly"
+import { zonedParts, zonedWallTimeToUtc } from "@/lib/date/local";
 
 export type RecurrenceRule = {
   freq: "DAILY" | "WEEKLY" | "MONTHLY";
@@ -63,7 +64,12 @@ export function expandRecurrence(
   rrule: string | null,
   rangeStart: Date,
   rangeEnd: Date,
-  recurrenceEnd: Date | null = null
+  recurrenceEnd: Date | null = null,
+  // TZ del usuario. Sin esto, WEEKLY/BYDAY se calcula con el día de semana
+  // y hora del SERVIDOR (UTC en Vercel): "lunes 20:00 Lima" (seed = mar
+  // 01:00Z) recurría los domingos. Con tz reconstruimos cada ocurrencia en
+  // el día/hora de pared del usuario. (Los tests no pasan tz → UTC.)
+  tz?: string | null
 ): Array<{ startAt: Date; endAt: Date | null }> {
   const rule = parseRecurrence(rrule);
   const dur = endAt ? endAt.getTime() - startAt.getTime() : 0;
@@ -102,6 +108,37 @@ export function expandRecurrence(
       current = new Date(current);
       current.setDate(current.getDate() + interval);
     }
+  } else if (rule.freq === "WEEKLY" && tz) {
+    // ── Camino tz-aware: reconstruye cada ocurrencia en la hora de pared
+    //    del usuario. Trabajamos con la fecha civil (Y-M-D) en su TZ.
+    const p = zonedParts(startAt, tz);
+    const days = rule.byDay ?? [p.weekday];
+    // Lunes de la semana del seed, en fecha civil UTC para aritmética.
+    const mondayMs = Date.UTC(p.year, p.month - 1, p.day) - ((p.weekday + 6) % 7) * 86400000;
+    let weekMonday = mondayMs;
+    let guard = 0;
+    while (out.length < MAX && guard < 400) {
+      guard++;
+      for (const dow of days) {
+        const offset = (dow + 6) % 7; // Lunes=0..Dom=6
+        const civil = new Date(weekMonday + offset * 86400000);
+        const occ = zonedWallTimeToUtc(
+          civil.getUTCFullYear(),
+          civil.getUTCMonth() + 1,
+          civil.getUTCDate(),
+          p.hour,
+          p.minute,
+          p.second,
+          tz,
+        );
+        if (occ >= startAt && occ <= stopAt && intersectsRange(occ)) {
+          out.push({ startAt: occ, endAt: endAt ? new Date(occ.getTime() + dur) : null });
+        }
+      }
+      weekMonday += 7 * interval * 86400000;
+      if (weekMonday > stopAt.getTime() + 7 * 86400000) break;
+    }
+    out.sort((a, b) => a.startAt.getTime() - b.startAt.getTime());
   } else if (rule.freq === "WEEKLY") {
     const days = rule.byDay ?? [startAt.getDay()];
     // Avanzar semana por semana, generando una ocurrencia por cada día en byDay

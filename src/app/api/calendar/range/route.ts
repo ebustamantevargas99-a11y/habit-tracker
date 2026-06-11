@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { expandRecurrence } from "@/lib/calendar/recurrence";
+import { zonedStartOfDayUTC, zonedEndOfDayUTC, toLocalDateStr } from "@/lib/date/local";
 
 // GET /api/calendar/range?from=YYYY-MM-DD&to=YYYY-MM-DD
 // Devuelve eventos custom + workouts + meals agrupados por día.
@@ -19,8 +20,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "from/to inválidos" }, { status: 400 });
     }
 
-    const fromDate = new Date(`${from}T00:00:00Z`);
-    const toDate = new Date(`${to}T23:59:59Z`);
+    // Ventana en la TZ del usuario, no en UTC. Antes [from 00:00Z, to
+    // 23:59Z] dejaba fuera los eventos de 19:00–23:59 hora Lima del último
+    // día (caen al día UTC siguiente) → desaparecían de la vista.
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { timezone: true },
+    });
+    const tz = profile?.timezone ?? null;
+    const fromDate = zonedStartOfDayUTC(from, tz);
+    const toDate = zonedEndOfDayUTC(to, tz);
 
     const [rawEvents, workouts, meals, habitLogs, milestones] = await Promise.all([
       prisma.calendarEvent.findMany({
@@ -96,6 +105,7 @@ export async function GET(req: NextRequest) {
         fromDate,
         toDate,
         ev.recurrenceEnd,
+        tz,
       );
       for (const occ of occs) {
         events.push({
@@ -112,7 +122,7 @@ export async function GET(req: NextRequest) {
     // que los días con eventos recurrentes se marquen correctamente.
     const density: Record<string, number> = {};
     for (const e of events) {
-      const d = e.startAt.toISOString().split("T")[0];
+      const d = toLocalDateStr(e.startAt, tz); // clave en día civil del user
       density[d] = (density[d] ?? 0) + 1;
     }
     for (const w of workouts) density[w.date] = (density[w.date] ?? 0) + 1;

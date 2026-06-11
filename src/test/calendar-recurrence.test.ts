@@ -220,6 +220,47 @@ describe("expandRecurrence", () => {
   });
 });
 
+describe("expandRecurrence — tz-aware (Lima UTC-5)", () => {
+  // "Lunes 20:00 Lima" → seed = martes 01:00Z. Sin tz, BYDAY=MO recurría
+  // los domingos (día de semana UTC del seed). Con tz debe caer en lunes.
+  it("WEEKLY BYDAY=MO a las 20:00 Lima recurre los lunes, no domingos", () => {
+    const seed = d("2026-06-09T01:00:00Z"); // lunes 8-jun 20:00 Lima
+    const rangeStart = d("2026-06-08T05:00:00Z"); // lun 8 00:00 Lima
+    const rangeEnd = d("2026-06-22T04:59:59Z"); // dom 21 23:59 Lima
+    const occs = expandRecurrence(
+      seed,
+      null,
+      "FREQ=WEEKLY;BYDAY=MO",
+      rangeStart,
+      rangeEnd,
+      null,
+      "America/Lima",
+    );
+    // Cada ocurrencia debe ser un lunes 20:00 hora Lima (01:00Z del martes).
+    for (const o of occs) {
+      const limaParts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Lima",
+        weekday: "short",
+        hour: "2-digit",
+        hour12: false,
+      }).formatToParts(o.startAt);
+      expect(limaParts.find((p) => p.type === "weekday")?.value).toBe("Mon");
+      expect(limaParts.find((p) => p.type === "hour")?.value).toBe("20");
+    }
+    expect(occs.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("evento vespertino del último día del rango NO se pierde (window tz)", () => {
+    // Evento 14-jun 20:00 Lima = 15-jun 01:00Z. Con ventana tz del día 14
+    // debe intersectar; con ventana UTC quedaba fuera.
+    const seed = d("2026-06-15T01:00:00Z");
+    const rangeStart = d("2026-06-08T05:00:00Z");
+    const rangeEnd = d("2026-06-15T04:59:59Z"); // dom 14 23:59 Lima
+    const occs = expandRecurrence(seed, null, null, rangeStart, rangeEnd, null, "America/Lima");
+    expect(occs).toHaveLength(1);
+  });
+});
+
 describe("humanReadableRecurrence", () => {
   it("muestra días en español", () => {
     expect(humanReadableRecurrence("FREQ=WEEKLY;BYDAY=MO,TH")).toBe(

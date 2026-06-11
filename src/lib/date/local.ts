@@ -118,6 +118,77 @@ export function startOfWeekLocal(date: Date, tz?: string | null): Date {
   return d;
 }
 
+/**
+ * Componentes de pared (wall-clock) de un instante en una TZ dada.
+ * weekday: 0=Dom..6=Sáb.
+ */
+export function zonedParts(
+  date: Date,
+  tz: string,
+): { year: number; month: number; day: number; weekday: number; hour: number; minute: number; second: number } {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: tz,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    weekday: "short",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(date);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
+  const wkMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  let hour = parseInt(get("hour"), 10);
+  if (hour === 24) hour = 0; // algunos motores devuelven "24" a medianoche
+  return {
+    year: parseInt(get("year"), 10),
+    month: parseInt(get("month"), 10),
+    day: parseInt(get("day"), 10),
+    weekday: wkMap[get("weekday")] ?? 0,
+    hour,
+    minute: parseInt(get("minute"), 10),
+    second: parseInt(get("second"), 10),
+  };
+}
+
+/**
+ * Instante UTC que corresponde a una hora de pared (Y-M-D H:M:S) en una TZ.
+ * Usa el truco de offset de 1 iteración (exacto en zonas sin DST como Lima;
+ * en transiciones DST puede errar 1h en la hora ambigua, aceptable aquí).
+ */
+export function zonedWallTimeToUtc(
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  second: number,
+  tz: string,
+): Date {
+  const asUTC = Date.UTC(year, month - 1, day, hour, minute, second);
+  const p = zonedParts(new Date(asUTC), tz);
+  const tzAsUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  const offset = tzAsUTC - asUTC; // cuánto adelanta la TZ respecto a UTC
+  return new Date(asUTC - offset);
+}
+
+/** Instante UTC del inicio del día civil `dateStr` en la TZ del usuario. */
+export function zonedStartOfDayUTC(dateStr: string, tz?: string | null): Date {
+  const z = resolveTimezone(tz);
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (!m) return new Date(NaN);
+  return zonedWallTimeToUtc(+m[1], +m[2], +m[3], 0, 0, 0, z);
+}
+
+/** Instante UTC del fin del día civil `dateStr` (23:59:59.999) en la TZ. */
+export function zonedEndOfDayUTC(dateStr: string, tz?: string | null): Date {
+  const start = zonedStartOfDayUTC(dateStr, tz);
+  if (isNaN(start.getTime())) return start;
+  return new Date(start.getTime() + 24 * 60 * 60 * 1000 - 1);
+}
+
 /** ¿Dos fechas caen en el mismo día civil en TZ local? */
 export function sameLocalDay(
   a: Date | string,
