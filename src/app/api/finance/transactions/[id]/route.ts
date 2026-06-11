@@ -5,6 +5,7 @@ import { parseJson, transactionUpdateSchema } from "@/lib/validation";
 import {
   sourceBalanceDelta,
   destinationBalanceDelta,
+  roundCents,
   type TxnType,
 } from "@/lib/finance/balance";
 
@@ -27,28 +28,27 @@ async function applyTxnToBalances(
 ) {
   const src = await db.financialAccount.findUnique({
     where: { id: txn.accountId },
-    select: { type: true },
+    select: { type: true, balance: true },
   });
-  await db.financialAccount.update({
-    where: { id: txn.accountId },
-    data: {
-      balance: {
-        increment:
-          sign * sourceBalanceDelta(src?.type, txn.type as TxnType, txn.amount),
-      },
-    },
-  });
+  if (src) {
+    const delta = sign * sourceBalanceDelta(src.type, txn.type as TxnType, txn.amount);
+    await db.financialAccount.update({
+      where: { id: txn.accountId },
+      data: { balance: roundCents(src.balance + delta) },
+    });
+  }
   if (txn.type === "transfer" && txn.transferToAccountId) {
     const dest = await db.financialAccount.findUnique({
       where: { id: txn.transferToAccountId },
-      select: { type: true },
+      select: { type: true, balance: true },
     });
-    await db.financialAccount.update({
-      where: { id: txn.transferToAccountId },
-      data: {
-        balance: { increment: sign * destinationBalanceDelta(dest?.type, txn.amount) },
-      },
-    });
+    if (dest) {
+      const delta = sign * destinationBalanceDelta(dest.type, txn.amount);
+      await db.financialAccount.update({
+        where: { id: txn.transferToAccountId },
+        data: { balance: roundCents(dest.balance + delta) },
+      });
+    }
   }
 }
 
@@ -71,7 +71,8 @@ export async function PATCH(
     // usuario no edita conserva el valor anterior).
     const newAccountId = "accountId" in d && d.accountId ? d.accountId : existing.accountId;
     const newType = ("type" in d && d.type ? d.type : existing.type) as TxnType;
-    const newAmount = "amount" in d && d.amount != null ? d.amount : existing.amount;
+    const newAmount =
+      "amount" in d && d.amount != null ? roundCents(d.amount) : existing.amount;
     const newTransferTo =
       "transferToAccountId" in d ? d.transferToAccountId ?? null : existing.transferToAccountId;
 
@@ -131,7 +132,7 @@ export async function PATCH(
         data: {
           ...("accountId" in d ? { accountId: d.accountId } : {}),
           ...("date" in d ? { date: d.date } : {}),
-          ...("amount" in d ? { amount: d.amount } : {}),
+          ...("amount" in d ? { amount: newAmount } : {}),
           ...("type" in d ? { type: d.type } : {}),
           ...("category" in d ? { category: d.category } : {}),
           ...("subcategory" in d ? { subcategory: d.subcategory ?? null } : {}),

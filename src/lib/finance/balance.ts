@@ -16,6 +16,16 @@
 
 export type TxnType = "income" | "expense" | "transfer";
 
+/**
+ * Redondea a centavos (2 decimales). Los saldos y montos se guardan como
+ * Float; sin redondear, sumar/restar acumula deriva binaria
+ * (0.1 + 0.2 = 0.30000000000000004). Aplicar esto en cada escritura
+ * mantiene los valores en centavos exactos para la práctica.
+ */
+export function roundCents(n: number): number {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
+
 /** ¿Es una cuenta donde el balance representa deuda? */
 export function isLiabilityAccount(type: string | null | undefined): boolean {
   return type === "credit" || type === "loan";

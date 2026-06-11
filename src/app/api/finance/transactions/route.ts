@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
 import { parseJson, transactionCreateSchema } from "@/lib/validation";
-import { sourceBalanceDelta, destinationBalanceDelta } from "@/lib/finance/balance";
+import { sourceBalanceDelta, destinationBalanceDelta, roundCents } from "@/lib/finance/balance";
 
 export async function GET(req: NextRequest) {
   return withAuth(async (userId) => {
@@ -64,6 +64,7 @@ export async function POST(req: NextRequest) {
     // Si es transfer, verificar la cuenta destino (y obtener su tipo para
     // aplicar el signo correcto: transferir hacia una tarjeta reduce deuda).
     let toAccountType: string | null = null;
+    let toAccountBalance = 0;
     if (d.type === "transfer") {
       if (!d.transferToAccountId || d.transferToAccountId === d.accountId) {
         return NextResponse.json(
@@ -73,16 +74,18 @@ export async function POST(req: NextRequest) {
       }
       const toAccount = await prisma.financialAccount.findFirst({
         where: { id: d.transferToAccountId, userId },
-        select: { id: true, type: true },
+        select: { id: true, type: true, balance: true },
       });
       if (!toAccount) {
         return NextResponse.json({ error: "Cuenta destino no encontrada" }, { status: 404 });
       }
       toAccountType = toAccount.type;
+      toAccountBalance = toAccount.balance;
     }
 
     const today = new Date().toISOString().split("T")[0];
     const date = d.date ?? today;
+    const amount = roundCents(d.amount);
 
     // Transaction: crear + actualizar balance(s) de cuenta(s)
     const created = await prisma.$transaction(async (tx) => {
@@ -91,7 +94,7 @@ export async function POST(req: NextRequest) {
           userId,
           accountId: d.accountId,
           date,
-          amount: d.amount,
+          amount,
           type: d.type,
           category: d.category,
           subcategory: d.subcategory ?? null,
@@ -108,12 +111,11 @@ export async function POST(req: NextRequest) {
       });
 
       // Impacto sobre la cuenta origen (helper único respeta activo/pasivo).
+      // Leer-y-setear redondeado a centavos para no acumular deriva binaria.
       await tx.financialAccount.update({
         where: { id: d.accountId },
         data: {
-          balance: {
-            increment: sourceBalanceDelta(account.type, d.type, d.amount),
-          },
+          balance: roundCents(account.balance + sourceBalanceDelta(account.type, d.type, amount)),
         },
       });
 
@@ -123,7 +125,7 @@ export async function POST(req: NextRequest) {
         await tx.financialAccount.update({
           where: { id: d.transferToAccountId },
           data: {
-            balance: { increment: destinationBalanceDelta(toAccountType, d.amount) },
+            balance: roundCents(toAccountBalance + destinationBalanceDelta(toAccountType, amount)),
           },
         });
       }
