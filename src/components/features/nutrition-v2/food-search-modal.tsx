@@ -46,6 +46,27 @@ type Props = {
   onPick: (food: CatalogFood, grams: number) => void;
 };
 
+// servingSize está SIEMPRE en gramos/ml. servingUnit puede ser una unidad
+// discreta (pieza, taza, cucharada…) que indica cómo se cuenta el alimento:
+// 1 pieza = servingSize gramos. Para esas unidades el usuario debe ingresar
+// NÚMERO DE PORCIONES (no gramos), si no "2 huevos" se interpretaba como 2 g
+// → macros hasta 50× mal. Para g/ml el input es gramos directo.
+const CONTINUOUS_UNITS = new Set(["g", "gr", "gram", "grams", "ml", "mililitro"]);
+function isDiscreteUnit(unit: string): boolean {
+  return !CONTINUOUS_UNITS.has(unit.trim().toLowerCase());
+}
+function unitLabel(unit: string): string {
+  const u = unit.trim().toLowerCase();
+  if (u === "piece" || u === "unit" || u === "unidad") return "porción";
+  return unit;
+}
+/** Multiplicador sobre los macros base según lo que ingresó el usuario. */
+function servingFactor(food: CatalogFood, quantityStr: string): number {
+  const n = parseFloat(quantityStr);
+  if (!(n > 0)) return 0;
+  return isDiscreteUnit(food.servingUnit) ? n : n / food.servingSize;
+}
+
 export default function FoodSearchModal({ open, onClose, onPick }: Props) {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("all");
@@ -88,14 +109,22 @@ export default function FoodSearchModal({ open, onClose, onPick }: Props) {
   }, [foods]);
 
   useEffect(() => {
-    if (selected) setQuantity(String(selected.servingSize));
+    if (!selected) return;
+    // Discreto → arranca en 1 porción; continuo → arranca en servingSize gramos.
+    setQuantity(isDiscreteUnit(selected.servingUnit) ? "1" : String(selected.servingSize));
   }, [selected]);
 
   if (!open) return null;
 
   function handleAdd() {
     if (!selected) return;
-    const grams = parseFloat(quantity) || selected.servingSize;
+    const n = parseFloat(quantity);
+    const discrete = isDiscreteUnit(selected.servingUnit);
+    // Para unidades discretas convertimos porciones → gramos (el server
+    // siempre calcula ratio = gramos / servingSize).
+    const grams = discrete
+      ? (n > 0 ? n : 1) * selected.servingSize
+      : (n > 0 ? n : selected.servingSize);
     onPick(selected, grams);
     setSelected(null);
     setQuantity("");
@@ -231,18 +260,22 @@ export default function FoodSearchModal({ open, onClose, onPick }: Props) {
               )}
             </h3>
             <p className="text-xs text-brand-warm mt-1 mb-4">
-              Por {selected.servingSize}
-              {selected.servingUnit}: {Math.round(selected.calories)} kcal · P{" "}
-              {selected.protein}g · C {selected.carbs}g · F {selected.fat}g
+              {isDiscreteUnit(selected.servingUnit)
+                ? `Por ${unitLabel(selected.servingUnit)} (${selected.servingSize} g)`
+                : `Por ${selected.servingSize}${selected.servingUnit}`}
+              : {Math.round(selected.calories)} kcal · P {selected.protein}g · C{" "}
+              {selected.carbs}g · F {selected.fat}g
             </p>
 
             <label className="block text-sm font-medium text-brand-dark mb-2">
-              Cantidad ({selected.servingUnit})
+              {isDiscreteUnit(selected.servingUnit)
+                ? `Porciones (1 = ${selected.servingSize} g)`
+                : "Cantidad (g)"}
             </label>
             <input
               type="number"
-              min="1"
-              step="1"
+              min={isDiscreteUnit(selected.servingUnit) ? "0.5" : "1"}
+              step={isDiscreteUnit(selected.servingUnit) ? "0.5" : "1"}
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               className="w-40 px-4 py-3 rounded-button border border-brand-cream bg-brand-paper text-brand-dark text-lg font-mono focus:outline-none focus:border-accent"
@@ -252,39 +285,28 @@ export default function FoodSearchModal({ open, onClose, onPick }: Props) {
             {quantity && parseFloat(quantity) > 0 && (
               <div className="mt-4 bg-brand-cream/30 rounded-lg p-4">
                 <p className="text-xs text-brand-warm mb-2">
-                  Macros calculados para {quantity}
-                  {selected.servingUnit}:
+                  {isDiscreteUnit(selected.servingUnit)
+                    ? `Macros para ${quantity} ${unitLabel(selected.servingUnit)}${parseFloat(quantity) === 1 ? "" : "es"} (${Math.round(parseFloat(quantity) * selected.servingSize)} g):`
+                    : `Macros calculados para ${quantity} g:`}
                 </p>
                 <div className="grid grid-cols-4 gap-3 text-center">
                   <Macro
                     label="Cal"
-                    value={Math.round(
-                      (selected.calories * parseFloat(quantity)) /
-                        selected.servingSize
-                    )}
+                    value={Math.round(selected.calories * servingFactor(selected, quantity))}
                   />
                   <Macro
                     label="Prot"
-                    value={Math.round(
-                      (selected.protein * parseFloat(quantity)) /
-                        selected.servingSize
-                    )}
+                    value={Math.round(selected.protein * servingFactor(selected, quantity))}
                     suffix="g"
                   />
                   <Macro
                     label="Carbs"
-                    value={Math.round(
-                      (selected.carbs * parseFloat(quantity)) /
-                        selected.servingSize
-                    )}
+                    value={Math.round(selected.carbs * servingFactor(selected, quantity))}
                     suffix="g"
                   />
                   <Macro
                     label="Grasa"
-                    value={Math.round(
-                      (selected.fat * parseFloat(quantity)) /
-                        selected.servingSize
-                    )}
+                    value={Math.round(selected.fat * servingFactor(selected, quantity))}
                     suffix="g"
                   />
                 </div>
