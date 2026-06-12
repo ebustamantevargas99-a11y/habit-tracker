@@ -97,6 +97,7 @@ model User {
   calendarEvents CalendarEvent[]
   dayTemplates   DayTemplate[]
   calendarGroups CalendarGroup[]
+  googleCalendar GoogleCalendarConnection?
 }
 
 model Account {
@@ -1313,15 +1314,38 @@ model CalendarEvent {
   sourceModule String? // workout | meal | focus | meditation | cycle | habit | fasting
   sourceId     String?
 
+  // Sincronización externa (Google Calendar): id del evento en Google para
+  // deduplicar/actualizar en cada sync. Null para eventos nativos de la app.
+  googleEventId String?
+
   completed Boolean @default(false)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, googleEventId])
   @@index([userId, startAt])
   @@index([userId, type])
   @@index([groupId])
+}
+
+// Conexión OAuth a Google Calendar (1 por usuario). Solo lectura: la app
+// refleja el Google Calendar del usuario. Guarda el refresh token para
+// renovar acceso y el syncToken para sync incremental.
+model GoogleCalendarConnection {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  email          String? // cuenta de Google conectada (informativo)
+  accessToken    String?   @db.Text
+  refreshToken   String    @db.Text
+  expiresAt      DateTime? // expiración del accessToken
+  calendarId     String    @default("primary")
+  syncToken      String?   @db.Text // para listEvents incremental
+  lastSyncedAt   DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Grupos de calendarios (estilo iCloud sidebar).

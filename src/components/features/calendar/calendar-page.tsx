@@ -43,6 +43,8 @@ export default function CalendarPage() {
   // Sidebar state
   const [collapsed, setCollapsed] = useState<boolean>(false);
   const [groups, setGroups] = useState<CalendarGroup[]>([]);
+  // Se incrementa tras sincronizar Google → remonta las vistas para refetch.
+  const [syncKey, setSyncKey] = useState(0);
 
   useEffect(() => {
     try {
@@ -111,6 +113,7 @@ export default function CalendarPage() {
         collapsed={collapsed}
         onToggleCollapsed={toggleCollapsed}
         onGroupsChange={handleGroupsChange}
+        onGoogleSynced={() => setSyncKey((k) => k + 1)}
       />
 
       {/* Contenido principal */}
@@ -173,11 +176,12 @@ export default function CalendarPage() {
         </div>
 
         {view === "today" && (
-          <TodayView selectedDate={selectedDate} onDateChange={setSelectedDate} />
+          <TodayView key={syncKey} selectedDate={selectedDate} onDateChange={setSelectedDate} />
         )}
-        {view === "week" && <WeekView groups={groups} />}
+        {view === "week" && <WeekView key={syncKey} groups={groups} />}
         {view === "month" && (
           <MonthView
+            key={syncKey}
             groups={groups}
             onDrillDown={(date) => {
               setSelectedDate(date);

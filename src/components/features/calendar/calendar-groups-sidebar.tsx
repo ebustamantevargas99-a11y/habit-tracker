@@ -16,12 +16,15 @@ import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import type { CalendarGroup } from "./types";
+import GoogleCalendarConnect from "./google-calendar-connect";
 
 interface Props {
   collapsed: boolean;
   onToggleCollapsed: () => void;
   /** Llamado cada vez que cambia la lista (nuevo, edit, delete, toggle visible) */
   onGroupsChange: (groups: CalendarGroup[]) => void;
+  /** Llamado tras sincronizar/desconectar Google → refrescar grupos y vistas. */
+  onGoogleSynced?: () => void;
 }
 
 const PALETTE: string[] = [
@@ -41,6 +44,7 @@ export default function CalendarGroupsSidebar({
   collapsed,
   onToggleCollapsed,
   onGroupsChange,
+  onGoogleSynced,
 }: Props) {
   const [groups, setGroups] = useState<CalendarGroup[]>([]);
   const [loading, setLoading] = useState(true);
@@ -275,6 +279,13 @@ export default function CalendarGroupsSidebar({
           </button>
         )}
       </div>
+
+      <GoogleCalendarConnect
+        onSynced={() => {
+          void refresh();
+          onGoogleSynced?.();
+        }}
+      />
 
       <footer className="px-3 py-2 border-t border-brand-cream text-[10px] text-brand-tan text-center">
         Eventos sin grupo siempre se muestran
