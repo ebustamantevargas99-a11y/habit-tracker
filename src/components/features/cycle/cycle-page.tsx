@@ -3,7 +3,7 @@ import { todayLocal, parseLocalDateStr, shiftDaysLocal } from "@/lib/date/local"
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Droplet, Calendar, Loader2, Plus, Sparkles, TrendingUp, Heart } from "lucide-react";
+import { Droplet, Calendar, Loader2, Plus, Sparkles, TrendingUp, Heart, Pencil, Trash2, Check, X } from "lucide-react";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
@@ -131,6 +131,27 @@ export default function CyclePage() {
       return log;
     } catch {
       toast.error("Error guardando");
+    }
+  }
+
+  async function updateCycleStartDate(id: string, startDate: string) {
+    try {
+      await api.patch(`/cycle/cycles/${id}`, { startDate });
+      await refresh();
+      toast.success("Ciclo actualizado");
+    } catch {
+      toast.error("Error actualizando");
+    }
+  }
+
+  async function deleteCycle(id: string) {
+    if (!confirm("¿Borrar este ciclo? También se eliminan sus registros diarios.")) return;
+    try {
+      await api.delete(`/cycle/cycles/${id}`);
+      await refresh();
+      toast.success("Ciclo borrado");
+    } catch {
+      toast.error("Error borrando");
     }
   }
 
@@ -277,6 +298,26 @@ export default function CyclePage() {
               value={cycles.reduce((s, c) => s + c.periodLogs.length, 0)}
             />
           </div>
+
+          {/* Historial de ciclos — editable */}
+          {cycles.length > 0 && (
+            <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
+              <h3 className="font-serif text-base font-semibold text-brand-dark mb-3">
+                Historial de ciclos
+              </h3>
+              <ul className="flex flex-col gap-2">
+                {cycles.slice(0, 12).map((c, i) => (
+                  <CycleRow
+                    key={c.id}
+                    cycle={c}
+                    isLatest={i === 0}
+                    onUpdate={(date) => updateCycleStartDate(c.id, date)}
+                    onDelete={() => deleteCycle(c.id)}
+                  />
+                ))}
+              </ul>
+            </div>
+          )}
 
           {/* Últimos logs */}
           <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
@@ -498,5 +539,115 @@ function SliderRow({
         ))}
       </div>
     </div>
+  );
+}
+
+function CycleRow({
+  cycle,
+  isLatest,
+  onUpdate,
+  onDelete,
+}: {
+  cycle: MenstrualCycle;
+  isLatest: boolean;
+  onUpdate: (startDate: string) => void;
+  onDelete: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [date, setDate] = useState(cycle.startDate);
+  const longLabel = (s: string) =>
+    parseLocalDateStr(s).toLocaleDateString("es-MX", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+
+  function save() {
+    if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      toast.error("Fecha inválida");
+      return;
+    }
+    onUpdate(date);
+    setEditing(false);
+  }
+
+  return (
+    <li className="flex items-center gap-3 px-3 py-2 rounded-lg bg-brand-warm-white border border-brand-cream">
+      <div
+        className="shrink-0 w-2 h-8 rounded-full"
+        style={{ backgroundColor: isLatest ? "var(--color-accent)" : "var(--color-tan)" }}
+        aria-hidden
+      />
+      <div className="flex-1 min-w-0">
+        {editing ? (
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="px-2 py-1 rounded border border-brand-cream bg-brand-paper text-xs text-brand-dark focus:outline-none focus:border-accent"
+            autoFocus
+          />
+        ) : (
+          <>
+            <p className="text-sm font-semibold text-brand-dark m-0">
+              {longLabel(cycle.startDate)}
+              {isLatest && (
+                <span className="ml-2 inline-block text-[10px] uppercase tracking-widest text-accent">
+                  Actual
+                </span>
+              )}
+            </p>
+            <p className="text-[11px] text-brand-warm m-0">
+              {cycle.cycleLength ? `Duró ${cycle.cycleLength} días` : "En curso"} ·{" "}
+              {cycle.periodLogs.length} registro{cycle.periodLogs.length === 1 ? "" : "s"}
+            </p>
+          </>
+        )}
+      </div>
+      <div className="shrink-0 flex gap-0.5">
+        {editing ? (
+          <>
+            <button
+              onClick={save}
+              className="p-1.5 rounded hover:bg-brand-cream text-success"
+              title="Guardar"
+              aria-label="Guardar"
+            >
+              <Check size={14} />
+            </button>
+            <button
+              onClick={() => {
+                setDate(cycle.startDate);
+                setEditing(false);
+              }}
+              className="p-1.5 rounded hover:bg-brand-cream text-brand-warm"
+              title="Cancelar"
+              aria-label="Cancelar"
+            >
+              <X size={14} />
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={() => setEditing(true)}
+              className="p-1.5 rounded hover:bg-brand-cream text-brand-warm"
+              title="Editar fecha de inicio"
+              aria-label="Editar fecha"
+            >
+              <Pencil size={13} />
+            </button>
+            <button
+              onClick={onDelete}
+              className="p-1.5 rounded hover:bg-danger-light/40 hover:text-danger text-brand-warm"
+              title="Borrar ciclo"
+              aria-label="Borrar ciclo"
+            >
+              <Trash2 size={13} />
+            </button>
+          </>
+        )}
+      </div>
+    </li>
   );
 }
