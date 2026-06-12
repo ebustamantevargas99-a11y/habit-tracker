@@ -1,7 +1,7 @@
 "use client";
 import { todayLocal } from "@/lib/date/local";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Timer, Trash2, GripVertical, Zap } from "lucide-react";
 import ExerciseSelector, { type CatalogExercise } from "./exercise-selector";
@@ -102,19 +102,82 @@ function findPreviousBest(
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
+const DRAFT_KEY = "ut-fitness-v2-draft";
+
+interface Draft {
+  name: string;
+  exercises: LoggedExercise[];
+  startedAt: string;
+}
+
+function loadDraft(): Draft | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    const d = JSON.parse(raw) as Draft;
+    if (!Array.isArray(d.exercises)) return null;
+    return d;
+  } catch {
+    return null;
+  }
+}
+
 export default function WorkoutLogger() {
+  // Draft persistente: si recargas, vuelves a casa o se reinicia el dev
+  // server, los sets ya registrados sobreviven hasta que guardes o cierres.
+  const initialDraft = useRef<Draft | null>(loadDraft());
+
   const [workoutName, setWorkoutName] = useState(() => {
+    if (initialDraft.current?.name) return initialDraft.current.name;
     const d = new Date();
     const hour = d.getHours();
     if (hour < 11) return "Entreno de mañana";
     if (hour < 17) return "Entreno de tarde";
     return "Entreno de noche";
   });
-  const [exercises, setExercises] = useState<LoggedExercise[]>([]);
+  const [exercises, setExercises] = useState<LoggedExercise[]>(
+    () => initialDraft.current?.exercises ?? [],
+  );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [activeTimer, setActiveTimer] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [startTime] = useState(new Date());
+  const [startTime] = useState(() =>
+    initialDraft.current?.startedAt ? new Date(initialDraft.current.startedAt) : new Date(),
+  );
+
+  // Autosave del draft tras cada cambio relevante.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (exercises.length === 0) {
+      // Sin ejercicios → no persistimos basura.
+      window.localStorage.removeItem(DRAFT_KEY);
+      return;
+    }
+    try {
+      window.localStorage.setItem(
+        DRAFT_KEY,
+        JSON.stringify({
+          name: workoutName,
+          exercises,
+          startedAt: startTime.toISOString(),
+        } satisfies Draft),
+      );
+    } catch {
+      /* sin localStorage o quota llena: el draft no persiste, no es crítico */
+    }
+  }, [workoutName, exercises, startTime]);
+
+  // Aviso si intentas cerrar/recargar con un draft sin guardar.
+  useEffect(() => {
+    if (exercises.length === 0) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [exercises.length]);
 
   async function addExercise(ex: CatalogExercise) {
     const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(ex.muscleGroup);
@@ -364,6 +427,14 @@ export default function WorkoutLogger() {
       }
       setExercises([]);
       setActiveTimer(null);
+      // Guardado OK → limpiar draft persistente.
+      if (typeof window !== "undefined") {
+        try {
+          window.localStorage.removeItem(DRAFT_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
     } catch {
       toast.error("Error guardando el entreno");
     } finally {

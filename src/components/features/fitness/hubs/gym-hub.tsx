@@ -214,21 +214,10 @@ export default function GymHub() {
 
       {subTab === "hoy" && (
         <div className="flex flex-col gap-6">
-          {/* Nuevo logger pro v2 — interfaz principal */}
+          {/* Logger único v2 con autosave a localStorage. Antes había DOS
+              loggers en esta pestaña (v2 + clásico) — duplicaba sesiones
+              y guardaba por dos caminos distintos. Ahora una sola fuente. */}
           <WorkoutLoggerV2 />
-
-          {/* Logger clásico, útil como rápido sketch + control de sesión */}
-          <div className="mt-2">
-            <h3 className="font-serif text-base text-brand-dark m-0 mb-3">
-              Logger clásico (draft en vivo)
-            </h3>
-            <WorkoutTab
-              exercises={sessionExercises}
-              onExercisesChange={setSessionExercises}
-              isSaving={isSavingSession}
-              onFinish={handleFinishSession}
-            />
-          </div>
         </div>
       )}
 
