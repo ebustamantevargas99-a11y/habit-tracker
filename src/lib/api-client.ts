@@ -14,6 +14,9 @@ async function apiFetch<T>(
   options?: RequestInit
 ): Promise<T> {
   const res = await fetch(`/api${path}`, {
+    // no-store evita que el navegador sirva respuestas GET cacheadas
+    // (datos viejos tras marcar un hábito, mover dinero, etc.).
+    cache: "no-store",
     headers: { "Content-Type": "application/json" },
     ...options,
   });
