@@ -19,6 +19,7 @@ interface Status {
 export default function GoogleCalendarConnect({ onSynced }: { onSynced?: () => void }) {
   const [status, setStatus] = useState<Status | null>(null);
   const [syncing, setSyncing] = useState(false);
+  const [autoSynced, setAutoSynced] = useState(false);
 
   const loadStatus = useCallback(async () => {
     try {
@@ -31,6 +32,28 @@ export default function GoogleCalendarConnect({ onSynced }: { onSynced?: () => v
   useEffect(() => {
     void loadStatus();
   }, [loadStatus]);
+
+  // Auto-sincronizar al abrir el calendario: si está conectado y la última
+  // sync fue hace > 2 min, jala los cambios de Google en silencio (es
+  // incremental, barato). Así los cambios que hagas en Google aparecen
+  // automáticamente sin apretar nada. Una vez por montaje.
+  useEffect(() => {
+    if (!status?.connected || autoSynced) return;
+    setAutoSynced(true);
+    const stale =
+      !status.lastSyncedAt ||
+      Date.now() - new Date(status.lastSyncedAt).getTime() > 2 * 60 * 1000;
+    if (!stale) return;
+    api
+      .post<{ imported: number }>("/calendar/google/sync", {})
+      .then(() => {
+        void loadStatus();
+        onSynced?.();
+      })
+      .catch(() => {
+        /* silencioso: el botón manual sigue disponible */
+      });
+  }, [status, autoSynced, loadStatus, onSynced]);
 
   // Mostrar resultado del callback (?google=connected|error) una sola vez.
   useEffect(() => {
