@@ -15,11 +15,12 @@ import {
   ROOTED_THRESHOLD,
 } from '@/lib/habit-utils';
 import { prisma } from '@/lib/prisma';
+import { shiftDaysLocal } from '@/lib/date/local';
 
+// recalculateStreak (sin tz) opera en la fecha civil local; construimos las
+// fechas de prueba igual para no romper al cruzar medianoche UTC.
 function dateOffset(daysAgo: number): string {
-  const d = new Date();
-  d.setDate(d.getDate() - daysAgo);
-  return d.toISOString().split('T')[0];
+  return shiftDaysLocal(-daysAgo);
 }
 
 function makeLogs(completedDaysAgo: number[]) {

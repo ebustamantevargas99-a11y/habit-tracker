@@ -11,13 +11,16 @@ vi.mock('@/lib/api-client', () => ({
 
 import { useHabitStore } from '@/stores/habit-store';
 import { api } from '@/lib/api-client';
+import { todayLocal, shiftDaysLocal } from '@/lib/date/local';
 import type { Habit, HabitLog } from '@/types';
 
 const mockGet    = api.get    as ReturnType<typeof vi.fn>;
 const mockPost   = api.post   as ReturnType<typeof vi.fn>;
 const mockDelete = api.delete as ReturnType<typeof vi.fn>;
 
-const TODAY = new Date().toISOString().split('T')[0];
+// El store usa la fecha civil local (todayLocal), no UTC — los tests deben
+// usar la misma para no romperse al cruzar medianoche UTC.
+const TODAY = todayLocal();
 
 const SAMPLE_HABITS: Habit[] = [
   { id: 'h1', name: 'Run', icon: '🏃', category: 'fitness', timeOfDay: 'all', frequency: 'daily', targetDays: [0,1,2,3,4,5,6], streakCurrent: 5, streakBest: 10, strength: 50, isActive: true, createdAt: '2026-01-01' },
@@ -125,12 +128,10 @@ describe('useHabitStore — getCompletionRate()', () => {
 
 describe('useHabitStore — getTodayLogs()', () => {
   it('returns only today\'s logs', () => {
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
     useHabitStore.setState({
       logs: [
         ...SAMPLE_LOGS,
-        { id: 'l3', habitId: 'h1', date: yesterday.toISOString().split('T')[0], completed: true },
+        { id: 'l3', habitId: 'h1', date: shiftDaysLocal(-1), completed: true },
       ],
     });
     const todayLogs = useHabitStore.getState().getTodayLogs();
