@@ -1,6 +1,7 @@
 "use client";
 
 import Hero from "./hero";
+import TodayChecklist from "./today-checklist";
 import Vitals from "./vitals";
 import Radar from "./radar";
 import HabitForest from "./habit-forest";
@@ -34,6 +35,9 @@ export default function HomeV2() {
         userName={data.user.name}
         showCierre={showCierre}
       />
+
+      {/* Lo primero accionable: marca tus hábitos del día sin salir del inicio. */}
+      <TodayChecklist />
 
       <Vitals modules={data.enabledModules} data={data} />
 
