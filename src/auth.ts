@@ -11,10 +11,27 @@ declare module "next-auth" {
 }
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
+import { CredentialsSignin } from "next-auth";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { logSecurityEvent } from "@/lib/security-log";
 import { logger } from "@/lib/logger";
+import { verifyToken, consumeBackupCode } from "@/lib/two-factor";
+
+/**
+ * Errores tipados que el frontend del login reconoce (login/page.tsx busca
+ * estos `code` en result.error). Extendemos CredentialsSignin para que
+ * NextAuth respete el `code` en vez de mapear a "Configuration".
+ */
+class TwoFactorRequiredError extends CredentialsSignin {
+  code = "TwoFactorRequired";
+}
+class TwoFactorInvalidError extends CredentialsSignin {
+  code = "TwoFactorInvalid";
+}
+class AccountLockedError extends CredentialsSignin {
+  code = "AccountLocked";
+}
 
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MINUTES = 30;
@@ -81,12 +98,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: {
         email: { label: "Email", type: "email" },
         password: { label: "Contraseña", type: "password" },
+        twoFactorToken: { label: "2FA", type: "text" },
       },
       authorize: async (credentials) => {
         if (!credentials?.email || !credentials?.password) return null;
 
         const email = String(credentials.email).toLowerCase().trim();
         const password = String(credentials.password);
+        const twoFactorToken = String(credentials.twoFactorToken ?? "").trim();
 
         const user = await prisma.user.findUnique({
           where: { email },
@@ -113,7 +132,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               until: user.lockedUntil.toISOString(),
             },
           });
-          return null;
+          throw new AccountLockedError();
         }
 
         // Caso 3: password incorrecto → incrementar contador
@@ -141,6 +160,49 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             },
           });
           return null;
+        }
+
+        // Caso 3.5: 2FA. Si el usuario lo tiene activado y no envía token,
+        // pedirlo. Si lo envía, validarlo (TOTP o backup code). El password
+        // ya pasó: si el 2FA falla, NO incrementamos failedLoginAttempts
+        // (solo cuenta password) para no bloquear cuentas por un dígito.
+        if (user.twoFactorEnabled && user.twoFactorSecret) {
+          if (!twoFactorToken) {
+            void logSecurityEvent({
+              eventType: "login_failed",
+              userId: user.id,
+              email,
+              metadata: { reason: "2fa_required" },
+            });
+            throw new TwoFactorRequiredError();
+          }
+          // 6 dígitos → TOTP. Cualquier otra cosa → backup code.
+          const isTotp = /^\d{6}$/.test(twoFactorToken);
+          let ok = false;
+          if (isTotp) {
+            ok = verifyToken(twoFactorToken, user.twoFactorSecret);
+          } else {
+            const result = consumeBackupCode(
+              twoFactorToken,
+              user.twoFactorBackupCodes,
+            );
+            if (result.matched) {
+              ok = true;
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { twoFactorBackupCodes: result.remaining },
+              });
+            }
+          }
+          if (!ok) {
+            void logSecurityEvent({
+              eventType: "login_failed",
+              userId: user.id,
+              email,
+              metadata: { reason: "2fa_invalid" },
+            });
+            throw new TwoFactorInvalidError();
+          }
         }
 
         // Caso 4: login exitoso → reset contador + lastLoginAt

@@ -60,7 +60,10 @@ export default function LoginPage() {
       });
 
       if (result?.error) {
-        const code = String(result.error);
+        // NextAuth v5: el .error queda como "CredentialsSignin" y el código
+        // específico viaja en .code. Aceptamos ambos para retro-compat.
+        const r = result as { error?: string; code?: string };
+        const code = String(r.code ?? r.error ?? "");
         if (code.includes("TwoFactorRequired")) {
           setTwoFactorRequired(true);
           setError("");
