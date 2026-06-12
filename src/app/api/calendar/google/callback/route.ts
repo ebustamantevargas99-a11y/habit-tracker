@@ -7,7 +7,6 @@ import {
   verifyState,
   googleConfigured,
 } from "@/lib/calendar/google";
-import { syncGoogleCalendar } from "@/lib/calendar/google-sync";
 import { captureException } from "@/lib/sentry";
 
 // GET /api/calendar/google/callback?code=...&state=...
@@ -63,13 +62,9 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    // Sync inicial (no bloqueante para el redirect si falla).
-    try {
-      await syncGoogleCalendar(userId);
-    } catch (e) {
-      captureException(e, { tags: { area: "google-calendar-initial-sync" } });
-    }
-
+    // NO bloqueamos el redirect con la importación: en serverless una sync
+    // larga (muchos eventos recurrentes) cuelga la función. Redirigimos al
+    // instante; el auto-sync al cargar el calendario importa los eventos.
     return NextResponse.redirect(`${calendarUrl}&google=connected`);
   } catch (e) {
     captureException(e, { tags: { area: "google-calendar-callback" } });

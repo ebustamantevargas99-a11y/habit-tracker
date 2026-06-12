@@ -154,10 +154,13 @@ export async function listEvents(
   calendarId: string,
   syncToken: string | null,
   timeMinDaysAgo = 30,
+  timeMaxDaysAhead = 120,
 ): Promise<ListResult> {
   const events: GoogleEvent[] = [];
   let pageToken: string | undefined;
   let nextSyncToken: string | null = null;
+  let pages = 0;
+  const MAX_PAGES = 12; // tope de seguridad: ~3000 eventos máx por sync
 
   do {
     const params = new URLSearchParams({
@@ -168,15 +171,20 @@ export async function listEvents(
     if (syncToken) {
       params.set("syncToken", syncToken);
     } else {
-      const timeMin = new Date(Date.now() - timeMinDaysAgo * 86400000).toISOString();
-      params.set("timeMin", timeMin);
+      // Ventana acotada [-30d, +120d]: sin timeMax, las series recurrentes
+      // se expanden a miles de instancias y la función se cuelga/timeout.
+      params.set("timeMin", new Date(Date.now() - timeMinDaysAgo * 86400000).toISOString());
+      params.set("timeMax", new Date(Date.now() + timeMaxDaysAhead * 86400000).toISOString());
       params.set("orderBy", "startTime");
     }
     if (pageToken) params.set("pageToken", pageToken);
 
     const res = await fetch(
       `${CALENDAR_API}/calendars/${encodeURIComponent(calendarId)}/events?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: AbortSignal.timeout(8000),
+      },
     );
 
     if (res.status === 410) {
@@ -189,7 +197,8 @@ export async function listEvents(
     for (const item of data.items ?? []) events.push(item as GoogleEvent);
     pageToken = data.nextPageToken;
     if (data.nextSyncToken) nextSyncToken = data.nextSyncToken;
-  } while (pageToken);
+    pages++;
+  } while (pageToken && pages < MAX_PAGES);
 
   return { events, nextSyncToken, expired: false };
 }
