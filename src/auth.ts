@@ -10,6 +10,7 @@ declare module "next-auth" {
   }
 }
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { logSecurityEvent } from "@/lib/security-log";
@@ -18,12 +19,64 @@ import { logger } from "@/lib/logger";
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_DURATION_MINUTES = 30;
 
+const GOOGLE_ENABLED = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+
+/**
+ * Crea (o encuentra) el usuario de la app a partir de un login con Google.
+ * Sin adapter de DB: el enlace es por email. Si no existe, crea User +
+ * UserProfile + Gamification con los mismos defaults que el registro normal.
+ */
+async function upsertGoogleUser(
+  email: string,
+  name: string | null,
+  image: string | null,
+): Promise<{ id: string } | null> {
+  const normEmail = email.toLowerCase().trim();
+  const existing = await prisma.user.findUnique({
+    where: { email: normEmail },
+    select: { id: true },
+  });
+  if (existing) return existing;
+
+  const created = await prisma.user.create({
+    data: {
+      email: normEmail,
+      name: name ?? null,
+      image: image ?? null,
+      emailVerified: new Date(), // Google ya verificó el correo
+      profile: { create: {} },
+      gamification: { create: {} },
+    },
+    select: { id: true, email: true },
+  });
+  void logSecurityEvent({
+    eventType: "register",
+    userId: created.id,
+    email: created.email,
+    metadata: { via: "google" },
+  });
+  return { id: created.id };
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",
   },
   providers: [
+    ...(GOOGLE_ENABLED
+      ? [
+          Google({
+            clientId: process.env.GOOGLE_CLIENT_ID as string,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+            authorization: {
+              params: { access_type: "offline", prompt: "consent" },
+            },
+          }),
+        ]
+      : []),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
@@ -116,7 +169,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    jwt({ token, user }) {
+    async signIn({ account, profile }) {
+      // Google: exigir email verificado. Credentials se valida en authorize().
+      if (account?.provider === "google") {
+        const p = profile as { email?: string; email_verified?: boolean } | undefined;
+        return Boolean(p?.email) && p?.email_verified !== false;
+      }
+      return true;
+    },
+    async jwt({ token, user, account }) {
+      // Login con Google: enlazar (o crear) el usuario de la app por email.
+      if (account?.provider === "google" && user?.email) {
+        try {
+          const dbUser = await upsertGoogleUser(
+            user.email,
+            user.name ?? null,
+            user.image ?? null,
+          );
+          if (dbUser) {
+            token.id = dbUser.id;
+            token.iat = Math.floor(Date.now() / 1000);
+          }
+        } catch (e) {
+          logger.error("auth:google-upsert-failed", {
+            error: e instanceof Error ? e.message : String(e),
+          });
+          // Sin token.id la sesión queda inválida y no se filtra acceso.
+        }
+        return token;
+      }
       if (user) {
         token.id = user.id;
         // Marca el timestamp de emisión del token para invalidación por password change
