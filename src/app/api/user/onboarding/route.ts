@@ -44,6 +44,18 @@ export async function POST(req: NextRequest) {
       biologicalSex: d.biologicalSex as BiologicalSex,
     });
 
+    // Si el usuario ya completó onboarding antes y luego ajustó sus módulos
+    // manualmente en Configuración, no debemos PISAR su elección al
+    // re-hacer el cuestionario: fusionamos con lo existente.
+    const existing = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { onboardingCompleted: true, enabledModules: true },
+    });
+    const mergedModules =
+      existing?.onboardingCompleted && existing.enabledModules.length > 0
+        ? Array.from(new Set([...existing.enabledModules, ...enabledModules]))
+        : enabledModules;
+
     await prisma.user.update({
       where: { id: userId },
       data: { name: d.name },
@@ -69,7 +81,7 @@ export async function POST(req: NextRequest) {
         interests: d.interests,
         primaryGoals: d.primaryGoals,
         conditions: d.conditions,
-        enabledModules,
+        enabledModules: mergedModules,
         onboardingCompleted: true,
       },
       update: {
@@ -89,7 +101,7 @@ export async function POST(req: NextRequest) {
         interests: d.interests,
         primaryGoals: d.primaryGoals,
         conditions: d.conditions,
-        enabledModules,
+        enabledModules: mergedModules,
         onboardingCompleted: true,
       },
     });

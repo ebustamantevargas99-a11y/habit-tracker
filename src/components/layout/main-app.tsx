@@ -164,20 +164,12 @@ export default function MainApp() {
           {/* Right */}
           <div className="flex items-center gap-6">
             {activePage === "home" && (
-              <>
-                <button
-                  className="btn-primary text-sm"
-                  onClick={() => useAppStore.setState({ showMonthlySummary: true })}
-                >
-                  🎬 Resumen del mes
-                </button>
-                <button
-                  className="btn btn-md bg-brand-brown text-white hover:bg-brand-medium"
-                  onClick={() => useAppStore.setState({ showWeeklySummary: true })}
-                >
-                  Resumen semanal
-                </button>
-              </>
+              <button
+                className="btn-primary text-sm"
+                onClick={() => useAppStore.setState({ showMonthlySummary: true })}
+              >
+                🎬 Resumen del mes
+              </button>
             )}
 
             <button
@@ -206,7 +198,9 @@ export default function MainApp() {
       {showMonthlySummary && (
         <RewindModal onClose={() => useAppStore.setState({ showMonthlySummary: false })} />
       )}
-      {showWeeklySummary && (
+      {/* WeeklySummaryModal eliminado del top bar: usaba datos hardcoded.
+          El RewindModal del 'Resumen del mes' sí usa datos reales. */}
+      {false && showWeeklySummary && (
         <WeeklySummaryModal onClose={() => useAppStore.setState({ showWeeklySummary: false })} />
       )}
       {showOnboarding && (
