@@ -122,6 +122,38 @@ export default function LoginPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-[22px] shadow-[0_20px_60px_-15px_rgba(61,43,31,0.25),0_4px_20px_-5px_rgba(61,43,31,0.1)] border border-white p-10 md:p-12">
           {/* Header */}
           <header className="text-center mb-8">
+            {/* Escudo logo — mismo que el sidebar/PWA */}
+            <svg
+              viewBox="0 0 100 100"
+              aria-hidden
+              style={{
+                width: 56,
+                height: 56,
+                display: "block",
+                margin: "0 auto 14px",
+              }}
+            >
+              <path
+                d="M28 22 h44 v38 a22 22 0 0 1 -44 0 z"
+                fill="none"
+                stroke="#3D2B1F"
+                strokeWidth="4"
+                strokeLinejoin="round"
+              />
+              <text
+                x="50"
+                y="46"
+                fontFamily="Georgia, 'Times New Roman', serif"
+                fontSize="28"
+                fontWeight="700"
+                fill="#3D2B1F"
+                textAnchor="middle"
+                dominantBaseline="middle"
+              >
+                UT
+              </text>
+              <rect x="38" y="66" width="24" height="2" rx="1" fill="#B8860B" opacity="0.7" />
+            </svg>
             <h1
               className="font-display font-bold text-brand-dark m-0 leading-none"
               style={{

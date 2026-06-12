@@ -107,22 +107,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
         isOpen ? "w-[260px] min-w-[260px]" : "w-[68px] min-w-[68px]",
       )}
     >
-      {/* Logo */}
+      {/* Logo — escudo Shield + Ultimate TRACKER */}
       <div
         className={cn(
-          "flex items-center gap-3 p-4 border-b border-white/10",
+          "flex items-center gap-2.5 p-4 border-b border-white/10",
           !isOpen && "justify-center",
         )}
       >
-        {isOpen ? (
+        <ShieldLogo size={isOpen ? 28 : 32} />
+        {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
             Ultimate <span className="text-hero tracking-widest">TRACKER</span>
           </h2>
-        ) : (
-          // Collapsed: monograma "UT" — elegante, sin emoji.
-          <span className="font-display text-lg font-bold text-accent-light tracking-widest">
-            UT
-          </span>
         )}
       </div>
 
@@ -277,3 +273,47 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
 };
 
 export default Sidebar;
+
+/** Escudo del logo — usado inline en sidebar/login (mismo SVG que public/icon.svg). */
+function ShieldLogo({ size = 28 }: { size?: number }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 100 100"
+      aria-hidden
+      style={{ display: "block", flexShrink: 0 }}
+    >
+      <path
+        d="M28 22 h44 v38 a22 22 0 0 1 -44 0 z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="3.5"
+        strokeLinejoin="round"
+        className="text-accent-light"
+      />
+      <text
+        x="50"
+        y="46"
+        fontFamily="Georgia, 'Times New Roman', serif"
+        fontSize="24"
+        fontWeight="700"
+        fill="currentColor"
+        textAnchor="middle"
+        dominantBaseline="middle"
+        className="text-accent-light"
+      >
+        UT
+      </text>
+      <rect
+        x="38"
+        y="66"
+        width="24"
+        height="2"
+        fill="currentColor"
+        opacity="0.7"
+        className="text-accent-light"
+      />
+    </svg>
+  );
+}

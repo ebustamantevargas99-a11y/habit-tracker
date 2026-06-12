@@ -1,5 +1,5 @@
 /**
- * Ultimate Habit Tracker — TypeScript Type Definitions
+ * Ultimate TRACKER — TypeScript Type Definitions
  */
 
 // ─── Core Types ───────────────────────────────────────────────────────────────
