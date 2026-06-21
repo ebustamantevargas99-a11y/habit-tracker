@@ -11,6 +11,13 @@ import {
   doneVolumeByMuscle,
   roundHalf,
 } from "@/lib/fitness/muscle-volume";
+import {
+  mesocycleWeek,
+  suggestProgression,
+  weeklyVolumeHistory,
+  type ProgressionSuggestion,
+  type WeekVolumePoint,
+} from "@/lib/fitness/mesocycle";
 
 interface ScheduleDay {
   dayOfWeek: number;
@@ -21,6 +28,8 @@ interface Program {
   id: string;
   name: string;
   active: boolean;
+  startDate: string;
+  durationWeeks: number;
   schedule: ScheduleDay[];
 }
 
@@ -81,6 +90,18 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
     [planned, done],
   );
 
+  // ── Mesociclo (Fase 2) ──────────────────────────────────────────────────────
+  const week = program ? mesocycleWeek(program.startDate) : null;
+  const weeklyTrend = useMemo(() => weeklyVolumeHistory(workouts, 6), [workouts]);
+  const suggestions = useMemo(() => {
+    if (!week) return [] as ProgressionSuggestion[];
+    const order: Record<string, number> = { raise_to_mev: 0, deload: 1, add_set: 2, hold: 3 };
+    return MUSCLE_ORDER.map((slug) => suggestProgression(slug, planned.byMuscle[slug] ?? 0, week))
+      .filter((s): s is ProgressionSuggestion => s != null && s.action !== "hold")
+      .sort((a, b) => order[a.action] - order[b.action]);
+  }, [planned, week]);
+  const mesoComplete = program != null && week != null && week > program.durationWeeks;
+
   return (
     <div className="bg-brand-paper rounded-xl border border-brand-cream p-6">
       <header className="mb-4">
@@ -113,6 +134,14 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
           crees tu rutina en <strong>Rutinas</strong>; abajo ves lo ya entrenado.
         </div>
       )}
+
+      <MesocyclePanel
+        week={week}
+        durationWeeks={program?.durationWeeks ?? null}
+        mesoComplete={mesoComplete}
+        trend={weeklyTrend}
+        suggestions={suggestions}
+      />
 
       <div className="space-y-3.5">
         {MUSCLE_ORDER.map((slug) => {
@@ -186,5 +215,124 @@ function Marker({ pct }: { pct: number }) {
       className="absolute top-[-2px] bottom-[-2px] w-[2px] bg-brand-warm/45"
       style={{ left: `${pct}%` }}
     />
+  );
+}
+
+// ─── Mesociclo (Fase 2) ───────────────────────────────────────────────────────
+
+function MesocyclePanel({
+  week,
+  durationWeeks,
+  mesoComplete,
+  trend,
+  suggestions,
+}: {
+  week: number | null;
+  durationWeeks: number | null;
+  mesoComplete: boolean;
+  trend: WeekVolumePoint[];
+  suggestions: ProgressionSuggestion[];
+}) {
+  const hasTrend = trend.some((t) => t.totalSets > 0);
+  if (week == null && !hasTrend) return null;
+
+  return (
+    <div className="mb-5 rounded-xl border border-brand-light-tan bg-brand-warm-white p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="font-serif text-base text-brand-dark m-0">
+          Mesociclo · progresión
+        </h4>
+        {week != null && (
+          <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-accent/15 text-accent font-semibold">
+            Semana {week}
+            {durationWeeks ? ` de ${durationWeeks}` : ""}
+          </span>
+        )}
+      </div>
+
+      {mesoComplete && (
+        <div className="mb-3 rounded-lg border border-warning/40 bg-warning-light/40 px-3 py-2 text-xs text-brand-dark">
+          Completaste el bloque ({durationWeeks} semanas). Toca una{" "}
+          <strong>semana de descarga</strong> y reiniciar el mesociclo un poco
+          más alto.
+        </div>
+      )}
+
+      {hasTrend && (
+        <div className="mb-3">
+          <p className="text-[11px] text-brand-warm mb-1.5">
+            Volumen semanal (series efectivas totales)
+          </p>
+          <TrendBars data={trend} />
+        </div>
+      )}
+
+      {week != null &&
+        (suggestions.length > 0 ? (
+          <div>
+            <p className="text-[11px] text-brand-warm mb-1.5">
+              Para la próxima semana
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {suggestions.map((s) => (
+                <SuggestionChip key={s.slug} s={s} />
+              ))}
+            </div>
+          </div>
+        ) : !mesoComplete ? (
+          <p className="text-xs text-success">
+            Tu plan está en el objetivo de volumen de esta semana 👌
+          </p>
+        ) : null)}
+    </div>
+  );
+}
+
+function TrendBars({ data }: { data: WeekVolumePoint[] }) {
+  const max = Math.max(1, ...data.map((d) => d.totalSets));
+  return (
+    <div className="flex items-end gap-2">
+      {data.map((d, i) => {
+        const isLast = i === data.length - 1;
+        const h = Math.max(4, Math.round((d.totalSets / max) * 64));
+        return (
+          <div
+            key={i}
+            className="flex-1 flex flex-col items-center gap-1"
+            title={`${d.label}: ${d.totalSets} series`}
+          >
+            <span className="text-[10px] text-brand-warm h-3">
+              {d.totalSets || ""}
+            </span>
+            <div
+              className="w-full rounded-t"
+              style={{ height: `${h}px`, background: isLast ? DONE_COLOR : PLAN_COLOR }}
+            />
+            <span className="text-[9px] text-brand-warm/70">{d.label}</span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SuggestionChip({ s }: { s: ProgressionSuggestion }) {
+  const label = MUSCLE_LABEL_ES[s.slug] ?? s.slug;
+  let text: string;
+  let cls: string;
+  if (s.action === "raise_to_mev") {
+    text = `${label}: sube a ${s.target} (MEV)`;
+    cls = "bg-danger/10 text-danger border-danger/30";
+  } else if (s.action === "deload") {
+    text = `${label}: tope MRV — descarga`;
+    cls = "bg-warning-light/60 text-brand-dark border-warning/40";
+  } else {
+    text = `${label}: sube a ${s.target}`;
+    cls = "bg-accent/10 text-accent border-accent/30";
+  }
+  return (
+    <span className={`text-[11px] px-2.5 py-1 rounded-full border ${cls}`}>
+      {text}
+    </span>
   );
 }
