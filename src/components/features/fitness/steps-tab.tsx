@@ -1,5 +1,5 @@
 'use client';
-import { todayLocal } from "@/lib/date/local";
+import { todayLocal, shiftDaysLocal, parseLocalDateStr } from "@/lib/date/local";
 
 import React, { useState } from 'react';
 import {
@@ -14,7 +14,7 @@ interface StepsTabProps {
   onAddSteps: (entry: { date: string; steps: number }) => Promise<void>;
 }
 
-const DAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const WD = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 
 function getHeatClass(steps: number, goal: number): string {
   if (steps >= goal)           return 'bg-success text-brand-paper';
@@ -37,19 +37,32 @@ export default function StepsTab({ stepsLog: storedLog, onAddSteps }: StepsTabPr
     }
   };
 
-  const weekData = DAYS.map((day, i) => {
-    const entry = storedLog[storedLog.length - 7 + i];
-    return { day, steps: entry?.steps ?? 0 };
-  });
-  weekData[6] = { day: 'Dom', steps: todaySteps };
+  // Mapa fecha→pasos con datos reales del log (+ lo que se edita hoy).
+  const byDate = React.useMemo(() => {
+    const m = new Map<string, number>(storedLog.map((e) => [e.date, e.steps] as [string, number]));
+    m.set(todayLocal(), todaySteps);
+    return m;
+  }, [storedLog, todaySteps]);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const monthGrid = React.useMemo(() =>
-    Array.from({ length: 30 }, (_, i) => ({
-      day: i + 1,
-      steps: Math.floor(Math.random() * 15000) + 2000,
-    })),
-  []);
+  // Últimos 7 días reales, etiquetados por día de la semana.
+  const weekData = React.useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, i) => {
+        const date = shiftDaysLocal(-(6 - i));
+        return { day: WD[parseLocalDateStr(date).getDay()], steps: byDate.get(date) ?? 0 };
+      }),
+    [byDate],
+  );
+
+  // Últimos 30 días reales (sin datos inventados).
+  const monthGrid = React.useMemo(
+    () =>
+      Array.from({ length: 30 }, (_, i) => {
+        const date = shiftDaysLocal(-(29 - i));
+        return { day: parseInt(date.slice(8, 10), 10), date, steps: byDate.get(date) ?? 0 };
+      }),
+    [byDate],
+  );
 
   const weekAvg = Math.round(weekData.reduce((s, d) => s + d.steps, 0) / 7);
   const distance = (todaySteps * 0.0008).toFixed(1);
@@ -139,7 +152,7 @@ export default function StepsTab({ stepsLog: storedLog, onAddSteps }: StepsTabPr
           {monthGrid.map((d) => (
             <div
               key={d.day}
-              title={`Día ${d.day}: ${d.steps.toLocaleString()} pasos`}
+              title={`${d.date}: ${d.steps.toLocaleString()} pasos`}
               className={cn(
                 'aspect-square rounded-[4px] flex items-center justify-center text-[10px] font-semibold w-full',
                 getHeatClass(d.steps, dailyGoal),

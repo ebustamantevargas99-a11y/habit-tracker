@@ -48,11 +48,10 @@ export const NAV_ITEMS = [
     label: "Fitness",
     icon: "Dumbbell",
     sections: [
-      "Gym",
-      "Cardio",
+      "Resumen",
+      "Entreno",
       "Cuerpo",
-      "Programas",
-      "Análisis",
+      "Rutinas",
     ],
   },
   {

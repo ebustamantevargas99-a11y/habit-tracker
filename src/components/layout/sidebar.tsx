@@ -37,11 +37,10 @@ const PLAN_SECTION_MAP: Record<string, PlanTab> = {
 };
 
 const FITNESS_SECTION_MAP: Record<string, string> = {
-  "Gym":       "gym",
-  "Cardio":    "cardio",
-  "Cuerpo":    "cuerpo",
-  "Programas": "programas",
-  "Análisis":  "analisis",
+  "Resumen":  "resumen",
+  "Entreno":  "entreno",
+  "Cuerpo":   "cuerpo",
+  "Rutinas":  "rutinas",
 };
 
 const FINANCE_SECTION_MAP: Record<string, string> = {

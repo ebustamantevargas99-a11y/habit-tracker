@@ -58,10 +58,10 @@ describe('useAppStore — toggleSidebar()', () => {
 
 describe('useAppStore — setPageFromURL()', () => {
   it('sets page correctly with a valid tab', () => {
-    // Fitness redesign (Fase 9): hubs son 'gym' | 'cardio' | 'cuerpo' | 'programas' | 'analisis'
-    useAppStore.getState().setPageFromURL('fitness', 'cardio');
+    // Fitness rediseño (2026-06): hubs son 'resumen' | 'entreno' | 'cuerpo' | 'rutinas'
+    useAppStore.getState().setPageFromURL('fitness', 'entreno');
     expect(useAppStore.getState().activePage).toBe('fitness');
-    expect(useAppStore.getState().fitnessTab).toBe('cardio');
+    expect(useAppStore.getState().fitnessTab).toBe('entreno');
   });
 
   it('sets page but ignores invalid tab', () => {

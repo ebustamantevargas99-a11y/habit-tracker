@@ -14,7 +14,7 @@ export type PlanTab = "today" | "week" | "month";
 const VALID_TABS: Record<string, string[]> = {
   productivity: ['command', 'habits', 'projects', 'pomodoro', 'reading', 'projection'],
   plan:         ['today', 'week', 'month'],
-  fitness:      ['gym', 'cardio', 'cuerpo', 'programas', 'analisis'],
+  fitness:      ['resumen', 'entreno', 'cuerpo', 'rutinas'],
   finance:      ['panel', 'flow', 'goals', 'investments', 'analysis'],
   nutrition:    ['hoy', 'progreso', 'composicion', 'alimentos'],
 };
@@ -68,7 +68,7 @@ export const useAppStore = create<AppState>((set) => ({
   planTab: "today",
   setPlanTab: (tab) => set({ planTab: tab }),
 
-  fitnessTab: 'gym',
+  fitnessTab: 'resumen',
   setFitnessTab: (tab) => set({ fitnessTab: tab }),
 
   financeTab: 'panel',

@@ -158,7 +158,7 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
           api.get<PersonalRecord[]>("/fitness/personal-records"),
           api.get<BodyMetric[]>("/fitness/body-metrics"),
           api.get<WeightEntry[]>("/fitness/weight?days=30"),
-          api.get<StepEntry[]>("/fitness/steps?days=7"),
+          api.get<StepEntry[]>("/fitness/steps?days=30"),
           api.get<{ totalWorkouts: number; currentWeekWorkouts: number; weeklyVolume: Record<string, number> }>("/fitness/stats"),
         ]);
 
