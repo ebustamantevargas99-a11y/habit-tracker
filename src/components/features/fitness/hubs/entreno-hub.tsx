@@ -6,23 +6,7 @@ import { useFitnessStore } from "@/stores/fitness-store";
 import { LivePR } from "../fitness-engine";
 import RecordsTab from "../records-tab";
 import WorkoutLoggerV2 from "@/components/features/fitness-v2/workout-logger";
-import VolumeDashboard from "@/components/features/fitness-v2/volume-dashboard";
-
-// Map muscleGroup español → slug inglés para VolumeDashboard v2
-function mapMuscleToEn(muscleEs: string): string {
-  const m = muscleEs.toLowerCase();
-  if (m.includes("pecho") || m.includes("chest")) return "chest";
-  if (m.includes("espalda") || m.includes("back")) return "back";
-  if (m.includes("hombro") || m.includes("shoulder")) return "shoulders";
-  if (m.includes("bíceps") || m.includes("biceps")) return "biceps";
-  if (m.includes("tríceps") || m.includes("triceps")) return "triceps";
-  if (m.includes("cuád") || m.includes("quad")) return "quads";
-  if (m.includes("isquio") || m.includes("hamstring")) return "hamstrings";
-  if (m.includes("glúteo") || m.includes("glute")) return "glutes";
-  if (m.includes("core") || m.includes("abdom")) return "core";
-  if (m.includes("pantorr") || m.includes("calve")) return "calves";
-  return muscleEs;
-}
+import VolumePlanVsDone from "../volume-plan-vs-done";
 
 const ENTRENO_SUBTABS = [
   { id: "hoy",        label: "🏋️ Hoy" },
@@ -58,23 +42,6 @@ export default function EntrenoHub() {
     [workouts], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  // Series de la última semana para el dashboard de volumen (datos reales).
-  const weekSets = useMemo(() => {
-    const weekAgo = new Date();
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    return workouts
-      .filter((w) => new Date(w.date) >= weekAgo)
-      .flatMap((w) =>
-        (w.exercises ?? []).flatMap((e) =>
-          (e.sets ?? []).map((s) => ({
-            muscleGroup: mapMuscleToEn(e.muscleGroup ?? ""),
-            reps: s.reps,
-            rpe: s.rpe ?? null,
-          })),
-        ),
-      );
-  }, [workouts]);
-
   return (
     <section>
       <Tabs
@@ -86,7 +53,7 @@ export default function EntrenoHub() {
 
       {subTab === "hoy" && <WorkoutLoggerV2 />}
 
-      {subTab === "volumen" && <VolumeDashboard weekSets={weekSets} />}
+      {subTab === "volumen" && <VolumePlanVsDone workouts={workouts} />}
 
       {subTab === "records" && (
         <RecordsTab liveRecords={livePRs} tonelageHistory={tonelageHistory} />
