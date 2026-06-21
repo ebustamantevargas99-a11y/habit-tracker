@@ -1,9 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-import { Tabs, Card } from "@/components/ui";
+import { Tabs } from "@/components/ui";
 import { useFitnessStore } from "@/stores/fitness-store";
 import BodyMetricsTab from "../body-metrics-tab";
+import BodyCompositionTab from "../body-composition-tab";
 import WeightTab from "../weight-tab";
 import StepsTab from "../steps-tab";
 import PhotosTab from "../photos-tab";
@@ -43,7 +44,7 @@ export default function CuerpoHub() {
         <WeightTab weightLog={weightLog} onAddWeight={addWeight} />
       )}
 
-      {subTab === "composicion" && <BodyCompositionPlaceholder />}
+      {subTab === "composicion" && <BodyCompositionTab />}
 
       {subTab === "medidas" && <BodyMetricsTab onSave={addBodyMetric} />}
 
@@ -53,35 +54,5 @@ export default function CuerpoHub() {
         <StepsTab stepsLog={stepsLog} onAddSteps={addSteps} />
       )}
     </section>
-  );
-}
-
-// Composición (nuevo — usa BodyComposition model). Placeholder didáctico
-// hasta Fase 3 que implementa CRUD + gráfica de evolución.
-function BodyCompositionPlaceholder() {
-  return (
-    <Card variant="default" padding="md" className="border-brand-light-tan">
-      <h3 className="font-serif text-lg text-brand-dark m-0 mb-2">
-        Composición corporal · próximamente
-      </h3>
-      <p className="text-brand-warm text-sm m-0 mb-3">
-        Separado de "Medidas" — aquí trackeas los valores <em>globales</em> del
-        cuerpo: % grasa, masa magra (LBM), masa grasa, agua, grasa visceral,
-        masa ósea, BMR.
-      </p>
-      <ul className="text-brand-warm text-sm list-disc pl-5 m-0 mb-3">
-        <li>
-          <strong>Método</strong>: DEXA, báscula bioimpedancia (BIA),
-          plicómetro, Navy tape, photo estimate
-        </li>
-        <li>Cálculo automático de LBM/fatMass desde peso + % grasa</li>
-        <li>Gráfica de evolución y comparación mes a mes</li>
-        <li>Relación composición ↔ progreso de entreno</li>
-      </ul>
-      <p className="text-brand-warm text-xs m-0">
-        Las <strong>circunferencias</strong> (pecho, cintura, cadera, brazo,
-        muslo) siguen en la sub-tab <strong>Medidas</strong>.
-      </p>
-    </Card>
   );
 }
