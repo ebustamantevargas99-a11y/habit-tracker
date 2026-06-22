@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Plus, Trash2, Save, Wand2, BedDouble } from "lucide-react";
+import React, { useCallback, useEffect, useState } from "react";
+import { Plus, Trash2, Save, Wand2, BedDouble, History, Play } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { todayLocal } from "@/lib/date/local";
@@ -50,11 +50,15 @@ const DOW_FULL: Record<number, string> = {
 
 const COMMON_EXERCISES = [
   "Press banca", "Press inclinado", "Press militar", "Press mancuernas",
-  "Sentadilla", "Peso muerto", "Peso muerto rumano", "Prensa",
-  "Dominadas", "Jalón al pecho", "Remo con barra", "Remo mancuerna",
-  "Curl bíceps", "Curl martillo", "Extensión tríceps", "Fondos",
-  "Elevaciones laterales", "Pájaros", "Curl femoral", "Extensión cuádriceps",
-  "Elevación de gemelos", "Hip thrust", "Zancadas", "Face pull", "Plancha",
+  "Sentadilla", "Sentadilla frontal", "Sentadilla búlgara", "Peso muerto",
+  "Peso muerto rumano", "Prensa", "Zancadas",
+  "Dominadas", "Dominadas lastradas", "Dominadas asistidas", "Dominadas neutras",
+  "Jalón al pecho", "Jalón unilateral", "Pullover en polea",
+  "Remo con barra", "Remo mancuerna", "Remo pecho apoyado", "Remo unilateral",
+  "Curl bíceps", "Curl inclinado", "Curl martillo", "Extensión tríceps", "Fondos",
+  "Elevaciones laterales", "Elevaciones laterales en cable", "Pájaros",
+  "Reverse pec deck", "Face pulls", "Curl femoral", "Extensión cuádriceps",
+  "Gemelos", "Hip thrust", "Plancha", "Plancha lastrada", "Woodchoppers",
 ];
 
 const ex = (name: string, sets: number, repMin: number, repMax: number): ExerciseState => ({
@@ -124,35 +128,41 @@ export default function RutinasHub() {
   const [loadedId, setLoadedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [programs, setPrograms] = useState<Program[]>([]);
 
-  // Cargar rutina activa (si existe) al montar.
+  // Carga una rutina guardada en el constructor (para ver/editar/reutilizar).
+  const loadProgramIntoBuilder = useCallback((p: Program) => {
+    setLoadedId(p.id);
+    setName(p.name);
+    const wk = emptyWeek();
+    for (const sd of p.schedule ?? []) {
+      const day = wk.find((d) => d.dayOfWeek === sd.dayOfWeek);
+      if (!day) continue;
+      day.templateName = sd.templateName ?? "";
+      day.exercises = (sd.exercises ?? []).map((e) => ({
+        name: e.name,
+        sets: e.sets,
+        repMin: e.repRange?.[0] ?? 8,
+        repMax: e.repRange?.[1] ?? 12,
+      }));
+    }
+    setDays(wk);
+  }, []);
+
+  const refreshPrograms = useCallback(async (): Promise<Program[]> => {
+    const ps = await api.get<Program[]>("/fitness/programs").catch(() => [] as Program[]);
+    setPrograms(ps);
+    return ps;
+  }, []);
+
+  // Al montar: lista de rutinas + carga la activa en el constructor.
   useEffect(() => {
     let cancelled = false;
-    api
-      .get<Program[]>("/fitness/programs")
-      .then((programs) => {
+    refreshPrograms()
+      .then((ps) => {
         if (cancelled) return;
-        const active = programs.find((p) => p.active) ?? null;
-        if (active) {
-          setLoadedId(active.id);
-          setName(active.name);
-          const wk = emptyWeek();
-          for (const sd of active.schedule ?? []) {
-            const day = wk.find((d) => d.dayOfWeek === sd.dayOfWeek);
-            if (!day) continue;
-            day.templateName = sd.templateName ?? "";
-            day.exercises = (sd.exercises ?? []).map((e) => ({
-              name: e.name,
-              sets: e.sets,
-              repMin: e.repRange?.[0] ?? 8,
-              repMax: e.repRange?.[1] ?? 12,
-            }));
-          }
-          setDays(wk);
-        }
-      })
-      .catch(() => {
-        /* arranca con semana vacía */
+        const active = ps.find((p) => p.active);
+        if (active) loadProgramIntoBuilder(active);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -160,7 +170,37 @@ export default function RutinasHub() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [refreshPrograms, loadProgramIntoBuilder]);
+
+  function newRoutine() {
+    setLoadedId(null);
+    setName("Mi rutina");
+    setDays(emptyWeek());
+    toast.success("Constructor en blanco — arma tu nueva rutina");
+  }
+
+  async function activateProgram(p: Program) {
+    try {
+      await api.patch(`/fitness/programs/${p.id}`, { active: true });
+      const ps = await refreshPrograms();
+      const active = ps.find((x) => x.active);
+      if (active) loadProgramIntoBuilder(active);
+      toast.success(`"${p.name}" activada — la verás en Resumen`);
+    } catch {
+      toast.error("No se pudo activar");
+    }
+  }
+
+  async function deleteProgram(p: Program) {
+    try {
+      await api.delete(`/fitness/programs/${p.id}`);
+      if (loadedId === p.id) newRoutine();
+      await refreshPrograms();
+      toast.success("Rutina borrada");
+    } catch {
+      toast.error("No se pudo borrar");
+    }
+  }
 
   const update = (fn: (draft: DayState[]) => void) => {
     setDays((prev) => {
@@ -255,6 +295,7 @@ export default function RutinasHub() {
         const created = await api.post<Program>("/fitness/programs", payload);
         setLoadedId(created.id);
       }
+      await refreshPrograms();
       toast.success("Rutina guardada ✓ — la verás en Resumen");
     } catch {
       toast.error("Error al guardar la rutina");
@@ -308,6 +349,78 @@ export default function RutinasHub() {
           </span>
         </div>
       </div>
+
+      {/* Historial de rutinas — reutilizables como los atajos */}
+      {programs.length > 0 && (
+        <div className="bg-brand-paper rounded-xl border border-brand-light-tan p-4">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-brand-warm flex items-center gap-1.5">
+              <History size={14} /> Mis rutinas guardadas
+            </span>
+            <button
+              onClick={newRoutine}
+              className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
+            >
+              <Plus size={13} /> Nueva en blanco
+            </button>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {programs.map((p) => {
+              const dCount = (p.schedule ?? []).filter((d) => d.exercises?.length).length;
+              const eCount = (p.schedule ?? []).reduce(
+                (s, d) => s + (d.exercises?.length ?? 0),
+                0,
+              );
+              const isLoaded = p.id === loadedId;
+              return (
+                <div
+                  key={p.id}
+                  className={`inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border text-xs ${
+                    isLoaded
+                      ? "border-accent bg-accent/10"
+                      : "border-brand-light-tan bg-brand-warm-white"
+                  }`}
+                >
+                  <button
+                    onClick={() => loadProgramIntoBuilder(p)}
+                    className="font-medium text-brand-dark hover:text-accent transition"
+                    title="Cargar para ver / editar"
+                  >
+                    {p.name}
+                  </button>
+                  <span className="text-brand-warm/70">
+                    {dCount}d·{eCount}ej
+                  </span>
+                  {p.active ? (
+                    <span className="text-[10px] text-success font-semibold uppercase tracking-wide">
+                      activa
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => activateProgram(p)}
+                      className="p-0.5 text-accent hover:scale-110 transition"
+                      title="Usar (activar)"
+                    >
+                      <Play size={12} />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => deleteProgram(p)}
+                    className="p-0.5 text-brand-warm hover:text-danger transition"
+                    title="Borrar"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[11px] text-brand-warm mt-2">
+            Toca el nombre para cargarla y ver de qué consta ·{" "}
+            <Play size={10} className="inline -mt-0.5" /> la reutiliza (activa).
+          </p>
+        </div>
+      )}
 
       {/* Días */}
       <datalist id="common-exercises">

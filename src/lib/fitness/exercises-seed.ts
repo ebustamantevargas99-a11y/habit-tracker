@@ -128,6 +128,21 @@ export const EXERCISES_SEED: ExerciseSeed[] = [
   { slug: "kettlebell-swing", name: "Kettlebell swing", nameEn: "Kettlebell Swing", muscleGroup: "full_body", category: "compound", equipment: "kettlebell", isLowerBody: true, primaryMovementPattern: "hinge" },
   { slug: "burpee", name: "Burpee", nameEn: "Burpee", muscleGroup: "full_body", category: "plyometric", equipment: "bodyweight", isLowerBody: true },
   { slug: "box-jump", name: "Box jump", nameEn: "Box Jump", muscleGroup: "quads", category: "plyometric", equipment: "other", isLowerBody: true },
+
+  // ── Variantes frecuentes (calistenia, asistidos, cable) ──────────────────────
+  { slug: "weighted-pull-up", name: "Dominadas lastradas", nameEn: "Weighted Pull-Up", muscleGroup: "back", category: "compound", equipment: "bodyweight", isLowerBody: false, primaryMovementPattern: "vertical_pull" },
+  { slug: "assisted-pull-up", name: "Dominadas asistidas", nameEn: "Assisted Pull-Up", muscleGroup: "back", category: "compound", equipment: "machine", isLowerBody: false, primaryMovementPattern: "vertical_pull" },
+  { slug: "neutral-pull-up", name: "Dominadas neutras", nameEn: "Neutral-Grip Pull-Up", muscleGroup: "back", category: "compound", equipment: "bodyweight", isLowerBody: false, primaryMovementPattern: "vertical_pull" },
+  { slug: "unilateral-pulldown", name: "Jalón unilateral", nameEn: "Unilateral Lat Pulldown", muscleGroup: "back", category: "compound", equipment: "cable", isLowerBody: false, primaryMovementPattern: "vertical_pull" },
+  { slug: "cable-pullover", name: "Pullover en polea", nameEn: "Cable Pullover", muscleGroup: "back", category: "isolation", equipment: "cable", isLowerBody: false },
+  { slug: "chest-supported-row", name: "Remo pecho apoyado", nameEn: "Chest-Supported Row", muscleGroup: "back", category: "compound", equipment: "machine", isLowerBody: false, primaryMovementPattern: "horizontal_pull" },
+  { slug: "unilateral-row", name: "Remo unilateral", nameEn: "Unilateral Row", muscleGroup: "back", category: "compound", equipment: "dumbbell", isLowerBody: false, primaryMovementPattern: "horizontal_pull" },
+  { slug: "reverse-pec-deck", name: "Reverse pec deck", nameEn: "Reverse Pec Deck", muscleGroup: "shoulders", category: "isolation", equipment: "machine", isLowerBody: false },
+  { slug: "cable-lateral-raise", name: "Elevaciones laterales en cable", nameEn: "Cable Lateral Raise", muscleGroup: "shoulders", category: "isolation", equipment: "cable", isLowerBody: false },
+  { slug: "incline-curl", name: "Curl inclinado", nameEn: "Incline Dumbbell Curl", muscleGroup: "biceps", category: "isolation", equipment: "dumbbell", isLowerBody: false },
+  { slug: "triceps-extension", name: "Extensión tríceps", nameEn: "Triceps Extension", muscleGroup: "triceps", category: "isolation", equipment: "cable", isLowerBody: false },
+  { slug: "woodchopper", name: "Woodchoppers", nameEn: "Cable Woodchopper", muscleGroup: "core", category: "isolation", equipment: "cable", isLowerBody: false, primaryMovementPattern: "rotation" },
+  { slug: "weighted-plank", name: "Plancha lastrada", nameEn: "Weighted Plank", muscleGroup: "core", category: "isolation", equipment: "bodyweight", isLowerBody: false },
 ];
 
 export const EXERCISES_BY_MUSCLE = EXERCISES_SEED.reduce<
