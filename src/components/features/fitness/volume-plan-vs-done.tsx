@@ -18,6 +18,12 @@ import {
   type ProgressionSuggestion,
   type WeekVolumePoint,
 } from "@/lib/fitness/mesocycle";
+import {
+  isDeloadActive,
+  setDeloadActive,
+  deloadTarget,
+  DELOAD_LOAD_REDUCTION_PCT,
+} from "@/lib/fitness/deload";
 
 interface ScheduleDay {
   dayOfWeek: number;
@@ -44,6 +50,8 @@ interface WorkoutLike {
 
 const PLAN_COLOR = "#C0DD97"; // verde claro = planificado
 const DONE_COLOR = "#639922"; // verde fuerte = hecho
+const DELOAD_PLAN_COLOR = "#FAC775"; // ámbar claro = objetivo de descarga
+const DELOAD_DONE_COLOR = "#BA7517"; // ámbar fuerte = hecho en descarga
 
 function planStatus(slug: string, plan: number): { label: string; cls: string } {
   if (plan <= 0) return { label: "sin programar", cls: "text-brand-warm" };
@@ -59,8 +67,10 @@ function planStatus(slug: string, plan: number): { label: string; cls: string } 
 export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[] }) {
   const [program, setProgram] = useState<Program | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [deload, setDeload] = useState(false);
 
   useEffect(() => {
+    setDeload(isDeloadActive());
     let cancelled = false;
     api
       .get<Program[]>("/fitness/programs")
@@ -75,6 +85,12 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
       cancelled = true;
     };
   }, []);
+
+  const toggleDeload = () => {
+    const next = !deload;
+    setDeloadActive(next);
+    setDeload(next);
+  };
 
   const planned = useMemo(
     () => plannedVolumeByMuscle(program?.schedule ?? []),
@@ -101,6 +117,11 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
       .sort((a, b) => order[a.action] - order[b.action]);
   }, [planned, week]);
   const mesoComplete = program != null && week != null && week > program.durationWeeks;
+  // Aviso automático de descarga: bloque completo o algún músculo en MRV.
+  const suggestDeload = !deload && (mesoComplete || suggestions.some((s) => s.action === "deload"));
+
+  const planColor = deload ? DELOAD_PLAN_COLOR : PLAN_COLOR;
+  const doneColor = deload ? DELOAD_DONE_COLOR : DONE_COLOR;
 
   return (
     <div className="bg-brand-paper rounded-xl border border-brand-cream p-6">
@@ -114,12 +135,12 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
         </p>
         <div className="flex flex-wrap gap-4 mt-3 text-[11px] text-brand-warm">
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: DONE_COLOR }} />
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: doneColor }} />
             Hecho esta semana
           </span>
           <span className="flex items-center gap-1.5">
-            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: PLAN_COLOR }} />
-            Plan de tu rutina
+            <span className="inline-block w-3 h-3 rounded-sm" style={{ background: planColor }} />
+            {deload ? "Objetivo descarga" : "Plan de tu rutina"}
           </span>
           <span className="flex items-center gap-1.5">
             <span className="inline-block w-[2px] h-3.5 bg-brand-warm/50" />
@@ -141,17 +162,23 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
         mesoComplete={mesoComplete}
         trend={weeklyTrend}
         suggestions={suggestions}
+        deload={deload}
+        suggestDeload={suggestDeload}
+        onToggleDeload={toggleDeload}
       />
 
       <div className="space-y-3.5">
         {MUSCLE_ORDER.map((slug) => {
           const l = VOLUME_LANDMARKS[slug];
           const plan = planned.byMuscle[slug] ?? 0;
+          const target = deload ? deloadTarget(plan) : plan;
           const dn = done.byMuscle[slug] ?? 0;
-          const planR = roundHalf(plan);
+          const targetR = roundHalf(target);
           const doneR = roundHalf(dn);
-          const status = planStatus(slug, plan);
-          const remaining = roundHalf(Math.max(0, plan - dn));
+          const status = deload
+            ? { label: "objetivo descarga", cls: "text-warning" }
+            : planStatus(slug, plan);
+          const remaining = roundHalf(Math.max(0, target - dn));
 
           const pct = (v: number) => Math.min(100, (v / l.mrv) * 100);
 
@@ -162,18 +189,18 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
                   {MUSCLE_LABEL_ES[slug]}
                 </span>
                 <span className="text-[13px] text-brand-warm">
-                  <b className="text-brand-dark font-semibold">{doneR}</b> / {planR} series
+                  <b className="text-brand-dark font-semibold">{doneR}</b> / {targetR} series
                 </span>
               </div>
 
               <div className="relative h-[18px] bg-brand-light-cream rounded-md overflow-hidden">
                 <div
                   className="absolute left-0 top-0 h-full"
-                  style={{ width: `${pct(plan)}%`, background: PLAN_COLOR }}
+                  style={{ width: `${pct(target)}%`, background: planColor }}
                 />
                 <div
                   className="absolute left-0 top-0 h-full"
-                  style={{ width: `${pct(dn)}%`, background: DONE_COLOR }}
+                  style={{ width: `${pct(dn)}%`, background: doneColor }}
                 />
                 <Marker pct={(l.mev / l.mrv) * 100} />
                 <Marker pct={(l.mavLow / l.mrv) * 100} />
@@ -184,14 +211,14 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
                 <span className={status.cls}>{status.label}</span>
                 <span
                   className={
-                    plan <= 0
+                    target <= 0
                       ? "text-brand-warm/60"
-                      : dn >= plan
+                      : dn >= target
                         ? "text-success"
                         : "text-warning"
                   }
                 >
-                  {plan > 0 && (dn >= plan ? "✓ completo" : `faltan ${remaining}`)}
+                  {target > 0 && (dn >= target ? "✓ completo" : `faltan ${remaining}`)}
                 </span>
               </div>
             </div>
@@ -218,7 +245,7 @@ function Marker({ pct }: { pct: number }) {
   );
 }
 
-// ─── Mesociclo (Fase 2) ───────────────────────────────────────────────────────
+// ─── Mesociclo + descarga (Fase 2/3) ──────────────────────────────────────────
 
 function MesocyclePanel({
   week,
@@ -226,48 +253,87 @@ function MesocyclePanel({
   mesoComplete,
   trend,
   suggestions,
+  deload,
+  suggestDeload,
+  onToggleDeload,
 }: {
   week: number | null;
   durationWeeks: number | null;
   mesoComplete: boolean;
   trend: WeekVolumePoint[];
   suggestions: ProgressionSuggestion[];
+  deload: boolean;
+  suggestDeload: boolean;
+  onToggleDeload: () => void;
 }) {
   const hasTrend = trend.some((t) => t.totalSets > 0);
   if (week == null && !hasTrend) return null;
 
   return (
     <div className="mb-5 rounded-xl border border-brand-light-tan bg-brand-warm-white p-4">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
         <h4 className="font-serif text-base text-brand-dark m-0">
           Mesociclo · progresión
         </h4>
-        {week != null && (
-          <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-accent/15 text-accent font-semibold">
-            Semana {week}
-            {durationWeeks ? ` de ${durationWeeks}` : ""}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {week != null && (
+            <span className="text-[11px] uppercase tracking-wider px-2.5 py-1 rounded-full bg-accent/15 text-accent font-semibold">
+              Semana {week}
+              {durationWeeks ? ` de ${durationWeeks}` : ""}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={onToggleDeload}
+            className={`text-[11px] px-2.5 py-1 rounded-full border font-semibold transition ${
+              deload
+                ? "bg-warning-light/70 border-warning/50 text-brand-dark"
+                : "border-brand-light-tan text-brand-warm hover:text-brand-dark hover:border-brand-warm"
+            }`}
+          >
+            {deload ? "Salir de descarga" : "Descarga"}
+          </button>
+        </div>
       </div>
 
-      {mesoComplete && (
+      {/* Estado de descarga (Fase 3) */}
+      {deload ? (
         <div className="mb-3 rounded-lg border border-warning/40 bg-warning-light/40 px-3 py-2 text-xs text-brand-dark">
-          Completaste el bloque ({durationWeeks} semanas). Toca una{" "}
-          <strong>semana de descarga</strong> y reiniciar el mesociclo un poco
-          más alto.
+          <strong>Semana de descarga activa.</strong> Objetivos al ~50% del
+          volumen y ~{DELOAD_LOAD_REDUCTION_PCT}% menos carga. Deja 2–3 reps en
+          reserva: el objetivo es recuperar, no fallar. La próxima semana
+          reanudas el mesociclo un poco más alto.
         </div>
-      )}
+      ) : suggestDeload ? (
+        <div className="mb-3 rounded-lg border border-warning/40 bg-warning-light/40 px-3 py-2 text-xs text-brand-dark flex items-center justify-between gap-3 flex-wrap">
+          <span>
+            {mesoComplete
+              ? `Completaste el bloque (${durationWeeks} semanas).`
+              : "Tienes músculos en el tope (MRV)."}{" "}
+            Toca una <strong>semana de descarga</strong>.
+          </span>
+          <button
+            type="button"
+            onClick={onToggleDeload}
+            className="shrink-0 px-3 py-1.5 rounded-button bg-accent text-white font-semibold text-[11px] hover:opacity-90 transition"
+          >
+            Activar descarga
+          </button>
+        </div>
+      ) : null}
 
       {hasTrend && (
         <div className="mb-3">
           <p className="text-[11px] text-brand-warm mb-1.5">
             Volumen semanal (series efectivas totales)
           </p>
-          <TrendBars data={trend} />
+          <TrendBars data={trend} deload={deload} />
         </div>
       )}
 
-      {week != null &&
+      {/* Sugerencias de progresión — ocultas en descarga (esta semana se baja) */}
+      {!deload &&
+        week != null &&
         (suggestions.length > 0 ? (
           <div>
             <p className="text-[11px] text-brand-warm mb-1.5">
@@ -279,7 +345,7 @@ function MesocyclePanel({
               ))}
             </div>
           </div>
-        ) : !mesoComplete ? (
+        ) : !suggestDeload ? (
           <p className="text-xs text-success">
             Tu plan está en el objetivo de volumen de esta semana 👌
           </p>
@@ -288,13 +354,18 @@ function MesocyclePanel({
   );
 }
 
-function TrendBars({ data }: { data: WeekVolumePoint[] }) {
+function TrendBars({ data, deload }: { data: WeekVolumePoint[]; deload: boolean }) {
   const max = Math.max(1, ...data.map((d) => d.totalSets));
   return (
     <div className="flex items-end gap-2">
       {data.map((d, i) => {
         const isLast = i === data.length - 1;
         const h = Math.max(4, Math.round((d.totalSets / max) * 64));
+        const color = isLast
+          ? deload
+            ? DELOAD_DONE_COLOR
+            : DONE_COLOR
+          : PLAN_COLOR;
         return (
           <div
             key={i}
@@ -306,7 +377,7 @@ function TrendBars({ data }: { data: WeekVolumePoint[] }) {
             </span>
             <div
               className="w-full rounded-t"
-              style={{ height: `${h}px`, background: isLast ? DONE_COLOR : PLAN_COLOR }}
+              style={{ height: `${h}px`, background: color }}
             />
             <span className="text-[9px] text-brand-warm/70">{d.label}</span>
           </div>
