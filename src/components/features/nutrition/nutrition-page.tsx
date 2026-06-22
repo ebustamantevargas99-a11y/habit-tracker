@@ -13,7 +13,7 @@ import { colors } from "@/lib/colors";
 import { api } from "@/lib/api-client";
 import { useNutritionStore, MealLog, FoodItem, NutritionGoal } from "@/stores/nutrition-store";
 import { useAppStore } from "@/stores/app-store";
-import { cn, ErrorBanner } from "@/components/ui";
+import { cn, ErrorBanner, Tabs } from "@/components/ui";
 import HoyHub from "./hubs/hoy-hub";
 import ProgresoHub from "./hubs/progreso-hub";
 import ComposicionHub from "./hubs/composicion-hub";
@@ -1057,10 +1057,10 @@ function CustomTargetsEditor() {
 // ─── Main Page — router de 4 hubs (Fase 2 redesign) ─────────────────────────
 
 const HUBS = [
-  { id: "hoy",         label: "🍽️ Hoy"          },
-  { id: "progreso",    label: "📈 Progreso"     },
-  { id: "composicion", label: "🧬 Composición"  },
-  { id: "alimentos",   label: "🥗 Alimentos"    },
+  { id: "hoy",         label: "Hoy"          },
+  { id: "progreso",    label: "Progreso"     },
+  { id: "composicion", label: "Composición"  },
+  { id: "alimentos",   label: "Alimentos"    },
 ] as const;
 
 type HubId = (typeof HUBS)[number]["id"];
@@ -1103,22 +1103,13 @@ export default function NutritionPage() {
       </div>
 
       {/* Tabs de hubs */}
-      <div className="flex gap-1 border-b-2 border-brand-cream">
-        {HUBS.map(({ id, label }) => (
-          <button
-            key={id}
-            onClick={() => setActiveTab(id)}
-            className={cn(
-              "px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-              hubId === id
-                ? "border-b-accent text-accent font-semibold"
-                : "border-b-transparent text-brand-medium hover:text-brand-dark",
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        tabs={HUBS.map((h) => ({ id: h.id, label: h.label }))}
+        activeTab={hubId}
+        onChange={(id) => setActiveTab(id)}
+        variant="segmented"
+        className="overflow-x-auto"
+      />
 
       {/* Content — lazy imports para reducir bundle inicial */}
       {hubId === "hoy"         && <HoyHub />}

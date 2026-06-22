@@ -21,11 +21,11 @@ import NutrientReport from "../progreso/nutrient-report";
 import { SummaryTab } from "../nutrition-page";
 
 const SUB_TABS = [
-  { id: "peso",       label: "⚖️ Peso + proyección" },
-  { id: "calorias",   label: "🔥 Calorías" },
-  { id: "nutrientes", label: "🧪 Nutrientes 30d" },
-  { id: "resumen",    label: "📊 Resumen 7d" },
-  { id: "coach",      label: "🤖 Coach IA" },
+  { id: "peso",       label: "Peso + proyección" },
+  { id: "calorias",   label: "Calorías" },
+  { id: "nutrientes", label: "Nutrientes 30d" },
+  { id: "resumen",    label: "Resumen 7d" },
+  { id: "coach",      label: "Coach IA" },
 ];
 
 export default function ProgresoHub() {
@@ -45,7 +45,8 @@ export default function ProgresoHub() {
         tabs={SUB_TABS}
         activeTab={subTab}
         onChange={(id) => setSubTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="pill"
+        className="mb-6"
       />
 
       {subTab === "peso"       && <WeightProgressionChart />}

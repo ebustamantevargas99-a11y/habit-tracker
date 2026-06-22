@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { User, Trophy, Zap, Shield, Download, Trash2, Bell, Palette, Globe, Lock, Check, LayoutGrid, Sun, ShieldCheck, RotateCcw } from 'lucide-react';
+import { Zap, Shield, Download, Trash2, Bell, Globe, Lock, Check } from 'lucide-react';
 import { LEVELS, XP_REWARDS } from '@/lib/constants';
 import { exportToJSON, exportToCSV } from '@/lib/utils';
 import { useGamificationStore } from '@/stores/gamification-store';
 import { useUserStore } from '@/stores/user-store';
 import { useHabitStore } from '@/stores/habit-store';
 import { api } from '@/lib/api-client';
-import { cn } from '@/components/ui';
+import { cn, Tabs } from '@/components/ui';
 import ExportSection from './export-section';
 import ModulesTab from './modules-tab';
 import AppearanceTab from './appearance-tab';
@@ -549,14 +549,14 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('profile');
 
   const tabs = [
-    { id: 'profile',       label: 'Perfil',        icon: User        },
-    { id: 'security',      label: 'Seguridad',     icon: ShieldCheck },
-    { id: 'modules',       label: 'Módulos',       icon: LayoutGrid  },
-    { id: 'appearance',    label: 'Apariencia',    icon: Sun         },
-    { id: 'gamification',  label: 'Gamificación',  icon: Trophy      },
-    { id: 'preferences',   label: 'Preferencias',  icon: Palette     },
-    { id: 'data',          label: 'Datos',         icon: Download    },
-    { id: 'reset',         label: 'Resetear',      icon: RotateCcw   },
+    { id: 'profile',       label: 'Perfil' },
+    { id: 'security',      label: 'Seguridad' },
+    { id: 'modules',       label: 'Módulos' },
+    { id: 'appearance',    label: 'Apariencia' },
+    { id: 'gamification',  label: 'Gamificación' },
+    { id: 'preferences',   label: 'Preferencias' },
+    { id: 'data',          label: 'Datos' },
+    { id: 'reset',         label: 'Resetear' },
   ];
 
   return (
@@ -567,24 +567,13 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 mb-8 border-b-2 border-brand-light-tan">
-        {tabs.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "px-5 py-3 border-none cursor-pointer rounded-[8px_8px_0_0] text-[0.95rem] font-semibold flex items-center gap-2 transition-all duration-200",
-                activeTab === tab.id ? "bg-accent text-brand-paper" : "bg-transparent text-brand-warm"
-              )}
-            >
-              <Icon size={16} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        tabs={tabs}
+        activeTab={activeTab}
+        onChange={setActiveTab}
+        variant="segmented"
+        className="mb-8 overflow-x-auto"
+      />
 
       {/* Content */}
       <div>

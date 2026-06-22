@@ -61,10 +61,10 @@ const METHOD_LABELS: Record<string, string> = {
 };
 
 const SUB_TABS = [
-  { id: "registro",   label: "📋 Registro"    },
-  { id: "evolucion",  label: "📈 Evolución"   },
-  { id: "analisis",   label: "🧠 Análisis"    },
-  { id: "marcadores", label: "🩸 Marcadores sangre" },
+  { id: "registro",   label: "Registro"    },
+  { id: "evolucion",  label: "Evolución"   },
+  { id: "analisis",   label: "Análisis"    },
+  { id: "marcadores", label: "Marcadores sangre" },
 ];
 
 export default function ComposicionHub() {
@@ -137,7 +137,8 @@ export default function ComposicionHub() {
         tabs={SUB_TABS}
         activeTab={subTab}
         onChange={(id) => setSubTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="pill"
+        className="mb-6"
       />
 
       {subTab === "registro" && (

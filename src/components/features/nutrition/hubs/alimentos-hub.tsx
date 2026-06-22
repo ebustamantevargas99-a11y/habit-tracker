@@ -15,10 +15,10 @@ import GoalWizard from "../alimentos/goal-wizard";
 import RecipeBuilder from "../recipes/recipe-builder";
 
 const SUB_TABS = [
-  { id: "foods",   label: "🥗 Mis Alimentos" },
-  { id: "recipes", label: "📖 Recetas" },
-  { id: "wizard",  label: "🎯 Meta avanzada" },
-  { id: "manual",  label: "⚙️ Metas manuales" },
+  { id: "foods",   label: "Mis Alimentos" },
+  { id: "recipes", label: "Recetas" },
+  { id: "wizard",  label: "Meta avanzada" },
+  { id: "manual",  label: "Metas manuales" },
 ];
 
 export default function AlimentosHub() {
@@ -41,7 +41,8 @@ export default function AlimentosHub() {
         tabs={SUB_TABS}
         activeTab={subTab}
         onChange={(id) => setSubTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="pill"
+        className="mb-6"
       />
 
       {subTab === "foods"   && <FoodsTab />}

@@ -1,18 +1,17 @@
 "use client";
 
-import { CheckSquare, Target, Zap, BookOpen } from "lucide-react";
-import { cn } from "@/components/ui";
+import { Tabs } from "@/components/ui";
 import { useAppStore, type ProductivityTab } from "@/stores/app-store";
 import HabitTrackerPage from "@/components/features/habits/habit-tracker-page";
 import KanbanView from "@/components/features/projects/kanban-view";
 import FocusPanel from "@/components/features/productivity/focus-panel";
 import ReadingPage from "@/components/features/reading/reading-page";
 
-const TABS: { id: ProductivityTab; label: string; icon: React.ElementType }[] = [
-  { id: "habits",   label: "Hábitos",            icon: CheckSquare },
-  { id: "projects", label: "Proyectos",          icon: Target      },
-  { id: "pomodoro", label: "Trabajo profundo",   icon: Zap         },
-  { id: "reading",  label: "Lectura",            icon: BookOpen    },
+const TABS: { id: ProductivityTab; label: string }[] = [
+  { id: "habits",   label: "Hábitos" },
+  { id: "projects", label: "Proyectos" },
+  { id: "pomodoro", label: "Trabajo profundo" },
+  { id: "reading",  label: "Lectura" },
 ];
 
 export default function ProductivityPage() {
@@ -22,26 +21,13 @@ export default function ProductivityPage() {
   return (
     <div className="space-y-5">
       {/* Tabs */}
-      <div className="flex gap-1 border-b-2 border-brand-cream overflow-x-auto">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          return (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={cn(
-                "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-                activeTab === t.id
-                  ? "border-b-accent text-accent font-semibold"
-                  : "border-b-transparent text-brand-medium hover:text-brand-dark"
-              )}
-            >
-              <Icon size={15} />
-              {t.label}
-            </button>
-          );
-        })}
-      </div>
+      <Tabs
+        tabs={TABS}
+        activeTab={activeTab}
+        onChange={(id) => setActiveTab(id as ProductivityTab)}
+        variant="segmented"
+        className="overflow-x-auto"
+      />
 
       {activeTab === "habits"   && <HabitTrackerPage />}
       {activeTab === "projects" && <KanbanView />}

@@ -1,14 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  LayoutDashboard,
-  ArrowRightLeft,
-  Target,
-  TrendingUp,
-  PieChart,
-} from "lucide-react";
-import { cn } from "@/components/ui";
+import { Tabs } from "@/components/ui";
 import { useAppStore } from "@/stores/app-store";
 import { useFinanceStore } from "@/stores/finance-store";
 import PanelView from "./panel-view";
@@ -20,12 +13,12 @@ import AccountsManagerModal from "./accounts-manager-modal";
 
 type View = "panel" | "flow" | "goals" | "investments" | "analysis";
 
-const VIEWS: { id: View; label: string; icon: React.ElementType }[] = [
-  { id: "panel",       label: "Panel",       icon: LayoutDashboard },
-  { id: "flow",        label: "Flujo",       icon: ArrowRightLeft },
-  { id: "goals",       label: "Metas & Deudas", icon: Target },
-  { id: "investments", label: "Inversiones", icon: TrendingUp },
-  { id: "analysis",    label: "Análisis",    icon: PieChart },
+const VIEWS: { id: View; label: string }[] = [
+  { id: "panel",       label: "Panel" },
+  { id: "flow",        label: "Flujo" },
+  { id: "goals",       label: "Metas & Deudas" },
+  { id: "investments", label: "Inversiones" },
+  { id: "analysis",    label: "Análisis" },
 ];
 
 export default function FinancePage() {
@@ -48,30 +41,17 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-2 border-b-2 border-brand-cream">
-        <div className="flex gap-1 overflow-x-auto">
-          {VIEWS.map((v) => {
-            const Icon = v.icon;
-            return (
-              <button
-                key={v.id}
-                onClick={() => setFinanceTab(v.id)}
-                className={cn(
-                  "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-                  currentView === v.id
-                    ? "border-b-accent text-accent font-semibold"
-                    : "border-b-transparent text-brand-medium hover:text-brand-dark"
-                )}
-              >
-                <Icon size={15} />
-                {v.label}
-              </button>
-            );
-          })}
-        </div>
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <Tabs
+          tabs={VIEWS}
+          activeTab={currentView}
+          onChange={(id) => setFinanceTab(id)}
+          variant="segmented"
+          className="overflow-x-auto"
+        />
         <button
           onClick={() => setShowAccountsModal(true)}
-          className="shrink-0 mb-1.5 px-3 py-1.5 rounded-button border border-brand-cream text-brand-medium text-xs hover:bg-brand-cream"
+          className="shrink-0 px-3 py-1.5 rounded-button border border-brand-cream text-brand-medium text-xs hover:bg-brand-cream"
         >
           Cuentas
         </button>

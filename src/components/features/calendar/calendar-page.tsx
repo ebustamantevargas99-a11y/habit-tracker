@@ -2,16 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  Calendar as CalendarIcon,
-  CalendarDays,
-  CalendarRange,
   Download,
   Bell,
   BellOff,
   Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/components/ui";
+import { Tabs } from "@/components/ui";
 import TodayView from "./today-view";
 import WeekView from "./week-view";
 import MonthView from "./month-view";
@@ -22,10 +19,10 @@ import { useAppStore, type PlanTab } from "@/stores/app-store";
 import { useUserStore } from "@/stores/user-store";
 import { todayLocal } from "@/lib/date/local";
 
-const VIEWS: { id: PlanTab; label: string; icon: React.ElementType }[] = [
-  { id: "today", label: "Hoy",    icon: CalendarIcon },
-  { id: "week",  label: "Semana", icon: CalendarDays },
-  { id: "month", label: "Mes",    icon: CalendarRange },
+const VIEWS: { id: PlanTab; label: string }[] = [
+  { id: "today", label: "Hoy" },
+  { id: "week",  label: "Semana" },
+  { id: "month", label: "Mes" },
 ];
 
 const LS_COLLAPSED_KEY = "calendar.sidebarCollapsed";
@@ -119,28 +116,14 @@ export default function CalendarPage() {
       {/* Contenido principal */}
       <div className="flex-1 min-w-0 px-6 py-6 space-y-5">
         {/* View switcher + actions */}
-        <div className="flex items-center justify-between gap-2 border-b-2 border-brand-cream">
-          <div className="flex gap-1">
-            {VIEWS.map((v) => {
-              const Icon = v.icon;
-              return (
-                <button
-                  key={v.id}
-                  onClick={() => setView(v.id)}
-                  className={cn(
-                    "flex items-center gap-2 px-5 py-2.5 border-b-2 -mb-[2px] text-sm transition-colors whitespace-nowrap",
-                    view === v.id
-                      ? "border-b-accent text-accent font-semibold"
-                      : "border-b-transparent text-brand-medium hover:text-brand-dark"
-                  )}
-                >
-                  <Icon size={15} />
-                  {v.label}
-                </button>
-              );
-            })}
-          </div>
-          <div className="flex gap-2 pb-1.5 flex-wrap">
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <Tabs
+            tabs={VIEWS}
+            activeTab={view}
+            onChange={(id) => setView(id as PlanTab)}
+            variant="segmented"
+          />
+          <div className="flex gap-2 flex-wrap">
             {notifPermission !== "unsupported" && notifPermission !== "granted" && (
               <button
                 onClick={requestNotifPermission}
