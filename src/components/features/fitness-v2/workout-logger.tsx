@@ -9,6 +9,8 @@ import RestTimer from "./rest-timer";
 import SetRow, { type WorkoutSet, type SetType } from "./set-row";
 import { oneRMEstimate, setVolume } from "@/lib/fitness/calculations";
 import { api } from "@/lib/api-client";
+import { useFitnessStore } from "@/stores/fitness-store";
+import { resolveExerciseMuscles } from "@/lib/fitness/muscle-volume";
 
 type PreviousBest = { weight: number; reps: number } | null;
 
@@ -145,6 +147,53 @@ export default function WorkoutLogger() {
   const [startTime] = useState(() =>
     initialDraft.current?.startedAt ? new Date(initialDraft.current.startedAt) : new Date(),
   );
+
+  // ── Semilla desde la rutina ("Empezar sesión" en Resumen) ──────────────────
+  const sessionSeed = useFitnessStore((s) => s.sessionSeed);
+  const setSessionSeed = useFitnessStore((s) => s.setSessionSeed);
+
+  useEffect(() => {
+    if (!sessionSeed) return;
+    let cancelled = false;
+    (async () => {
+      // Mejor set previo por ejercicio → referencia de carga (overload).
+      const history = await api
+        .get<ExerciseHistoryRow[]>("/fitness/workouts?limit=20")
+        .catch(() => [] as ExerciseHistoryRow[]);
+      if (cancelled) return;
+      const built: LoggedExercise[] = sessionSeed.exercises.map((se) => {
+        const prevBest = findPreviousBest(history, se.name);
+        const slug = resolveExerciseMuscles(se.name)?.primary ?? "";
+        const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(slug);
+        const restKey = isLower ? "compound_lower" : "compound_upper";
+        const count = Math.max(1, Math.min(20, Math.round(se.sets) || 1));
+        return {
+          uid: uid(),
+          exerciseId: "",
+          exerciseName: se.name,
+          muscleGroup: slug || "—",
+          sets: Array.from({ length: count }, (_, i) => ({
+            id: uid(),
+            setNumber: i + 1,
+            weight: prevBest?.weight ?? 0,
+            reps: prevBest?.reps ?? se.repMin,
+            rpe: null,
+            completed: false,
+            setType: "straight" as SetType,
+          })),
+          restSeconds: DEFAULT_REST[restKey] ?? DEFAULT_REST.default,
+          isLowerBody: isLower,
+          previousBest: prevBest,
+        };
+      });
+      setExercises(built);
+      setWorkoutName(sessionSeed.name);
+      setSessionSeed(null); // consumida
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionSeed, setSessionSeed]);
 
   // Autosave del draft tras cada cambio relevante.
   useEffect(() => {

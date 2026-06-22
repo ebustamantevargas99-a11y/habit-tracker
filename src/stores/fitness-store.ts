@@ -76,6 +76,19 @@ export interface TonelagePoint {
   volume: number;
 }
 
+// Semilla efímera para arrancar una sesión desde la rutina ("Empezar sesión"
+// en Resumen). El logger la consume al montar para prefijar los ejercicios.
+export interface SessionSeedExercise {
+  name: string;
+  sets: number;
+  repMin: number;
+  repMax: number;
+}
+export interface SessionSeed {
+  name: string;
+  exercises: SessionSeedExercise[];
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function getWeekLabel(dateStr: string): string {
@@ -104,6 +117,10 @@ interface FitnessState {
   isLoading: boolean;
   error: string | null;
   clearError: () => void;
+
+  // Semilla de sesión (Resumen "Empezar sesión" → logger de Entreno)
+  sessionSeed: SessionSeed | null;
+  setSessionSeed: (seed: SessionSeed | null) => void;
 
   // Lifecycle
   initialize: () => Promise<void>;
@@ -147,6 +164,9 @@ export const useFitnessStore = create<FitnessState>((set, get) => ({
   isLoading: false,
   error: null,
   clearError: () => set({ error: null }),
+
+  sessionSeed: null,
+  setSessionSeed: (seed) => set({ sessionSeed: seed }),
 
   initialize: async () => {
     if (get().isLoaded) return;

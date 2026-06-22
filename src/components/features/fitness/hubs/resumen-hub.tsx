@@ -42,7 +42,7 @@ interface Program {
 const DOW_LABEL = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
 export default function ResumenHub() {
-  const { workouts, weightLog, totalWorkouts } = useFitnessStore();
+  const { workouts, weightLog, totalWorkouts, setSessionSeed } = useFitnessStore();
   const setFitnessTab = useAppStore((s) => s.setFitnessTab);
 
   const [activeProgram, setActiveProgram] = useState<Program | null>(null);
@@ -101,6 +101,23 @@ export default function ResumenHub() {
   const todaySchedule =
     activeProgram?.schedule?.find((d) => d.dayOfWeek === todayDow) ?? null;
 
+  // "Empezar sesión": siembra el logger con los ejercicios de hoy (nombre +
+  // series + rango de reps) y navega a Entreno → Hoy.
+  const startSession = () => {
+    if (todaySchedule && todaySchedule.exercises.length > 0) {
+      setSessionSeed({
+        name: todaySchedule.templateName || "Entreno",
+        exercises: todaySchedule.exercises.map((e) => ({
+          name: e.name,
+          sets: e.sets,
+          repMin: e.repRange[0],
+          repMax: e.repRange[1],
+        })),
+      });
+    }
+    setFitnessTab("entreno");
+  };
+
   return (
     <div className="flex flex-col gap-6">
       {/* ── Métricas clave ── */}
@@ -153,7 +170,7 @@ export default function ResumenHub() {
           </div>
           {todaySchedule && todaySchedule.exercises.length > 0 && (
             <button
-              onClick={() => setFitnessTab("entreno")}
+              onClick={startSession}
               className="flex items-center gap-1.5 px-4 py-2 rounded-button bg-accent text-white font-semibold text-sm hover:opacity-90 transition shrink-0"
             >
               Empezar sesión <ArrowRight size={15} />
