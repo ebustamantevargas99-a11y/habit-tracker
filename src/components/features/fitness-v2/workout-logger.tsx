@@ -7,7 +7,7 @@ import { Plus, Timer, Trash2, GripVertical, Zap } from "lucide-react";
 import ExerciseSelector, { type CatalogExercise } from "./exercise-selector";
 import RestTimer from "./rest-timer";
 import SetRow, { type WorkoutSet, type SetType } from "./set-row";
-import { oneRMEstimate, setVolume } from "@/lib/fitness/calculations";
+import { oneRMEstimate } from "@/lib/fitness/calculations";
 import { api } from "@/lib/api-client";
 import { useFitnessStore } from "@/stores/fitness-store";
 import { resolveExerciseMuscles } from "@/lib/fitness/muscle-volume";
@@ -18,7 +18,7 @@ type PreviousBest = { weight: number; reps: number } | null;
 //  - weight: peso externo normal (barra, mancuerna, máquina)
 //  - bodyweight: peso corporal (dominadas, fondos) — carga = peso corporal + lastre
 //  - isometric: sostén por tiempo (plancha) — "reps" = segundos
-export type ExerciseKind = "weight" | "bodyweight" | "isometric";
+export type ExerciseKind = "weight" | "bodyweight" | "assisted" | "isometric";
 
 function normName(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
@@ -27,14 +27,34 @@ function normName(s: string): string {
 /** Detecta el tipo de carga por nombre/equipo (override manual disponible en UI). */
 function detectKind(name: string, equipment?: string): ExerciseKind {
   const n = normName(name);
+  if (/(asistid|assisted|asistenc|gravitron|con ayuda)/.test(n)) return "assisted";
   if (/(planch|plank|hollow|wall ?sit|isom|vacuum|sosten|puente isom)/.test(n))
     return "isometric";
   if (
-    /(dominad|pull[- ]?up|chin[- ]?up|fondo|dip|flexion|push[- ]?up|lagartija|muscle[- ]?up|pistol|al fallo en barra)/.test(n)
+    /(dominad|pull[- ]?up|chin[- ]?up|fondo|dip|flexion|push[- ]?up|lagartija|muscle[- ]?up|pistol)/.test(n)
   )
     return "bodyweight";
   if (equipment && normName(equipment).includes("bodyweight")) return "bodyweight";
   return "weight";
+}
+
+// Carga efectiva (kg) que mueve el m\u00fasculo, seg\u00fan el tipo de ejercicio:
+//  - weight: el peso externo tal cual.
+//  - bodyweight / isometric: peso corporal + lastre (campo = lastre, 0 = puro).
+//  - assisted: peso corporal \u2212 ayuda (campo = ayuda de la m\u00e1quina).
+function effectiveLoad(kind: ExerciseKind, field: number, bw: number): number {
+  if (kind === "assisted") return Math.max(0, Math.round((bw - field) * 2) / 2);
+  if (kind === "bodyweight" || kind === "isometric")
+    return Math.round((bw + field) * 2) / 2;
+  return field;
+}
+
+// Inverso: dado un efectivo (del hist\u00f3rico), el valor a mostrar en el campo.
+function fieldFromEffective(kind: ExerciseKind, effective: number, bw: number): number {
+  if (kind === "assisted") return Math.max(0, Math.round((bw - effective) * 2) / 2);
+  if (kind === "bodyweight" || kind === "isometric")
+    return Math.max(0, Math.round((effective - bw) * 2) / 2);
+  return effective;
 }
 
 type LoggedExercise = {
@@ -129,6 +149,7 @@ function findPreviousBest(
 // ─── Component ────────────────────────────────────────────────────────────────
 
 const DRAFT_KEY = "ut-fitness-v2-draft";
+const BW_KEY = "ut-fitness-bodyweight";
 
 interface Draft {
   name: string;
@@ -162,8 +183,12 @@ export default function WorkoutLogger() {
     if (hour < 17) return "Entreno de tarde";
     return "Entreno de noche";
   });
-  const [exercises, setExercises] = useState<LoggedExercise[]>(
-    () => initialDraft.current?.exercises ?? [],
+  const [exercises, setExercises] = useState<LoggedExercise[]>(() =>
+    // Reclasifica drafts antiguos (sin `kind`) por nombre.
+    (initialDraft.current?.exercises ?? []).map((e) => ({
+      ...e,
+      kind: e.kind ?? detectKind(e.exerciseName),
+    })),
   );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [activeTimer, setActiveTimer] = useState<number | null>(null);
@@ -176,11 +201,34 @@ export default function WorkoutLogger() {
   const sessionSeed = useFitnessStore((s) => s.sessionSeed);
   const setSessionSeed = useFitnessStore((s) => s.setSessionSeed);
   const weightLog = useFitnessStore((s) => s.weightLog);
-  // Peso corporal más reciente → carga base de ejercicios de peso corporal.
-  const bodyweight = useMemo(() => {
+  const latestLoggedBw = useMemo(() => {
     const sorted = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
     return sorted[sorted.length - 1]?.weight ?? 0;
   }, [weightLog]);
+  // Peso corporal para la matemática de calistenia. Override manual (localStorage)
+  // o, si no hay, el último peso registrado en Cuerpo → Peso.
+  const [bodyweight, setBodyweightState] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const o = window.localStorage.getItem(BW_KEY);
+        if (o) return parseFloat(o) || 0;
+      } catch {
+        /* ignore */
+      }
+    }
+    return 0;
+  });
+  useEffect(() => {
+    setBodyweightState((cur) => (cur === 0 && latestLoggedBw > 0 ? latestLoggedBw : cur));
+  }, [latestLoggedBw]);
+  const setBodyweight = (v: number) => {
+    setBodyweightState(v);
+    try {
+      window.localStorage.setItem(BW_KEY, String(v));
+    } catch {
+      /* ignore */
+    }
+  };
 
   useEffect(() => {
     if (!sessionSeed) return;
@@ -198,9 +246,13 @@ export default function WorkoutLogger() {
         const restKey = isLower ? "compound_lower" : "compound_upper";
         const count = Math.max(1, Math.min(20, Math.round(se.sets) || 1));
         const kind = detectKind(se.name);
-        // Peso corporal/isométrico: carga base = peso corporal (+ lastre que ajuste el user).
-        const baseWeight =
-          prevBest?.weight ?? (kind === "weight" ? 0 : bodyweight);
+        // El campo guarda el "extra": lastre (peso corporal), ayuda (asistido)
+        // o el peso (normal). Desde el histórico (efectivo) lo convertimos.
+        const baseWeight = prevBest
+          ? fieldFromEffective(kind, prevBest.weight, bodyweight)
+          : kind === "assisted"
+            ? Math.round(bodyweight * 0.4)
+            : 0;
         const baseReps =
           prevBest?.reps ?? (kind === "isometric" ? 30 : se.repMin);
         return {
@@ -288,10 +340,16 @@ export default function WorkoutLogger() {
     ]);
 
     const kind = detectKind(ex.name, ex.equipment);
-    let initialWeight = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
+    const effPrev = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
+    // El campo guarda el "extra" (lastre / ayuda / peso). Convertimos desde el
+    // histórico (efectivo) o partimos de 0 (puro) / ~40% PC de ayuda (asistido).
+    const initialWeight =
+      effPrev > 0
+        ? fieldFromEffective(kind, effPrev, bodyweight)
+        : kind === "assisted"
+          ? Math.round(bodyweight * 0.4)
+          : 0;
     let initialReps = suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
-    // Peso corporal / isométrico: carga base = peso corporal si no hay histórico.
-    if (kind !== "weight" && !initialWeight) initialWeight = bodyweight;
     if (kind === "isometric" && !initialReps) initialReps = 30; // segundos default
 
     setExercises((prev) => [
@@ -333,13 +391,11 @@ export default function WorkoutLogger() {
   function setExerciseKind(exUid: string, kind: ExerciseKind) {
     setExercises((prev) =>
       prev.map((e) => {
-        if (e.uid !== exUid) return e;
-        // Al pasar a peso corporal/isométrico, prefija la carga base (peso
-        // corporal) si el set está en 0; así no arranca en cero.
-        const sets =
-          kind !== "weight"
-            ? e.sets.map((s) => (s.weight ? s : { ...s, weight: bodyweight }))
-            : e.sets;
+        if (e.uid !== exUid || e.kind === kind) return e;
+        // El campo cambia de significado (peso/lastre/ayuda) → resetea al
+        // default del nuevo tipo: 0 (puro/lastre) o ~40% PC de ayuda.
+        const def = kind === "assisted" ? Math.round(bodyweight * 0.4) : 0;
+        const sets = e.sets.map((s) => ({ ...s, weight: def }));
         return { ...e, kind, sets };
       }),
     );
@@ -462,16 +518,17 @@ export default function WorkoutLogger() {
           completedSets++;
           // Isométricos guardan segundos en reps → no suman a volumen/e1RM.
           if (iso) continue;
-          volume += setVolume(s);
-          const e1RM = oneRMEstimate(s.weight, s.reps);
+          const eff = effectiveLoad(ex.kind, s.weight, bodyweight);
+          volume += eff * s.reps;
+          const e1RM = oneRMEstimate(eff, s.reps);
           if (!topSingle || e1RM > topSingle.e1RM) {
-            topSingle = { weight: s.weight, reps: s.reps, e1RM };
+            topSingle = { weight: eff, reps: s.reps, e1RM };
           }
         }
       }
     }
     return { volume, totalSets, completedSets, topSingle };
-  }, [exercises]);
+  }, [exercises, bodyweight]);
 
   async function finishWorkout() {
     if (exercises.length === 0) {
@@ -505,7 +562,9 @@ export default function WorkoutLogger() {
         sets: ex.sets
           .filter((s) => s.completed && s.reps > 0)
           .map((s) => ({
-            weight: s.weight,
+            // Guardamos la carga EFECTIVA (peso corporal ± lastre/ayuda) para
+            // que volumen, e1RM y PRs sean correctos.
+            weight: effectiveLoad(ex.kind, s.weight, bodyweight),
             reps: s.reps,
             rpe: s.rpe,
             tempo: s.tempo ?? null,
@@ -516,7 +575,9 @@ export default function WorkoutLogger() {
                   ? "isometric"
                   : ex.kind === "bodyweight"
                     ? "bodyweight"
-                    : s.setType ?? "straight",
+                    : ex.kind === "assisted"
+                      ? "assisted"
+                      : s.setType ?? "straight",
             groupId: s.groupId ?? null,
             isWarmup: s.isWarmup ?? s.setType === "warmup",
           })),
@@ -594,6 +655,22 @@ export default function WorkoutLogger() {
         </div>
       </div>
 
+      {/* Peso corporal — base para dominadas, fondos, asistidas y planchas */}
+      <div className="flex items-center gap-2 px-1 text-xs text-brand-warm flex-wrap">
+        <span>Peso corporal:</span>
+        <input
+          type="number"
+          step="0.5"
+          value={bodyweight || ""}
+          onChange={(e) => setBodyweight(parseFloat(e.target.value) || 0)}
+          placeholder="kg"
+          className="w-20 px-2 py-1 rounded border border-brand-cream text-center text-brand-dark bg-brand-paper focus:outline-none focus:border-accent"
+        />
+        <span className="text-brand-warm/80">
+          kg — se usa para calcular la carga de peso corporal, asistidas y planchas.
+        </span>
+      </div>
+
       {/* Exercises */}
       {exercises.length === 0 && (
         <div className="bg-brand-warm-white rounded-xl border-2 border-dashed border-brand-tan p-10 text-center">
@@ -618,11 +695,12 @@ export default function WorkoutLogger() {
                 <p className="text-xs text-brand-warm">
                   {ex.muscleGroup} · descanso {ex.restSeconds}s
                 </p>
-                <div className="flex gap-1 mt-1.5">
+                <div className="flex gap-1 mt-1.5 flex-wrap">
                   {(
                     [
                       ["weight", "Peso"],
                       ["bodyweight", "P. corporal"],
+                      ["assisted", "Asistida"],
                       ["isometric", "Tiempo"],
                     ] as [ExerciseKind, string][]
                   ).map(([k, label]) => (
@@ -640,6 +718,15 @@ export default function WorkoutLogger() {
                     </button>
                   ))}
                 </div>
+                {ex.kind !== "weight" && (
+                  <p className="text-[10px] text-brand-warm mt-1 leading-snug">
+                    {ex.kind === "bodyweight"
+                      ? `Carga = peso corporal (${bodyweight || "?"} kg) + lastre. Progresa con +reps o +lastre.`
+                      : ex.kind === "assisted"
+                        ? `Asistida = peso corporal (${bodyweight || "?"} kg) − ayuda. Progresa bajando la ayuda hasta 0.`
+                        : "Sostén por tiempo (segundos). Progresa con +seg o +lastre."}
+                  </p>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -697,7 +784,13 @@ export default function WorkoutLogger() {
           <div className="grid grid-cols-[28px_64px_1fr_1fr_1fr_28px_28px_28px] gap-1.5 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
             <div className="text-center">#</div>
             <div className="text-center">Ant.</div>
-            <div className="text-center">{ex.kind === "bodyweight" ? "Peso·PC" : "Peso"}</div>
+            <div className="text-center">
+              {ex.kind === "bodyweight" || ex.kind === "isometric"
+                ? "Lastre"
+                : ex.kind === "assisted"
+                  ? "Ayuda"
+                  : "Peso"}
+            </div>
             <div className="text-center">{ex.kind === "isometric" ? "Seg" : "Reps"}</div>
             <div className="text-center">RPE</div>
             <div></div>

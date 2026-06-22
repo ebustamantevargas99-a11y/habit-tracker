@@ -92,6 +92,7 @@ export const setTypeEnum = z.enum([
   "amrap",
   "failure",
   "bodyweight", // peso corporal (carga = peso corporal + lastre)
+  "assisted", // asistido (carga = peso corporal − ayuda)
   "isometric", // isométrico: reps = segundos de sostén
 ]);
 export type SetType = z.infer<typeof setTypeEnum>;

@@ -55,7 +55,7 @@ const SET_TYPE_MENU: { value: SetType; label: string; hint: string }[] = [
 type Props = {
   set: WorkoutSet;
   previousBest?: { weight: number; reps: number } | null;
-  kind?: "weight" | "bodyweight" | "isometric";
+  kind?: "weight" | "bodyweight" | "assisted" | "isometric";
   onChange: (patch: Partial<WorkoutSet>) => void;
   onComplete: () => void;
   onDelete: () => void;
@@ -136,7 +136,13 @@ export default function SetRow({
         step="0.5"
         value={set.weight || ""}
         onChange={(e) => onChange({ weight: parseFloat(e.target.value) || 0 })}
-        placeholder={kind === "bodyweight" ? "kg PC" : "kg"}
+        placeholder={
+          kind === "assisted"
+            ? "ayuda"
+            : kind === "bodyweight" || kind === "isometric"
+              ? "+kg"
+              : "kg"
+        }
         className="w-full px-2 py-1.5 rounded border border-brand-cream text-center text-brand-dark text-sm bg-brand-paper focus:outline-none focus:border-accent"
       />
 
