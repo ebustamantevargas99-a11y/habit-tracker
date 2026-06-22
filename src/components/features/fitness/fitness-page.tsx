@@ -15,10 +15,10 @@ import RutinasHub from "./hubs/rutinas-hub";
 // Cuerpo  · peso, composición, medidas, fotos, pasos
 // Rutinas · constructor de rutina semanal propia
 const HUBS = [
-  { id: "resumen", label: "🏠 Resumen" },
-  { id: "entreno", label: "🏋️ Entreno" },
-  { id: "cuerpo",  label: "👤 Cuerpo" },
-  { id: "rutinas", label: "📆 Rutinas" },
+  { id: "resumen", label: "Resumen" },
+  { id: "entreno", label: "Entreno" },
+  { id: "cuerpo",  label: "Cuerpo" },
+  { id: "rutinas", label: "Rutinas" },
 ];
 
 export default function FitnessPage() {
@@ -65,7 +65,8 @@ export default function FitnessPage() {
         tabs={HUBS}
         activeTab={hubId}
         onChange={(id) => setActiveTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="segmented"
+        className="mb-6"
       />
 
       {hubId === "resumen" && <ResumenHub />}

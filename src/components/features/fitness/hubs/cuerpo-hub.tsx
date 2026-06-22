@@ -10,11 +10,11 @@ import StepsTab from "../steps-tab";
 import PhotosTab from "../photos-tab";
 
 const CUERPO_SUBTABS = [
-  { id: "peso",        label: "⚖️ Peso" },
-  { id: "composicion", label: "🧬 Composición" },
-  { id: "medidas",     label: "📏 Medidas" },
-  { id: "fotos",       label: "📸 Fotos" },
-  { id: "pasos",       label: "👣 Pasos" },
+  { id: "peso",        label: "Peso" },
+  { id: "composicion", label: "Composición" },
+  { id: "medidas",     label: "Medidas" },
+  { id: "fotos",       label: "Fotos" },
+  { id: "pasos",       label: "Pasos" },
 ];
 
 export default function CuerpoHub() {
@@ -37,7 +37,8 @@ export default function CuerpoHub() {
         tabs={CUERPO_SUBTABS}
         activeTab={subTab}
         onChange={(id) => setSubTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="pill"
+        className="mb-6"
       />
 
       {subTab === "peso" && (

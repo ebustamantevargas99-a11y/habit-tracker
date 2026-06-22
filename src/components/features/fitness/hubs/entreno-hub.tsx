@@ -9,10 +9,10 @@ import WorkoutLoggerV2 from "@/components/features/fitness-v2/workout-logger";
 import VolumePlanVsDone from "../volume-plan-vs-done";
 
 const ENTRENO_SUBTABS = [
-  { id: "hoy",        label: "🏋️ Hoy" },
-  { id: "volumen",    label: "📊 Volumen" },
-  { id: "records",    label: "🏆 Récords" },
-  { id: "historial",  label: "📜 Historial" },
+  { id: "hoy",        label: "Hoy" },
+  { id: "volumen",    label: "Volumen" },
+  { id: "records",    label: "Récords" },
+  { id: "historial",  label: "Historial" },
 ];
 
 export default function EntrenoHub() {
@@ -48,7 +48,8 @@ export default function EntrenoHub() {
         tabs={ENTRENO_SUBTABS}
         activeTab={subTab}
         onChange={(id) => setSubTab(id as string)}
-        className="mb-6 flex-wrap border-brand-light-tan"
+        variant="pill"
+        className="mb-6"
       />
 
       {subTab === "hoy" && <WorkoutLoggerV2 />}
