@@ -82,7 +82,8 @@ export async function detectAndPersistPRs(
     let bestSetOneRM = 0;
     let bestSet: { weight: number; reps: number; rpe: number | null } | null = null;
     for (const s of we.sets) {
-      if (s.isWarmup || s.setType === "warmup") continue;
+      // Isométricos guardan segundos en reps → su e1RM no tiene sentido.
+      if (s.isWarmup || s.setType === "warmup" || s.setType === "isometric") continue;
       const e1RM = estimateSetOneRM(s.weight, s.reps, s.rpe);
       if (e1RM > bestSetOneRM) {
         bestSetOneRM = e1RM;

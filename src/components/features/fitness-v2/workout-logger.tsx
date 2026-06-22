@@ -14,11 +14,35 @@ import { resolveExerciseMuscles } from "@/lib/fitness/muscle-volume";
 
 type PreviousBest = { weight: number; reps: number } | null;
 
+// Tipo de carga del ejercicio:
+//  - weight: peso externo normal (barra, mancuerna, máquina)
+//  - bodyweight: peso corporal (dominadas, fondos) — carga = peso corporal + lastre
+//  - isometric: sostén por tiempo (plancha) — "reps" = segundos
+export type ExerciseKind = "weight" | "bodyweight" | "isometric";
+
+function normName(s: string): string {
+  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+}
+
+/** Detecta el tipo de carga por nombre/equipo (override manual disponible en UI). */
+function detectKind(name: string, equipment?: string): ExerciseKind {
+  const n = normName(name);
+  if (/(planch|plank|hollow|wall ?sit|isom|vacuum|sosten|puente isom)/.test(n))
+    return "isometric";
+  if (
+    /(dominad|pull[- ]?up|chin[- ]?up|fondo|dip|flexion|push[- ]?up|lagartija|muscle[- ]?up|pistol|al fallo en barra)/.test(n)
+  )
+    return "bodyweight";
+  if (equipment && normName(equipment).includes("bodyweight")) return "bodyweight";
+  return "weight";
+}
+
 type LoggedExercise = {
   uid: string;
   exerciseId: string;
   exerciseName: string;
   muscleGroup: string;
+  kind: ExerciseKind;
   sets: WorkoutSet[];
   restSeconds: number;
   isLowerBody: boolean;
@@ -151,6 +175,12 @@ export default function WorkoutLogger() {
   // ── Semilla desde la rutina ("Empezar sesión" en Resumen) ──────────────────
   const sessionSeed = useFitnessStore((s) => s.sessionSeed);
   const setSessionSeed = useFitnessStore((s) => s.setSessionSeed);
+  const weightLog = useFitnessStore((s) => s.weightLog);
+  // Peso corporal más reciente → carga base de ejercicios de peso corporal.
+  const bodyweight = useMemo(() => {
+    const sorted = [...weightLog].sort((a, b) => a.date.localeCompare(b.date));
+    return sorted[sorted.length - 1]?.weight ?? 0;
+  }, [weightLog]);
 
   useEffect(() => {
     if (!sessionSeed) return;
@@ -167,16 +197,23 @@ export default function WorkoutLogger() {
         const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(slug);
         const restKey = isLower ? "compound_lower" : "compound_upper";
         const count = Math.max(1, Math.min(20, Math.round(se.sets) || 1));
+        const kind = detectKind(se.name);
+        // Peso corporal/isométrico: carga base = peso corporal (+ lastre que ajuste el user).
+        const baseWeight =
+          prevBest?.weight ?? (kind === "weight" ? 0 : bodyweight);
+        const baseReps =
+          prevBest?.reps ?? (kind === "isometric" ? 30 : se.repMin);
         return {
           uid: uid(),
           exerciseId: "",
           exerciseName: se.name,
           muscleGroup: slug || "—",
+          kind,
           sets: Array.from({ length: count }, (_, i) => ({
             id: uid(),
             setNumber: i + 1,
-            weight: prevBest?.weight ?? 0,
-            reps: prevBest?.reps ?? se.repMin,
+            weight: baseWeight,
+            reps: baseReps,
             rpe: null,
             completed: false,
             setType: "straight" as SetType,
@@ -193,7 +230,7 @@ export default function WorkoutLogger() {
     return () => {
       cancelled = true;
     };
-  }, [sessionSeed, setSessionSeed]);
+  }, [sessionSeed, setSessionSeed, bodyweight]);
 
   // Autosave del draft tras cada cambio relevante.
   useEffect(() => {
@@ -250,8 +287,12 @@ export default function WorkoutLogger() {
         .catch(() => null),
     ]);
 
-    const initialWeight = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
-    const initialReps = suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
+    const kind = detectKind(ex.name, ex.equipment);
+    let initialWeight = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
+    let initialReps = suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
+    // Peso corporal / isométrico: carga base = peso corporal si no hay histórico.
+    if (kind !== "weight" && !initialWeight) initialWeight = bodyweight;
+    if (kind === "isometric" && !initialReps) initialReps = 30; // segundos default
 
     setExercises((prev) => [
       ...prev,
@@ -260,6 +301,7 @@ export default function WorkoutLogger() {
         exerciseId: ex.id,
         exerciseName: ex.name,
         muscleGroup: ex.muscleGroup,
+        kind,
         sets: [
           {
             id: uid(),
@@ -286,6 +328,21 @@ export default function WorkoutLogger() {
           : undefined,
       },
     ]);
+  }
+
+  function setExerciseKind(exUid: string, kind: ExerciseKind) {
+    setExercises((prev) =>
+      prev.map((e) => {
+        if (e.uid !== exUid) return e;
+        // Al pasar a peso corporal/isométrico, prefija la carga base (peso
+        // corporal) si el set está en 0; así no arranca en cero.
+        const sets =
+          kind !== "weight"
+            ? e.sets.map((s) => (s.weight ? s : { ...s, weight: bodyweight }))
+            : e.sets;
+        return { ...e, kind, sets };
+      }),
+    );
   }
 
   function removeExercise(exUid: string) {
@@ -397,11 +454,14 @@ export default function WorkoutLogger() {
     let completedSets = 0;
     let topSingle: { weight: number; reps: number; e1RM: number } | null = null;
     for (const ex of exercises) {
+      const iso = ex.kind === "isometric";
       for (const s of ex.sets) {
         if (s.isWarmup || s.setType === "warmup") continue;
         totalSets++;
         if (s.completed) {
           completedSets++;
+          // Isométricos guardan segundos en reps → no suman a volumen/e1RM.
+          if (iso) continue;
           volume += setVolume(s);
           const e1RM = oneRMEstimate(s.weight, s.reps);
           if (!topSingle || e1RM > topSingle.e1RM) {
@@ -418,8 +478,10 @@ export default function WorkoutLogger() {
       toast.error("Agrega al menos un ejercicio");
       return;
     }
+    // reps > 0 basta (el peso puede ser 0 en peso corporal puro; en
+    // isométricos "reps" son segundos).
     const hasCompletedSet = exercises.some((e) =>
-      e.sets.some((s) => s.completed && s.weight > 0 && s.reps > 0),
+      e.sets.some((s) => s.completed && s.reps > 0),
     );
     if (!hasCompletedSet) {
       toast.error("Completa al menos una serie válida");
@@ -441,13 +503,20 @@ export default function WorkoutLogger() {
         muscleGroup: ex.muscleGroup,
         notes: ex.notes,
         sets: ex.sets
-          .filter((s) => s.completed && s.weight > 0 && s.reps > 0)
+          .filter((s) => s.completed && s.reps > 0)
           .map((s) => ({
             weight: s.weight,
             reps: s.reps,
             rpe: s.rpe,
             tempo: s.tempo ?? null,
-            setType: (s.setType ?? (s.isWarmup ? "warmup" : "straight")) as SetType,
+            setType:
+              s.isWarmup || s.setType === "warmup"
+                ? "warmup"
+                : ex.kind === "isometric"
+                  ? "isometric"
+                  : ex.kind === "bodyweight"
+                    ? "bodyweight"
+                    : s.setType ?? "straight",
             groupId: s.groupId ?? null,
             isWarmup: s.isWarmup ?? s.setType === "warmup",
           })),
@@ -549,6 +618,28 @@ export default function WorkoutLogger() {
                 <p className="text-xs text-brand-warm">
                   {ex.muscleGroup} · descanso {ex.restSeconds}s
                 </p>
+                <div className="flex gap-1 mt-1.5">
+                  {(
+                    [
+                      ["weight", "Peso"],
+                      ["bodyweight", "P. corporal"],
+                      ["isometric", "Tiempo"],
+                    ] as [ExerciseKind, string][]
+                  ).map(([k, label]) => (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => setExerciseKind(ex.uid, k)}
+                      className={`text-[10px] px-2 py-0.5 rounded-full border transition ${
+                        ex.kind === k
+                          ? "bg-accent text-white border-accent font-semibold"
+                          : "border-brand-cream text-brand-warm hover:text-brand-dark"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -606,8 +697,8 @@ export default function WorkoutLogger() {
           <div className="grid grid-cols-[28px_64px_1fr_1fr_1fr_28px_28px_28px] gap-1.5 px-2 py-1 text-[10px] uppercase tracking-widest text-brand-warm font-semibold">
             <div className="text-center">#</div>
             <div className="text-center">Ant.</div>
-            <div className="text-center">Peso</div>
-            <div className="text-center">Reps</div>
+            <div className="text-center">{ex.kind === "bodyweight" ? "Peso·PC" : "Peso"}</div>
+            <div className="text-center">{ex.kind === "isometric" ? "Seg" : "Reps"}</div>
             <div className="text-center">RPE</div>
             <div></div>
             <div></div>
@@ -618,6 +709,7 @@ export default function WorkoutLogger() {
             {ex.sets.map((s) => (
               <SetRow
                 key={s.id}
+                kind={ex.kind}
                 set={s}
                 previousBest={ex.previousBest}
                 onChange={(patch) => patchSet(ex.uid, s.id, patch)}

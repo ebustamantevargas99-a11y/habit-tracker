@@ -55,6 +55,7 @@ const SET_TYPE_MENU: { value: SetType; label: string; hint: string }[] = [
 type Props = {
   set: WorkoutSet;
   previousBest?: { weight: number; reps: number } | null;
+  kind?: "weight" | "bodyweight" | "isometric";
   onChange: (patch: Partial<WorkoutSet>) => void;
   onComplete: () => void;
   onDelete: () => void;
@@ -63,10 +64,12 @@ type Props = {
 export default function SetRow({
   set,
   previousBest,
+  kind = "weight",
   onChange,
   onComplete,
   onDelete,
 }: Props) {
+  const isIso = kind === "isometric";
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -120,7 +123,11 @@ export default function SetRow({
 
       {/* Previous best */}
       <div className="text-xs text-brand-warm text-center truncate">
-        {previousBest ? `${previousBest.weight}×${previousBest.reps}` : "—"}
+        {previousBest
+          ? isIso
+            ? `${previousBest.reps}s`
+            : `${previousBest.weight}×${previousBest.reps}`
+          : "—"}
       </div>
 
       {/* Weight */}
@@ -129,16 +136,16 @@ export default function SetRow({
         step="0.5"
         value={set.weight || ""}
         onChange={(e) => onChange({ weight: parseFloat(e.target.value) || 0 })}
-        placeholder="kg"
+        placeholder={kind === "bodyweight" ? "kg PC" : "kg"}
         className="w-full px-2 py-1.5 rounded border border-brand-cream text-center text-brand-dark text-sm bg-brand-paper focus:outline-none focus:border-accent"
       />
 
-      {/* Reps */}
+      {/* Reps / segundos (isométrico) */}
       <input
         type="number"
         value={set.reps || ""}
         onChange={(e) => onChange({ reps: parseInt(e.target.value) || 0 })}
-        placeholder="reps"
+        placeholder={isIso ? "seg" : "reps"}
         className="w-full px-2 py-1.5 rounded border border-brand-cream text-center text-brand-dark text-sm bg-brand-paper focus:outline-none focus:border-accent"
       />
 

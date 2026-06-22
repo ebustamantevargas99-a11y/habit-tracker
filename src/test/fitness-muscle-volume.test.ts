@@ -40,6 +40,15 @@ describe("resolveExerciseMuscles", () => {
   it("devuelve null si no se puede categorizar", () => {
     expect(resolveExerciseMuscles("zzz desconocido")).toBeNull();
   });
+
+  it("casos del mundo real: pullover, reverse pec deck, woodchopper", () => {
+    expect(resolveExerciseMuscles("Pullover en polea")?.primary).toBe("back");
+    // reverse pec deck = deltoide posterior, NO pecho (aunque contenga 'pec deck')
+    expect(resolveExerciseMuscles("Reverse pec deck")?.primary).toBe("shoulders");
+    expect(resolveExerciseMuscles("Woodchoppers")?.primary).toBe("core");
+    // dominadas lastradas siguen siendo espalda
+    expect(resolveExerciseMuscles("Dominadas lastradas")?.primary).toBe("back");
+  });
 });
 
 describe("plannedVolumeByMuscle (fraccional)", () => {

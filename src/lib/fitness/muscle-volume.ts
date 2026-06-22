@@ -63,6 +63,9 @@ export function spanishMuscleToSlug(muscleEs: string): string | null {
 
 // Reglas ordenadas por especificidad: la primera que matchea gana.
 const RULES: { keys: string[]; m: MuscleAttribution }[] = [
+  // Deltoide posterior — debe ir ANTES que "pec deck" (apertura) para no caer en pecho.
+  { keys: ["reverse pec deck", "pec deck inverso", "peck deck inverso", "contractor inverso", "deltoide posterior"], m: { primary: "shoulders", secondaries: ["back"] } },
+  { keys: ["pullover"], m: { primary: "back", secondaries: ["chest"] } },
   { keys: ["press militar", "press de hombro", "overhead", "ohp", "militar", "arnold"], m: { primary: "shoulders", secondaries: ["triceps"] } },
   { keys: ["press inclinad", "incline"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
   { keys: ["press banca", "bench", "press de pecho", "press con barra", "press mancuern", "press plano"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
@@ -83,7 +86,7 @@ const RULES: { keys: string[]; m: MuscleAttribution }[] = [
   { keys: ["curl martillo", "hammer"], m: { primary: "biceps", secondaries: [] } },
   { keys: ["curl", "bicep"], m: { primary: "biceps", secondaries: [] } },
   { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa"], m: { primary: "triceps", secondaries: [] } },
-  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "core"], m: { primary: "core", secondaries: [] } },
+  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "woodchop", "lenador", "pallof", "core"], m: { primary: "core", secondaries: [] } },
   { keys: ["press"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
   { keys: ["espalda", "back"], m: { primary: "back", secondaries: ["biceps"] } },
   { keys: ["pecho", "chest"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
