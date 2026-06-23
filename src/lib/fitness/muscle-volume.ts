@@ -121,6 +121,12 @@ const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
     c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
   { keys: ["fondo", "dip"],
     c: [C("chest", 1), C("triceps", 0.5), C("delt_ant", 0.25)] },
+  // Flexiones: igual que press de pecho (chest + delt_ant + triceps)
+  { keys: ["flexion", "push-up", "push up", "lagartija", "pushup", "flexiones"],
+    c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
+  // Pike push-up: más hombro que pecho por el ángulo de inclinación
+  { keys: ["pike push", "flexion en pica", "push up pika", "pica"],
+    c: [C("delt_ant", 1), C("triceps", 0.5)] },
   { keys: ["apertura", "pec deck", "contractor", "peck deck", "cruce de polea", "crossover", "fly", "pec fly"],
     c: [C("chest", 1)] },
   // ── Cadena posterior (hinge) ─────────────────────────────────────────────────
@@ -136,7 +142,10 @@ const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
     c: [C("lower_back", 1), C("hamstrings", 0.5), C("glutes", 0.5), C("traps", 0.25)] },
   { keys: ["hip thrust", "empuje de cadera", "puente de gluteo", "glute bridge", "kettlebell swing", "swing"],
     c: [C("glutes", 1), C("hamstrings", 0.5)] },
-  { keys: ["gluteo", "glute", "patada de gluteo", "kickback", "abduccion"],
+  // Hiperextensión: espalda baja primaria, glúteos sinergistas fuertes
+  { keys: ["hiperextension", "back extension", "extension de espalda", "extensiones de espalda", "superman", "reverse hyper", "hiperextension reversa"],
+    c: [C("lower_back", 1), C("glutes", 0.5)] },
+  { keys: ["gluteo", "glute", "patada de gluteo", "kickback", "abduccion", "donkey kick", "patada trasera", "clamshell", "almeja", "fire hydrant", "hip abduction"],
     c: [C("glutes", 1)] },
   // ── Cuádriceps (sentadilla: isquios NO cuentan, Schoenfeld 2019) ─────────────
   { keys: ["sentadilla", "squat", "hack"],
@@ -147,9 +156,24 @@ const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
     c: [C("quads", 1), C("glutes", 0.5)] },
   { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad", "sissy"],
     c: [C("quads", 1)] },
+  // Saltos y pliométricos: cuádriceps + glúteos (potencia del tren inferior)
+  { keys: ["salto", "jump", "box jump", "box step", "plyometric", "pliometrico", "burpee"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
   // ── Pantorrilla ──────────────────────────────────────────────────────────────
   { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"],
     c: [C("calves", 1)] },
+  // ── Trapecios aislados ───────────────────────────────────────────────────────
+  { keys: ["encogimiento", "shrug"],
+    c: [C("traps", 1)] },
+  // Farmer's carry: trapecios soportan la carga + core estabiliza
+  { keys: ["farmer", "granjero", "carry", "caminata del granjero"],
+    c: [C("traps", 1), C("core", 0.25)] },
+  // YTW / Y-T-W raises: deltoide posterior + trapecios
+  { keys: ["ytw", "y-t-w", "y raise", "t raise", "w raise", "yty"],
+    c: [C("delt_post", 1), C("traps", 0.5)] },
+  // Jalón recto de pie: dorsal en máximo estiramiento (aislado)
+  { keys: ["jalon de pie", "jalon recto", "straight arm", "tiron recto", "tirón recto"],
+    c: [C("lats", 1)] },
   // ── Espalda: jalones y dominadas (dorsales primarios) ────────────────────────
   { keys: ["dominada", "pull up", "pull-up", "chin up", "chin-up", "muscle up", "jalon", "pulldown", "pull down"],
     c: [C("lats", 1), C("biceps", 0.5)] },
@@ -169,8 +193,24 @@ const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
   { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa", "skullcrusher", "rompecraneos"],
     c: [C("triceps", 1)] },
   // ── Core ─────────────────────────────────────────────────────────────────────
-  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "giro ruso", "woodchop", "lenador", "pallof", "hollow", "core", "dragon flag"],
+  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "giro ruso", "woodchop", "lenador", "pallof", "hollow", "core", "dragon flag", "dead bug", "bird dog", "toes to bar", "l-sit", "bear crawl"],
     c: [C("core", 1)] },
+  // ── Levantamientos olímpicos y full body ─────────────────────────────────────
+  // Trapecios dominantes en el tirón; cuádriceps y glúteos generan la potencia.
+  { keys: ["clean", "power clean", "hang clean", "arranque", "snatch", "envion", "clean and jerk"],
+    c: [C("traps", 1), C("quads", 0.5), C("glutes", 0.5)] },
+  // Thruster: combinación de press de hombro + sentadilla
+  { keys: ["thruster"],
+    c: [C("delt_ant", 1), C("quads", 1), C("triceps", 0.5), C("glutes", 0.5)] },
+  // Landmine press: ángulo oblicuo → más delt_ant que pecho plano, menos que OHP
+  { keys: ["landmine"],
+    c: [C("delt_ant", 1), C("chest", 0.5), C("triceps", 0.25)] },
+  // Turkish get-up: full body pero con énfasis en core + glúteos + hombro
+  { keys: ["turkish get-up", "get up", "turkish"],
+    c: [C("core", 1), C("delt_ant", 0.5), C("glutes", 0.5)] },
+  // Sled push/pull: tren inferior potencia
+  { keys: ["trineo", "sled push", "sled pull", "empuje de trineo"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
   // ── Genéricos (último recurso por palabra clave) ─────────────────────────────
   { keys: ["press"],
     c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
