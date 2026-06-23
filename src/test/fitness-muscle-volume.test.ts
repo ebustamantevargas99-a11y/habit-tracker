@@ -219,6 +219,35 @@ describe("doneVolumeByMuscle (series efectivas)", () => {
   });
 });
 
+describe("customMap — Fase D", () => {
+  it("customMap tiene prioridad sobre RULES y fallback", () => {
+    const map = { "maquina rara x": [{ muscle: "glutes", fraction: 1 as const }] };
+    const c = resolveExerciseContributions("Máquina rara X", "Pecho", map);
+    expect(c?.[0].muscle).toBe("glutes");
+  });
+
+  it("sin customMap, el fallback muscleGroup sigue funcionando", () => {
+    expect(resolveExerciseContributions("Máquina rara X", "Pecho")?.primary ?? resolveExerciseContributions("Máquina rara X", "Pecho")?.[0].muscle).toBe("chest");
+  });
+
+  it("doneVolumeByMuscle con customMap categoriza ejercicios antes no categorizados", () => {
+    const map = { "cosa rara": [{ muscle: "lats", fraction: 1 as const }] };
+    const { byMuscle, uncategorized } = doneVolumeByMuscle(
+      [{
+        date: "2026-06-20",
+        exercises: [{
+          exerciseName: "Cosa rara",
+          sets: [{ weight: 50, reps: 8, rpe: 7 }],
+        }],
+      }],
+      "2026-06-14",
+      map,
+    );
+    expect(byMuscle.lats).toBe(1);
+    expect(uncategorized).not.toContain("Cosa rara");
+  });
+});
+
 describe("roundHalf", () => {
   it("redondea a 0.5", () => {
     expect(roundHalf(13.9)).toBe(14);

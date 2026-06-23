@@ -57,9 +57,10 @@ model User {
   hydrationLogs    HydrationLog[]
   pomodoroSessions PomodoroSession[]
   projects         Project[]
-  challenges       FitnessChallenge[]
-  weightLogs       WeightLog[]
-  stepsLogs        StepsLog[]
+  challenges           FitnessChallenge[]
+  weightLogs           WeightLog[]
+  stepsLogs            StepsLog[]
+  exerciseMappings     FitnessExerciseMapping[]
 
   // ── Fitness redesign (2026-04-21 — Fase 9) ─────────────────────────────────
   trainingPrograms TrainingProgram[]
@@ -426,6 +427,23 @@ model StepsLog {
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+// ─── Fitness: mapeos custom de ejercicios → músculos (Fase D) ────────────────
+
+model FitnessExerciseMapping {
+  id                String   @id @default(cuid())
+  userId            String
+  // nombre normalizado (lowercase, sin acentos) — clave de búsqueda
+  exerciseName      String
+  // JSON: [{muscle: string, fraction: number}] — contribuciones fraccionales
+  contributionsJson String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, exerciseName])
+  @@index([userId])
 }
 
 // FastingLog DROPPED (Fase 9 redesign) — consolidado en FastingSession (LifeOS)

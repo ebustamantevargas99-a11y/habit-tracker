@@ -62,6 +62,9 @@ function norm(s: string): string {
     .trim();
 }
 
+/** Normaliza un nombre de ejercicio para usar como clave de lookup (Fase D). */
+export const normExerciseName = norm;
+
 /** Mapea un muscleGroup en español (de sesiones registradas) → slug fino. */
 export function spanishMuscleToSlug(muscleEs: string): string | null {
   const m = norm(muscleEs);
@@ -225,15 +228,21 @@ const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
 ];
 
 /**
- * Contribuciones { músculo, fracción } de un ejercicio por nombre. Si no matchea
- * ninguna regla, usa el muscleGroup registrado como primario (1.0). null si no
- * se puede categorizar.
+ * Contribuciones { músculo, fracción } de un ejercicio por nombre.
+ *
+ * Prioridad:
+ *   1. customMap[norm(name)] — mapeo explícito del usuario (Fase D)
+ *   2. RULES — reglas curadas por nombre de ejercicio
+ *   3. fallbackMuscleGroup — muscleGroup del registro (solo primario, 1.0)
+ *   4. null — no categorizable
  */
 export function resolveExerciseContributions(
   name: string,
   fallbackMuscleGroup?: string | null,
+  customMap?: Record<string, MuscleContribution[]> | null,
 ): MuscleContribution[] | null {
   const n = norm(name);
+  if (customMap && n && customMap[n]?.length) return customMap[n];
   if (n) {
     for (const rule of RULES) {
       if (rule.keys.some((k) => n.includes(k))) return rule.c;
@@ -289,14 +298,17 @@ function addContributions(
 }
 
 /** Volumen planificado (series/semana fraccionales) desde el schedule de la rutina. */
-export function plannedVolumeByMuscle(schedule: ScheduleDay[]): VolumeResult {
+export function plannedVolumeByMuscle(
+  schedule: ScheduleDay[],
+  customMap?: Record<string, MuscleContribution[]> | null,
+): VolumeResult {
   const byMuscle: Record<string, number> = {};
   const uncategorized = new Set<string>();
   for (const day of schedule ?? []) {
     for (const ex of day.exercises ?? []) {
       const name = ex.name?.trim();
       if (!name || !(ex.sets > 0)) continue;
-      const c = resolveExerciseContributions(name);
+      const c = resolveExerciseContributions(name, undefined, customMap);
       if (!c) {
         uncategorized.add(name);
         continue;
@@ -331,6 +343,7 @@ function isEffective(s: LoggedSet): boolean {
 export function doneVolumeByMuscle(
   workouts: LoggedWorkout[],
   sinceStr: string,
+  customMap?: Record<string, MuscleContribution[]> | null,
 ): VolumeResult {
   const byMuscle: Record<string, number> = {};
   const uncategorized = new Set<string>();
@@ -339,7 +352,7 @@ export function doneVolumeByMuscle(
     for (const ex of w.exercises ?? []) {
       const eff = (ex.sets ?? []).filter(isEffective).length;
       if (eff === 0) continue;
-      const c = resolveExerciseContributions(ex.exerciseName, ex.muscleGroup);
+      const c = resolveExerciseContributions(ex.exerciseName, ex.muscleGroup, customMap);
       if (!c) {
         uncategorized.add(ex.exerciseName);
         continue;

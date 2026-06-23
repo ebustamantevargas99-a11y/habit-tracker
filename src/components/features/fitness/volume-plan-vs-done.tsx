@@ -10,6 +10,8 @@ import {
   plannedVolumeByMuscle,
   doneVolumeByMuscle,
   roundHalf,
+  normExerciseName,
+  type MuscleContribution,
 } from "@/lib/fitness/muscle-volume";
 // MUSCLE_ORDER se usa en MesocyclePanel (suggestions); DISPLAY_SECTIONS maneja el render principal
 import {
@@ -79,19 +81,32 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
   const [program, setProgram] = useState<Program | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [deload, setDeload] = useState(false);
+  // Fase D: mapeos custom usuario → contribuciones fraccionales
+  const [customMap, setCustomMap] = useState<Record<string, MuscleContribution[]>>({});
+  const [mapTarget, setMapTarget] = useState<string | null>(null);
 
   useEffect(() => {
     setDeload(isDeloadActive());
     let cancelled = false;
-    api
-      .get<Program[]>("/fitness/programs")
-      .then((ps) => {
-        if (!cancelled) setProgram(ps.find((p) => p.active) ?? null);
+
+    Promise.all([
+      api.get<Program[]>("/fitness/programs"),
+      api.get<{ exerciseName: string; contributions: MuscleContribution[] }[]>(
+        "/fitness/exercise-mappings",
+      ),
+    ])
+      .then(([programs, mappings]) => {
+        if (cancelled) return;
+        setProgram(programs.find((p) => p.active) ?? null);
+        const m: Record<string, MuscleContribution[]> = {};
+        for (const mapping of mappings) m[mapping.exerciseName] = mapping.contributions;
+        setCustomMap(m);
       })
       .catch(() => {})
       .finally(() => {
         if (!cancelled) setLoaded(true);
       });
+
     return () => {
       cancelled = true;
     };
@@ -104,12 +119,12 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
   };
 
   const planned = useMemo(
-    () => plannedVolumeByMuscle(program?.schedule ?? []),
-    [program],
+    () => plannedVolumeByMuscle(program?.schedule ?? [], customMap),
+    [program, customMap],
   );
   const done = useMemo(
-    () => doneVolumeByMuscle(workouts, shiftDaysLocal(-6)),
-    [workouts],
+    () => doneVolumeByMuscle(workouts, shiftDaysLocal(-6), customMap),
+    [workouts, customMap],
   );
 
   const uncategorized = useMemo(
@@ -249,10 +264,40 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
       </div>
 
       {uncategorized.length > 0 && (
-        <p className="mt-4 pt-3 border-t border-brand-cream text-[11px] text-brand-warm">
-          Sin músculo asignado (no cuentan al volumen):{" "}
-          <span className="text-brand-dark">{uncategorized.join(", ")}</span>
-        </p>
+        <div className="mt-4 pt-3 border-t border-brand-cream">
+          <p className="text-[11px] text-brand-warm mb-2">
+            Sin músculo asignado — no cuentan al volumen:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {uncategorized.map((name) => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => setMapTarget(name)}
+                className="text-[11px] px-2.5 py-1 rounded-full border border-brand-light-tan hover:border-accent hover:text-accent text-brand-warm transition"
+              >
+                {name}{" "}
+                <span className="opacity-50 text-[10px]">+ definir</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mapTarget && (
+        <MuscleContributionModal
+          exerciseName={mapTarget}
+          existing={customMap[normExerciseName(mapTarget)]}
+          onSave={(contributions) => {
+            const key = normExerciseName(mapTarget);
+            setCustomMap((prev) => ({ ...prev, [key]: contributions }));
+            api
+              .put("/fitness/exercise-mappings", { exerciseName: mapTarget, contributions })
+              .catch(() => {});
+            setMapTarget(null);
+          }}
+          onClose={() => setMapTarget(null)}
+        />
       )}
     </div>
   );
@@ -405,6 +450,154 @@ function TrendBars({ data, deload }: { data: WeekVolumePoint[]; deload: boolean 
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Modal: definir contribuciones para un ejercicio no categorizado (Fase D) ─
+
+const FRACTIONS: { label: string; value: number }[] = [
+  { label: "Principal (1.0)", value: 1 },
+  { label: "Fuerte (0.5)", value: 0.5 },
+  { label: "Asistente (0.25)", value: 0.25 },
+];
+
+function MuscleContributionModal({
+  exerciseName,
+  existing,
+  onSave,
+  onClose,
+}: {
+  exerciseName: string;
+  existing?: MuscleContribution[];
+  onSave: (contributions: MuscleContribution[]) => void;
+  onClose: () => void;
+}) {
+  const [primary, setPrimary] = useState(existing?.[0]?.muscle ?? "");
+  const [secondaries, setSecondaries] = useState<{ muscle: string; fraction: number }[]>(
+    existing?.slice(1).map((c) => ({ muscle: c.muscle, fraction: c.fraction })) ?? [],
+  );
+
+  const allMuscles = MUSCLE_ORDER as readonly string[];
+
+  const addSecondary = () => {
+    if (secondaries.length < 3)
+      setSecondaries((prev) => [...prev, { muscle: "", fraction: 0.5 }]);
+  };
+
+  const removeSecondary = (i: number) =>
+    setSecondaries((prev) => prev.filter((_, j) => j !== i));
+
+  const updateSecondary = (i: number, field: "muscle" | "fraction", val: string | number) =>
+    setSecondaries((prev) => prev.map((s, j) => (j === i ? { ...s, [field]: val } : s)));
+
+  const handleSave = () => {
+    if (!primary) return;
+    const contributions: MuscleContribution[] = [
+      { muscle: primary, fraction: 1 },
+      ...secondaries.filter((s) => s.muscle).map((s) => ({ muscle: s.muscle, fraction: s.fraction })),
+    ];
+    onSave(contributions);
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-dark/40 px-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div className="w-full max-w-sm bg-brand-paper rounded-2xl border border-brand-cream shadow-xl p-6">
+        <h3 className="font-display text-lg font-semibold text-brand-dark mb-0.5">
+          Definir músculos
+        </h3>
+        <p className="text-[12px] text-brand-warm mb-5 truncate">"{exerciseName}"</p>
+
+        {/* Músculo principal */}
+        <label className="block text-[11px] font-semibold uppercase tracking-wider text-brand-warm/70 mb-1.5">
+          Músculo principal (1.0)
+        </label>
+        <select
+          value={primary}
+          onChange={(e) => setPrimary(e.target.value)}
+          className="w-full rounded-lg border border-brand-light-tan bg-brand-warm-white px-3 py-2 text-sm text-brand-dark focus:outline-none focus:border-accent mb-4"
+        >
+          <option value="">— seleccionar —</option>
+          {allMuscles.map((slug) => (
+            <option key={slug} value={slug}>
+              {MUSCLE_LABEL_ES[slug] ?? slug}
+            </option>
+          ))}
+        </select>
+
+        {/* Secundarios */}
+        {secondaries.length > 0 && (
+          <div className="space-y-2 mb-3">
+            {secondaries.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <select
+                  value={s.muscle}
+                  onChange={(e) => updateSecondary(i, "muscle", e.target.value)}
+                  className="flex-1 rounded-lg border border-brand-light-tan bg-brand-warm-white px-3 py-1.5 text-sm text-brand-dark focus:outline-none focus:border-accent"
+                >
+                  <option value="">— músculo —</option>
+                  {allMuscles
+                    .filter((slug) => slug !== primary)
+                    .map((slug) => (
+                      <option key={slug} value={slug}>
+                        {MUSCLE_LABEL_ES[slug] ?? slug}
+                      </option>
+                    ))}
+                </select>
+                <select
+                  value={s.fraction}
+                  onChange={(e) => updateSecondary(i, "fraction", Number(e.target.value))}
+                  className="w-28 rounded-lg border border-brand-light-tan bg-brand-warm-white px-2 py-1.5 text-[11px] text-brand-dark focus:outline-none focus:border-accent"
+                >
+                  {FRACTIONS.slice(1).map((f) => (
+                    <option key={f.value} value={f.value}>
+                      {f.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removeSecondary(i)}
+                  className="text-brand-warm hover:text-danger transition text-sm px-1"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {secondaries.length < 3 && (
+          <button
+            type="button"
+            onClick={addSecondary}
+            className="text-[11px] text-brand-warm hover:text-accent transition mb-5"
+          >
+            + añadir músculo secundario
+          </button>
+        )}
+
+        <div className="flex gap-2 mt-2">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 rounded-button border border-brand-light-tan py-2 text-sm text-brand-warm hover:text-brand-dark transition"
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            disabled={!primary}
+            onClick={handleSave}
+            className="flex-1 rounded-button bg-accent py-2 text-sm font-semibold text-white hover:opacity-90 transition disabled:opacity-40"
+          >
+            Guardar
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

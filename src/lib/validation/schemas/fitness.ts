@@ -383,6 +383,18 @@ export const bodyCompositionMethodEnum = z.enum([
   "scale",
 ]);
 
+// ─── FitnessExerciseMapping (Fase D) ──────────────────────────────────────────
+
+export const muscleContributionSchema = z.object({
+  muscle: z.string().min(1).max(50),
+  fraction: z.number().min(0.05).max(1),
+});
+
+export const exerciseMappingUpsertSchema = z.object({
+  exerciseName: z.string().trim().min(1).max(200),
+  contributions: z.array(muscleContributionSchema).min(1).max(8),
+});
+
 export const bodyCompositionUpsertSchema = z.object({
   date: dateSchema,
   weightKg: z.number().min(20).max(500).optional().nullable(),
