@@ -156,7 +156,15 @@ export const workoutUpdateSchema = z.object({
 
 export const primaryMuscleEnum = z.enum([
   "chest",
+  // Espalda (taxonomía fina) — "back" se conserva para datos históricos
+  "lats",
+  "traps",
+  "lower_back",
   "back",
+  // Hombros (taxonomía fina) — "shoulders" se conserva para datos históricos
+  "delt_ant",
+  "delt_lat",
+  "delt_post",
   "shoulders",
   "biceps",
   "triceps",
@@ -166,7 +174,6 @@ export const primaryMuscleEnum = z.enum([
   "core",
   "calves",
   "forearms",
-  "traps",
 ]);
 export type PrimaryMuscle = z.infer<typeof primaryMuscleEnum>;
 

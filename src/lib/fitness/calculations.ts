@@ -102,20 +102,31 @@ export function effectiveSetsByMuscle(
 // MRV = Maximum Recoverable Volume (punto antes de sobreentrenar)
 // Basado en recomendaciones de Mike Israetel / Renaissance Periodization.
 
+// Landmarks de Israetel / Renaissance Periodization para taxonomía fina.
+// Espalda separada en lats / trapecios / lumbar.
+// Hombros separados en deltoide anterior / lateral / posterior.
 export const VOLUME_LANDMARKS: Record<
   string,
   { mv: number; mev: number; mavLow: number; mavHigh: number; mrv: number }
 > = {
-  chest: { mv: 6, mev: 8, mavLow: 12, mavHigh: 20, mrv: 22 },
-  back: { mv: 6, mev: 8, mavLow: 14, mavHigh: 22, mrv: 25 },
-  shoulders: { mv: 6, mev: 8, mavLow: 16, mavHigh: 22, mrv: 26 },
-  biceps: { mv: 4, mev: 6, mavLow: 14, mavHigh: 20, mrv: 22 },
-  triceps: { mv: 4, mev: 6, mavLow: 10, mavHigh: 16, mrv: 18 },
-  quads: { mv: 6, mev: 8, mavLow: 12, mavHigh: 18, mrv: 20 },
-  hamstrings: { mv: 4, mev: 6, mavLow: 10, mavHigh: 16, mrv: 18 },
-  glutes: { mv: 4, mev: 6, mavLow: 12, mavHigh: 16, mrv: 20 },
-  core: { mv: 0, mev: 4, mavLow: 8, mavHigh: 12, mrv: 16 },
-  calves: { mv: 6, mev: 8, mavLow: 12, mavHigh: 16, mrv: 20 },
+  chest:      { mv: 6, mev: 8,  mavLow: 12, mavHigh: 20, mrv: 22 },
+  // Espalda ──────────────────────────────────────────────────────────────────
+  lats:       { mv: 6, mev: 8,  mavLow: 14, mavHigh: 22, mrv: 25 },
+  traps:      { mv: 0, mev: 2,  mavLow: 6,  mavHigh: 12, mrv: 18 },
+  lower_back: { mv: 0, mev: 2,  mavLow: 4,  mavHigh: 8,  mrv: 12 },
+  // Hombros ──────────────────────────────────────────────────────────────────
+  // delt_ant recibe volumen indirecto masivo de todos los press; MEV directo ≈ 0
+  delt_ant:   { mv: 0, mev: 0,  mavLow: 4,  mavHigh: 8,  mrv: 12 },
+  delt_lat:   { mv: 6, mev: 8,  mavLow: 16, mavHigh: 22, mrv: 26 },
+  delt_post:  { mv: 4, mev: 6,  mavLow: 12, mavHigh: 20, mrv: 26 },
+  // ──────────────────────────────────────────────────────────────────────────
+  biceps:     { mv: 4, mev: 6,  mavLow: 14, mavHigh: 20, mrv: 22 },
+  triceps:    { mv: 4, mev: 6,  mavLow: 10, mavHigh: 16, mrv: 18 },
+  quads:      { mv: 6, mev: 8,  mavLow: 12, mavHigh: 18, mrv: 20 },
+  hamstrings: { mv: 4, mev: 6,  mavLow: 10, mavHigh: 16, mrv: 18 },
+  glutes:     { mv: 4, mev: 6,  mavLow: 12, mavHigh: 16, mrv: 20 },
+  core:       { mv: 0, mev: 4,  mavLow: 8,  mavHigh: 12, mrv: 16 },
+  calves:     { mv: 6, mev: 8,  mavLow: 12, mavHigh: 16, mrv: 20 },
 };
 
 export type VolumeZone = "under_mv" | "between_mv_mev" | "optimal" | "approaching_mrv" | "over_mrv";

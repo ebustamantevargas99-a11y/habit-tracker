@@ -26,14 +26,22 @@ export interface MuscleAttribution {
 }
 
 export const MUSCLE_ORDER = [
-  "chest", "back", "shoulders", "biceps", "triceps",
-  "quads", "hamstrings", "glutes", "core", "calves",
+  "chest",
+  "lats", "traps", "lower_back",
+  "delt_ant", "delt_lat", "delt_post",
+  "biceps", "triceps",
+  "quads", "hamstrings", "glutes",
+  "core", "calves",
 ] as const;
 
 export const MUSCLE_LABEL_ES: Record<string, string> = {
   chest: "Pecho",
-  back: "Espalda",
-  shoulders: "Hombros",
+  lats: "Dorsales",
+  traps: "Trapecios",
+  lower_back: "Lumbar",
+  delt_ant: "Deltoide anterior",
+  delt_lat: "Deltoide lateral",
+  delt_post: "Deltoide posterior",
   biceps: "Bíceps",
   triceps: "Tríceps",
   quads: "Cuádriceps",
@@ -41,6 +49,9 @@ export const MUSCLE_LABEL_ES: Record<string, string> = {
   glutes: "Glúteos",
   core: "Core",
   calves: "Gemelos",
+  // Aliases legacy para datos existentes — no aparecen en UI
+  back: "Espalda",
+  shoulders: "Hombros",
 };
 
 function norm(s: string): string {
@@ -51,12 +62,19 @@ function norm(s: string): string {
     .trim();
 }
 
-/** Mapea un muscleGroup en español (de sesiones registradas) → slug inglés. */
+/** Mapea un muscleGroup en español (de sesiones registradas) → slug fino. */
 export function spanishMuscleToSlug(muscleEs: string): string | null {
   const m = norm(muscleEs);
   if (m.includes("pecho") || m.includes("chest")) return "chest";
-  if (m.includes("espalda") || m.includes("dorsal") || m.includes("back") || m.includes("lat")) return "back";
-  if (m.includes("hombro") || m.includes("deltoid") || m.includes("shoulder")) return "shoulders";
+  // Espalda fina: primero los específicos, luego genéricos → lats como fallback
+  if (m.includes("trapecio") || (m.includes("trap") && !m.includes("pec"))) return "traps";
+  if (m.includes("lumbar") || m.includes("lower back") || m.includes("erector")) return "lower_back";
+  if (m.includes("dorsal") || (m.includes("lat") && !m.includes("lateral"))) return "lats";
+  if (m.includes("espalda") || m.includes("back")) return "lats";
+  // Deltoides: primero los específicos, luego genérico → delt_lat como fallback
+  if (m.includes("anterior") || m.includes("front delt")) return "delt_ant";
+  if (m.includes("posterior") || m.includes("rear delt")) return "delt_post";
+  if (m.includes("hombro") || m.includes("deltoid") || m.includes("shoulder")) return "delt_lat";
   if (m.includes("bicep")) return "biceps";
   if (m.includes("tricep")) return "triceps";
   if (m.includes("cuadricep") || m.includes("quad")) return "quads";
@@ -70,53 +88,100 @@ export function spanishMuscleToSlug(muscleEs: string): string | null {
 // Helpers para construir contribuciones legibles.
 const C = (muscle: string, fraction: number): MuscleContribution => ({ muscle, fraction });
 
-// Reglas ordenadas por especificidad: la primera que matchea gana. Cada una
-// lleva las fracciones investigadas por músculo (1.0 / 0.5 / 0.25).
+// Reglas ordenadas por especificidad: la primera que matchea gana.
+// Fracciones Schoenfeld: 1.0 motor primario · 0.5 sinergista fuerte · 0.25 asistente menor.
+// Slugs finos: lats/traps/lower_back para espalda; delt_ant/delt_lat/delt_post para hombros.
 const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
-  // ── Hombros (casos que NO deben caer en pecho/espalda) ──────────────────────
-  { keys: ["reverse pec deck", "pec deck inverso", "peck deck inverso", "contractor inverso", "deltoide posterior"], c: [C("shoulders", 1), C("back", 0.25)] },
-  { keys: ["remo al menton", "upright row", "jalon al menton", "remo vertical"], c: [C("shoulders", 1), C("back", 0.5), C("biceps", 0.25)] },
-  { keys: ["face pull", "pajaro", "reverse fly", "pull apart"], c: [C("shoulders", 1), C("back", 0.25)] },
-  // ── Espalda especiales ──────────────────────────────────────────────────────
-  { keys: ["pullover"], c: [C("back", 1), C("chest", 0.25)] },
-  // ── Press de hombro ─────────────────────────────────────────────────────────
-  { keys: ["press militar", "press de hombro", "overhead", "ohp", "militar", "arnold", "press pike", "handstand"], c: [C("shoulders", 1), C("triceps", 0.5)] },
-  // ── Press de pecho ──────────────────────────────────────────────────────────
-  { keys: ["press banca agarre cerrado", "agarre cerrado", "close grip", "press cerrado"], c: [C("triceps", 1), C("chest", 0.5), C("shoulders", 0.25)] },
-  { keys: ["press inclinad", "incline"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
-  { keys: ["press banca", "bench", "press de pecho", "press con barra", "press mancuern", "press plano", "press declinad"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
-  { keys: ["fondo", "dip"], c: [C("chest", 1), C("triceps", 0.5), C("shoulders", 0.25)] },
-  { keys: ["apertura", "pec deck", "contractor", "peck deck", "cruce de polea", "crossover", "fly", "pec fly"], c: [C("chest", 1)] },
-  // ── Cadena posterior (hinge) ────────────────────────────────────────────────
-  { keys: ["peso muerto rumano", "rumano", "rdl", "buenos dias", "good morning"], c: [C("hamstrings", 1), C("glutes", 0.5), C("back", 0.25)] },
-  { keys: ["curl femoral", "femoral", "leg curl", "curl de pierna", "curl tumbado", "curl sentado", "nordic"], c: [C("hamstrings", 1)] },
-  { keys: ["peso muerto sumo", "sumo"], c: [C("glutes", 1), C("quads", 0.5), C("hamstrings", 0.5), C("back", 0.5)] },
-  { keys: ["peso muerto", "deadlift"], c: [C("back", 1), C("hamstrings", 0.5), C("glutes", 0.5)] },
-  { keys: ["hip thrust", "empuje de cadera", "puente de gluteo", "glute bridge", "kettlebell swing", "swing"], c: [C("glutes", 1), C("hamstrings", 0.5)] },
-  { keys: ["gluteo", "glute", "patada de gluteo", "kickback", "abduccion"], c: [C("glutes", 1)] },
+  // ── Deltoide posterior (aislado) ─────────────────────────────────────────────
+  { keys: ["reverse pec deck", "pec deck inverso", "peck deck inverso", "contractor inverso", "deltoide posterior"],
+    c: [C("delt_post", 1), C("traps", 0.25)] },
+  // "face pull" y pájaros: posterior + trapecios medios
+  { keys: ["face pull", "pajaro", "reverse fly", "pull apart"],
+    c: [C("delt_post", 1), C("traps", 0.5)] },
+  // ── Remo al mentón: deltoide lateral primario ────────────────────────────────
+  { keys: ["remo al menton", "upright row", "jalon al menton", "remo vertical"],
+    c: [C("delt_lat", 1), C("traps", 0.5), C("biceps", 0.25)] },
+  // ── Espalda especiales ───────────────────────────────────────────────────────
+  { keys: ["pullover"],
+    c: [C("lats", 1), C("chest", 0.25)] },
+  // ── Press de hombro: delt_ant primario, delt_lat secundario ─────────────────
+  // El OHP/press militar recluta principalmente el deltoide anterior; el lateral
+  // trabaja como estabilizador fuerte. El Arnold añade rotación pero la carga
+  // principal sigue siendo anterior.
+  { keys: ["press militar", "press de hombro", "overhead", "ohp", "militar", "arnold", "press pike", "handstand"],
+    c: [C("delt_ant", 1), C("delt_lat", 0.5), C("triceps", 0.5)] },
+  // ── Press de pecho ───────────────────────────────────────────────────────────
+  // Todos los press de pecho reclutan delt_ant (no lateral): la cabeza anterior
+  // participa en aducción horizontal, la lateral no.
+  { keys: ["press banca agarre cerrado", "agarre cerrado", "close grip", "press cerrado"],
+    c: [C("triceps", 1), C("chest", 0.5), C("delt_ant", 0.25)] },
+  { keys: ["press inclinad", "incline"],
+    c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
+  { keys: ["press banca", "bench", "press de pecho", "press con barra", "press mancuern", "press plano", "press declinad"],
+    c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
+  { keys: ["fondo", "dip"],
+    c: [C("chest", 1), C("triceps", 0.5), C("delt_ant", 0.25)] },
+  { keys: ["apertura", "pec deck", "contractor", "peck deck", "cruce de polea", "crossover", "fly", "pec fly"],
+    c: [C("chest", 1)] },
+  // ── Cadena posterior (hinge) ─────────────────────────────────────────────────
+  { keys: ["peso muerto rumano", "rumano", "rdl", "buenos dias", "good morning"],
+    c: [C("hamstrings", 1), C("glutes", 0.5), C("lower_back", 0.25)] },
+  { keys: ["curl femoral", "femoral", "leg curl", "curl de pierna", "curl tumbado", "curl sentado", "nordic"],
+    c: [C("hamstrings", 1)] },
+  { keys: ["peso muerto sumo", "sumo"],
+    c: [C("glutes", 1), C("quads", 0.5), C("hamstrings", 0.5), C("lower_back", 0.5)] },
+  // Peso muerto convencional: espalda baja primaria, isquios/glúteos secundarios,
+  // trapecios estabilizan la barra bajo tensión.
+  { keys: ["peso muerto", "deadlift"],
+    c: [C("lower_back", 1), C("hamstrings", 0.5), C("glutes", 0.5), C("traps", 0.25)] },
+  { keys: ["hip thrust", "empuje de cadera", "puente de gluteo", "glute bridge", "kettlebell swing", "swing"],
+    c: [C("glutes", 1), C("hamstrings", 0.5)] },
+  { keys: ["gluteo", "glute", "patada de gluteo", "kickback", "abduccion"],
+    c: [C("glutes", 1)] },
   // ── Cuádriceps (sentadilla: isquios NO cuentan, Schoenfeld 2019) ─────────────
-  { keys: ["sentadilla", "squat", "hack"], c: [C("quads", 1), C("glutes", 0.5)] },
-  { keys: ["prensa", "leg press"], c: [C("quads", 1), C("glutes", 0.5)] },
-  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat", "step up", "subida al cajon"], c: [C("quads", 1), C("glutes", 0.5)] },
-  { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad", "sissy"], c: [C("quads", 1)] },
-  // ── Pantorrilla ─────────────────────────────────────────────────────────────
-  { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"], c: [C("calves", 1)] },
-  // ── Espalda (jalones / remos) ───────────────────────────────────────────────
-  { keys: ["dominada", "pull up", "pull-up", "chin up", "chin-up", "jalon", "pulldown", "pull down", "remo", "row", "muscle up", "pendlay"], c: [C("back", 1), C("biceps", 0.5)] },
-  // ── Hombro lateral (aislado) ────────────────────────────────────────────────
-  { keys: ["elevacion lateral", "lateral raise", "elevaciones laterales", "lateral", "elevacion frontal", "front raise"], c: [C("shoulders", 1)] },
-  // ── Brazos aislados ─────────────────────────────────────────────────────────
-  { keys: ["curl martillo", "hammer"], c: [C("biceps", 1)] },
-  { keys: ["curl", "bicep"], c: [C("biceps", 1)] },
-  { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa", "skullcrusher", "rompecraneos"], c: [C("triceps", 1)] },
-  // ── Core ────────────────────────────────────────────────────────────────────
-  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "giro ruso", "woodchop", "lenador", "pallof", "hollow", "core", "dragon flag"], c: [C("core", 1)] },
-  // ── Genéricos (último recurso por palabra) ──────────────────────────────────
-  { keys: ["press"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
-  { keys: ["espalda", "back"], c: [C("back", 1), C("biceps", 0.5)] },
-  { keys: ["pecho", "chest"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
-  { keys: ["hombro", "shoulder", "deltoide"], c: [C("shoulders", 1), C("triceps", 0.5)] },
-  { keys: ["pierna", "leg", "tren inferior"], c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["sentadilla", "squat", "hack"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["prensa", "leg press"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat", "step up", "subida al cajon"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad", "sissy"],
+    c: [C("quads", 1)] },
+  // ── Pantorrilla ──────────────────────────────────────────────────────────────
+  { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"],
+    c: [C("calves", 1)] },
+  // ── Espalda: jalones y dominadas (dorsales primarios) ────────────────────────
+  { keys: ["dominada", "pull up", "pull-up", "chin up", "chin-up", "muscle up", "jalon", "pulldown", "pull down"],
+    c: [C("lats", 1), C("biceps", 0.5)] },
+  // Remos horizontales: dorsales + trapecios medios
+  { keys: ["remo", "row", "pendlay"],
+    c: [C("lats", 1), C("traps", 0.5), C("biceps", 0.25)] },
+  // ── Deltoides aislados ───────────────────────────────────────────────────────
+  { keys: ["elevacion frontal", "front raise"],
+    c: [C("delt_ant", 1)] },
+  { keys: ["elevacion lateral", "lateral raise", "elevaciones laterales", "lateral"],
+    c: [C("delt_lat", 1)] },
+  // ── Brazos aislados ──────────────────────────────────────────────────────────
+  { keys: ["curl martillo", "hammer"],
+    c: [C("biceps", 1)] },
+  { keys: ["curl", "bicep"],
+    c: [C("biceps", 1)] },
+  { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa", "skullcrusher", "rompecraneos"],
+    c: [C("triceps", 1)] },
+  // ── Core ─────────────────────────────────────────────────────────────────────
+  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "giro ruso", "woodchop", "lenador", "pallof", "hollow", "core", "dragon flag"],
+    c: [C("core", 1)] },
+  // ── Genéricos (último recurso por palabra clave) ─────────────────────────────
+  { keys: ["press"],
+    c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
+  { keys: ["espalda", "back"],
+    c: [C("lats", 1), C("biceps", 0.5)] },
+  { keys: ["pecho", "chest"],
+    c: [C("chest", 1), C("delt_ant", 0.5), C("triceps", 0.5)] },
+  { keys: ["hombro", "shoulder", "deltoide"],
+    c: [C("delt_lat", 1)] },
+  { keys: ["pierna", "leg", "tren inferior"],
+    c: [C("quads", 1), C("glutes", 0.5)] },
 ];
 
 /**

@@ -13,10 +13,26 @@ function frac(c: MuscleContribution[] | null, muscle: string): number {
 }
 
 describe("resolveExerciseContributions (fracciones por músculo)", () => {
-  it("press banca: pecho 1.0, hombro 0.5, tríceps 0.5", () => {
+  it("press banca: pecho 1.0, delt_ant 0.5, tríceps 0.5 (NO delt_lat)", () => {
     const c = resolveExerciseContributions("Press banca");
     expect(frac(c, "chest")).toBe(1);
-    expect(frac(c, "shoulders")).toBe(0.5);
+    expect(frac(c, "delt_ant")).toBe(0.5);
+    expect(frac(c, "triceps")).toBe(0.5);
+    expect(frac(c, "delt_lat")).toBe(0);
+    expect(frac(c, "shoulders")).toBe(0); // slug legacy no usado
+  });
+
+  it("press inclinado: pecho 1.0, delt_ant 0.5, tríceps 0.5", () => {
+    const c = resolveExerciseContributions("Press inclinado");
+    expect(frac(c, "chest")).toBe(1);
+    expect(frac(c, "delt_ant")).toBe(0.5);
+    expect(frac(c, "triceps")).toBe(0.5);
+  });
+
+  it("press militar: delt_ant 1.0, delt_lat 0.5, tríceps 0.5", () => {
+    const c = resolveExerciseContributions("Press militar");
+    expect(frac(c, "delt_ant")).toBe(1);
+    expect(frac(c, "delt_lat")).toBe(0.5);
     expect(frac(c, "triceps")).toBe(0.5);
   });
 
@@ -27,32 +43,79 @@ describe("resolveExerciseContributions (fracciones por músculo)", () => {
     expect(frac(c, "hamstrings")).toBe(0);
   });
 
-  it("remo al mentón → hombros (no espalda) por la regla específica", () => {
-    expect(resolveExerciseContributions("Remo al mentón")?.[0].muscle).toBe("shoulders");
+  it("remo al mentón → delt_lat primario (no espalda genérica)", () => {
+    const c = resolveExerciseContributions("Remo al mentón");
+    expect(c?.[0].muscle).toBe("delt_lat");
+    expect(frac(c, "traps")).toBe(0.5);
   });
 
-  it("peso muerto sumo → glúteos primario (no espalda)", () => {
+  it("peso muerto sumo → glúteos primario, lower_back secundario (no back)", () => {
     const c = resolveExerciseContributions("Peso muerto sumo");
     expect(frac(c, "glutes")).toBe(1);
-    expect(frac(c, "back")).toBe(0.5);
+    expect(frac(c, "lower_back")).toBe(0.5);
+    expect(frac(c, "back")).toBe(0); // slug legacy no usado
   });
 
-  it("press banca agarre cerrado → tríceps primario", () => {
+  it("peso muerto convencional → lower_back 1.0, isquios + glúteos 0.5, trapecios 0.25", () => {
+    const c = resolveExerciseContributions("Peso muerto");
+    expect(frac(c, "lower_back")).toBe(1);
+    expect(frac(c, "hamstrings")).toBe(0.5);
+    expect(frac(c, "glutes")).toBe(0.5);
+    expect(frac(c, "traps")).toBe(0.25);
+    expect(frac(c, "back")).toBe(0); // slug legacy no usado
+  });
+
+  it("press banca agarre cerrado → tríceps primario, delt_ant (no shoulders)", () => {
     const c = resolveExerciseContributions("Press banca agarre cerrado");
     expect(frac(c, "triceps")).toBe(1);
     expect(frac(c, "chest")).toBe(0.5);
+    expect(frac(c, "delt_ant")).toBe(0.25);
+  });
+
+  it("face pull → delt_post 1.0, trapecios 0.5", () => {
+    const c = resolveExerciseContributions("Face pull");
+    expect(frac(c, "delt_post")).toBe(1);
+    expect(frac(c, "traps")).toBe(0.5);
+  });
+
+  it("reverse pec deck → delt_post (no pecho ni hombros genérico)", () => {
+    const c = resolveExerciseContributions("Reverse pec deck");
+    expect(c?.[0].muscle).toBe("delt_post");
+  });
+
+  it("elevaciones laterales → delt_lat 1.0", () => {
+    expect(frac(resolveExerciseContributions("Elevaciones laterales"), "delt_lat")).toBe(1);
+  });
+
+  it("elevación frontal → delt_ant 1.0", () => {
+    expect(frac(resolveExerciseContributions("Elevación frontal"), "delt_ant")).toBe(1);
+  });
+
+  it("dominadas → lats 1.0, bíceps 0.5 (no back genérico)", () => {
+    const c = resolveExerciseContributions("Dominadas");
+    expect(frac(c, "lats")).toBe(1);
+    expect(frac(c, "biceps")).toBe(0.5);
+    expect(frac(c, "back")).toBe(0);
+  });
+
+  it("remo con barra → lats 1.0, trapecios 0.5, bíceps 0.25", () => {
+    const c = resolveExerciseContributions("Remo con barra");
+    expect(frac(c, "lats")).toBe(1);
+    expect(frac(c, "traps")).toBe(0.5);
+    expect(frac(c, "biceps")).toBe(0.25);
   });
 });
 
 describe("resolveExerciseMuscles", () => {
-  it("press banca → pecho + secundarios hombro/tríceps", () => {
+  it("press banca → pecho primario + delt_ant y tríceps como secundarios", () => {
     const m = resolveExerciseMuscles("Press banca");
     expect(m?.primary).toBe("chest");
-    expect(m?.secondaries).toEqual(expect.arrayContaining(["shoulders", "triceps"]));
+    expect(m?.secondaries).toEqual(expect.arrayContaining(["delt_ant", "triceps"]));
+    expect(m?.secondaries).not.toContain("shoulders");
   });
 
-  it("press militar → hombros (no pecho), antes que la regla genérica de 'press'", () => {
-    expect(resolveExerciseMuscles("Press militar")?.primary).toBe("shoulders");
+  it("press militar → delt_ant primario (antes que la regla genérica de 'press')", () => {
+    expect(resolveExerciseMuscles("Press militar")?.primary).toBe("delt_ant");
   });
 
   it("curl de bíceps → bíceps, sin secundarios", () => {
@@ -61,14 +124,14 @@ describe("resolveExerciseMuscles", () => {
     expect(m?.secondaries).toEqual([]);
   });
 
-  it("peso muerto rumano → isquios (no espalda como el peso muerto normal)", () => {
+  it("peso muerto → lumbar primario; peso muerto rumano → isquios primario", () => {
+    expect(resolveExerciseMuscles("Peso muerto")?.primary).toBe("lower_back");
     expect(resolveExerciseMuscles("Peso muerto rumano")?.primary).toBe("hamstrings");
-    expect(resolveExerciseMuscles("Peso muerto")?.primary).toBe("back");
   });
 
   it("ignora acentos y mayúsculas", () => {
     expect(resolveExerciseMuscles("SENTADILLA")?.primary).toBe("quads");
-    expect(resolveExerciseMuscles("elevación lateral")?.primary).toBe("shoulders");
+    expect(resolveExerciseMuscles("elevación lateral")?.primary).toBe("delt_lat");
   });
 
   it("usa el muscleGroup de fallback si el nombre no matchea", () => {
@@ -79,24 +142,23 @@ describe("resolveExerciseMuscles", () => {
     expect(resolveExerciseMuscles("zzz desconocido")).toBeNull();
   });
 
-  it("casos del mundo real: pullover, reverse pec deck, woodchopper", () => {
-    expect(resolveExerciseMuscles("Pullover en polea")?.primary).toBe("back");
-    // reverse pec deck = deltoide posterior, NO pecho (aunque contenga 'pec deck')
-    expect(resolveExerciseMuscles("Reverse pec deck")?.primary).toBe("shoulders");
+  it("pullover → dorsales (lats); reverse pec deck → delt_post; woodchopper → core; dominadas → lats", () => {
+    expect(resolveExerciseMuscles("Pullover en polea")?.primary).toBe("lats");
+    expect(resolveExerciseMuscles("Reverse pec deck")?.primary).toBe("delt_post");
     expect(resolveExerciseMuscles("Woodchoppers")?.primary).toBe("core");
-    // dominadas lastradas siguen siendo espalda
-    expect(resolveExerciseMuscles("Dominadas lastradas")?.primary).toBe("back");
+    expect(resolveExerciseMuscles("Dominadas lastradas")?.primary).toBe("lats");
   });
 });
 
 describe("plannedVolumeByMuscle (fraccional)", () => {
-  it("reparte las series del compuesto a principal (1.0) y secundarios (0.5)", () => {
+  it("press banca acumula delt_ant (no shoulders) como sinergista", () => {
     const { byMuscle } = plannedVolumeByMuscle([
       { exercises: [{ name: "Press banca", sets: 4 }] },
     ]);
     expect(byMuscle.chest).toBe(4);
-    expect(byMuscle.shoulders).toBe(2);
+    expect(byMuscle.delt_ant).toBe(2);   // insight clave: anterior delt recibe trabajo indirecto
     expect(byMuscle.triceps).toBe(2);
+    expect(byMuscle.shoulders ?? 0).toBe(0); // slug legacy no debe aparecer
   });
 
   it("suma a través de días y reporta no categorizados", () => {
@@ -107,6 +169,18 @@ describe("plannedVolumeByMuscle (fraccional)", () => {
     expect(byMuscle.quads).toBe(7);
     expect(byMuscle.glutes).toBe(3.5);
     expect(uncategorized).toContain("Cosa rara");
+  });
+
+  it("press militar + elevaciones laterales → acumulan deltoides por separado", () => {
+    const { byMuscle } = plannedVolumeByMuscle([
+      { exercises: [
+        { name: "Press militar", sets: 3 },       // delt_ant +3, delt_lat +1.5
+        { name: "Elevaciones laterales", sets: 4 }, // delt_lat +4
+      ]},
+    ]);
+    expect(byMuscle.delt_ant).toBe(3);
+    expect(byMuscle.delt_lat).toBe(5.5);
+    expect(byMuscle.delt_post ?? 0).toBe(0);
   });
 });
 
@@ -132,6 +206,7 @@ describe("doneVolumeByMuscle (series efectivas)", () => {
       "2026-06-14",
     );
     expect(byMuscle.chest).toBe(1);
+    expect(byMuscle.delt_ant).toBe(0.5); // la serie efectiva de bench da 0.5 a delt_ant
     expect(byMuscle.triceps).toBe(0.5);
   });
 

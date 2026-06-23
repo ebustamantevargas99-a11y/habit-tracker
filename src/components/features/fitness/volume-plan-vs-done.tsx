@@ -11,6 +11,7 @@ import {
   doneVolumeByMuscle,
   roundHalf,
 } from "@/lib/fitness/muscle-volume";
+// MUSCLE_ORDER se usa en MesocyclePanel (suggestions); DISPLAY_SECTIONS maneja el render principal
 import {
   mesocycleWeek,
   suggestProgression,
@@ -47,6 +48,16 @@ interface WorkoutLike {
     sets?: { weight: number; reps: number; rpe?: number | null }[];
   }[];
 }
+
+// Agrupación visual de los músculos finos — header opcional + slugs del grupo
+const DISPLAY_SECTIONS: { header?: string; slugs: string[] }[] = [
+  { slugs: ["chest"] },
+  { header: "Espalda", slugs: ["lats", "traps", "lower_back"] },
+  { header: "Hombros", slugs: ["delt_ant", "delt_lat", "delt_post"] },
+  { slugs: ["biceps", "triceps"] },
+  { header: "Piernas", slugs: ["quads", "hamstrings", "glutes"] },
+  { slugs: ["core", "calves"] },
+];
 
 const PLAN_COLOR = "#C0DD97"; // verde claro = planificado
 const DONE_COLOR = "#639922"; // verde fuerte = hecho
@@ -167,63 +178,74 @@ export default function VolumePlanVsDone({ workouts }: { workouts: WorkoutLike[]
         onToggleDeload={toggleDeload}
       />
 
-      <div className="space-y-3.5">
-        {MUSCLE_ORDER.map((slug) => {
-          const l = VOLUME_LANDMARKS[slug];
-          const plan = planned.byMuscle[slug] ?? 0;
-          const target = deload ? deloadTarget(plan) : plan;
-          const dn = done.byMuscle[slug] ?? 0;
-          const targetR = roundHalf(target);
-          const doneR = roundHalf(dn);
-          const status = deload
-            ? { label: "objetivo descarga", cls: "text-warning" }
-            : planStatus(slug, plan);
-          const remaining = roundHalf(Math.max(0, target - dn));
+      <div className="space-y-5">
+        {DISPLAY_SECTIONS.map((section, si) => (
+          <div key={si}>
+            {section.header && (
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-brand-warm/50 mb-2.5 mt-0.5">
+                {section.header}
+              </p>
+            )}
+            <div className="space-y-3.5">
+              {section.slugs.map((slug) => {
+                const l = VOLUME_LANDMARKS[slug];
+                if (!l) return null;
+                const plan = planned.byMuscle[slug] ?? 0;
+                const target = deload ? deloadTarget(plan) : plan;
+                const dn = done.byMuscle[slug] ?? 0;
+                const targetR = roundHalf(target);
+                const doneR = roundHalf(dn);
+                const status = deload
+                  ? { label: "objetivo descarga", cls: "text-warning" }
+                  : planStatus(slug, plan);
+                const remaining = roundHalf(Math.max(0, target - dn));
+                const pct = (v: number) => Math.min(100, (v / l.mrv) * 100);
 
-          const pct = (v: number) => Math.min(100, (v / l.mrv) * 100);
+                return (
+                  <div key={slug}>
+                    <div className="flex items-baseline justify-between mb-1.5">
+                      <span className="text-sm font-semibold text-brand-dark">
+                        {MUSCLE_LABEL_ES[slug]}
+                      </span>
+                      <span className="text-[13px] text-brand-warm">
+                        <b className="text-brand-dark font-semibold">{doneR}</b> / {targetR} series
+                      </span>
+                    </div>
 
-          return (
-            <div key={slug}>
-              <div className="flex items-baseline justify-between mb-1.5">
-                <span className="text-sm font-semibold text-brand-dark">
-                  {MUSCLE_LABEL_ES[slug]}
-                </span>
-                <span className="text-[13px] text-brand-warm">
-                  <b className="text-brand-dark font-semibold">{doneR}</b> / {targetR} series
-                </span>
-              </div>
+                    <div className="relative h-[18px] bg-brand-light-cream rounded-md overflow-hidden">
+                      <div
+                        className="absolute left-0 top-0 h-full"
+                        style={{ width: `${pct(target)}%`, background: planColor }}
+                      />
+                      <div
+                        className="absolute left-0 top-0 h-full"
+                        style={{ width: `${pct(dn)}%`, background: doneColor }}
+                      />
+                      <Marker pct={(l.mev / l.mrv) * 100} />
+                      <Marker pct={(l.mavLow / l.mrv) * 100} />
+                      <Marker pct={(l.mavHigh / l.mrv) * 100} />
+                    </div>
 
-              <div className="relative h-[18px] bg-brand-light-cream rounded-md overflow-hidden">
-                <div
-                  className="absolute left-0 top-0 h-full"
-                  style={{ width: `${pct(target)}%`, background: planColor }}
-                />
-                <div
-                  className="absolute left-0 top-0 h-full"
-                  style={{ width: `${pct(dn)}%`, background: doneColor }}
-                />
-                <Marker pct={(l.mev / l.mrv) * 100} />
-                <Marker pct={(l.mavLow / l.mrv) * 100} />
-                <Marker pct={(l.mavHigh / l.mrv) * 100} />
-              </div>
-
-              <div className="flex justify-between mt-1 text-[11px]">
-                <span className={status.cls}>{status.label}</span>
-                <span
-                  className={
-                    target <= 0
-                      ? "text-brand-warm/60"
-                      : dn >= target
-                        ? "text-success"
-                        : "text-warning"
-                  }
-                >
-                  {target > 0 && (dn >= target ? "✓ completo" : `faltan ${remaining}`)}
-                </span>
-              </div>
+                    <div className="flex justify-between mt-1 text-[11px]">
+                      <span className={status.cls}>{status.label}</span>
+                      <span
+                        className={
+                          target <= 0
+                            ? "text-brand-warm/60"
+                            : dn >= target
+                              ? "text-success"
+                              : "text-warning"
+                        }
+                      >
+                        {target > 0 && (dn >= target ? "✓ completo" : `faltan ${remaining}`)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </div>
 
       {uncategorized.length > 0 && (
