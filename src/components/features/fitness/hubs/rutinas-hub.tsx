@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { Plus, Trash2, Save, Wand2, BedDouble, History, Play } from "lucide-react";
+import { Plus, Trash2, Save, BedDouble, History, Play } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { todayLocal } from "@/lib/date/local";
@@ -65,61 +65,8 @@ const ex = (name: string, sets: number, repMin: number, repMax: number): Exercis
   name, sets, repMin, repMax,
 });
 
-const PUSH = [
-  ex("Press banca", 4, 6, 10), ex("Press militar", 3, 8, 12),
-  ex("Press inclinado", 3, 8, 12), ex("Fondos", 3, 8, 12),
-  ex("Elevaciones laterales", 3, 12, 20), ex("Extensión tríceps", 3, 10, 15),
-];
-const PULL = [
-  ex("Dominadas", 4, 6, 10), ex("Remo con barra", 4, 8, 12),
-  ex("Jalón al pecho", 3, 10, 15), ex("Remo mancuerna", 3, 10, 12),
-  ex("Curl bíceps", 3, 8, 12), ex("Curl martillo", 3, 10, 15),
-];
-const LEGS = [
-  ex("Sentadilla", 4, 6, 10), ex("Peso muerto rumano", 3, 8, 12),
-  ex("Prensa", 3, 10, 15), ex("Curl femoral", 3, 10, 15),
-  ex("Extensión cuádriceps", 3, 12, 15), ex("Elevación de gemelos", 4, 12, 20),
-];
-const FULLBODY = [
-  ex("Sentadilla", 3, 5, 8), ex("Press banca", 3, 6, 10),
-  ex("Remo con barra", 3, 8, 12), ex("Press militar", 3, 8, 12),
-  ex("Curl bíceps", 2, 10, 15), ex("Elevación de gemelos", 3, 12, 20),
-];
-const UPPER = [
-  ex("Press banca", 4, 6, 10), ex("Remo con barra", 4, 8, 12),
-  ex("Press militar", 3, 8, 12), ex("Jalón al pecho", 3, 10, 15),
-  ex("Curl bíceps", 3, 10, 15), ex("Extensión tríceps", 3, 10, 15),
-];
-const LOWER = [
-  ex("Sentadilla", 4, 6, 10), ex("Peso muerto rumano", 3, 8, 12),
-  ex("Prensa", 3, 10, 15), ex("Curl femoral", 3, 10, 15),
-  ex("Elevación de gemelos", 4, 12, 20),
-];
-
-const clone = (arr: ExerciseState[]) => arr.map((e) => ({ ...e }));
-
 function emptyWeek(): DayState[] {
   return DOW_ORDER.map((d) => ({ dayOfWeek: d, templateName: "", exercises: [] }));
-}
-
-type TemplateKey = "ppl" | "fullbody" | "upperlower";
-function buildTemplate(key: TemplateKey): DayState[] {
-  const wk = emptyWeek();
-  const set = (dow: number, name: string, exs: ExerciseState[]) => {
-    const day = wk.find((d) => d.dayOfWeek === dow)!;
-    day.templateName = name;
-    day.exercises = clone(exs);
-  };
-  if (key === "ppl") {
-    set(1, "Push", PUSH); set(2, "Pull", PULL); set(3, "Pierna", LEGS);
-    set(4, "Push", PUSH); set(5, "Pull", PULL); set(6, "Pierna", LEGS);
-  } else if (key === "fullbody") {
-    set(1, "Full Body", FULLBODY); set(3, "Full Body", FULLBODY); set(5, "Full Body", FULLBODY);
-  } else {
-    set(1, "Upper", UPPER); set(2, "Lower", LOWER);
-    set(4, "Upper", UPPER); set(5, "Lower", LOWER);
-  }
-  return wk;
 }
 
 export default function RutinasHub() {
@@ -241,11 +188,6 @@ export default function RutinasHub() {
       day.exercises = [];
     });
 
-  const applyTemplate = (key: TemplateKey) => {
-    setDays(buildTemplate(key));
-    toast.success("Plantilla aplicada — ajústala y guarda");
-  };
-
   const totalExercises = days.reduce(
     (s, d) => s + d.exercises.filter((e) => e.name.trim()).length,
     0,
@@ -337,90 +279,76 @@ export default function RutinasHub() {
           </button>
         </div>
 
+        {/* Mis rutinas guardadas (reemplazan a las plantillas rápidas) */}
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-xs text-brand-warm flex items-center gap-1.5">
-            <Wand2 size={14} /> Plantillas rápidas:
+            <History size={14} /> Mis rutinas:
           </span>
-          <TemplateButton onClick={() => applyTemplate("ppl")} label="Push / Pull / Pierna" />
-          <TemplateButton onClick={() => applyTemplate("upperlower")} label="Torso / Pierna" />
-          <TemplateButton onClick={() => applyTemplate("fullbody")} label="Full Body 3×" />
+          {programs.length === 0 && (
+            <span className="text-xs text-brand-warm/70">
+              aún no tienes — arma una abajo y guárdala
+            </span>
+          )}
+          {programs.map((p) => {
+            const dCount = (p.schedule ?? []).filter((d) => d.exercises?.length).length;
+            const eCount = (p.schedule ?? []).reduce(
+              (s, d) => s + (d.exercises?.length ?? 0),
+              0,
+            );
+            const isLoaded = p.id === loadedId;
+            return (
+              <div
+                key={p.id}
+                className={`inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border text-xs ${
+                  isLoaded
+                    ? "border-accent bg-accent/10"
+                    : "border-brand-light-tan bg-brand-warm-white"
+                }`}
+              >
+                <button
+                  onClick={() => loadProgramIntoBuilder(p)}
+                  className="font-medium text-brand-dark hover:text-accent transition"
+                  title="Cargar para ver / editar"
+                >
+                  {p.name}
+                </button>
+                <span className="text-brand-warm/70">
+                  {dCount}d·{eCount}ej
+                </span>
+                {p.active ? (
+                  <span className="text-[10px] text-success font-semibold uppercase tracking-wide">
+                    activa
+                  </span>
+                ) : (
+                  <button
+                    onClick={() => activateProgram(p)}
+                    className="p-0.5 text-accent hover:scale-110 transition"
+                    title="Usar (activar)"
+                  >
+                    <Play size={12} />
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteProgram(p)}
+                  className="p-0.5 text-brand-warm hover:text-danger transition"
+                  title="Borrar"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            );
+          })}
+          <button
+            onClick={newRoutine}
+            className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
+          >
+            <Plus size={13} /> Nueva en blanco
+          </button>
           <span className="text-xs text-brand-warm ml-auto">
             {totalExercises} ejercicios · {days.filter((d) => d.exercises.some((e) => e.name.trim())).length} días
           </span>
         </div>
       </div>
-
-      {/* Historial de rutinas — reutilizables como los atajos */}
-      {programs.length > 0 && (
-        <div className="bg-brand-paper rounded-xl border border-brand-light-tan p-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-brand-warm flex items-center gap-1.5">
-              <History size={14} /> Mis rutinas guardadas
-            </span>
-            <button
-              onClick={newRoutine}
-              className="text-xs text-accent font-medium flex items-center gap-1 hover:underline"
-            >
-              <Plus size={13} /> Nueva en blanco
-            </button>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {programs.map((p) => {
-              const dCount = (p.schedule ?? []).filter((d) => d.exercises?.length).length;
-              const eCount = (p.schedule ?? []).reduce(
-                (s, d) => s + (d.exercises?.length ?? 0),
-                0,
-              );
-              const isLoaded = p.id === loadedId;
-              return (
-                <div
-                  key={p.id}
-                  className={`inline-flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full border text-xs ${
-                    isLoaded
-                      ? "border-accent bg-accent/10"
-                      : "border-brand-light-tan bg-brand-warm-white"
-                  }`}
-                >
-                  <button
-                    onClick={() => loadProgramIntoBuilder(p)}
-                    className="font-medium text-brand-dark hover:text-accent transition"
-                    title="Cargar para ver / editar"
-                  >
-                    {p.name}
-                  </button>
-                  <span className="text-brand-warm/70">
-                    {dCount}d·{eCount}ej
-                  </span>
-                  {p.active ? (
-                    <span className="text-[10px] text-success font-semibold uppercase tracking-wide">
-                      activa
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => activateProgram(p)}
-                      className="p-0.5 text-accent hover:scale-110 transition"
-                      title="Usar (activar)"
-                    >
-                      <Play size={12} />
-                    </button>
-                  )}
-                  <button
-                    onClick={() => deleteProgram(p)}
-                    className="p-0.5 text-brand-warm hover:text-danger transition"
-                    title="Borrar"
-                  >
-                    <Trash2 size={12} />
-                  </button>
-                </div>
-              );
-            })}
-          </div>
-          <p className="text-[11px] text-brand-warm mt-2">
-            Toca el nombre para cargarla y ver de qué consta ·{" "}
-            <Play size={10} className="inline -mt-0.5" /> la reutiliza (activa).
-          </p>
-        </div>
-      )}
 
       {/* Días */}
       <datalist id="common-exercises">
@@ -533,16 +461,5 @@ export default function RutinasHub() {
         toca entrenar y podrás empezar la sesión con un toque.
       </p>
     </section>
-  );
-}
-
-function TemplateButton({ onClick, label }: { onClick: () => void; label: string }) {
-  return (
-    <button
-      onClick={onClick}
-      className="px-3 py-1.5 rounded-full border border-brand-light-tan bg-brand-warm-white text-xs text-brand-dark font-medium hover:border-accent hover:text-accent transition"
-    >
-      {label}
-    </button>
   );
 }

@@ -75,9 +75,12 @@ const RULES: { keys: string[]; m: MuscleAttribution }[] = [
   { keys: ["curl femoral", "femoral", "leg curl", "curl de pierna", "curl tumbado", "curl sentado"], m: { primary: "hamstrings", secondaries: [] } },
   { keys: ["peso muerto", "deadlift"], m: { primary: "back", secondaries: ["hamstrings", "glutes"] } },
   { keys: ["hip thrust", "empuje de cadera", "gluteo", "glute", "patada de gluteo", "puente"], m: { primary: "glutes", secondaries: ["hamstrings"] } },
-  { keys: ["sentadilla", "squat", "hack"], m: { primary: "quads", secondaries: ["glutes", "hamstrings"] } },
+  // Sentadilla/zancada/prensa: cuádriceps directo + glúteo. Los isquios NO se
+  // cuentan: la activación de isquios en patrón sentadilla es marcadamente baja
+  // (Schoenfeld 2019), contarlos como 0.5 sobreestima su volumen.
+  { keys: ["sentadilla", "squat", "hack"], m: { primary: "quads", secondaries: ["glutes"] } },
   { keys: ["prensa", "leg press"], m: { primary: "quads", secondaries: ["glutes"] } },
-  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat"], m: { primary: "quads", secondaries: ["glutes", "hamstrings"] } },
+  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat"], m: { primary: "quads", secondaries: ["glutes"] } },
   { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad"], m: { primary: "quads", secondaries: [] } },
   { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"], m: { primary: "calves", secondaries: [] } },
   { keys: ["dominada", "pull up", "pull-up", "jalon", "pulldown", "pull down", "remo", "row"], m: { primary: "back", secondaries: ["biceps"] } },
