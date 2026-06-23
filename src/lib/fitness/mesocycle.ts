@@ -10,7 +10,7 @@
  */
 
 import { VOLUME_LANDMARKS } from "./calculations";
-import { resolveExerciseMuscles } from "./muscle-volume";
+import { resolveExerciseContributions } from "./muscle-volume";
 import { todayLocal, shiftDaysLocal, parseLocalDateStr } from "@/lib/date/local";
 
 /** Semana del mesociclo (1-indexed) desde la fecha de inicio de la rutina. */
@@ -109,9 +109,9 @@ export function weeklyVolumeHistory(
     for (const ex of w.exercises ?? []) {
       const eff = (ex.sets ?? []).filter(isEffective).length;
       if (eff === 0) continue;
-      const m = resolveExerciseMuscles(ex.exerciseName, ex.muscleGroup);
-      if (!m) continue;
-      const fractionalPerSet = 1 + m.secondaries.length * 0.5;
+      const contribs = resolveExerciseContributions(ex.exerciseName, ex.muscleGroup);
+      if (!contribs) continue;
+      const fractionalPerSet = contribs.reduce((s, c) => s + c.fraction, 0);
       buckets[idx] += eff * fractionalPerSet;
     }
   }

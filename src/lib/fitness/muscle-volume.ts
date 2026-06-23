@@ -1,23 +1,29 @@
 /**
  * Volumen fraccional por grupo muscular.
  *
- * Vincula los ejercicios (de la rutina y de las sesiones registradas) con los
- * músculos que entrenan, para poder comparar VOLUMEN PLANIFICADO (rutina) vs
- * VOLUMEN HECHO (sesiones) contra los landmarks MEV/MAV/MRV.
+ * Cada ejercicio se resuelve a una lista de CONTRIBUCIONES { músculo, fracción }.
+ * Fracciones basadas en evidencia (método fraccional de Schoenfeld):
+ *   1.0  = motor primario (trabajo directo)
+ *   0.5  = sinergista fuerte
+ *   0.25 = asistente / estabilizador menor
+ * Así un compuesto (press banca) aporta 1.0 a pecho, 0.5 a hombro y 0.5 a
+ * tríceps; un aislado (curl) aporta 1.0 solo a su músculo.
  *
- * Conteo fraccional (elección del usuario): un ejercicio suma 1.0 serie a su
- * músculo principal y 0.5 a cada secundario. Así un compuesto (press banca)
- * aporta a pecho + hombro + tríceps, no solo a pecho.
+ * Es la base de datos de ejercicios → volumen. Se amplía por lotes; lo que no
+ * está curado cae en reglas por palabra clave (1.0 primario / 0.5 sinergista).
  *
  * Slugs en inglés para casar con VOLUME_LANDMARKS de calculations.ts.
  */
+
+export interface MuscleContribution {
+  muscle: string;
+  fraction: number;
+}
 
 export interface MuscleAttribution {
   primary: string;
   secondaries: string[];
 }
-
-const SECONDARY_WEIGHT = 0.5;
 
 export const MUSCLE_ORDER = [
   "chest", "back", "shoulders", "biceps", "triceps",
@@ -61,62 +67,95 @@ export function spanishMuscleToSlug(muscleEs: string): string | null {
   return null;
 }
 
-// Reglas ordenadas por especificidad: la primera que matchea gana.
-const RULES: { keys: string[]; m: MuscleAttribution }[] = [
-  // Deltoide posterior — debe ir ANTES que "pec deck" (apertura) para no caer en pecho.
-  { keys: ["reverse pec deck", "pec deck inverso", "peck deck inverso", "contractor inverso", "deltoide posterior"], m: { primary: "shoulders", secondaries: ["back"] } },
-  { keys: ["pullover"], m: { primary: "back", secondaries: ["chest"] } },
-  { keys: ["press militar", "press de hombro", "overhead", "ohp", "militar", "arnold"], m: { primary: "shoulders", secondaries: ["triceps"] } },
-  { keys: ["press inclinad", "incline"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
-  { keys: ["press banca", "bench", "press de pecho", "press con barra", "press mancuern", "press plano"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
-  { keys: ["fondo", "dip"], m: { primary: "chest", secondaries: ["triceps", "shoulders"] } },
-  { keys: ["apertura", "pec deck", "contractor", "peck deck", "cruce de polea"], m: { primary: "chest", secondaries: [] } },
-  { keys: ["peso muerto rumano", "rumano", "rdl", "buenos dias", "good morning"], m: { primary: "hamstrings", secondaries: ["glutes", "back"] } },
-  { keys: ["curl femoral", "femoral", "leg curl", "curl de pierna", "curl tumbado", "curl sentado"], m: { primary: "hamstrings", secondaries: [] } },
-  { keys: ["peso muerto", "deadlift"], m: { primary: "back", secondaries: ["hamstrings", "glutes"] } },
-  { keys: ["hip thrust", "empuje de cadera", "gluteo", "glute", "patada de gluteo", "puente"], m: { primary: "glutes", secondaries: ["hamstrings"] } },
-  // Sentadilla/zancada/prensa: cuádriceps directo + glúteo. Los isquios NO se
-  // cuentan: la activación de isquios en patrón sentadilla es marcadamente baja
-  // (Schoenfeld 2019), contarlos como 0.5 sobreestima su volumen.
-  { keys: ["sentadilla", "squat", "hack"], m: { primary: "quads", secondaries: ["glutes"] } },
-  { keys: ["prensa", "leg press"], m: { primary: "quads", secondaries: ["glutes"] } },
-  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat"], m: { primary: "quads", secondaries: ["glutes"] } },
-  { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad"], m: { primary: "quads", secondaries: [] } },
-  { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"], m: { primary: "calves", secondaries: [] } },
-  { keys: ["dominada", "pull up", "pull-up", "jalon", "pulldown", "pull down", "remo", "row"], m: { primary: "back", secondaries: ["biceps"] } },
-  { keys: ["face pull", "pajaro", "reverse fly", "deltoide posterior", "pull apart"], m: { primary: "shoulders", secondaries: ["back"] } },
-  { keys: ["elevacion lateral", "lateral raise", "elevaciones laterales", "lateral"], m: { primary: "shoulders", secondaries: [] } },
-  { keys: ["curl martillo", "hammer"], m: { primary: "biceps", secondaries: [] } },
-  { keys: ["curl", "bicep"], m: { primary: "biceps", secondaries: [] } },
-  { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa"], m: { primary: "triceps", secondaries: [] } },
-  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "woodchop", "lenador", "pallof", "core"], m: { primary: "core", secondaries: [] } },
-  { keys: ["press"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
-  { keys: ["espalda", "back"], m: { primary: "back", secondaries: ["biceps"] } },
-  { keys: ["pecho", "chest"], m: { primary: "chest", secondaries: ["shoulders", "triceps"] } },
-  { keys: ["hombro", "shoulder", "deltoide"], m: { primary: "shoulders", secondaries: ["triceps"] } },
-  { keys: ["pierna", "leg", "tren inferior"], m: { primary: "quads", secondaries: ["glutes", "hamstrings"] } },
+// Helpers para construir contribuciones legibles.
+const C = (muscle: string, fraction: number): MuscleContribution => ({ muscle, fraction });
+
+// Reglas ordenadas por especificidad: la primera que matchea gana. Cada una
+// lleva las fracciones investigadas por músculo (1.0 / 0.5 / 0.25).
+const RULES: { keys: string[]; c: MuscleContribution[] }[] = [
+  // ── Hombros (casos que NO deben caer en pecho/espalda) ──────────────────────
+  { keys: ["reverse pec deck", "pec deck inverso", "peck deck inverso", "contractor inverso", "deltoide posterior"], c: [C("shoulders", 1), C("back", 0.25)] },
+  { keys: ["remo al menton", "upright row", "jalon al menton", "remo vertical"], c: [C("shoulders", 1), C("back", 0.5), C("biceps", 0.25)] },
+  { keys: ["face pull", "pajaro", "reverse fly", "pull apart"], c: [C("shoulders", 1), C("back", 0.25)] },
+  // ── Espalda especiales ──────────────────────────────────────────────────────
+  { keys: ["pullover"], c: [C("back", 1), C("chest", 0.25)] },
+  // ── Press de hombro ─────────────────────────────────────────────────────────
+  { keys: ["press militar", "press de hombro", "overhead", "ohp", "militar", "arnold", "press pike", "handstand"], c: [C("shoulders", 1), C("triceps", 0.5)] },
+  // ── Press de pecho ──────────────────────────────────────────────────────────
+  { keys: ["press banca agarre cerrado", "agarre cerrado", "close grip", "press cerrado"], c: [C("triceps", 1), C("chest", 0.5), C("shoulders", 0.25)] },
+  { keys: ["press inclinad", "incline"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
+  { keys: ["press banca", "bench", "press de pecho", "press con barra", "press mancuern", "press plano", "press declinad"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
+  { keys: ["fondo", "dip"], c: [C("chest", 1), C("triceps", 0.5), C("shoulders", 0.25)] },
+  { keys: ["apertura", "pec deck", "contractor", "peck deck", "cruce de polea", "crossover", "fly", "pec fly"], c: [C("chest", 1)] },
+  // ── Cadena posterior (hinge) ────────────────────────────────────────────────
+  { keys: ["peso muerto rumano", "rumano", "rdl", "buenos dias", "good morning"], c: [C("hamstrings", 1), C("glutes", 0.5), C("back", 0.25)] },
+  { keys: ["curl femoral", "femoral", "leg curl", "curl de pierna", "curl tumbado", "curl sentado", "nordic"], c: [C("hamstrings", 1)] },
+  { keys: ["peso muerto sumo", "sumo"], c: [C("glutes", 1), C("quads", 0.5), C("hamstrings", 0.5), C("back", 0.5)] },
+  { keys: ["peso muerto", "deadlift"], c: [C("back", 1), C("hamstrings", 0.5), C("glutes", 0.5)] },
+  { keys: ["hip thrust", "empuje de cadera", "puente de gluteo", "glute bridge", "kettlebell swing", "swing"], c: [C("glutes", 1), C("hamstrings", 0.5)] },
+  { keys: ["gluteo", "glute", "patada de gluteo", "kickback", "abduccion"], c: [C("glutes", 1)] },
+  // ── Cuádriceps (sentadilla: isquios NO cuentan, Schoenfeld 2019) ─────────────
+  { keys: ["sentadilla", "squat", "hack"], c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["prensa", "leg press"], c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["zancada", "lunge", "bulgara", "desplante", "split squat", "step up", "subida al cajon"], c: [C("quads", 1), C("glutes", 0.5)] },
+  { keys: ["extension de cuadricep", "extension cuadricep", "leg extension", "cuadricep", "quad", "sissy"], c: [C("quads", 1)] },
+  // ── Pantorrilla ─────────────────────────────────────────────────────────────
+  { keys: ["gemelo", "pantorrilla", "calf", "soleo", "elevacion de talon"], c: [C("calves", 1)] },
+  // ── Espalda (jalones / remos) ───────────────────────────────────────────────
+  { keys: ["dominada", "pull up", "pull-up", "chin up", "chin-up", "jalon", "pulldown", "pull down", "remo", "row", "muscle up", "pendlay"], c: [C("back", 1), C("biceps", 0.5)] },
+  // ── Hombro lateral (aislado) ────────────────────────────────────────────────
+  { keys: ["elevacion lateral", "lateral raise", "elevaciones laterales", "lateral", "elevacion frontal", "front raise"], c: [C("shoulders", 1)] },
+  // ── Brazos aislados ─────────────────────────────────────────────────────────
+  { keys: ["curl martillo", "hammer"], c: [C("biceps", 1)] },
+  { keys: ["curl", "bicep"], c: [C("biceps", 1)] },
+  { keys: ["extension de tricep", "triceps", "tricep", "press frances", "frances", "pushdown", "jalon de tricep", "patada de tricep", "copa", "skullcrusher", "rompecraneos"], c: [C("triceps", 1)] },
+  // ── Core ────────────────────────────────────────────────────────────────────
+  { keys: ["plancha", "plank", "abdom", "crunch", "oblicuo", "rueda abdominal", "elevacion de pierna", "russian twist", "giro ruso", "woodchop", "lenador", "pallof", "hollow", "core", "dragon flag"], c: [C("core", 1)] },
+  // ── Genéricos (último recurso por palabra) ──────────────────────────────────
+  { keys: ["press"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
+  { keys: ["espalda", "back"], c: [C("back", 1), C("biceps", 0.5)] },
+  { keys: ["pecho", "chest"], c: [C("chest", 1), C("shoulders", 0.5), C("triceps", 0.5)] },
+  { keys: ["hombro", "shoulder", "deltoide"], c: [C("shoulders", 1), C("triceps", 0.5)] },
+  { keys: ["pierna", "leg", "tren inferior"], c: [C("quads", 1), C("glutes", 0.5)] },
 ];
 
 /**
- * Resuelve los músculos de un ejercicio por su nombre. Si no matchea ninguna
- * regla, intenta con el muscleGroup registrado (de la sesión) como principal.
- * Devuelve null si no se puede categorizar.
+ * Contribuciones { músculo, fracción } de un ejercicio por nombre. Si no matchea
+ * ninguna regla, usa el muscleGroup registrado como primario (1.0). null si no
+ * se puede categorizar.
+ */
+export function resolveExerciseContributions(
+  name: string,
+  fallbackMuscleGroup?: string | null,
+): MuscleContribution[] | null {
+  const n = norm(name);
+  if (n) {
+    for (const rule of RULES) {
+      if (rule.keys.some((k) => n.includes(k))) return rule.c;
+    }
+  }
+  if (fallbackMuscleGroup) {
+    const slug = spanishMuscleToSlug(fallbackMuscleGroup);
+    if (slug) return [C(slug, 1)];
+  }
+  return null;
+}
+
+/**
+ * Versión compacta { primary, secondaries } (para el logger). Primary = mayor
+ * fracción; el resto son secundarios.
  */
 export function resolveExerciseMuscles(
   name: string,
   fallbackMuscleGroup?: string | null,
 ): MuscleAttribution | null {
-  const n = norm(name);
-  if (n) {
-    for (const rule of RULES) {
-      if (rule.keys.some((k) => n.includes(k))) return rule.m;
-    }
-  }
-  if (fallbackMuscleGroup) {
-    const slug = spanishMuscleToSlug(fallbackMuscleGroup);
-    if (slug) return { primary: slug, secondaries: [] };
-  }
-  return null;
+  const c = resolveExerciseContributions(name, fallbackMuscleGroup);
+  if (!c || c.length === 0) return null;
+  const sorted = [...c].sort((a, b) => b.fraction - a.fraction);
+  return {
+    primary: sorted[0].muscle,
+    secondaries: sorted.slice(1).map((x) => x.muscle),
+  };
 }
 
 // ─── Cálculo de volumen ───────────────────────────────────────────────────────
@@ -134,10 +173,13 @@ export interface VolumeResult {
   uncategorized: string[];
 }
 
-function addAttribution(out: Record<string, number>, m: MuscleAttribution, sets: number) {
-  out[m.primary] = (out[m.primary] ?? 0) + sets;
-  for (const sec of m.secondaries) {
-    out[sec] = (out[sec] ?? 0) + sets * SECONDARY_WEIGHT;
+function addContributions(
+  out: Record<string, number>,
+  contributions: MuscleContribution[],
+  sets: number,
+) {
+  for (const { muscle, fraction } of contributions) {
+    out[muscle] = (out[muscle] ?? 0) + sets * fraction;
   }
 }
 
@@ -149,12 +191,12 @@ export function plannedVolumeByMuscle(schedule: ScheduleDay[]): VolumeResult {
     for (const ex of day.exercises ?? []) {
       const name = ex.name?.trim();
       if (!name || !(ex.sets > 0)) continue;
-      const m = resolveExerciseMuscles(name);
-      if (!m) {
+      const c = resolveExerciseContributions(name);
+      if (!c) {
         uncategorized.add(name);
         continue;
       }
-      addAttribution(byMuscle, m, ex.sets);
+      addContributions(byMuscle, c, ex.sets);
     }
   }
   return { byMuscle, uncategorized: Array.from(uncategorized) };
@@ -192,12 +234,12 @@ export function doneVolumeByMuscle(
     for (const ex of w.exercises ?? []) {
       const eff = (ex.sets ?? []).filter(isEffective).length;
       if (eff === 0) continue;
-      const m = resolveExerciseMuscles(ex.exerciseName, ex.muscleGroup);
-      if (!m) {
+      const c = resolveExerciseContributions(ex.exerciseName, ex.muscleGroup);
+      if (!c) {
         uncategorized.add(ex.exerciseName);
         continue;
       }
-      addAttribution(byMuscle, m, eff);
+      addContributions(byMuscle, c, eff);
     }
   }
   return { byMuscle, uncategorized: Array.from(uncategorized) };

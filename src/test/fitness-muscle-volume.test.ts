@@ -1,10 +1,48 @@
 import { describe, it, expect } from "vitest";
 import {
   resolveExerciseMuscles,
+  resolveExerciseContributions,
   plannedVolumeByMuscle,
   doneVolumeByMuscle,
   roundHalf,
+  type MuscleContribution,
 } from "@/lib/fitness/muscle-volume";
+
+function frac(c: MuscleContribution[] | null, muscle: string): number {
+  return c?.find((x) => x.muscle === muscle)?.fraction ?? 0;
+}
+
+describe("resolveExerciseContributions (fracciones por músculo)", () => {
+  it("press banca: pecho 1.0, hombro 0.5, tríceps 0.5", () => {
+    const c = resolveExerciseContributions("Press banca");
+    expect(frac(c, "chest")).toBe(1);
+    expect(frac(c, "shoulders")).toBe(0.5);
+    expect(frac(c, "triceps")).toBe(0.5);
+  });
+
+  it("sentadilla: cuádriceps 1.0, glúteo 0.5, SIN isquios", () => {
+    const c = resolveExerciseContributions("Sentadilla");
+    expect(frac(c, "quads")).toBe(1);
+    expect(frac(c, "glutes")).toBe(0.5);
+    expect(frac(c, "hamstrings")).toBe(0);
+  });
+
+  it("remo al mentón → hombros (no espalda) por la regla específica", () => {
+    expect(resolveExerciseContributions("Remo al mentón")?.[0].muscle).toBe("shoulders");
+  });
+
+  it("peso muerto sumo → glúteos primario (no espalda)", () => {
+    const c = resolveExerciseContributions("Peso muerto sumo");
+    expect(frac(c, "glutes")).toBe(1);
+    expect(frac(c, "back")).toBe(0.5);
+  });
+
+  it("press banca agarre cerrado → tríceps primario", () => {
+    const c = resolveExerciseContributions("Press banca agarre cerrado");
+    expect(frac(c, "triceps")).toBe(1);
+    expect(frac(c, "chest")).toBe(0.5);
+  });
+});
 
 describe("resolveExerciseMuscles", () => {
   it("press banca → pecho + secundarios hombro/tríceps", () => {
