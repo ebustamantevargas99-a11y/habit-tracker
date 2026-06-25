@@ -1,10 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Fondo: café oscuro del sitio, esquinas redondeadas para Android maskable -->
   <rect width="512" height="512" rx="96" fill="#2E1F14"/>
-  <path d="M144 116 h224 v192 a112 112 0 0 1 -224 0 z"
-        fill="none" stroke="#E8B547" stroke-width="14"
-        stroke-linejoin="round"/>
-  <text x="256" y="234" font-family="Georgia, 'Times New Roman', serif"
-        font-size="124" font-weight="700" fill="#E8B547"
-        text-anchor="middle" dominant-baseline="middle">UT</text>
-  <rect x="194" y="344" width="124" height="10" rx="2" fill="#E8B547" opacity="0.7"/>
+
+  <!-- Monograma UT — dorado del sitio (#C79B55) -->
+  <g fill="#C79B55">
+    <!-- Barra superior (crossbar de la T, techo de la U) -->
+    <rect x="101" y="82" width="310" height="48"/>
+
+    <!-- Columna izquierda (brazo izquierdo de la U) -->
+    <rect x="101" y="130" width="46" height="252"/>
+
+    <!-- Columna derecha (brazo derecho de la U) -->
+    <rect x="365" y="130" width="46" height="252"/>
+
+    <!-- Tallo central (vástago de la T) -->
+    <rect x="233" y="130" width="46" height="175"/>
+
+    <!-- Conector izquierdo (une columna izquierda con el tallo central) -->
+    <rect x="147" y="255" width="86" height="42"/>
+
+    <!-- Conector derecho (une tallo central con columna derecha) -->
+    <rect x="279" y="255" width="86" height="42"/>
+
+    <!-- Fondo redondeado de la U -->
+    <path d="M101,382 L101,400 Q101,430 131,430 L381,430 Q411,430 411,400 L411,382 Z"/>
+  </g>
 </svg>
