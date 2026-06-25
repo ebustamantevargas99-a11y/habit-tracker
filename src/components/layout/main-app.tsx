@@ -18,6 +18,7 @@ import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
 import SettingsPage from "@/components/features/settings/settings-page";
 import FloatingAIButton from "@/components/features/ai-export/floating-ai-button";
 import PWAInstallPrompt from "@/components/pwa/install-prompt";
+import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
 import ReminderScheduler from "@/components/features/calendar/reminder-scheduler";
 import { useState, useEffect } from "react";
 import { Menu, Bell } from "lucide-react";
@@ -86,7 +87,8 @@ function ThemeInitializer() {
 export default function MainApp() {
   useRouteSync();
   const { activePage, showMonthlySummary, showWeeklySummary, toggleSidebar } = useAppStore();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // false es el valor seguro para SSR; el useEffect lo corrige en cliente.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const userName = useUserStore((s) => s.user?.name ?? "U");
   // El modo oscuro lo maneja el sistema de 8 temas (theme-store), no una
@@ -108,6 +110,13 @@ export default function MainApp() {
     initUser();
     initNutrition();
   }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition]);
+
+  // Abre el sidebar por defecto solo en pantallas desktop.
+  useEffect(() => {
+    if (window.matchMedia("(min-width: 768px)").matches) {
+      setSidebarOpen(true);
+    }
+  }, []);
 
   const homeV2 = useHomeV2Flag();
 
@@ -142,13 +151,22 @@ export default function MainApp() {
       <ReminderScheduler />
       <ThemeInitializer />
 
-      <Sidebar isOpen={sidebarOpen} />
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      {/* Backdrop para cerrar el drawer en móvil al tocar fuera */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
+        />
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="flex items-center justify-between px-8 border-b border-brand-light-cream bg-brand-paper h-[70px] shrink-0">
+        <header className="flex items-center justify-between px-4 md:px-8 border-b border-brand-light-cream bg-brand-paper h-[70px] shrink-0">
           {/* Left */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             <button
               onClick={() => { setSidebarOpen(!sidebarOpen); toggleSidebar(); }}
               className="p-2 text-brand-dark hover:bg-brand-light-cream rounded-lg transition-colors"
@@ -156,16 +174,16 @@ export default function MainApp() {
             >
               <Menu size={24} />
             </button>
-            <h1 className="text-3xl font-serif text-brand-dark m-0">
+            <h1 className="text-xl md:text-3xl font-serif text-brand-dark m-0">
               {PAGE_TITLES[activePage] ?? "Ultimate TRACKER"}
             </h1>
           </div>
 
           {/* Right */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 md:gap-6">
             {activePage === "home" && (
               <button
-                className="btn-primary text-sm"
+                className="btn-primary text-sm hidden md:block"
                 onClick={() => useAppStore.setState({ showMonthlySummary: true })}
               >
                 🎬 Resumen del mes
@@ -186,11 +204,13 @@ export default function MainApp() {
           </div>
         </header>
 
-        {/* Page Content */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-8">
+        {/* Page Content — pb-20 en móvil para no quedar tapado por el bottom nav */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-20 md:pb-8">
           {renderPage()}
         </main>
       </div>
+
+      <MobileBottomNav onMenuOpen={() => setSidebarOpen(true)} />
 
       <FloatingAIButton />
       <PWAInstallPrompt />

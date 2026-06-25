@@ -115,7 +115,7 @@ function ProfileTab() {
       {/* Account Stats — derivadas de datos reales del habit-store */}
       <div className={CARD}>
         <h3 className="font-serif text-brand-dark m-0 mb-4">📊 Estadísticas de Cuenta</h3>
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: 'Días Activo',       value: String(accountStats.daysActive),                       emoji: '📅' },
             { label: 'Hábitos Creados',   value: String(accountStats.habitsCreated),                    emoji: '🔁' },
@@ -185,7 +185,7 @@ function GamificationTab() {
       {/* XP Earning Rules */}
       <div className={CARD}>
         <h3 className="font-serif text-brand-dark m-0 mb-4">⚡ Cómo Ganar XP</h3>
-        <div className="grid grid-cols-2 gap-[10px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-[10px]">
           {([
             { action: 'Completar un hábito', xp: XP_REWARDS.completeHabit },
             { action: 'Completar todos los del día', xp: XP_REWARDS.completeAllDaily },
@@ -222,7 +222,7 @@ function GamificationTab() {
       {/* All Levels */}
       <div className={CARD}>
         <h3 className="font-serif text-brand-dark m-0 mb-4">🏆 Niveles</h3>
-        <div className="grid grid-cols-5 gap-[10px]">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-[10px]">
           {LEVELS.map((lvl, i) => {
             const isUnlocked = (i + 1) <= currentLevel;
             const isCurrent = (i + 1) === currentLevel;
@@ -251,7 +251,7 @@ function GamificationTab() {
         <h3 className="font-serif text-brand-dark m-0 mb-4">
           🎖️ Insignias ({badges.filter(b => b.earned).length}/{badges.length})
         </h3>
-        <div className="grid grid-cols-5 gap-3">
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
           {badges.map((b, i) => (
             <div
               key={i}

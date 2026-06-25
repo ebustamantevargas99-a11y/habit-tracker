@@ -38,7 +38,7 @@ export default function FloatingAIButton() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Exportar a IA"
-        className="fixed bottom-6 right-6 z-40 flex items-center gap-2 px-5 py-3 rounded-full bg-accent text-white font-semibold text-sm shadow-warm-lg hover:bg-brand-brown transition-transform hover:scale-105 group"
+        className="fixed bottom-20 md:bottom-6 right-4 md:right-6 z-40 flex items-center gap-2 px-4 md:px-5 py-3 rounded-full bg-accent text-white font-semibold text-sm shadow-warm-lg hover:bg-brand-brown transition-transform hover:scale-105 group"
       >
         <Sparkles size={18} className="group-hover:animate-pulse" />
         <span>Analizar con IA</span>

@@ -41,7 +41,7 @@ export default function FinancePage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <Tabs
           tabs={VIEWS}
           activeTab={currentView}

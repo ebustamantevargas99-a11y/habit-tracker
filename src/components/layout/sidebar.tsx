@@ -66,9 +66,10 @@ import { signOut } from "next-auth/react";
 
 interface SidebarProps {
   isOpen?: boolean;
+  onClose?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
+const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const {
     activePage, setActivePage,
     setProductivitySubTab, setPlanTab,
@@ -101,9 +102,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
       className={cn(
         // bg-[var(...)] + text-[var(...)]: usa las mismas vars que el hero
         // para garantizar superficie oscura + texto claro en todos los temas.
-        "flex flex-col bg-[var(--color-hero-bg-1)] text-[var(--color-hero-text)] shrink-0 overflow-y-auto overflow-x-hidden",
-        "border-r border-white/10 transition-[width,min-width] duration-300",
-        isOpen ? "w-[260px] min-w-[260px]" : "w-[68px] min-w-[68px]",
+        "flex flex-col bg-[var(--color-hero-bg-1)] text-[var(--color-hero-text)] overflow-y-auto overflow-x-hidden",
+        "border-r border-white/10",
+        // Móvil: drawer fijo superpuesto (fuera del flujo flex), siempre 260px
+        "fixed inset-y-0 left-0 z-50 w-[260px]",
+        "transition-transform duration-300 ease-in-out",
+        isOpen ? "translate-x-0" : "-translate-x-full",
+        // Desktop (≥768px): vuelve al flujo normal, ancho controlado por isOpen
+        "md:static md:inset-auto md:z-auto md:translate-x-0 md:shrink-0",
+        "md:transition-[width,min-width] md:duration-300",
+        isOpen ? "md:w-[260px] md:min-w-[260px]" : "md:w-[68px] md:min-w-[68px]",
       )}
     >
       {/* Logo — escudo Shield + Ultimate TRACKER */}
@@ -133,6 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                 onClick={() => {
                   setActivePage(item.key);
                   if (item.sections.length > 0) toggleSection(item.key);
+                  onClose?.();
                 }}
                 className={cn(
                   "w-full flex items-center gap-3 px-4 py-3 text-sm font-medium",
@@ -171,6 +180,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true }) => {
                         if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);
                         if (item.key === "finance"       && FINANCE_SECTION_MAP[section])       setFinanceTab(FINANCE_SECTION_MAP[section]);
                         if (item.key === "nutrition"     && NUTRITION_SECTION_MAP[section])     setNutritionTab(NUTRITION_SECTION_MAP[section]);
+                        onClose?.();
                       }}
                       className={cn(
                         "w-full pl-10 pr-4 py-2 text-[0.8125rem] flex items-center",

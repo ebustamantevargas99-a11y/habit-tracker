@@ -104,7 +104,7 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="flex gap-0 -mx-6 -my-6 min-h-[calc(100vh-80px)]">
+    <div className="flex gap-0 -mx-4 md:-mx-8 -my-4 md:-my-8 min-h-[calc(100vh-80px)]">
       {/* Sidebar (retráctil) */}
       <CalendarGroupsSidebar
         collapsed={collapsed}
@@ -114,7 +114,7 @@ export default function CalendarPage() {
       />
 
       {/* Contenido principal */}
-      <div className="flex-1 min-w-0 px-6 py-6 space-y-5">
+      <div className="flex-1 min-w-0 px-4 py-4 md:px-6 md:py-6 space-y-5">
         {/* View switcher + actions */}
         <div className="flex items-center justify-between gap-2 flex-wrap">
           <Tabs

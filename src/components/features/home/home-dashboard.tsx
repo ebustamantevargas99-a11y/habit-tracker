@@ -368,7 +368,7 @@ export default function HomeDashboard() {
       </div>
 
       {/* Metric Cards */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-4">
           <div className="text-xs text-brand-warm mb-2">vs. Semana Pasada</div>
           <div className="flex items-center gap-2 mb-2">
@@ -489,7 +489,7 @@ export default function HomeDashboard() {
             </div>
           )}
 
-          <div className="grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {(Object.entries(LIFE_DIM_LABELS) as [string, { label: string; icon: string }][]).map(
               ([key, meta]) => {
                 const dim = lifeScoreBreakdown[key];
@@ -540,7 +540,7 @@ export default function HomeDashboard() {
       )}
 
       {/* Today's Habits + Radar */}
-      <div className="grid grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
           <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Hábitos de Hoy</h2>
           {todayHabits.length === 0 && (
@@ -669,7 +669,7 @@ export default function HomeDashboard() {
       </div>
 
       {/* Top Streaks + Habit Strength */}
-      <div className="grid grid-cols-2 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-brand-paper border border-brand-light-cream rounded-xl p-5">
           <h2 className="text-[18px] font-bold text-brand-brown m-0 mb-4">Mejores rachas</h2>
           {topStreaks.length === 0 ? (

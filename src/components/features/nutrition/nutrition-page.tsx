@@ -616,7 +616,7 @@ export function FoodsTab() {
       </p>
 
       {/* Food list */}
-      <div className="grid [grid-template-columns:repeat(auto-fill,minmax(260px,1fr))] gap-3">
+      <div className="grid grid-cols-1 sm:[grid-template-columns:repeat(auto-fill,minmax(260px,1fr))] gap-3">
         {filtered.length === 0 ? (
           <div className="col-span-full text-center p-12 text-brand-medium">
             <Apple size={40} className="mb-3 opacity-40 mx-auto" />
@@ -823,7 +823,7 @@ export function GoalsTab() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
             { key: "calories",    label: "Calorías (kcal/día)",    min: 1000, max: 5000 },
             ...(useMacroSplit
