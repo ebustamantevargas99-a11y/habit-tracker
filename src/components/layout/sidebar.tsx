@@ -283,46 +283,25 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
 export default Sidebar;
 
-/** Escudo del logo — usado inline en sidebar/login (mismo SVG que public/icon.svg). */
+/** Monograma UT — mismo diseño que public/icon.svg, sin fondo. */
 function ShieldLogo({ size = 28 }: { size?: number }) {
   return (
     <svg
       width={size}
       height={size}
-      viewBox="0 0 100 100"
+      viewBox="96 88 320 360"
       aria-hidden
+      fill="currentColor"
       style={{ display: "block", flexShrink: 0 }}
+      className="text-accent-light"
     >
-      <path
-        d="M28 22 h44 v38 a22 22 0 0 1 -44 0 z"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinejoin="round"
-        className="text-accent-light"
-      />
-      <text
-        x="50"
-        y="46"
-        fontFamily="Georgia, 'Times New Roman', serif"
-        fontSize="24"
-        fontWeight="700"
-        fill="currentColor"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        className="text-accent-light"
-      >
-        UT
-      </text>
-      <rect
-        x="38"
-        y="66"
-        width="24"
-        height="2"
-        fill="currentColor"
-        opacity="0.7"
-        className="text-accent-light"
-      />
+      <rect x="96" y="88" width="320" height="52" rx="6" />
+      <rect x="96" y="140" width="52" height="252" rx="4" />
+      <rect x="364" y="140" width="52" height="252" rx="4" />
+      <rect x="230" y="140" width="52" height="180" rx="4" />
+      <rect x="148" y="264" width="82" height="44" rx="4" />
+      <rect x="282" y="264" width="82" height="44" rx="4" />
+      <path d="M96,392 L96,414 Q96,448 130,448 L382,448 Q416,448 416,414 L416,392 Z" />
     </svg>
   );
 }
