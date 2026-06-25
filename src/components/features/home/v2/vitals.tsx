@@ -25,7 +25,7 @@ function StatTile({ label, value, unit, spark, delta, suffix, delay }: StatTileP
 
   return (
     <div
-      className="ht-card ht-card-interactive flex flex-col gap-2.5"
+      className="ht-card ht-card-interactive flex flex-col gap-2.5 min-w-[152px] md:min-w-0"
       style={{
         padding: 20,
         animation: `ht-fadeUp .55s ${delay}ms both cubic-bezier(.2, .7, .2, 1)`,
@@ -157,15 +157,18 @@ export default function Vitals({ modules, data }: Props) {
         title="Pulso del momento"
         subtitle="Los números que te importan, respirando a tu ritmo."
       />
-      <div
-        className="grid gap-4 mt-5"
-        style={{
-          gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))`,
-        }}
-      >
-        {tiles.map((t, i) => (
-          <StatTile key={t.label} {...t} delay={120 + i * 90} />
-        ))}
+      {/* -mx-4 md:mx-0: extiende hasta los bordes en móvil para aprovechar todo el ancho */}
+      <div className="mt-5 -mx-4 md:mx-0 overflow-x-auto pb-1">
+        <div
+          className="flex md:grid gap-3 px-4 md:px-0"
+          style={{
+            gridTemplateColumns: `repeat(${tiles.length}, minmax(0, 1fr))`,
+          }}
+        >
+          {tiles.map((t, i) => (
+            <StatTile key={t.label} {...t} delay={120 + i * 90} />
+          ))}
+        </div>
       </div>
     </section>
   );
