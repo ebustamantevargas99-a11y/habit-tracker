@@ -124,11 +124,11 @@ export default function LoginPage() {
           {/* Header */}
           <header className="text-center mb-8">
             <Image
-              src="/icons/icon-192.png"
-              width={64}
-              height={64}
+              src="/logo.png"
+              width={72}
+              height={72}
               alt="Ultimate Tracker logo"
-              style={{ borderRadius: 12, display: "block", margin: "0 auto 14px" }}
+              style={{ display: "block", margin: "0 auto 14px" }}
             />
             <h1
               className="font-display font-bold text-brand-dark m-0 leading-none"
