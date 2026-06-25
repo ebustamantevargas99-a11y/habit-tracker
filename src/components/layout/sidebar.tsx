@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
 import { useAppStore, type ProductivityTab, type PlanTab } from "@/stores/app-store";
 import { useGamificationStore } from "@/stores/gamification-store";
@@ -121,7 +122,13 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           !isOpen && "justify-center",
         )}
       >
-        <ShieldLogo size={isOpen ? 28 : 32} />
+        <Image
+          src="/icons/icon-192.png"
+          width={isOpen ? 28 : 32}
+          height={isOpen ? 28 : 32}
+          alt="Ultimate Tracker logo"
+          style={{ borderRadius: 6, flexShrink: 0 }}
+        />
         {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
             Ultimate <span className="text-hero tracking-widest">TRACKER</span>
@@ -283,25 +290,3 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 
 export default Sidebar;
 
-/** Monograma UT — mismo diseño que public/icon.svg, sin fondo. */
-function ShieldLogo({ size = 28 }: { size?: number }) {
-  return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="96 88 320 360"
-      aria-hidden
-      fill="currentColor"
-      style={{ display: "block", flexShrink: 0 }}
-      className="text-accent-light"
-    >
-      <rect x="96" y="88" width="320" height="52" rx="6" />
-      <rect x="96" y="140" width="52" height="252" rx="4" />
-      <rect x="364" y="140" width="52" height="252" rx="4" />
-      <rect x="230" y="140" width="52" height="180" rx="4" />
-      <rect x="148" y="264" width="82" height="44" rx="4" />
-      <rect x="282" y="264" width="82" height="44" rx="4" />
-      <path d="M96,392 L96,414 Q96,448 130,448 L382,448 Q416,448 416,414 L416,392 Z" />
-    </svg>
-  );
-}

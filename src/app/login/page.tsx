@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -122,26 +123,13 @@ export default function LoginPage() {
         <div className="bg-white/80 backdrop-blur-sm rounded-[22px] shadow-[0_20px_60px_-15px_rgba(61,43,31,0.25),0_4px_20px_-5px_rgba(61,43,31,0.1)] border border-white p-10 md:p-12">
           {/* Header */}
           <header className="text-center mb-8">
-            {/* Monograma UT */}
-            <svg
-              viewBox="96 88 320 360"
-              aria-hidden
-              fill="#3D2B1F"
-              style={{
-                width: 56,
-                height: 56,
-                display: "block",
-                margin: "0 auto 14px",
-              }}
-            >
-              <rect x="96" y="88" width="320" height="52" rx="6" />
-              <rect x="96" y="140" width="52" height="252" rx="4" />
-              <rect x="364" y="140" width="52" height="252" rx="4" />
-              <rect x="230" y="140" width="52" height="180" rx="4" />
-              <rect x="148" y="264" width="82" height="44" rx="4" />
-              <rect x="282" y="264" width="82" height="44" rx="4" />
-              <path d="M96,392 L96,414 Q96,448 130,448 L382,448 Q416,448 416,414 L416,392 Z" />
-            </svg>
+            <Image
+              src="/icons/icon-192.png"
+              width={64}
+              height={64}
+              alt="Ultimate Tracker logo"
+              style={{ borderRadius: 12, display: "block", margin: "0 auto 14px" }}
+            />
             <h1
               className="font-display font-bold text-brand-dark m-0 leading-none"
               style={{
