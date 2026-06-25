@@ -124,10 +124,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       >
         <Image
           src="/logo.png"
-          width={isOpen ? 28 : 32}
-          height={isOpen ? 28 : 32}
+          width={isOpen ? 36 : 38}
+          height={isOpen ? 36 : 38}
           alt="Ultimate Tracker logo"
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, marginLeft: isOpen ? 4 : 0 }}
         />
         {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
