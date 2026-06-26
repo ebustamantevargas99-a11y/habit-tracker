@@ -1,17 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withApiKeyAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
-import { todayLocal } from "@/lib/date/local";
+import { todayLocal, zonedParts } from "@/lib/date/local";
 
 export async function GET(req: NextRequest) {
   return withApiKeyAuth(req, async (userId) => {
-    // Use the user's configured timezone so "today" matches their local date,
-    // not the server's UTC date (which can be off by one day in the evening).
     const profile = await prisma.userProfile.findUnique({
       where: { userId },
       select: { timezone: true },
     });
-    const today = todayLocal(profile?.timezone);
+    const tz = profile?.timezone ?? "America/Mexico_City";
+    const today = todayLocal(tz);
+
+    // Day-of-week in the user's local timezone (0=Sun … 6=Sat), matching the
+    // targetDays convention used in the Habit model and throughout the app.
+    const { weekday } = zonedParts(new Date(), tz);
 
     const [hydration, habits, habitLogs, latestWeight, todayExpenses] =
       await Promise.all([
@@ -19,8 +22,17 @@ export async function GET(req: NextRequest) {
           where: { userId_date: { userId, date: today } },
           select: { amountMl: true, goalMl: true },
         }),
+        // Mirror the app's habit list: only show habits scheduled for today.
+        // targetDays=[] means "every day"; otherwise it's a specific-days habit.
         prisma.habit.findMany({
-          where: { userId, isActive: true },
+          where: {
+            userId,
+            isActive: true,
+            OR: [
+              { targetDays: { isEmpty: true } },
+              { targetDays: { has: weekday } },
+            ],
+          },
           select: { id: true, name: true, icon: true },
           orderBy: { createdAt: "asc" },
         }),
