@@ -1,67 +1,70 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withApiKeyAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { todayLocal } from "@/lib/date/local";
+import {
+  recalculateStreak,
+  crossedMilestone,
+  ROOTED_THRESHOLD,
+} from "@/lib/habit-utils";
+import {
+  awardXP,
+  checkFirstStepBadge,
+  checkStreakBadges,
+  checkHydrationHeroBadge,
+} from "@/lib/gamification-utils";
 import { z } from "zod";
 
-const TODAY = () => new Date().toISOString().split("T")[0];
+const dateField = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .optional();
 
 const schema = z.discriminatedUnion("action", [
-  // ── Hábito ────────────────────────────────────────────────────────────────
   z.object({
     action: z.literal("habit"),
     habitId: z.string().optional(),
     habitName: z.string().optional(),
     completed: z.boolean().default(true),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
+    date: dateField,
     notes: z.string().max(500).optional(),
   }),
-  // ── Agua ──────────────────────────────────────────────────────────────────
   z.object({
     action: z.literal("water"),
     amountMl: z.number().int().positive().max(5000).optional(),
     glasses: z.number().int().positive().max(20).optional(),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
+    date: dateField,
   }),
-  // ── Peso corporal ─────────────────────────────────────────────────────────
   z.object({
     action: z.literal("weight"),
     value: z.number().positive().max(999),
     unit: z.enum(["kg", "lb"]).default("kg"),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
+    date: dateField,
   }),
-  // ── Gasto / ingreso ───────────────────────────────────────────────────────
   z.object({
     action: z.literal("expense"),
     amount: z.number().positive().max(9_999_999),
     description: z.string().max(200),
     category: z.string().max(100).default("Otros"),
     type: z.enum(["expense", "income"]).default("expense"),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
+    date: dateField,
   }),
-  // ── Entrenamiento ─────────────────────────────────────────────────────────
   z.object({
     action: z.literal("workout"),
     name: z.string().max(200).default("Entrenamiento rápido"),
     durationMinutes: z.number().int().positive().max(600),
     notes: z.string().max(500).optional(),
-    date: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .optional(),
+    date: dateField,
   }),
 ]);
+
+async function getUserTz(userId: string): Promise<string | null> {
+  const profile = await prisma.userProfile.findUnique({
+    where: { userId },
+    select: { timezone: true },
+  });
+  return profile?.timezone ?? null;
+}
 
 export async function POST(req: NextRequest) {
   return withApiKeyAuth(req, async (userId) => {
@@ -81,28 +84,32 @@ export async function POST(req: NextRequest) {
     }
 
     const data = parsed.data;
-    const date = "date" in data && data.date ? data.date : TODAY();
+
+    // Resolve effective date: prefer explicit date from client (e.g. Scriptable
+    // sends its local date), fall back to server-side local date in user's TZ.
+    const tz = await getUserTz(userId);
+    const date = "date" in data && data.date ? data.date : todayLocal(tz);
 
     // ── Hábito ──────────────────────────────────────────────────────────────
     if (data.action === "habit") {
       let habitId = data.habitId;
 
       if (!habitId && data.habitName) {
-        const habit = await prisma.habit.findFirst({
+        const found = await prisma.habit.findFirst({
           where: {
             userId,
             isActive: true,
             name: { contains: data.habitName, mode: "insensitive" },
           },
-          select: { id: true, name: true },
+          select: { id: true },
         });
-        if (!habit) {
+        if (!found) {
           return NextResponse.json(
             { error: `Hábito "${data.habitName}" no encontrado` },
             { status: 404 }
           );
         }
-        habitId = habit.id;
+        habitId = found.id;
       }
 
       if (!habitId) {
@@ -113,8 +120,7 @@ export async function POST(req: NextRequest) {
       }
 
       const habit = await prisma.habit.findFirst({
-        where: { id: habitId, userId },
-        select: { id: true, name: true },
+        where: { id: habitId, userId, isActive: true },
       });
       if (!habit) {
         return NextResponse.json(
@@ -122,6 +128,8 @@ export async function POST(req: NextRequest) {
           { status: 404 }
         );
       }
+
+      const previousStreak = habit.streakCurrent;
 
       const log = await prisma.habitLog.upsert({
         where: { habitId_date: { habitId, date } },
@@ -135,12 +143,77 @@ export async function POST(req: NextRequest) {
         update: { completed: data.completed, notes: data.notes },
       });
 
+      // Recalculate streak exactly as the main habits route does.
+      const streakResult = await recalculateStreak(habitId, habit.targetDays, {
+        estimatedMinutes: habit.estimatedMinutes,
+        currentRootedAt: habit.rootedAt,
+        tz,
+      });
+
+      const updatedHabit = await prisma.habit.update({
+        where: { id: habitId },
+        data: {
+          streakCurrent: streakResult.streakCurrent,
+          streakBest: Math.max(streakResult.streakBest, habit.streakBest),
+          phase: streakResult.phase,
+          rootedAt: streakResult.rootedAtFirst,
+          rootedStreak: streakResult.rootedStreak,
+          graceDaysAvailable: streakResult.graceDaysAvailable,
+          graceWeekStart: streakResult.graceWeekStart,
+          lastCompletedDate: streakResult.lastCompletedDate,
+        },
+      });
+
+      // Milestones + gamification — same as main habits route.
+      if (data.completed) {
+        const milestone = crossedMilestone(
+          previousStreak,
+          streakResult.streakCurrent
+        );
+        if (milestone !== null) {
+          const titleMap: Record<number, string> = {
+            7: `Primer hito: 7 días de ${habit.name}`,
+            21: `Formándose: 21 días de ${habit.name}`,
+            66: `Fortaleciéndose: 66 días de ${habit.name}`,
+            [ROOTED_THRESHOLD]: `🏆 ¡${habit.name} arraigado!`,
+            100: `100 días arraigados: ${habit.name}`,
+            365: `1 año consecutivo: ${habit.name}`,
+            500: `500 días consecutivos: ${habit.name}`,
+            1000: `1,000 días consecutivos: ${habit.name}`,
+          };
+          try {
+            await prisma.milestone.create({
+              data: {
+                userId,
+                date,
+                type:
+                  milestone === ROOTED_THRESHOLD
+                    ? "habit_rooted"
+                    : "habit_streak",
+                title:
+                  titleMap[milestone] ?? `${milestone} días de ${habit.name}`,
+                icon:
+                  milestone === ROOTED_THRESHOLD ? "👑" : (habit.icon ?? "🔥"),
+                metadata: { habitId, streak: milestone } as unknown as object,
+              },
+            });
+          } catch {
+            // Milestone creation is non-critical; don't fail the request.
+          }
+        }
+
+        await awardXP(prisma, userId, 5);
+        await checkFirstStepBadge(prisma, userId);
+        await checkStreakBadges(prisma, userId, streakResult.streakCurrent);
+      }
+
       return NextResponse.json({
         ok: true,
         action: "habit",
         habit: habit.name,
         date,
         completed: log.completed,
+        streak: updatedHabit.streakCurrent,
       });
     }
 
@@ -152,11 +225,21 @@ export async function POST(req: NextRequest) {
         where: { userId_date: { userId, date } },
       });
 
+      const newAmount = Math.max(0, (existing?.amountMl ?? 0) + deltaMl);
       const log = await prisma.hydrationLog.upsert({
         where: { userId_date: { userId, date } },
-        create: { userId, date, amountMl: deltaMl, goalMl: 2500 },
-        update: { amountMl: (existing?.amountMl ?? 0) + deltaMl },
+        create: {
+          userId,
+          date,
+          amountMl: newAmount,
+          goalMl: existing?.goalMl ?? 2500,
+        },
+        update: { amountMl: newAmount },
       });
+
+      if (log.goalMl > 0 && log.amountMl >= log.goalMl) {
+        await checkHydrationHeroBadge(prisma, userId);
+      }
 
       return NextResponse.json({
         ok: true,
@@ -169,27 +252,18 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Peso ────────────────────────────────────────────────────────────────
+    // The BodyMetric model has no unique(userId, date, type) constraint.
+    // We replicate the app's own behavior (fitness/weight route POST), which
+    // always creates a new entry. The widget does the same to stay consistent.
     if (data.action === "weight") {
-      const metric = await prisma.bodyMetric.upsert({
-        where: {
-          // No hay unique compuesto — usamos findFirst+create/update manual
-          // para evitar duplicados por fecha+tipo
-          id:
-            (
-              await prisma.bodyMetric.findFirst({
-                where: { userId, date, type: "weight" },
-                select: { id: true },
-              })
-            )?.id ?? "__new__",
-        },
-        create: {
+      const metric = await prisma.bodyMetric.create({
+        data: {
           userId,
           date,
           type: "weight",
           value: data.value,
           unit: data.unit,
         },
-        update: { value: data.value, unit: data.unit },
       });
 
       return NextResponse.json({
@@ -204,7 +278,7 @@ export async function POST(req: NextRequest) {
     // ── Gasto ───────────────────────────────────────────────────────────────
     if (data.action === "expense") {
       const account = await prisma.financialAccount.findFirst({
-        where: { userId },
+        where: { userId, archived: false },
         select: { id: true, name: true },
         orderBy: { createdAt: "asc" },
       });
@@ -268,7 +342,7 @@ export async function POST(req: NextRequest) {
   });
 }
 
-// GET — lista hábitos activos (útil para configurar Scriptable)
+// GET — lista hábitos activos (útil para configurar el widget)
 export async function GET(req: NextRequest) {
   return withApiKeyAuth(req, async (userId) => {
     const habits = await prisma.habit.findMany({

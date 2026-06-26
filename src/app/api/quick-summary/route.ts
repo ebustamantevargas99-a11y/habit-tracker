@@ -1,10 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withApiKeyAuth } from "@/lib/api-helpers";
 import { prisma } from "@/lib/prisma";
+import { todayLocal } from "@/lib/date/local";
 
 export async function GET(req: NextRequest) {
   return withApiKeyAuth(req, async (userId) => {
-    const today = new Date().toISOString().split("T")[0];
+    // Use the user's configured timezone so "today" matches their local date,
+    // not the server's UTC date (which can be off by one day in the evening).
+    const profile = await prisma.userProfile.findUnique({
+      where: { userId },
+      select: { timezone: true },
+    });
+    const today = todayLocal(profile?.timezone);
 
     const [hydration, habits, habitLogs, latestWeight, todayExpenses] =
       await Promise.all([
@@ -15,6 +22,7 @@ export async function GET(req: NextRequest) {
         prisma.habit.findMany({
           where: { userId, isActive: true },
           select: { id: true, name: true, icon: true },
+          orderBy: { createdAt: "asc" },
         }),
         prisma.habitLog.findMany({
           where: { userId, date: today, completed: true },
