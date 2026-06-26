@@ -16,9 +16,9 @@ import {
   Trash2,
   Bell,
   Globe,
-  Lock,
   Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import { LEVELS, XP_REWARDS } from "@/lib/constants";
 import { exportToJSON, exportToCSV } from "@/lib/utils";
 import { useGamificationStore } from "@/stores/gamification-store";
@@ -100,8 +100,10 @@ function ProfileTab() {
   return (
     <div className="flex flex-col gap-6">
       {/* Avatar + Basic Info */}
-      <div className={cn(CARD, "flex gap-6 items-start")}>
-        <div className="w-[100px] h-[100px] rounded-full bg-gradient-accent flex items-center justify-center text-[2.5rem] text-brand-paper font-serif font-bold shrink-0">
+      <div
+        className={cn(CARD, "flex flex-col sm:flex-row gap-6 sm:items-start")}
+      >
+        <div className="w-[100px] h-[100px] rounded-full bg-gradient-accent flex items-center justify-center text-[2.5rem] text-brand-paper font-serif font-bold shrink-0 self-center sm:self-auto">
           {name.charAt(0).toUpperCase()}
         </div>
         <div className="flex-1 flex flex-col gap-4">
@@ -225,14 +227,15 @@ function GamificationTab() {
   const currentXP = totalXP;
   const pct = xpProgress;
 
+  // Placeholder — weekly XP breakdown requires a dedicated API endpoint.
   const xpHistory = [
-    { day: "Lun", xp: 45 },
-    { day: "Mar", xp: 60 },
-    { day: "Mié", xp: 35 },
-    { day: "Jue", xp: 80 },
-    { day: "Vie", xp: 55 },
-    { day: "Sáb", xp: 70 },
-    { day: "Dom", xp: 40 },
+    { day: "Lun", xp: 0 },
+    { day: "Mar", xp: 0 },
+    { day: "Mié", xp: 0 },
+    { day: "Jue", xp: 0 },
+    { day: "Vie", xp: 0 },
+    { day: "Sáb", xp: 0 },
+    { day: "Dom", xp: currentXP > 0 ? currentXP : 0 },
   ];
 
   const badges = storeBadges.map((b) => ({
@@ -306,41 +309,32 @@ function GamificationTab() {
         </div>
       </div>
 
-      {/* XP This Week Chart */}
+      {/* XP Total */}
       <div className={CARD}>
-        <h3 className="font-serif text-brand-dark m-0 mb-4">
-          📈 XP Esta Semana
-        </h3>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={xpHistory}>
-            <XAxis
-              dataKey="day"
-              tick={{ fill: C.warm, fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: C.warm, fontSize: 12 }}
-              axisLine={false}
-              tickLine={false}
-            />
-            <Tooltip
-              contentStyle={{
-                borderRadius: "8px",
-                border: `1px solid ${C.tan}`,
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="xp"
-              stroke={C.accent}
-              strokeWidth={3}
-              dot={{ fill: C.accent, r: 5 }}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-        <div className="text-center mt-2 text-[0.85rem] text-brand-warm">
-          Total esta semana: <strong className="text-accent">385 XP</strong>
+        <h3 className="font-serif text-brand-dark m-0 mb-3">📈 Tu progreso</h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="text-center p-4 bg-brand-light-cream rounded-[10px]">
+            <div className="text-[1.4rem] font-bold text-accent font-mono">
+              {currentXP}
+            </div>
+            <div className="text-[0.75rem] text-brand-warm mt-1">XP total</div>
+          </div>
+          <div className="text-center p-4 bg-brand-light-cream rounded-[10px]">
+            <div className="text-[1.4rem] font-bold text-accent font-mono">
+              {xpForNextLevel - currentXP}
+            </div>
+            <div className="text-[0.75rem] text-brand-warm mt-1">
+              XP para nivel {currentLevel + 1}
+            </div>
+          </div>
+          <div className="text-center p-4 bg-brand-light-cream rounded-[10px] col-span-2 sm:col-span-1">
+            <div className="text-[1.4rem] font-bold text-accent font-mono">
+              {Math.round(pct)}%
+            </div>
+            <div className="text-[0.75rem] text-brand-warm mt-1">
+              Progreso actual
+            </div>
+          </div>
         </div>
       </div>
 
@@ -424,7 +418,6 @@ function PreferencesTab() {
   const [notifStatus, setNotifStatus] = useState("");
 
   const [weekStartsOn, setWeekStartsOn] = useState(1);
-  const [language, setLanguage] = useState("es");
   const [insurance, setInsurance] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -432,7 +425,6 @@ function PreferencesTab() {
   useEffect(() => {
     if (user?.profile) {
       setWeekStartsOn(user.profile.weekStartsOn ?? 1);
-      setLanguage(user.profile.language ?? "es");
     }
     setInsurance(streakInsuranceDays ?? 1);
     const enabled = localStorage.getItem("habit-notifications") === "true";
@@ -480,7 +472,7 @@ function PreferencesTab() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      await saveProfile({ weekStartsOn, language });
+      await saveProfile({ weekStartsOn });
       await api.patch("/user/gamification", { streakInsuranceDays: insurance });
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
@@ -580,21 +572,6 @@ function PreferencesTab() {
             <option value={0}>Domingo</option>
           </select>
         </div>
-        <div className={cn(ROW, "border-b-0")}>
-          <div>
-            <div className="text-[0.9rem] font-semibold text-brand-dark">
-              Idioma
-            </div>
-          </div>
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className={SELECT}
-          >
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
-        </div>
       </div>
 
       {/* Streak Insurance */}
@@ -606,7 +583,7 @@ function PreferencesTab() {
           Días consecutivos que puedes fallar un hábito programado sin romper tu
           racha
         </p>
-        <div className="flex gap-[10px]">
+        <div className="flex flex-wrap gap-2">
           {[0, 1, 2, 3].map((n) => (
             <button
               key={n}
@@ -670,7 +647,7 @@ function DataTab() {
         `ultimate-tracker-backup-${new Date().toISOString().slice(0, 10)}`
       );
     } catch {
-      alert("Error exportando datos. Intenta de nuevo.");
+      toast.error("Error exportando datos. Intenta de nuevo.");
     } finally {
       setIsExporting(false);
     }
@@ -742,23 +719,20 @@ export default function SettingsPage() {
 
   const tabs = [
     { id: "profile", label: "Perfil" },
+    { id: "appearance", label: "Apariencia" },
     { id: "security", label: "Seguridad" },
     { id: "modules", label: "Módulos" },
-    { id: "appearance", label: "Apariencia" },
     { id: "gamification", label: "Gamificación" },
-    { id: "preferences", label: "Preferencias" },
     { id: "data", label: "Datos" },
-    { id: "integrations", label: "Widgets" },
-    { id: "reset", label: "Resetear" },
   ];
 
   return (
-    <div className="p-6 bg-brand-warm-white min-h-screen">
-      <div className="mb-8">
-        <h1 className="font-serif text-[2.5rem] text-brand-dark m-0 mb-2">
+    <div className="p-4 md:p-6">
+      <div className="mb-6">
+        <h1 className="font-serif text-2xl md:text-[2rem] text-brand-dark m-0 mb-1">
           Configuración
         </h1>
-        <p className="text-base text-brand-warm m-0">
+        <p className="text-sm text-brand-warm m-0">
           Personaliza tu experiencia
         </p>
       </div>
@@ -769,20 +743,28 @@ export default function SettingsPage() {
         activeTab={activeTab}
         onChange={setActiveTab}
         variant="segmented"
-        className="mb-8 overflow-x-auto"
+        className="mb-6 overflow-x-auto"
       />
 
       {/* Content */}
       <div>
         {activeTab === "profile" && <ProfileTab />}
+        {activeTab === "appearance" && (
+          <div className="flex flex-col gap-6">
+            <AppearanceTab />
+            <PreferencesTab />
+          </div>
+        )}
         {activeTab === "security" && <SecurityTab />}
         {activeTab === "modules" && <ModulesTab />}
-        {activeTab === "appearance" && <AppearanceTab />}
         {activeTab === "gamification" && <GamificationTab />}
-        {activeTab === "preferences" && <PreferencesTab />}
-        {activeTab === "data" && <DataTab />}
-        {activeTab === "integrations" && <IntegrationsTab />}
-        {activeTab === "reset" && <ResetDataTab />}
+        {activeTab === "data" && (
+          <div className="flex flex-col gap-6">
+            <DataTab />
+            <IntegrationsTab />
+            <ResetDataTab />
+          </div>
+        )}
       </div>
     </div>
   );
