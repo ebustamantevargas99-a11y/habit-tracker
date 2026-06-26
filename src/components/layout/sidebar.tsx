@@ -118,7 +118,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       {/* Logo — escudo Shield + Ultimate TRACKER */}
       <div
         className={cn(
-          "flex items-center gap-2 pl-2 pr-4 py-3 border-b border-white/10",
+          "flex items-center gap-0 pl-2 pr-4 py-3 border-b border-white/10",
           !isOpen && "justify-center",
         )}
       >
@@ -127,7 +127,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           width={isOpen ? 52 : 40}
           height={isOpen ? 52 : 40}
           alt="Ultimate Tracker logo"
-          style={{ flexShrink: 0 }}
+          style={{ flexShrink: 0, marginRight: isOpen ? 4 : 0 }}
         />
         {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
