@@ -1,8 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useState } from "react";
-import { useAppStore, type ProductivityTab, type PlanTab } from "@/stores/app-store";
+import {
+  useAppStore,
+  type ProductivityTab,
+  type PlanTab,
+} from "@/stores/app-store";
 import { useGamificationStore } from "@/stores/gamification-store";
 import { useUserStore } from "@/stores/user-store";
 import { NAV_ITEMS, LEVELS } from "@/lib/constants";
@@ -12,51 +15,51 @@ import { cn } from "@/components/ui/cn";
 // Mapa nav item → ModuleKey. Si el user desactiva el module, el sidebar
 // oculta su entry. Cores (home/tasks/settings) no se pueden desactivar.
 const NAV_TO_MODULE: Record<string, ModuleKey> = {
-  home:          "home",
-  plan:          "planner",
-  productivity:  "tasks",
-  finance:       "finance",
-  fitness:       "fitness",
-  nutrition:     "nutrition",
-  menstrualCycle:"menstrualCycle",
-  settings:      "settings",
+  home: "home",
+  plan: "planner",
+  productivity: "tasks",
+  finance: "finance",
+  fitness: "fitness",
+  nutrition: "nutrition",
+  menstrualCycle: "menstrualCycle",
+  settings: "settings",
 };
 
 // ─── Section → tab ID maps ────────────────────────────────────────────────────
 
 const PRODUCTIVITY_SECTION_MAP: Record<string, ProductivityTab> = {
-  "Hábitos":           "habits",
-  "Proyectos":         "projects",
-  "Trabajo profundo":  "pomodoro",
-  "Lectura":           "reading",
+  Hábitos: "habits",
+  Proyectos: "projects",
+  "Trabajo profundo": "pomodoro",
+  Lectura: "reading",
 };
 
 const PLAN_SECTION_MAP: Record<string, PlanTab> = {
-  "Hoy":    "today",
-  "Semana": "week",
-  "Mes":    "month",
+  Hoy: "today",
+  Semana: "week",
+  Mes: "month",
 };
 
 const FITNESS_SECTION_MAP: Record<string, string> = {
-  "Resumen":  "resumen",
-  "Entreno":  "entreno",
-  "Cuerpo":   "cuerpo",
-  "Rutinas":  "rutinas",
+  Resumen: "resumen",
+  Entreno: "entreno",
+  Cuerpo: "cuerpo",
+  Rutinas: "rutinas",
 };
 
 const FINANCE_SECTION_MAP: Record<string, string> = {
-  "Panel":          "panel",
-  "Flujo":          "flow",
+  Panel: "panel",
+  Flujo: "flow",
   "Metas & Deudas": "goals",
-  "Inversiones":    "investments",
-  "Análisis":       "analysis",
+  Inversiones: "investments",
+  Análisis: "analysis",
 };
 
 const NUTRITION_SECTION_MAP: Record<string, string> = {
-  "Hoy":          "hoy",
-  "Progreso":     "progreso",
-  "Composición":  "composicion",
-  "Alimentos":    "alimentos",
+  Hoy: "hoy",
+  Progreso: "progreso",
+  Composición: "composicion",
+  Alimentos: "alimentos",
 };
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -72,11 +75,22 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   const {
-    activePage, setActivePage,
-    setProductivitySubTab, setPlanTab,
-    setFitnessTab, setFinanceTab, setNutritionTab,
+    activePage,
+    setActivePage,
+    setProductivitySubTab,
+    setPlanTab,
+    setFitnessTab,
+    setFinanceTab,
+    setNutritionTab,
   } = useAppStore();
-  const { totalXP, currentLevel, levelName, xpForNextLevel, xpProgress, badges } = useGamificationStore();
+  const {
+    totalXP,
+    currentLevel,
+    levelName,
+    xpForNextLevel,
+    xpProgress,
+    badges,
+  } = useGamificationStore();
   const { user, isModuleEnabled } = useUserStore();
   const displayName = user?.name ?? "Usuario";
   const visibleNav = NAV_ITEMS.filter((item) => {
@@ -94,7 +108,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
   };
 
   const getIcon = (name: string) => {
-    const Icon = (LucideIcons as unknown as Record<string, React.ComponentType<{ size?: number }>>)[name];
+    const Icon = (
+      LucideIcons as unknown as Record<
+        string,
+        React.ComponentType<{ size?: number }>
+      >
+    )[name];
     return Icon ? <Icon size={20} /> : <LucideIcons.Package size={20} />;
   };
 
@@ -112,22 +131,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         // Desktop (≥768px): vuelve al flujo normal, ancho controlado por isOpen
         "md:static md:inset-auto md:z-auto md:translate-x-0 md:shrink-0",
         "md:transition-[width,min-width] md:duration-300",
-        isOpen ? "md:w-[260px] md:min-w-[260px]" : "md:w-[68px] md:min-w-[68px]",
+        isOpen ? "md:w-[260px] md:min-w-[260px]" : "md:w-[68px] md:min-w-[68px]"
       )}
     >
       {/* Logo — escudo Shield + Ultimate TRACKER */}
       <div
         className={cn(
           "flex items-center gap-0 pl-2 pr-4 py-3 border-b border-white/10",
-          !isOpen && "justify-center",
+          !isOpen && "justify-center"
         )}
       >
-        <Image
-          src="/logo.png"
-          width={isOpen ? 52 : 40}
-          height={isOpen ? 52 : 40}
-          alt="Ultimate Tracker logo"
-          style={{ flexShrink: 0, marginRight: isOpen ? 4 : 0 }}
+        <div
+          aria-label="Ultimate Tracker logo"
+          style={{
+            width: isOpen ? 52 : 40,
+            height: isOpen ? 52 : 40,
+            flexShrink: 0,
+            marginRight: isOpen ? 4 : 0,
+            backgroundColor: "var(--color-accent-light)",
+            WebkitMaskImage: "url(/logo.png)",
+            maskImage: "url(/logo.png)",
+            WebkitMaskSize: "contain",
+            maskSize: "contain",
+            WebkitMaskRepeat: "no-repeat",
+            maskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            maskPosition: "center",
+          }}
         />
         {isOpen && (
           <h2 className="font-display text-lg font-semibold text-accent-light whitespace-nowrap overflow-hidden m-0 tracking-wide">
@@ -139,7 +169,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
       {/* Navigation */}
       <nav className="flex-1 py-4 overflow-y-auto">
         {visibleNav.map((item) => {
-          const isActive   = activePage === item.key;
+          const isActive = activePage === item.key;
           const isExpanded = expandedSections.includes(item.key);
 
           return (
@@ -157,17 +187,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                   isActive
                     ? "bg-accent/15 text-accent-light border-l-accent"
                     : "text-hero border-l-transparent",
-                  !isOpen && "justify-center",
+                  !isOpen && "justify-center"
                 )}
               >
-                <span className="shrink-0 flex items-center">{getIcon(item.icon)}</span>
+                <span className="shrink-0 flex items-center">
+                  {getIcon(item.icon)}
+                </span>
                 {isOpen && (
                   <>
                     <span className="flex-1 text-left">{item.label}</span>
                     {item.sections.length > 0 && (
                       <LucideIcons.ChevronDown
                         size={16}
-                        className={cn("transition-transform duration-300", isExpanded && "rotate-180")}
+                        className={cn(
+                          "transition-transform duration-300",
+                          isExpanded && "rotate-180"
+                        )}
                       />
                     )}
                   </>
@@ -182,11 +217,33 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                       key={section}
                       onClick={() => {
                         setActivePage(item.key);
-                        if (item.key === "productivity"  && PRODUCTIVITY_SECTION_MAP[section])  setProductivitySubTab(PRODUCTIVITY_SECTION_MAP[section]);
-                        if (item.key === "plan"          && PLAN_SECTION_MAP[section] != null)  setPlanTab(PLAN_SECTION_MAP[section]);
-                        if (item.key === "fitness"       && FITNESS_SECTION_MAP[section])       setFitnessTab(FITNESS_SECTION_MAP[section]);
-                        if (item.key === "finance"       && FINANCE_SECTION_MAP[section])       setFinanceTab(FINANCE_SECTION_MAP[section]);
-                        if (item.key === "nutrition"     && NUTRITION_SECTION_MAP[section])     setNutritionTab(NUTRITION_SECTION_MAP[section]);
+                        if (
+                          item.key === "productivity" &&
+                          PRODUCTIVITY_SECTION_MAP[section]
+                        )
+                          setProductivitySubTab(
+                            PRODUCTIVITY_SECTION_MAP[section]
+                          );
+                        if (
+                          item.key === "plan" &&
+                          PLAN_SECTION_MAP[section] != null
+                        )
+                          setPlanTab(PLAN_SECTION_MAP[section]);
+                        if (
+                          item.key === "fitness" &&
+                          FITNESS_SECTION_MAP[section]
+                        )
+                          setFitnessTab(FITNESS_SECTION_MAP[section]);
+                        if (
+                          item.key === "finance" &&
+                          FINANCE_SECTION_MAP[section]
+                        )
+                          setFinanceTab(FINANCE_SECTION_MAP[section]);
+                        if (
+                          item.key === "nutrition" &&
+                          NUTRITION_SECTION_MAP[section]
+                        )
+                          setNutritionTab(NUTRITION_SECTION_MAP[section]);
                         onClose?.();
                       }}
                       className={cn(
@@ -194,7 +251,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                         "border-l-[3px] transition-all duration-200",
                         isActive
                           ? "bg-accent/25 text-accent-light border-l-accent font-medium"
-                          : "text-hero-subtle border-l-transparent hover:bg-white/5",
+                          : "text-hero-subtle border-l-transparent hover:bg-white/5"
                       )}
                     >
                       {section}
@@ -214,16 +271,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
           className={cn(
             "flex items-center gap-3",
             !isOpen && "justify-center",
-            isOpen && "mb-3",
+            isOpen && "mb-3"
           )}
         >
-          <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center
-                          text-brand-dark font-semibold text-base shrink-0">
+          <div
+            className="w-10 h-10 rounded-full bg-accent flex items-center justify-center
+                          text-brand-dark font-semibold text-base shrink-0"
+          >
             {initials}
           </div>
           {isOpen && (
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-hero truncate">{displayName}</p>
+              <p className="text-sm font-semibold text-hero truncate">
+                {displayName}
+              </p>
               <p className="text-[0.6875rem] text-accent-light font-semibold flex items-center gap-1">
                 <span>⭐</span>
                 Nivel {currentLevel} — {levelName}
@@ -245,26 +306,31 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
                 className="h-full rounded-full transition-[width] duration-500"
                 style={{
                   width: `${xpProgress}%`,
-                  background: "linear-gradient(90deg, var(--color-accent), var(--color-accent-light))",
+                  background:
+                    "linear-gradient(90deg, var(--color-accent), var(--color-accent-light))",
                 }}
               />
             </div>
             <p className="text-[0.625rem] text-hero-subtle/50 mt-1 text-center">
-              {(xpForNextLevel - totalXP).toLocaleString()} XP para Nivel {currentLevel + 1}
+              {(xpForNextLevel - totalXP).toLocaleString()} XP para Nivel{" "}
+              {currentLevel + 1}
             </p>
 
             {/* Badges */}
             {badges.filter((b) => b.isEarned).length > 0 && (
               <div className="flex gap-1.5 mt-2.5 justify-center flex-wrap">
-                {badges.filter((b) => b.isEarned).slice(0, 5).map((badge) => (
-                  <div
-                    key={badge.id}
-                    title={badge.name}
-                    className="w-7 h-7 rounded-md bg-accent/20 flex items-center justify-center text-sm"
-                  >
-                    {badge.emoji}
-                  </div>
-                ))}
+                {badges
+                  .filter((b) => b.isEarned)
+                  .slice(0, 5)
+                  .map((badge) => (
+                    <div
+                      key={badge.id}
+                      title={badge.name}
+                      className="w-7 h-7 rounded-md bg-accent/20 flex items-center justify-center text-sm"
+                    >
+                      {badge.emoji}
+                    </div>
+                  ))}
               </div>
             )}
           </div>
@@ -277,7 +343,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
             "mt-3 w-full py-2 px-3 flex items-center gap-1.5 text-xs",
             "text-hero-subtle/60 border border-white/20 rounded-md",
             "hover:text-hero hover:border-white/50 transition-all duration-200 bg-transparent",
-            !isOpen && "justify-center",
+            !isOpen && "justify-center"
           )}
         >
           <LucideIcons.LogOut size={14} />
@@ -289,4 +355,3 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
 };
 
 export default Sidebar;
-

@@ -51,10 +51,10 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon.svg?v=2", type: "image/svg+xml" },
-      { url: "/favicon.ico?v=2", sizes: "any" },
+      { url: "/icons/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/favicon.ico?v=3", sizes: "any" },
     ],
-    apple: "/apple-icon.png?v=2",
+    apple: "/apple-icon.png?v=3",
   },
   openGraph: {
     title: "Ultimate TRACKER",
