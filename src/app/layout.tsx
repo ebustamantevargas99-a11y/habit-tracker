@@ -94,6 +94,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="es" suppressHydrationWarning>
+      {/* Script síncrono: aplica el tema ANTES del primer paint para evitar flash */}
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('app-theme')||'perla';var v=['pergamino','marfil','perla','lino','cafe','carbon','pizarra','onice'];if(!v.includes(t))t='perla';if(t!=='pergamino')document.documentElement.classList.add('theme-'+t);})();`,
+          }}
+        />
+      </head>
       <body
         className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} font-sans`}
         style={{ backgroundColor: "var(--color-paper)" }}

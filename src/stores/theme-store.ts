@@ -8,42 +8,48 @@ import { api } from "@/lib/api-client";
 
 export type ThemeId =
   // Claros (4):
-  | "pergamino"   // default · papel manuscrito cálido
-  | "marfil"      // ivory + durazno + dorado suave
-  | "perla"       // gris frío elegante + bronce
-  | "lino"        // lino natural avena + sage muted
+  | "pergamino" // default · papel manuscrito cálido
+  | "marfil" // ivory + durazno + dorado suave
+  | "perla" // gris frío elegante + bronce
+  | "lino" // lino natural avena + sage muted
   // Oscuros (4):
-  | "cafe"        // chocolate cálido + cream + dorado
-  | "carbon"      // charcoal + bronce
-  | "pizarra"     // slate gris-azulado + brass
-  | "onice";      // casi negro + rose gold
+  | "cafe" // chocolate cálido + cream + dorado
+  | "carbon" // charcoal + bronce
+  | "pizarra" // slate gris-azulado + brass
+  | "onice"; // casi negro + rose gold
 
 const ALL_THEMES: ThemeId[] = [
-  "pergamino", "marfil", "perla", "lino",
-  "cafe", "carbon", "pizarra", "onice",
+  "pergamino",
+  "marfil",
+  "perla",
+  "lino",
+  "cafe",
+  "carbon",
+  "pizarra",
+  "onice",
 ];
 
 // Migración desde IDs legacy (v1.0 + v2.0 + v2.1) → tema actual equivalente.
 const LEGACY_MIGRATION: Record<string, ThemeId> = {
   // v1.0
-  warm:        "pergamino",
-  ocean:       "pizarra",
-  forest:      "lino",
-  rose:        "perla",
+  warm: "pergamino",
+  ocean: "pizarra",
+  forest: "lino",
+  rose: "perla",
   // v2.0 (deprecated)
-  minimo:      "perla",
-  matrix:      "onice",
-  nordico:     "pizarra",
-  cyberpunk:   "onice",
-  atardecer:   "pergamino",
-  bosque:      "lino",
+  minimo: "perla",
+  matrix: "onice",
+  nordico: "pizarra",
+  cyberpunk: "onice",
+  atardecer: "pergamino",
+  bosque: "lino",
   // v2.1 (deprecated)
-  zen:         "lino",
-  sakura:      "marfil",
-  lavanda:     "perla",
-  menta:       "lino",
-  medianoche:  "pizarra",
-  vino:        "onice",
+  zen: "lino",
+  sakura: "marfil",
+  lavanda: "perla",
+  menta: "lino",
+  medianoche: "pizarra",
+  vino: "onice",
 };
 
 interface ThemeState {
@@ -58,10 +64,10 @@ interface ThemeState {
 }
 
 function normalizeTheme(raw: string | null): ThemeId {
-  if (!raw) return "pergamino";
+  if (!raw) return "perla";
   if (ALL_THEMES.includes(raw as ThemeId)) return raw as ThemeId;
   if (raw in LEGACY_MIGRATION) return LEGACY_MIGRATION[raw]!;
-  return "pergamino";
+  return "perla";
 }
 
 function applyTheme(theme: ThemeId) {
@@ -78,7 +84,7 @@ function applyTheme(theme: ThemeId) {
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  theme: "pergamino",
+  theme: "perla",
 
   initTheme: () => {
     if (typeof localStorage === "undefined") return;
