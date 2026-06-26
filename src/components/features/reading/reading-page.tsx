@@ -16,7 +16,11 @@ import {
   BookOpenCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useReadingStore, type Book, type BookStatus } from "@/stores/reading-store";
+import {
+  useReadingStore,
+  type Book,
+  type BookStatus,
+} from "@/stores/reading-store";
 import { cn, ErrorBanner } from "@/components/ui";
 import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
@@ -24,10 +28,30 @@ const STATUS_META: Record<
   BookStatus,
   { label: string; color: string; bgClass: string; icon: React.ElementType }
 > = {
-  reading:  { label: "Leyendo",        color: "text-accent",  bgClass: "bg-accent",     icon: BookOpen },
-  want:     { label: "Quiero leer",    color: "text-info",    bgClass: "bg-info",       icon: BookmarkPlus },
-  finished: { label: "Terminados",     color: "text-success", bgClass: "bg-success",    icon: CheckCircle2 },
-  paused:   { label: "En pausa",       color: "text-warning", bgClass: "bg-warning",    icon: PauseCircle },
+  reading: {
+    label: "Leyendo",
+    color: "text-accent",
+    bgClass: "bg-accent",
+    icon: BookOpen,
+  },
+  want: {
+    label: "Quiero leer",
+    color: "text-info",
+    bgClass: "bg-info",
+    icon: BookmarkPlus,
+  },
+  finished: {
+    label: "Terminados",
+    color: "text-success",
+    bgClass: "bg-success",
+    icon: CheckCircle2,
+  },
+  paused: {
+    label: "En pausa",
+    color: "text-warning",
+    bgClass: "bg-warning",
+    icon: PauseCircle,
+  },
 };
 
 const TABS: BookStatus[] = ["reading", "want", "finished", "paused"];
@@ -56,7 +80,12 @@ export default function ReadingPage() {
   const [logFor, setLogFor] = useState<Book | null>(null);
 
   const grouped = useMemo(() => {
-    const m: Record<BookStatus, Book[]> = { reading: [], want: [], finished: [], paused: [] };
+    const m: Record<BookStatus, Book[]> = {
+      reading: [],
+      want: [],
+      finished: [],
+      paused: [],
+    };
     for (const b of books) {
       if (m[b.status]) m[b.status].push(b);
     }
@@ -80,9 +109,12 @@ export default function ReadingPage() {
       {/* Header */}
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-brand-dark m-0">Lectura</h1>
+          <h1 className="font-display text-2xl font-bold text-brand-dark m-0">
+            Lectura
+          </h1>
           <p className="text-sm text-brand-warm mt-1">
-            {stats.finished} terminados · {stats.currentReading} leyendo · {stats.totalPages.toLocaleString()} páginas
+            {stats.finished} terminados · {stats.currentReading} leyendo ·{" "}
+            {stats.totalPages.toLocaleString()} páginas
           </p>
         </div>
         <div className="flex gap-2">
@@ -103,11 +135,27 @@ export default function ReadingPage() {
       </div>
 
       {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard label="Leyendo ahora" value={stats.currentReading} icon={<BookOpen size={18} />} />
-        <StatCard label="Quiero leer" value={stats.want} icon={<BookmarkPlus size={18} />} />
-        <StatCard label="Terminados" value={stats.finished} icon={<CheckCircle2 size={18} />} />
-        <StatCard label="Páginas leídas" value={stats.totalPages.toLocaleString()} icon={<BookOpenCheck size={18} />} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard
+          label="Leyendo ahora"
+          value={stats.currentReading}
+          icon={<BookOpen size={18} />}
+        />
+        <StatCard
+          label="Quiero leer"
+          value={stats.want}
+          icon={<BookmarkPlus size={18} />}
+        />
+        <StatCard
+          label="Terminados"
+          value={stats.finished}
+          icon={<CheckCircle2 size={18} />}
+        />
+        <StatCard
+          label="Páginas leídas"
+          value={stats.totalPages.toLocaleString()}
+          icon={<BookOpenCheck size={18} />}
+        />
       </div>
 
       {/* Tabs */}
@@ -142,10 +190,7 @@ export default function ReadingPage() {
           Cargando biblioteca…
         </div>
       ) : grouped[activeTab].length === 0 ? (
-        <EmptyState
-          status={activeTab}
-          onAdd={() => setShowAddBook(true)}
-        />
+        <EmptyState status={activeTab} onAdd={() => setShowAddBook(true)} />
       ) : (
         <div className="grid grid-cols-2 gap-4">
           {grouped[activeTab].map((book) => (
@@ -213,10 +258,14 @@ function StatCard({
   return (
     <div className="bg-brand-paper border border-brand-cream rounded-xl p-4">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-xs uppercase tracking-widest text-brand-warm">{label}</span>
+        <span className="text-xs uppercase tracking-widest text-brand-warm">
+          {label}
+        </span>
         <span className="text-accent">{icon}</span>
       </div>
-      <div className="text-2xl font-bold text-brand-dark leading-none">{value}</div>
+      <div className="text-2xl font-bold text-brand-dark leading-none">
+        {value}
+      </div>
     </div>
   );
 }
@@ -389,7 +438,12 @@ function AddBookModal({
   onSave,
 }: {
   onClose: () => void;
-  onSave: (input: { title: string; author?: string; totalPages?: number; status: BookStatus }) => Promise<void>;
+  onSave: (input: {
+    title: string;
+    author?: string;
+    totalPages?: number;
+    status: BookStatus;
+  }) => Promise<void>;
 }) {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");

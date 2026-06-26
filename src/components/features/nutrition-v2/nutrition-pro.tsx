@@ -3,7 +3,19 @@ import { todayLocal, shiftDaysLocal } from "@/lib/date/local";
 
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { Plus, Trash2, Copy, Loader2, Sparkles, Droplet, Camera, Scan, Bookmark, BookmarkPlus, X } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Copy,
+  Loader2,
+  Sparkles,
+  Droplet,
+  Camera,
+  Scan,
+  Bookmark,
+  BookmarkPlus,
+  X,
+} from "lucide-react";
 import { api } from "@/lib/api-client";
 import FoodSearchModal, { type CatalogFood } from "./food-search-modal";
 import MacrosRing from "./macros-ring";
@@ -29,7 +41,11 @@ type MealTemplateFull = {
   items: TemplateItem[];
 };
 
-async function resizeImageToBase64(file: File, maxSize = 800, quality = 0.75): Promise<string> {
+async function resizeImageToBase64(
+  file: File,
+  maxSize = 800,
+  quality = 0.75
+): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
@@ -77,7 +93,13 @@ type MealItem = {
   protein: number;
   carbs: number;
   fat: number;
-  foodItem: { id: string; name: string; brand: string | null; servingSize: number; servingUnit: string };
+  foodItem: {
+    id: string;
+    name: string;
+    brand: string | null;
+    servingSize: number;
+    servingUnit: string;
+  };
 };
 
 type MealLog = {
@@ -118,9 +140,14 @@ export default function NutritionPro() {
   const [goal, setGoal] = useState<NutritionGoal>(DEFAULT_GOAL);
   const [loading, setLoading] = useState(true);
   const [selectorOpenFor, setSelectorOpenFor] = useState<MealType | null>(null);
-  const [hydration, setHydration] = useState<HydrationLog>({ amountMl: 0, goalMl: 2500 });
+  const [hydration, setHydration] = useState<HydrationLog>({
+    amountMl: 0,
+    goalMl: 2500,
+  });
   const [templates, setTemplates] = useState<MealTemplateFull[]>([]);
-  const [showTemplatesFor, setShowTemplatesFor] = useState<MealLog | null>(null);
+  const [showTemplatesFor, setShowTemplatesFor] = useState<MealLog | null>(
+    null
+  );
   const [showBarcodeModal, setShowBarcodeModal] = useState(false);
   const [saveAsTemplate, setSaveAsTemplate] = useState<MealLog | null>(null);
 
@@ -132,16 +159,18 @@ export default function NutritionPro() {
     setLoading(true);
     try {
       const today = todayLocal();
-      const [mealsRes, goalRes, hydrationRes, templatesRes] = await Promise.all([
-        api.get<MealLog[]>(`/nutrition/meals?date=${today}`),
-        api.get<NutritionGoal | null>("/nutrition/goals").catch(() => null),
-        api
-          .get<HydrationLog[]>(`/nutrition/hydration?days=1`)
-          .catch(() => [] as HydrationLog[]),
-        api
-          .get<MealTemplateFull[]>("/nutrition/meal-templates")
-          .catch(() => [] as MealTemplateFull[]),
-      ]);
+      const [mealsRes, goalRes, hydrationRes, templatesRes] = await Promise.all(
+        [
+          api.get<MealLog[]>(`/nutrition/meals?date=${today}`),
+          api.get<NutritionGoal | null>("/nutrition/goals").catch(() => null),
+          api
+            .get<HydrationLog[]>(`/nutrition/hydration?days=1`)
+            .catch(() => [] as HydrationLog[]),
+          api
+            .get<MealTemplateFull[]>("/nutrition/meal-templates")
+            .catch(() => [] as MealTemplateFull[]),
+        ]
+      );
       setMeals(mealsRes);
       setTemplates(templatesRes);
       if (goalRes) setGoal({ ...DEFAULT_GOAL, ...goalRes });
@@ -166,7 +195,9 @@ export default function NutritionPro() {
   async function uploadMealPhoto(meal: MealLog, file: File) {
     try {
       const dataUri = await resizeImageToBase64(file, 800, 0.75);
-      await api.put(`/nutrition/meals/${meal.id}/photo`, { photoData: dataUri });
+      await api.put(`/nutrition/meals/${meal.id}/photo`, {
+        photoData: dataUri,
+      });
       setMeals((prev) =>
         prev.map((m) => (m.id === meal.id ? { ...m, photoData: dataUri } : m))
       );
@@ -197,15 +228,18 @@ export default function NutritionPro() {
   async function saveTemplate(meal: MealLog, name: string) {
     if (meal.items.length === 0) return;
     try {
-      const tpl = await api.post<MealTemplateFull>("/nutrition/meal-templates", {
-        name,
-        mealType: meal.mealType,
-        items: meal.items.map((i) => ({
-          foodItemId: i.foodItemId,
-          quantity: i.quantity,
-          unit: i.unit,
-        })),
-      });
+      const tpl = await api.post<MealTemplateFull>(
+        "/nutrition/meal-templates",
+        {
+          name,
+          mealType: meal.mealType,
+          items: meal.items.map((i) => ({
+            foodItemId: i.foodItemId,
+            quantity: i.quantity,
+            unit: i.unit,
+          })),
+        }
+      );
       setTemplates((prev) => [tpl, ...prev]);
       setSaveAsTemplate(null);
       toast.success(`Plantilla "${name}" guardada`);
@@ -237,7 +271,9 @@ export default function NutritionPro() {
       });
       setHydration({ amountMl: updated.amountMl, goalMl: updated.goalMl });
       if (deltaMl > 0) {
-        toast.success(`+${deltaMl}ml · ${updated.amountMl}ml / ${updated.goalMl}ml`);
+        toast.success(
+          `+${deltaMl}ml · ${updated.amountMl}ml / ${updated.goalMl}ml`
+        );
       }
     } catch {
       // Rollback
@@ -287,17 +323,18 @@ export default function NutritionPro() {
         foodItemId = created.id;
       }
 
-      const item = await api.post<MealItem>(`/nutrition/meals/${mealId}/items`, {
-        foodItemId,
-        quantity,
-        unit: food.servingUnit,
-      });
+      const item = await api.post<MealItem>(
+        `/nutrition/meals/${mealId}/items`,
+        {
+          foodItemId,
+          quantity,
+          unit: food.servingUnit,
+        }
+      );
 
       setMeals((prev) =>
         prev.map((m) =>
-          m.mealType === mealType
-            ? { ...m, items: [...m.items, item] }
-            : m
+          m.mealType === mealType ? { ...m, items: [...m.items, item] } : m
         )
       );
       toast.success(`${food.name} agregado a ${MEAL_LABELS[mealType]}`);
@@ -425,7 +462,7 @@ export default function NutritionPro() {
 
       {/* Hydration quick-add */}
       <div className="bg-brand-paper rounded-xl p-5 border border-brand-cream">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3">
           <div className="flex items-center gap-3">
             <Droplet size={20} className="text-info" />
             <div>
@@ -438,7 +475,7 @@ export default function NutritionPro() {
               </p>
             </div>
           </div>
-          <div className="flex gap-1.5">
+          <div className="flex gap-1.5 flex-wrap">
             {[250, 500, 750].map((ml) => (
               <button
                 key={ml}
@@ -478,14 +515,12 @@ export default function NutritionPro() {
               foodItemId: food.foodItemId,
               quantity: food.servingSize,
               unit: food.servingUnit,
-            },
+            }
           );
           setMeals((prev) =>
             prev.map((m) =>
-              m.mealType === mealType
-                ? { ...m, items: [...m.items, item] }
-                : m,
-            ),
+              m.mealType === mealType ? { ...m, items: [...m.items, item] } : m
+            )
           );
           toast.success(`${food.name} → ${MEAL_LABELS[mealType]}`);
         }}
@@ -507,7 +542,8 @@ export default function NutritionPro() {
                   {MEAL_LABELS[type]}
                 </h4>
                 <p className="text-xs text-brand-warm">
-                  {Math.round(mealCals)} kcal · {meal?.items.length ?? 0} alimentos
+                  {Math.round(mealCals)} kcal · {meal?.items.length ?? 0}{" "}
+                  alimentos
                 </p>
               </div>
               <div className="flex gap-1">
@@ -589,9 +625,8 @@ export default function NutritionPro() {
                       <p className="text-xs text-brand-warm">
                         {Math.round(it.quantity)}
                         {it.unit} · {Math.round(it.calories)} kcal · P{" "}
-                        {Math.round(it.protein)}g · C{" "}
-                        {Math.round(it.carbs)}g · F{" "}
-                        {Math.round(it.fat)}g
+                        {Math.round(it.protein)}g · C {Math.round(it.carbs)}g ·
+                        F {Math.round(it.fat)}g
                       </p>
                     </div>
                     <button
@@ -617,8 +652,8 @@ export default function NutritionPro() {
         <Sparkles size={18} className="text-accent shrink-0 mt-0.5" />
         <div className="text-sm text-brand-medium">
           Usa el botón flotante <strong>Analizar con IA</strong> abajo-derecha
-          para generar un prompt con tu nutrición del día y pedirle
-          a Claude/ChatGPT feedback personalizado.
+          para generar un prompt con tu nutrición del día y pedirle a
+          Claude/ChatGPT feedback personalizado.
         </div>
       </div>
 
@@ -720,8 +755,8 @@ function TemplatesModal({
         <div className="flex-1 overflow-y-auto px-6 py-3">
           {visible.length === 0 ? (
             <p className="text-sm text-brand-warm text-center py-8 italic">
-              Aún no hay plantillas. Crea una guardando una comida desde el ícono
-              de marcador.
+              Aún no hay plantillas. Crea una guardando una comida desde el
+              ícono de marcador.
             </p>
           ) : (
             <div className="space-y-2">
@@ -833,9 +868,10 @@ function BarcodeModal({
     setLooking(true);
     setError(null);
     try {
-      const res = await api.get<{ food: { id: string; name: string }; source: string }>(
-        `/nutrition/barcode/${code}`,
-      );
+      const res = await api.get<{
+        food: { id: string; name: string };
+        source: string;
+      }>(`/nutrition/barcode/${code}`);
       onFound(res.food);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Producto no encontrado");
@@ -846,7 +882,12 @@ function BarcodeModal({
   // Mientras no haya resultado usamos BarcodeScanner, que maneja cámara +
   // fallback manual internamente. Cuando detecta un código llama a lookup().
   if (!error && !looking) {
-    return <BarcodeScanner onClose={onClose} onDetected={(code) => void lookup(code)} />;
+    return (
+      <BarcodeScanner
+        onClose={onClose}
+        onDetected={(code) => void lookup(code)}
+      />
+    );
   }
 
   return (

@@ -33,12 +33,17 @@ export default function HabitsHero({
     return h.targetDays?.includes(todayDow);
   });
 
-  const completedToday = activeToday.filter((h) => completedTodayIds.has(h.id)).length;
-  const pct = activeToday.length > 0 ? (completedToday / activeToday.length) * 100 : 0;
+  const completedToday = activeToday.filter((h) =>
+    completedTodayIds.has(h.id)
+  ).length;
+  const pct =
+    activeToday.length > 0 ? (completedToday / activeToday.length) * 100 : 0;
 
   const totalStreak = habits.reduce((s, h) => s + h.streakCurrent, 0);
   const bestStreak = Math.max(0, ...habits.map((h) => h.streakCurrent));
-  const rootedCount = habits.filter((h) => phaseFromStreak(h.streakCurrent) === "rooted").length;
+  const rootedCount = habits.filter(
+    (h) => phaseFromStreak(h.streakCurrent) === "rooted"
+  ).length;
 
   const totalHoursInvested = habits.reduce((sum, h) => {
     if (!h.estimatedMinutes || !h.streakCurrent) return sum;
@@ -74,7 +79,14 @@ export default function HabitsHero({
         {/* Ring de progreso del día */}
         <div className="shrink-0 relative w-28 h-28">
           <svg width="112" height="112" className="-rotate-90">
-            <circle cx="56" cy="56" r="46" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="6" />
+            <circle
+              cx="56"
+              cy="56"
+              r="46"
+              fill="none"
+              stroke="rgba(255,255,255,0.15)"
+              strokeWidth="6"
+            />
             <circle
               cx="56"
               cy="56"
@@ -100,14 +112,28 @@ export default function HabitsHero({
       </div>
 
       {/* Micro-stats */}
-      <div className="grid grid-cols-4 gap-3 mt-5">
-        <MiniStat icon={<Flame size={14} />} label="Mejor racha" value={bestStreak} />
-        <MiniStat icon={<Target size={14} />} label="Hábitos" value={habits.length} />
-        <MiniStat icon={<Trophy size={14} />} label="Arraigados" value={rootedCount} />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+        <MiniStat
+          icon={<Flame size={14} />}
+          label="Mejor racha"
+          value={bestStreak}
+        />
+        <MiniStat
+          icon={<Target size={14} />}
+          label="Hábitos"
+          value={habits.length}
+        />
+        <MiniStat
+          icon={<Trophy size={14} />}
+          label="Arraigados"
+          value={rootedCount}
+        />
         <MiniStat
           icon={<Clock size={14} />}
           label="Horas invertidas"
-          value={totalHoursInvested > 0 ? `${Math.round(totalHoursInvested)}h` : "—"}
+          value={
+            totalHoursInvested > 0 ? `${Math.round(totalHoursInvested)}h` : "—"
+          }
         />
       </div>
 
@@ -119,7 +145,9 @@ export default function HabitsHero({
             if (h.streakCurrent <= 0) return false;
             if (!h.lastCompletedDate) return false;
             const last = new Date(h.lastCompletedDate + "T00:00:00");
-            const diff = Math.floor((Date.now() - last.getTime()) / (1000 * 60 * 60 * 24));
+            const diff = Math.floor(
+              (Date.now() - last.getTime()) / (1000 * 60 * 60 * 24)
+            );
             return diff >= 1;
           })
           .slice(0, 3);
@@ -158,7 +186,9 @@ function MiniStat({
         {icon}
         <span className="text-[9px] uppercase tracking-widest">{label}</span>
       </div>
-      <div className="text-lg font-bold text-brand-paper leading-none">{value}</div>
+      <div className="text-lg font-bold text-brand-paper leading-none">
+        {value}
+      </div>
     </div>
   );
 }
