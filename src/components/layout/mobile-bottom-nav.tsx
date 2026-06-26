@@ -5,10 +5,10 @@ import { useAppStore } from "@/stores/app-store";
 import { cn } from "@/components/ui/cn";
 
 const BOTTOM_NAV_ITEMS = [
-  { key: "home",         label: "Inicio",     Icon: Home        },
-  { key: "productivity", label: "Productiv.", Icon: Zap         },
-  { key: "finance",      label: "Finanzas",   Icon: DollarSign  },
-  { key: "fitness",      label: "Fitness",    Icon: Dumbbell    },
+  { key: "home", label: "Inicio", Icon: Home },
+  { key: "productivity", label: "Productiv.", Icon: Zap },
+  { key: "finance", label: "Finanzas", Icon: DollarSign },
+  { key: "fitness", label: "Fitness", Icon: Dumbbell },
 ] as const;
 
 interface MobileBottomNavProps {
@@ -22,9 +22,13 @@ export default function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
     <nav
       className={cn(
         "fixed bottom-0 inset-x-0 z-30 md:hidden",
-        "flex h-16 items-stretch",
-        "bg-[var(--color-hero-bg-1)] border-t border-white/10",
+        "flex items-stretch",
+        "bg-[var(--color-hero-bg-1)] border-t border-white/10"
       )}
+      style={{
+        minHeight: 64,
+        paddingBottom: "env(safe-area-inset-bottom, 0px)",
+      }}
       aria-label="Navegación principal"
     >
       {BOTTOM_NAV_ITEMS.map(({ key, label, Icon }) => {
@@ -38,13 +42,18 @@ export default function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
               "transition-colors duration-150",
               isActive
                 ? "text-[var(--color-accent-light)]"
-                : "text-[var(--color-hero-text)] opacity-50 active:opacity-100",
+                : "text-[var(--color-hero-text)] opacity-50 active:opacity-100"
             )}
             aria-label={label}
             aria-current={isActive ? "page" : undefined}
           >
             <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
-            <span className={cn("text-[0.625rem] font-medium", isActive && "font-semibold")}>
+            <span
+              className={cn(
+                "text-[0.625rem] font-medium",
+                isActive && "font-semibold"
+              )}
+            >
               {label}
             </span>
           </button>
@@ -57,7 +66,7 @@ export default function MobileBottomNav({ onMenuOpen }: MobileBottomNavProps) {
         className={cn(
           "flex-1 flex flex-col items-center justify-center gap-0.5 pt-1",
           "text-[var(--color-hero-text)] opacity-50 active:opacity-100",
-          "transition-colors duration-150",
+          "transition-colors duration-150"
         )}
         aria-label="Más opciones"
       >

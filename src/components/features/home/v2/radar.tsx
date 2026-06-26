@@ -28,7 +28,8 @@ export default function Radar({ data }: Props) {
 
   const thisPts = pointsFor(data.thisWeek);
   const lastPts = pointsFor(data.lastWeek);
-  const polyStr = (pts: Array<[number, number]>) => pts.map((p) => p.join(",")).join(" ");
+  const polyStr = (pts: Array<[number, number]>) =>
+    pts.map((p) => p.join(",")).join(" ");
 
   const labelFor = (i: number): [number, number] => {
     const angle = -Math.PI / 2 + (i * 2 * Math.PI) / N;
@@ -36,7 +37,8 @@ export default function Radar({ data }: Props) {
     return [cx + Math.cos(angle) * r, cy + Math.sin(angle) * r];
   };
 
-  const avg = (arr: number[]): number => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const avg = (arr: number[]): number =>
+    arr.reduce((a, b) => a + b, 0) / arr.length;
   const deltaAvg = avg(data.thisWeek) - avg(data.lastWeek);
 
   return (
@@ -50,12 +52,14 @@ export default function Radar({ data }: Props) {
         className="ht-card mt-5"
         style={{ padding: 24, animation: "ht-fadeUp .55s 80ms both" }}
       >
-        <div
-          className="radar-grid-v2 grid gap-8 items-center"
-          style={{ gridTemplateColumns: "1fr auto" }}
-        >
+        <div className="radar-grid-v2 grid items-center">
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <svg viewBox={`0 0 ${size} ${size}`} width="100%" style={{ maxWidth: 460 }} aria-hidden>
+            <svg
+              viewBox={`0 0 ${size} ${size}`}
+              width="100%"
+              style={{ maxWidth: 460 }}
+              aria-hidden
+            >
               {/* Anillos */}
               {[0.25, 0.5, 0.75, 1].map((f, i) => (
                 <circle
@@ -114,7 +118,9 @@ export default function Radar({ data }: Props) {
                     fill="var(--color-accent)"
                     stroke="var(--color-warm-white)"
                     strokeWidth="1.5"
-                    style={{ animation: `ht-grow .45s ${400 + revI * 80}ms both` }}
+                    style={{
+                      animation: `ht-grow .45s ${400 + revI * 80}ms both`,
+                    }}
                   />
                 );
               })}
@@ -123,7 +129,11 @@ export default function Radar({ data }: Props) {
                 const [lx, ly] = labelFor(i);
                 const angle = -Math.PI / 2 + (i * 2 * Math.PI) / N;
                 const anchor =
-                  Math.cos(angle) < -0.25 ? "end" : Math.cos(angle) > 0.25 ? "start" : "middle";
+                  Math.cos(angle) < -0.25
+                    ? "end"
+                    : Math.cos(angle) > 0.25
+                      ? "start"
+                      : "middle";
                 return (
                   <text
                     key={lbl}
@@ -145,13 +155,19 @@ export default function Radar({ data }: Props) {
             </svg>
           </div>
 
-          <div className="flex flex-col gap-5" style={{ minWidth: 220 }}>
+          <div className="flex flex-col gap-5" style={{ minWidth: 0 }}>
             <div className="flex flex-col gap-1">
               <div className="ht-eyebrow">Esta semana</div>
               <div className="ht-serif ht-num-big" style={{ fontSize: 36 }}>
                 {Math.round(avg(data.thisWeek))}
               </div>
-              <div style={{ fontSize: 12, color: deltaAvg >= 0 ? "var(--color-good)" : "var(--color-danger)" }}>
+              <div
+                style={{
+                  fontSize: 12,
+                  color:
+                    deltaAvg >= 0 ? "var(--color-good)" : "var(--color-danger)",
+                }}
+              >
                 {deltaAvg >= 0 ? "+" : ""}
                 {Math.round(deltaAvg * 10) / 10} vs. anterior
               </div>
@@ -168,7 +184,11 @@ export default function Radar({ data }: Props) {
               {data.categories.map((c, i) => {
                 const d = data.thisWeek[i] - data.lastWeek[i];
                 return (
-                  <div key={c} className="flex items-center justify-between" style={{ fontSize: 12.5 }}>
+                  <div
+                    key={c}
+                    className="flex items-center justify-between"
+                    style={{ fontSize: 12.5 }}
+                  >
                     <span style={{ color: "var(--color-warm)" }}>{c}</span>
                     <span className="flex items-center gap-2">
                       <span
@@ -180,7 +200,10 @@ export default function Radar({ data }: Props) {
                       <span
                         style={{
                           fontSize: 10.5,
-                          color: d >= 0 ? "var(--color-good)" : "var(--color-danger)",
+                          color:
+                            d >= 0
+                              ? "var(--color-good)"
+                              : "var(--color-danger)",
                           minWidth: 26,
                           textAlign: "right",
                         }}

@@ -81,6 +81,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  // Needed for env(safe-area-inset-*) to work on iOS notch/home-indicator
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#FFFDF9" },
     { media: "(prefers-color-scheme: dark)", color: "#1A1411" },

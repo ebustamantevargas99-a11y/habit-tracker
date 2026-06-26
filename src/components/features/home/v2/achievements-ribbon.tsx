@@ -5,9 +5,18 @@ import SectionHeader from "./primitives/section-header";
 import type { HomeV2Data } from "./types";
 
 const QUOTES = [
-  { text: "Lo que haces cada día importa más que lo que haces de vez en cuando.", author: "Gretchen Rubin" },
-  { text: "No somos lo que decimos; somos lo que repetimos.", author: "Aristóteles" },
-  { text: "La disciplina es elegirse mañana antes de que llegue el mañana.", author: "—" },
+  {
+    text: "Lo que haces cada día importa más que lo que haces de vez en cuando.",
+    author: "Gretchen Rubin",
+  },
+  {
+    text: "No somos lo que decimos; somos lo que repetimos.",
+    author: "Aristóteles",
+  },
+  {
+    text: "La disciplina es elegirse mañana antes de que llegue el mañana.",
+    author: "—",
+  },
   { text: "Los pequeños pasos se vuelven paisajes.", author: "—" },
 ] as const;
 
@@ -16,17 +25,21 @@ const QUOTES = [
 // representa. Cuando el user cruza un hito, celebramos con confetti;
 // aquí solo mostramos "el próximo".
 const MILESTONES: Array<{ days: number; label: string; phase?: string }> = [
-  { days: 7,    label: "1 semana consecutiva",   phase: "Iniciando"       },
-  { days: 21,   label: "3 semanas consecutivas", phase: "Formándose"      },
-  { days: 66,   label: "2 meses consecutivos",   phase: "Fortaleciéndose" },
-  { days: 92,   label: "Hábito arraigado",       phase: "Casi arraigado"  },
-  { days: 100,  label: "100 días consecutivos"                            },
-  { days: 365,  label: "1 año de constancia"                              },
-  { days: 500,  label: "500 días"                                         },
-  { days: 1000, label: "1000 días"                                        },
+  { days: 7, label: "1 semana consecutiva", phase: "Iniciando" },
+  { days: 21, label: "3 semanas consecutivas", phase: "Formándose" },
+  { days: 66, label: "2 meses consecutivos", phase: "Fortaleciéndose" },
+  { days: 92, label: "Hábito arraigado", phase: "Casi arraigado" },
+  { days: 100, label: "100 días consecutivos" },
+  { days: 365, label: "1 año de constancia" },
+  { days: 500, label: "500 días" },
+  { days: 1000, label: "1000 días" },
 ];
 
-function nextMilestoneFor(streak: number): { days: number; label: string; remaining: number } {
+function nextMilestoneFor(streak: number): {
+  days: number;
+  label: string;
+  remaining: number;
+} {
   const next = MILESTONES.find((m) => m.days > streak);
   if (!next) {
     // Superó todos los hitos — celebración indefinida.
@@ -51,10 +64,7 @@ export default function AchievementsRibbon({ data }: Props) {
         className="ht-card mt-5"
         style={{ padding: 24, animation: "ht-fadeUp .55s 80ms both" }}
       >
-        <div
-          className="grid items-center gap-6"
-          style={{ gridTemplateColumns: "1fr 1fr 1fr" }}
-        >
+        <div className="grid items-center gap-6 grid-cols-1 sm:grid-cols-3">
           {/* Próximo badge */}
           <div className="flex items-center gap-4">
             <div
@@ -62,7 +72,8 @@ export default function AchievementsRibbon({ data }: Props) {
                 width: 58,
                 height: 58,
                 borderRadius: 14,
-                background: "color-mix(in oklab, var(--color-cream) 70%, var(--color-warm-white))",
+                background:
+                  "color-mix(in oklab, var(--color-cream) 70%, var(--color-warm-white))",
                 border: "1px dashed var(--color-tan)",
                 display: "flex",
                 alignItems: "center",
@@ -78,7 +89,12 @@ export default function AchievementsRibbon({ data }: Props) {
               </div>
               <div
                 className="ht-serif"
-                style={{ fontSize: 16, lineHeight: 1.2, fontWeight: 500, color: "var(--color-brown)" }}
+                style={{
+                  fontSize: 16,
+                  lineHeight: 1.2,
+                  fontWeight: 500,
+                  color: "var(--color-brown)",
+                }}
               >
                 {data.badge.name}
               </div>
@@ -116,7 +132,8 @@ export default function AchievementsRibbon({ data }: Props) {
                 width: 58,
                 height: 58,
                 borderRadius: 14,
-                background: "color-mix(in oklab, var(--color-accent) 18%, var(--color-warm-white))",
+                background:
+                  "color-mix(in oklab, var(--color-accent) 18%, var(--color-warm-white))",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -129,17 +146,46 @@ export default function AchievementsRibbon({ data }: Props) {
               <div className="ht-eyebrow" style={{ fontSize: 10 }}>
                 Racha global
               </div>
-              <div className="ht-serif ht-num-big" style={{ fontSize: 30, lineHeight: 1 }}>
+              <div
+                className="ht-serif ht-num-big"
+                style={{ fontSize: 30, lineHeight: 1 }}
+              >
                 {data.habitsToday.topStreak}{" "}
-                <span style={{ fontSize: 14, color: "var(--color-warm)", fontWeight: 400 }}>días</span>
+                <span
+                  style={{
+                    fontSize: 14,
+                    color: "var(--color-warm)",
+                    fontWeight: 400,
+                  }}
+                >
+                  días
+                </span>
               </div>
-              <div style={{ fontSize: 11, color: "var(--color-warm)" }}>Tu racha más larga</div>
+              <div style={{ fontSize: 11, color: "var(--color-warm)" }}>
+                Tu racha más larga
+              </div>
             </div>
           </div>
 
           {/* Milestone dinámico basado en el streak actual */}
-          <div className="flex items-center gap-4 justify-end">
-            <div className="flex flex-col gap-1 items-end text-right">
+          <div className="flex items-center gap-4">
+            <div
+              style={{
+                width: 58,
+                height: 58,
+                borderRadius: 14,
+                background:
+                  "color-mix(in oklab, var(--color-tan) 40%, var(--color-warm-white))",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "var(--color-brown)",
+                flexShrink: 0,
+              }}
+            >
+              <Target size={22} strokeWidth={1.5} />
+            </div>
+            <div className="flex flex-col gap-1">
               <div className="ht-eyebrow" style={{ fontSize: 10 }}>
                 Próximo milestone
               </div>
@@ -154,25 +200,14 @@ export default function AchievementsRibbon({ data }: Props) {
               >
                 {milestone.label}
               </div>
-              <div className="ht-mono" style={{ fontSize: 11, color: "var(--color-warm)" }}>
+              <div
+                className="ht-mono"
+                style={{ fontSize: 11, color: "var(--color-warm)" }}
+              >
                 {milestone.remaining > 0
                   ? `faltan ${milestone.remaining} día${milestone.remaining === 1 ? "" : "s"}`
                   : "meta alcanzada"}
               </div>
-            </div>
-            <div
-              style={{
-                width: 58,
-                height: 58,
-                borderRadius: 14,
-                background: "color-mix(in oklab, var(--color-tan) 40%, var(--color-warm-white))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-brown)",
-              }}
-            >
-              <Target size={22} strokeWidth={1.5} />
             </div>
           </div>
         </div>

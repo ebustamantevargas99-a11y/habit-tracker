@@ -13,186 +13,186 @@
 
 /* ─── CLARO 1 (DEFAULT): Pergamino — papel manuscrito cálido ─────────────── */
 :root {
-  --color-dark:         #2E1F14;
-  --color-brown:        #5C3E20;
-  --color-medium:       #8B6542;
-  --color-warm:         #A0845C;
-  --color-tan:          #C4A882;
-  --color-light-tan:    #D9C4A2;
-  --color-cream:        #E8D9BE;
-  --color-light-cream:  #F1E6CF;
-  --color-warm-white:   #F8F1DD;
-  --color-paper:        #F6EEDB;
-  --color-accent:       #A77A39;
-  --color-accent-light: #C79B55;
+  --color-dark: #2e1f14;
+  --color-brown: #5c3e20;
+  --color-medium: #8b6542;
+  --color-warm: #a0845c;
+  --color-tan: #c4a882;
+  --color-light-tan: #d9c4a2;
+  --color-cream: #e8d9be;
+  --color-light-cream: #f1e6cf;
+  --color-warm-white: #f8f1dd;
+  --color-paper: #f6eedb;
+  --color-accent: #a77a39;
+  --color-accent-light: #c79b55;
 
   /* Hero / dark-surface context (siempre debe ser oscuro con texto claro
      independiente del modo del tema). En temas claros = dark/brown vars.
      En temas oscuros se sobrescribe abajo. */
-  --color-hero-bg-1:       var(--color-dark);
-  --color-hero-bg-2:       var(--color-brown);
-  --color-hero-text:       var(--color-paper);
-  --color-hero-text-subtle:var(--color-light-cream);
+  --color-hero-bg-1: var(--color-dark);
+  --color-hero-bg-2: var(--color-brown);
+  --color-hero-text: var(--color-paper);
+  --color-hero-text-subtle: var(--color-light-cream);
 
   --font-heading: var(--font-playfair), "Georgia", "Cambria", serif;
-  --font-body:    var(--font-inter), system-ui, -apple-system, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", "Monaco", monospace;
+  --font-body: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", "Monaco", monospace;
 }
 
 /* Modo oscuro del tema Pergamino (activado con toggle aparte) */
 html.dark {
-  --color-dark:         #F1E6CF;
-  --color-brown:        #D9C4A2;
-  --color-medium:       #A0845C;
-  --color-warm:         #8B6542;
-  --color-tan:          #5C3E20;
-  --color-light-tan:    #3E2A18;
-  --color-cream:        #2E1F14;
-  --color-light-cream:  #241811;
-  --color-warm-white:   #1E140D;
-  --color-paper:        #17100B;
-  --color-accent:       #C79B55;
-  --color-accent-light: #D9B477;
+  --color-dark: #f1e6cf;
+  --color-brown: #d9c4a2;
+  --color-medium: #a0845c;
+  --color-warm: #8b6542;
+  --color-tan: #5c3e20;
+  --color-light-tan: #3e2a18;
+  --color-cream: #2e1f14;
+  --color-light-cream: #241811;
+  --color-warm-white: #1e140d;
+  --color-paper: #17100b;
+  --color-accent: #c79b55;
+  --color-accent-light: #d9b477;
 }
 
 /* ─── CLARO 2: Marfil — ivory + durazno + dorado suave ─────────────────── */
 .theme-marfil {
-  --color-dark:         #3B2E20;
-  --color-brown:        #5A4730;
-  --color-medium:       #7E6A4C;
-  --color-warm:         #A08863;
-  --color-tan:          #C6A876;
-  --color-light-tan:    #D9BF97;
-  --color-cream:        #EDDEC0;
-  --color-light-cream:  #F5EBD5;
-  --color-warm-white:   #FBF3E4;
-  --color-paper:        #FFF9F0;
-  --color-accent:       #C99969;
-  --color-accent-light: #E2B888;
+  --color-dark: #3b2e20;
+  --color-brown: #5a4730;
+  --color-medium: #7e6a4c;
+  --color-warm: #a08863;
+  --color-tan: #c6a876;
+  --color-light-tan: #d9bf97;
+  --color-cream: #eddec0;
+  --color-light-cream: #f5ebd5;
+  --color-warm-white: #fbf3e4;
+  --color-paper: #fff9f0;
+  --color-accent: #c99969;
+  --color-accent-light: #e2b888;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── CLARO 3: Perla — gris frío elegante + bronce cálido ───────────────── */
 .theme-perla {
-  --color-dark:         #2B2B33;
-  --color-brown:        #45454E;
-  --color-medium:       #656570;
-  --color-warm:         #8A8A95;
-  --color-tan:          #A8A8B0;
-  --color-light-tan:    #C0C0C6;
-  --color-cream:        #D8D8DC;
-  --color-light-cream:  #E6E6E9;
-  --color-warm-white:   #F0F0F2;
-  --color-paper:        #F8F8F9;
-  --color-accent:       #8B7355;
-  --color-accent-light: #A68E6B;
+  --color-dark: #2b2b33;
+  --color-brown: #45454e;
+  --color-medium: #656570;
+  --color-warm: #8a8a95;
+  --color-tan: #a8a8b0;
+  --color-light-tan: #c0c0c6;
+  --color-cream: #d8d8dc;
+  --color-light-cream: #e6e6e9;
+  --color-warm-white: #f0f0f2;
+  --color-paper: #f8f8f9;
+  --color-accent: #8b7355;
+  --color-accent-light: #a68e6b;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── CLARO 4: Lino — lino natural avena + taupe + sage muted ──────────── */
 .theme-lino {
-  --color-dark:         #3E3528;
-  --color-brown:        #5A4E3A;
-  --color-medium:       #7A6B52;
-  --color-warm:         #9A8B72;
-  --color-tan:          #B8A88E;
-  --color-light-tan:    #CFC2AA;
-  --color-cream:        #E2D8C4;
-  --color-light-cream:  #EDE4D3;
-  --color-warm-white:   #F4ECDC;
-  --color-paper:        #F8F2E6;
-  --color-accent:       #7A8B6C;
-  --color-accent-light: #95A385;
+  --color-dark: #3e3528;
+  --color-brown: #5a4e3a;
+  --color-medium: #7a6b52;
+  --color-warm: #9a8b72;
+  --color-tan: #b8a88e;
+  --color-light-tan: #cfc2aa;
+  --color-cream: #e2d8c4;
+  --color-light-cream: #ede4d3;
+  --color-warm-white: #f4ecdc;
+  --color-paper: #f8f2e6;
+  --color-accent: #7a8b6c;
+  --color-accent-light: #95a385;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── OSCURO 1: Café — chocolate cálido + cream + dorado ───────────────── */
 .theme-cafe {
-  --color-dark:         #EFD9BA;
-  --color-brown:        #D4AD82;
-  --color-medium:       #BA9065;
-  --color-warm:         #9B744D;
-  --color-tan:          #7B5838;
-  --color-light-tan:    #5A3F28;
-  --color-cream:        #3E2B1C;
-  --color-light-cream:  #2A1D14;
-  --color-warm-white:   #211610;
-  --color-paper:        #1A100A;
-  --color-accent:       #D4A843;
-  --color-accent-light: #E5BF5F;
+  --color-dark: #efd9ba;
+  --color-brown: #d4ad82;
+  --color-medium: #ba9065;
+  --color-warm: #9b744d;
+  --color-tan: #7b5838;
+  --color-light-tan: #5a3f28;
+  --color-cream: #3e2b1c;
+  --color-light-cream: #2a1d14;
+  --color-warm-white: #211610;
+  --color-paper: #1a100a;
+  --color-accent: #d4a843;
+  --color-accent-light: #e5bf5f;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── OSCURO 2: Carbón — charcoal cálido + bronce ──────────────────────── */
 .theme-carbon {
-  --color-dark:         #E8E4DE;
-  --color-brown:        #CCC7BE;
-  --color-medium:       #A5A098;
-  --color-warm:         #807C75;
-  --color-tan:          #5E5A54;
-  --color-light-tan:    #403D37;
-  --color-cream:        #2A2825;
-  --color-light-cream:  #1F1D1B;
-  --color-warm-white:   #1A1917;
-  --color-paper:        #151413;
-  --color-accent:       #B08C5A;
-  --color-accent-light: #C9A876;
+  --color-dark: #e8e4de;
+  --color-brown: #ccc7be;
+  --color-medium: #a5a098;
+  --color-warm: #807c75;
+  --color-tan: #5e5a54;
+  --color-light-tan: #403d37;
+  --color-cream: #2a2825;
+  --color-light-cream: #1f1d1b;
+  --color-warm-white: #1a1917;
+  --color-paper: #151413;
+  --color-accent: #b08c5a;
+  --color-accent-light: #c9a876;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── OSCURO 3: Pizarra — slate gris-azulado + brass ───────────────────── */
 .theme-pizarra {
-  --color-dark:         #DDE4EA;
-  --color-brown:        #B8C0C8;
-  --color-medium:       #8B95A0;
-  --color-warm:         #676F78;
-  --color-tan:          #464E56;
-  --color-light-tan:    #343A42;
-  --color-cream:        #232830;
-  --color-light-cream:  #1A1E24;
-  --color-warm-white:   #151920;
-  --color-paper:        #12161C;
-  --color-accent:       #C9A46B;
-  --color-accent-light: #DBB987;
+  --color-dark: #dde4ea;
+  --color-brown: #b8c0c8;
+  --color-medium: #8b95a0;
+  --color-warm: #676f78;
+  --color-tan: #464e56;
+  --color-light-tan: #343a42;
+  --color-cream: #232830;
+  --color-light-cream: #1a1e24;
+  --color-warm-white: #151920;
+  --color-paper: #12161c;
+  --color-accent: #c9a46b;
+  --color-accent-light: #dbb987;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── OSCURO 4: Ónice — casi negro + cream cálido + rose gold ───────── */
 .theme-onice {
-  --color-dark:         #EEE6E0;
-  --color-brown:        #CABAB0;
-  --color-medium:       #9A8A82;
-  --color-warm:         #6D5F58;
-  --color-tan:          #443A35;
-  --color-light-tan:    #2E2521;
-  --color-cream:        #1F1A17;
-  --color-light-cream:  #15110E;
-  --color-warm-white:   #0F0C0A;
-  --color-paper:        #0A0806;
-  --color-accent:       #B8967A;
-  --color-accent-light: #D4AE93;
+  --color-dark: #eee6e0;
+  --color-brown: #cabab0;
+  --color-medium: #9a8a82;
+  --color-warm: #6d5f58;
+  --color-tan: #443a35;
+  --color-light-tan: #2e2521;
+  --color-cream: #1f1a17;
+  --color-light-cream: #15110e;
+  --color-warm-white: #0f0c0a;
+  --color-paper: #0a0806;
+  --color-accent: #b8967a;
+  --color-accent-light: #d4ae93;
 
   --font-heading: var(--font-playfair), "Georgia", serif;
-  --font-body:    var(--font-inter), system-ui, sans-serif;
-  --font-mono:    var(--font-jetbrains), "Menlo", monospace;
+  --font-body: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), "Menlo", monospace;
 }
 
 /* ─── Override hero vars para los 4 temas oscuros ──────────────────────────
@@ -205,15 +205,17 @@ html.dark {
 .theme-carbon,
 .theme-pizarra,
 .theme-onice {
-  --color-hero-bg-1:        var(--color-warm-white);
-  --color-hero-bg-2:        var(--color-cream);
-  --color-hero-text:        var(--color-dark);
+  --color-hero-bg-1: var(--color-warm-white);
+  --color-hero-bg-2: var(--color-cream);
+  --color-hero-text: var(--color-dark);
   --color-hero-text-subtle: var(--color-brown);
 }
 
 /* ─── Base Reset ──────────────────────────────────────────────────────────── */
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -230,7 +232,12 @@ body {
   font-family: var(--font-body);
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: var(--font-heading);
   font-weight: 600;
   line-height: 1.25;
@@ -238,22 +245,40 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: -0.01em;
 }
 
-p { color: var(--color-dark); }
+p {
+  color: var(--color-dark);
+}
 
 a {
   color: var(--color-accent);
   text-decoration: none;
   transition: color 0.3s ease;
 }
-a:hover { color: var(--color-accent-light); }
+a:hover {
+  color: var(--color-accent-light);
+}
 
 /* ─── Scrollbar ───────────────────────────────────────────────────────────── */
 
-::-webkit-scrollbar              { width: 10px; height: 10px; }
-::-webkit-scrollbar-track        { background: var(--color-light-cream); border-radius: 5px; }
-::-webkit-scrollbar-thumb        { background: var(--color-tan); border-radius: 5px; }
-::-webkit-scrollbar-thumb:hover  { background: var(--color-warm); }
-*                                 { scrollbar-color: var(--color-tan) var(--color-light-cream); scrollbar-width: thin; }
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-light-cream);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-tan);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-warm);
+}
+* {
+  scrollbar-color: var(--color-tan) var(--color-light-cream);
+  scrollbar-width: thin;
+}
 
 /* ─── Base Element Styles ─────────────────────────────────────────────────── */
 
@@ -263,7 +288,9 @@ button {
   transition: all 0.2s ease;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   font-family: var(--font-body);
   border: 1px solid var(--color-light-tan);
   border-radius: 6px;
@@ -271,7 +298,9 @@ input, textarea, select {
   transition: border-color 0.2s ease;
 }
 
-input:focus, textarea:focus, select:focus {
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--color-accent);
   box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.1);
@@ -280,7 +309,6 @@ input:focus, textarea:focus, select:focus {
 /* ─── Semantic Component Classes ─────────────────────────────────────────── */
 
 @layer components {
-
   /* ── Cards ──────────────────────────────────────────────────────────────── */
   .card {
     @apply bg-brand-paper rounded-2xl border border-brand-cream;
@@ -297,9 +325,15 @@ input:focus, textarea:focus, select:focus {
     @apply inline-flex items-center justify-center gap-2 font-medium rounded-button
            transition-all duration-200 cursor-pointer border-none;
   }
-  .btn-sm  { @apply px-3 py-1.5 text-sm; }
-  .btn-md  { @apply px-4 py-2 text-sm; }
-  .btn-lg  { @apply px-6 py-3 text-base; }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm;
+  }
+  .btn-md {
+    @apply px-4 py-2 text-sm;
+  }
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
 
   .btn-primary {
     @apply btn btn-md bg-accent text-white hover:bg-accent-light;
@@ -329,11 +363,21 @@ input:focus, textarea:focus, select:focus {
   .badge {
     @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
   }
-  .badge-success { @apply badge bg-success-light text-success; }
-  .badge-danger  { @apply badge bg-danger-light text-danger; }
-  .badge-warning { @apply badge bg-warning-light text-warning; }
-  .badge-info    { @apply badge bg-info-light text-info; }
-  .badge-neutral { @apply badge bg-brand-cream text-brand-medium; }
+  .badge-success {
+    @apply badge bg-success-light text-success;
+  }
+  .badge-danger {
+    @apply badge bg-danger-light text-danger;
+  }
+  .badge-warning {
+    @apply badge bg-warning-light text-warning;
+  }
+  .badge-info {
+    @apply badge bg-info-light text-info;
+  }
+  .badge-neutral {
+    @apply badge bg-brand-cream text-brand-medium;
+  }
 
   /* ── Section headings ────────────────────────────────────────────────────── */
   .section-title {
@@ -400,10 +444,18 @@ input:focus, textarea:focus, select:focus {
      Hero banner: siempre superficie oscura con texto claro — los temas
      oscuros sobrescriben las vars hero-* para mantener contraste. */
   .bg-gradient-hero {
-    background: linear-gradient(135deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--color-hero-bg-1) 0%,
+      var(--color-hero-bg-2) 100%
+    );
   }
   .bg-gradient-hero-v {
-    background: linear-gradient(180deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%);
+    background: linear-gradient(
+      180deg,
+      var(--color-hero-bg-1) 0%,
+      var(--color-hero-bg-2) 100%
+    );
   }
   /* Hero con accent final (cards hero con glow dorado al terminar) */
   .bg-gradient-hero-accent {
@@ -416,17 +468,29 @@ input:focus, textarea:focus, select:focus {
   }
   /* Gradiente de acento (siempre visible: oro/bronce/rose gold) */
   .bg-gradient-accent {
-    background: linear-gradient(135deg, var(--color-accent), var(--color-accent-light));
+    background: linear-gradient(
+      135deg,
+      var(--color-accent),
+      var(--color-accent-light)
+    );
   }
   .bg-gradient-accent-h {
-    background: linear-gradient(90deg, var(--color-accent), var(--color-accent-light));
+    background: linear-gradient(
+      90deg,
+      var(--color-accent),
+      var(--color-accent-light)
+    );
   }
 
   /* ── Colores de texto para superficies hero ────────────────────────────
      Usados dentro de <div class="bg-gradient-hero ..."> para garantizar
      que el texto sea legible en ambos modos (light/dark theme). */
-  .text-hero        { color: var(--color-hero-text); }
-  .text-hero-subtle { color: var(--color-hero-text-subtle); }
+  .text-hero {
+    color: var(--color-hero-text);
+  }
+  .text-hero-subtle {
+    color: var(--color-hero-text-subtle);
+  }
 }
 
 /* ── Safety net: cualquier text-brand-paper / light-tan / light-cream /
@@ -465,53 +529,132 @@ input:focus, textarea:focus, select:focus {
 
 /* Defaults para :root (Pergamino) */
 :root {
-  --color-good:    #6E7F49;
-  --color-danger:  #9A4938;
-  --shadow-soft:   0 1px 2px rgba(46, 31, 20, .05), 0 8px 24px -12px rgba(46, 31, 20, .14);
-  --shadow-hover:  0 2px 4px rgba(46, 31, 20, .07), 0 16px 40px -18px rgba(46, 31, 20, .22);
+  --color-good: #6e7f49;
+  --color-danger: #9a4938;
+  --shadow-soft:
+    0 1px 2px rgba(46, 31, 20, 0.05), 0 8px 24px -12px rgba(46, 31, 20, 0.14);
+  --shadow-hover:
+    0 2px 4px rgba(46, 31, 20, 0.07), 0 16px 40px -18px rgba(46, 31, 20, 0.22);
 }
 
 html.dark {
   /* Pergamino oscuro — mismas buenas/malas pero ajustadas */
-  --color-good:    #ADB98A;
-  --color-danger:  #C88673;
-  --shadow-soft:   0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -10px rgba(0, 0, 0, .55);
-  --shadow-hover:  0 2px 4px rgba(0, 0, 0, .45), 0 16px 40px -14px rgba(0, 0, 0, .65);
+  --color-good: #adb98a;
+  --color-danger: #c88673;
+  --shadow-soft:
+    0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  --shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 16px 40px -14px rgba(0, 0, 0, 0.65);
 }
 
-.theme-marfil  { --color-good: #6B7F4C; --color-danger: #9B4A3E;
-                 --shadow-soft: 0 1px 2px rgba(58, 50, 38, .04), 0 8px 24px -12px rgba(58, 50, 38, .12);
-                 --shadow-hover: 0 2px 4px rgba(58, 50, 38, .06), 0 16px 40px -18px rgba(58, 50, 38, .18); }
-.theme-perla   { --color-good: #6B7A52; --color-danger: #914D40;
-                 --shadow-soft: 0 1px 2px rgba(62, 58, 48, .05), 0 8px 24px -12px rgba(62, 58, 48, .13);
-                 --shadow-hover: 0 2px 4px rgba(62, 58, 48, .07), 0 16px 40px -18px rgba(62, 58, 48, .18); }
-.theme-lino    { --color-good: #70814F; --color-danger: #944A3C;
-                 --shadow-soft: 0 1px 2px rgba(59, 51, 35, .05), 0 8px 24px -12px rgba(59, 51, 35, .13);
-                 --shadow-hover: 0 2px 4px rgba(59, 51, 35, .07), 0 16px 40px -18px rgba(59, 51, 35, .2); }
-.theme-cafe    { --color-good: #ADB98A; --color-danger: #C88673;
-                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .5);
-                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 40px -14px rgba(0, 0, 0, .6); }
-.theme-carbon  { --color-good: #AFBA8D; --color-danger: #CC8775;
-                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px -10px rgba(0, 0, 0, .5);
-                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .4), 0 16px 40px -14px rgba(0, 0, 0, .6); }
-.theme-pizarra { --color-good: #A8B38C; --color-danger: #C68979;
-                 --shadow-soft: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 24px -10px rgba(0, 0, 0, .55);
-                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .45), 0 16px 40px -14px rgba(0, 0, 0, .65); }
-.theme-onice   { --color-good: #B0BB8F; --color-danger: #CE8876;
-                 --shadow-soft: 0 1px 3px rgba(0, 0, 0, .4), 0 8px 24px -10px rgba(0, 0, 0, .6);
-                 --shadow-hover: 0 2px 4px rgba(0, 0, 0, .5), 0 16px 40px -14px rgba(0, 0, 0, .7); }
+.theme-marfil {
+  --color-good: #6b7f4c;
+  --color-danger: #9b4a3e;
+  --shadow-soft:
+    0 1px 2px rgba(58, 50, 38, 0.04), 0 8px 24px -12px rgba(58, 50, 38, 0.12);
+  --shadow-hover:
+    0 2px 4px rgba(58, 50, 38, 0.06), 0 16px 40px -18px rgba(58, 50, 38, 0.18);
+}
+.theme-perla {
+  --color-good: #6b7a52;
+  --color-danger: #914d40;
+  --shadow-soft:
+    0 1px 2px rgba(62, 58, 48, 0.05), 0 8px 24px -12px rgba(62, 58, 48, 0.13);
+  --shadow-hover:
+    0 2px 4px rgba(62, 58, 48, 0.07), 0 16px 40px -18px rgba(62, 58, 48, 0.18);
+}
+.theme-lino {
+  --color-good: #70814f;
+  --color-danger: #944a3c;
+  --shadow-soft:
+    0 1px 2px rgba(59, 51, 35, 0.05), 0 8px 24px -12px rgba(59, 51, 35, 0.13);
+  --shadow-hover:
+    0 2px 4px rgba(59, 51, 35, 0.07), 0 16px 40px -18px rgba(59, 51, 35, 0.2);
+}
+.theme-cafe {
+  --color-good: #adb98a;
+  --color-danger: #c88673;
+  --shadow-soft:
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
+  --shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px -14px rgba(0, 0, 0, 0.6);
+}
+.theme-carbon {
+  --color-good: #afba8d;
+  --color-danger: #cc8775;
+  --shadow-soft:
+    0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px -10px rgba(0, 0, 0, 0.5);
+  --shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.4), 0 16px 40px -14px rgba(0, 0, 0, 0.6);
+}
+.theme-pizarra {
+  --color-good: #a8b38c;
+  --color-danger: #c68979;
+  --shadow-soft:
+    0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px -10px rgba(0, 0, 0, 0.55);
+  --shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.45), 0 16px 40px -14px rgba(0, 0, 0, 0.65);
+}
+.theme-onice {
+  --color-good: #b0bb8f;
+  --color-danger: #ce8876;
+  --shadow-soft:
+    0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px -10px rgba(0, 0, 0, 0.6);
+  --shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.5), 0 16px 40px -14px rgba(0, 0, 0, 0.7);
+}
 
 /* Keyframes compartidos */
-@keyframes ht-fadeUp   { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes ht-grow     { from { opacity: 0; transform: scale(.82); } to { opacity: 1; transform: scale(1); } }
-@keyframes ht-breathe  { 0%, 100% { opacity: 1; } 50% { opacity: .5; } }
-@keyframes ht-drawLine { from { stroke-dashoffset: var(--ht-dash, 1000); } to { stroke-dashoffset: 0; } }
+@keyframes ht-fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes ht-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ht-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+@keyframes ht-drawLine {
+  from {
+    stroke-dashoffset: var(--ht-dash, 1000);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
 
-.ht-fade-up { animation: ht-fadeUp .55s cubic-bezier(.2, .7, .2, 1) both; }
+.ht-fade-up {
+  animation: ht-fadeUp 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
 
 /* Tipografía utility para home v2 */
-.ht-serif { font-family: var(--font-heading); font-feature-settings: 'lnum'; }
-.ht-mono  { font-family: var(--font-mono); }
+.ht-serif {
+  font-family: var(--font-heading);
+  font-feature-settings: "lnum";
+}
+.ht-mono {
+  font-family: var(--font-mono);
+}
 .ht-num-big {
   font-family: var(--font-heading);
   font-weight: 700;
@@ -533,7 +676,10 @@ html.dark {
   border: 1px solid var(--color-cream);
   border-radius: 18px;
   box-shadow: var(--shadow-soft);
-  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
 }
 .ht-card-interactive:hover {
   box-shadow: var(--shadow-hover);
@@ -546,7 +692,52 @@ html.dark {
   overflow-x: auto;
   scrollbar-width: thin;
   scrollbar-color: var(--color-tan) transparent;
+  overscroll-behavior-x: contain;
 }
-.ht-scroll-x::-webkit-scrollbar { height: 8px; }
-.ht-scroll-x::-webkit-scrollbar-thumb { background: var(--color-tan); border-radius: 4px; }
-.ht-scroll-x::-webkit-scrollbar-track { background: transparent; }
+.ht-scroll-x::-webkit-scrollbar {
+  height: 8px;
+}
+.ht-scroll-x::-webkit-scrollbar-thumb {
+  background: var(--color-tan);
+  border-radius: 4px;
+}
+.ht-scroll-x::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ─── Responsive home grid layouts ──────────────────────────────────────── */
+
+/* Hero: ring arriba centrado en mobile; ring+texto lado a lado en sm+ */
+.hero-grid-v2 {
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .hero-grid-v2 {
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    gap: 40px;
+  }
+}
+
+/* Radar: SVG arriba en mobile; lado a lado en sm+ */
+.radar-grid-v2 {
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) {
+  .radar-grid-v2 {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 32px;
+  }
+}
+
+/* ─── iOS Safe Area ──────────────────────────────────────────────────────── */
+/* Requiere viewportFit: "cover" en layout.tsx (ya configurado).             */
+/* Bottom padding del main en mobile: nav (64px) + home indicator de iOS.   */
+@media (max-width: 767px) {
+  .main-mobile-pb {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}

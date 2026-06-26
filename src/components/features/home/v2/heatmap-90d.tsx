@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowRight } from "lucide-react";
 import SectionHeader from "./primitives/section-header";
 import { MONTHS_ES } from "./primitives/helpers";
@@ -11,12 +11,19 @@ interface Props {
 
 export default function Heatmap90({ data }: Props) {
   const [hover, setHover] = useState<number | null>(null);
+  const [tileSize, setTileSize] = useState(20);
+  useEffect(() => {
+    const update = () => setTileSize(window.innerWidth < 640 ? 14 : 20);
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
   const cols = 15;
-  const tileSize = 20;
   const gap = 3;
 
   const shadeFor = (v: number): string => {
-    if (v === 0) return "color-mix(in oklab, var(--color-cream) 80%, var(--color-warm-white))";
+    if (v === 0)
+      return "color-mix(in oklab, var(--color-cream) 80%, var(--color-warm-white))";
     const pctTable = [0, 20, 38, 56, 72, 92];
     const p = pctTable[Math.max(0, Math.min(5, v))];
     return `color-mix(in oklab, var(--color-accent) ${p}%, var(--color-warm-white))`;
@@ -72,7 +79,8 @@ export default function Heatmap90({ data }: Props) {
                 height: tileSize,
                 borderRadius: 3,
                 background: shadeFor(v),
-                border: "1px solid color-mix(in oklab, var(--color-tan) 20%, transparent)",
+                border:
+                  "1px solid color-mix(in oklab, var(--color-tan) 20%, transparent)",
                 cursor: "pointer",
                 transition: "transform .15s",
                 transform: hover === i ? "scale(1.15)" : "none",
@@ -96,7 +104,8 @@ export default function Heatmap90({ data }: Props) {
                   height: 14,
                   borderRadius: 2,
                   background: shadeFor(v),
-                  border: "1px solid color-mix(in oklab, var(--color-tan) 20%, transparent)",
+                  border:
+                    "1px solid color-mix(in oklab, var(--color-tan) 20%, transparent)",
                 }}
               />
             ))}
@@ -122,7 +131,11 @@ export default function Heatmap90({ data }: Props) {
             </div>
             <div style={{ marginTop: 2 }}>
               <b>{data[hover]}</b> acciones ·{" "}
-              {data[hover] >= 3 ? "día activo" : data[hover] >= 1 ? "día suave" : "pausa"}
+              {data[hover] >= 3
+                ? "día activo"
+                : data[hover] >= 1
+                  ? "día suave"
+                  : "pausa"}
             </div>
           </div>
         )}

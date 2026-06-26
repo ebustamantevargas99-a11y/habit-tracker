@@ -40,7 +40,8 @@ function NotificationScheduler() {
       const enabled = localStorage.getItem("habit-notifications") === "true";
       if (!enabled || Notification.permission !== "granted") return;
 
-      const reminderTime = localStorage.getItem("habit-reminder-time") || "08:00";
+      const reminderTime =
+        localStorage.getItem("habit-reminder-time") || "08:00";
       const now = new Date();
       const nowTime = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
       if (nowTime !== reminderTime) return;
@@ -70,7 +71,9 @@ function ThemeInitializer() {
   const profileTheme = useUserStore((s) => s.user?.profile?.theme);
 
   // Aplica localStorage first (evita flash de tema default).
-  useEffect(() => { initTheme(); }, [initTheme]);
+  useEffect(() => {
+    initTheme();
+  }, [initTheme]);
 
   // Cuando carga el profile del server, sincroniza el tema guardado en
   // DB. Esto hace que el tema viaje con la cuenta del user — al loguear
@@ -86,7 +89,8 @@ function ThemeInitializer() {
 
 export default function MainApp() {
   useRouteSync();
-  const { activePage, showMonthlySummary, showWeeklySummary, toggleSidebar } = useAppStore();
+  const { activePage, showMonthlySummary, showWeeklySummary, toggleSidebar } =
+    useAppStore();
   // false es el valor seguro para SSR; el useEffect lo corrige en cliente.
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -95,12 +99,12 @@ export default function MainApp() {
   // clase .dark aparte: aplicar html.dark encima del tema elegido lo
   // sobreescribía (un tema claro + darkMode=true mostraba mezcla rota).
 
-  const initHabits       = useHabitStore((s) => s.initialize);
-  const initFinance      = useFinanceStore((s) => s.initialize);
-  const initFitness      = useFitnessStore((s) => s.initialize);
+  const initHabits = useHabitStore((s) => s.initialize);
+  const initFinance = useFinanceStore((s) => s.initialize);
+  const initFitness = useFitnessStore((s) => s.initialize);
   const initGamification = useGamificationStore((s) => s.initialize);
-  const initUser         = useUserStore((s) => s.initialize);
-  const initNutrition    = useNutritionStore((s) => s.initialize);
+  const initUser = useUserStore((s) => s.initialize);
+  const initNutrition = useNutritionStore((s) => s.initialize);
 
   useEffect(() => {
     initHabits();
@@ -109,7 +113,14 @@ export default function MainApp() {
     initGamification();
     initUser();
     initNutrition();
-  }, [initHabits, initFinance, initFitness, initGamification, initUser, initNutrition]);
+  }, [
+    initHabits,
+    initFinance,
+    initFitness,
+    initGamification,
+    initUser,
+    initNutrition,
+  ]);
 
   // Abre el sidebar por defecto solo en pantallas desktop.
   useEffect(() => {
@@ -122,31 +133,40 @@ export default function MainApp() {
 
   const renderPage = () => {
     switch (activePage) {
-      case "home":         return homeV2 ? <HomeV2 /> : <HomeDashboard />;
-      case "productivity": return <ProductivityPage />;
-      case "plan":         return <CalendarPage />;
-      case "finance":      return <FinancePage />;
-      case "fitness":      return <FitnessPage />;
-      case "nutrition":    return <NutritionPage />;
-      case "menstrualCycle": return <CyclePage />;
-      case "settings":     return <SettingsPage />;
-      default:             return <PlaceholderPage />;
+      case "home":
+        return homeV2 ? <HomeV2 /> : <HomeDashboard />;
+      case "productivity":
+        return <ProductivityPage />;
+      case "plan":
+        return <CalendarPage />;
+      case "finance":
+        return <FinancePage />;
+      case "fitness":
+        return <FitnessPage />;
+      case "nutrition":
+        return <NutritionPage />;
+      case "menstrualCycle":
+        return <CyclePage />;
+      case "settings":
+        return <SettingsPage />;
+      default:
+        return <PlaceholderPage />;
     }
   };
 
   const PAGE_TITLES: Record<string, string> = {
-    home:         "Inicio",
-    plan:         "Calendario",
+    home: "Inicio",
+    plan: "Calendario",
     productivity: "Productividad",
-    finance:      "Finanzas",
-    fitness:      "Fitness",
-    nutrition:    "Nutrición",
+    finance: "Finanzas",
+    fitness: "Fitness",
+    nutrition: "Nutrición",
     menstrualCycle: "Ciclo menstrual",
-    settings:     "Configuración",
+    settings: "Configuración",
   };
 
   return (
-    <div className="flex h-screen bg-brand-paper">
+    <div className="flex h-[100dvh] bg-brand-paper">
       <NotificationScheduler />
       <ReminderScheduler />
       <ThemeInitializer />
@@ -168,7 +188,10 @@ export default function MainApp() {
           {/* Left */}
           <div className="flex items-center gap-3 md:gap-6">
             <button
-              onClick={() => { setSidebarOpen(!sidebarOpen); toggleSidebar(); }}
+              onClick={() => {
+                setSidebarOpen(!sidebarOpen);
+                toggleSidebar();
+              }}
               className="p-2 text-brand-dark hover:bg-brand-light-cream rounded-lg transition-colors"
               aria-label="Mostrar u ocultar menú"
             >
@@ -184,7 +207,9 @@ export default function MainApp() {
             {activePage === "home" && (
               <button
                 className="btn-primary text-sm hidden md:block"
-                onClick={() => useAppStore.setState({ showMonthlySummary: true })}
+                onClick={() =>
+                  useAppStore.setState({ showMonthlySummary: true })
+                }
               >
                 🎬 Resumen del mes
               </button>
@@ -197,15 +222,17 @@ export default function MainApp() {
               <Bell size={20} />
             </button>
 
-            <div className="w-10 h-10 rounded-full bg-accent flex items-center justify-center
-                            text-white font-semibold text-base cursor-pointer select-none">
+            <div
+              className="w-10 h-10 rounded-full bg-accent flex items-center justify-center
+                            text-white font-semibold text-base cursor-pointer select-none"
+            >
               {userName.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
 
-        {/* Page Content — pb-20 en móvil para no quedar tapado por el bottom nav */}
-        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 pb-20 md:pb-8">
+        {/* Page Content — main-mobile-pb en móvil: nav height (64px) + safe area */}
+        <main className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-8 md:pb-8 main-mobile-pb">
           {renderPage()}
         </main>
       </div>
@@ -216,12 +243,16 @@ export default function MainApp() {
       <PWAInstallPrompt />
 
       {showMonthlySummary && (
-        <RewindModal onClose={() => useAppStore.setState({ showMonthlySummary: false })} />
+        <RewindModal
+          onClose={() => useAppStore.setState({ showMonthlySummary: false })}
+        />
       )}
       {/* WeeklySummaryModal eliminado del top bar: usaba datos hardcoded.
           El RewindModal del 'Resumen del mes' sí usa datos reales. */}
       {false && showWeeklySummary && (
-        <WeeklySummaryModal onClose={() => useAppStore.setState({ showWeeklySummary: false })} />
+        <WeeklySummaryModal
+          onClose={() => useAppStore.setState({ showWeeklySummary: false })}
+        />
       )}
       {showOnboarding && (
         <OnboardingModal onComplete={() => setShowOnboarding(false)} />

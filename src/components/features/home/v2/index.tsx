@@ -25,7 +25,7 @@ export default function HomeV2() {
 
   return (
     <div
-      className="flex flex-col gap-14"
+      className="flex flex-col gap-8 md:gap-14"
       style={{ paddingBottom: 64, maxWidth: 1320, margin: "0 auto" }}
     >
       <Hero

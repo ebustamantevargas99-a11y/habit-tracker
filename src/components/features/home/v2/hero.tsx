@@ -3,7 +3,11 @@
 import { useState } from "react";
 import { Sparkles, ArrowUpRight } from "lucide-react";
 import LifeScoreRing from "./primitives/life-score-ring";
-import { formatFechaLarga, greetingFor, lifeScoreMessage } from "./primitives/helpers";
+import {
+  formatFechaLarga,
+  greetingFor,
+  lifeScoreMessage,
+} from "./primitives/helpers";
 import AIExportModal from "@/components/features/ai-export/ai-export-modal";
 import type { ExportScope } from "@/lib/ai-export/types";
 
@@ -35,20 +39,18 @@ export default function Hero({
     <section
       className="ht-card ht-fade-up relative overflow-hidden"
       style={{
-        padding: "44px 40px",
+        padding: "clamp(24px, 5vw, 44px) clamp(20px, 4vw, 40px)",
         background:
           "linear-gradient(140deg, var(--color-hero-bg-1) 0%, var(--color-hero-bg-2) 100%)",
       }}
     >
       <HeroNoise />
-      {/* Variante B: Life Score a la izquierda, texto a la derecha.
-          Layout revista — la mirada entra por el número grande y
-          continúa hacia el saludo serif. */}
-      <div
-        className="hero-grid-v2 relative grid items-center gap-12"
-        style={{ gridTemplateColumns: "auto 1fr" }}
-      >
-        <LifeScoreRing score={score} prev={scorePrev} size={200} />
+      {/* Grid 1-col mobile (ring centrado arriba, texto abajo);
+          2-col desktop (ring izq, texto der). Controlado por .hero-grid-v2. */}
+      <div className="hero-grid-v2 relative grid">
+        <div className="flex justify-center sm:justify-start">
+          <LifeScoreRing score={score} prev={scorePrev} size={200} />
+        </div>
         <div className="flex flex-col gap-4">
           <div
             className="ht-eyebrow"
@@ -59,7 +61,7 @@ export default function Hero({
           <h1
             className="ht-serif leading-[1.05] m-0"
             style={{
-              fontSize: "clamp(30px, 4vw, 52px)",
+              fontSize: "clamp(26px, 4vw, 52px)",
               color: "var(--color-hero-text)",
               letterSpacing: "-0.02em",
               fontWeight: 700,
@@ -70,7 +72,7 @@ export default function Hero({
           <p
             className="ht-serif italic m-0"
             style={{
-              fontSize: "clamp(18px, 1.8vw, 22px)",
+              fontSize: "clamp(16px, 1.8vw, 22px)",
               color: "var(--color-hero-text)",
               opacity: 0.78,
               maxWidth: 520,
@@ -79,38 +81,40 @@ export default function Hero({
           >
             {msg}
           </p>
-          <div className="flex flex-wrap items-center gap-3 mt-2">
+          <div className="flex flex-wrap items-center gap-2 mt-1">
             {showCierre && (
               <button
                 type="button"
                 onClick={() => setAiModalScope("daily")}
-                className="inline-flex items-center gap-2 rounded-[14px] transition"
+                className="inline-flex items-center gap-2 rounded-[12px] transition"
                 style={{
                   background: "var(--color-dark)",
                   color: "var(--color-paper)",
-                  padding: "16px 22px",
-                  fontSize: 15,
+                  padding: "clamp(10px, 2vw, 16px) clamp(14px, 3vw, 22px)",
+                  fontSize: "clamp(13px, 1.5vw, 15px)",
                   fontWeight: 500,
                   border: "1px solid var(--color-dark)",
+                  whiteSpace: "nowrap",
                 }}
               >
-                <Sparkles size={17} strokeWidth={1.75} /> Cierre del día → Copiar a IA
+                <Sparkles size={15} strokeWidth={1.75} /> Cierre del día
               </button>
             )}
             <button
               type="button"
               onClick={() => setAiModalScope("weekly")}
-              className="inline-flex items-center gap-2 rounded-[14px] transition"
+              className="inline-flex items-center gap-2 rounded-[12px] transition"
               style={{
                 background: "transparent",
                 color: "var(--color-hero-text)",
-                padding: "16px 22px",
-                fontSize: 15,
+                padding: "clamp(10px, 2vw, 16px) clamp(14px, 3vw, 22px)",
+                fontSize: "clamp(13px, 1.5vw, 15px)",
                 fontWeight: 500,
                 border: "1px solid var(--color-tan)",
+                whiteSpace: "nowrap",
               }}
             >
-              Resumen semanal <ArrowUpRight size={15} strokeWidth={1.75} />
+              Resumen semanal <ArrowUpRight size={13} strokeWidth={1.75} />
             </button>
           </div>
         </div>
@@ -141,7 +145,12 @@ function HeroNoise() {
       }}
     >
       <filter id="ht-hero-noise">
-        <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="2" stitchTiles="stitch" />
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.8"
+          numOctaves="2"
+          stitchTiles="stitch"
+        />
         <feColorMatrix values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0" />
       </filter>
       <rect width="100%" height="100%" filter="url(#ht-hero-noise)" />
