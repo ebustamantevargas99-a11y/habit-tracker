@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, X, Plus, Minus } from "lucide-react";
+import { Play, Pause, RotateCcw, X, Plus, Minus, Volume2 } from "lucide-react";
 
 type Props = {
   initialSeconds: number;
@@ -9,6 +9,90 @@ type Props = {
   onDismiss?: () => void;
   autoStart?: boolean;
 };
+
+// ─── Singleton AudioContext ────────────────────────────────────────────────────
+// AudioContext must be created/resumed inside a user-gesture handler.
+// We create it the first time the user interacts with the timer (play/pause/adjust),
+// then reuse it when the alarm fires (which happens automatically with no gesture).
+
+let _ctx: AudioContext | null = null;
+
+function getOrCreateCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  if (_ctx) return _ctx;
+  try {
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext: typeof AudioContext })
+        .webkitAudioContext;
+    if (!Ctor) return null;
+    _ctx = new Ctor();
+  } catch {
+    return null;
+  }
+  return _ctx;
+}
+
+// Called on every user interaction with the timer so the context stays "running".
+function touchAudioCtx() {
+  const ctx = getOrCreateCtx();
+  if (ctx && ctx.state === "suspended") {
+    ctx.resume().catch(() => {});
+  }
+}
+
+async function playAlarm() {
+  const ctx = getOrCreateCtx();
+  if (!ctx) return;
+
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      return;
+    }
+  }
+
+  // Three-beep pattern: two short + one longer at higher pitch
+  const beep = (t: number, freq: number, dur: number) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.45, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    osc.start(t);
+    osc.stop(t + dur);
+  };
+
+  const now = ctx.currentTime;
+  beep(now, 880, 0.14);
+  beep(now + 0.22, 880, 0.14);
+  beep(now + 0.44, 1100, 0.35);
+}
+
+function vibrate() {
+  if (typeof navigator === "undefined") return;
+  navigator.vibrate?.([200, 100, 200, 100, 300]);
+}
+
+function notifyIfHidden() {
+  if (typeof Notification === "undefined") return;
+  if (Notification.permission !== "granted") return;
+  if (!document.hidden) return;
+  try {
+    new Notification("⏱️ ¡Descanso terminado!", {
+      body: "Ya puedes hacer tu próximo set.",
+      icon: "/favicon.ico",
+      tag: "rest-timer-done",
+      silent: true, // sound already played via Web Audio
+    });
+  } catch {}
+}
+
+// ─── Component ─────────────────────────────────────────────────────────────────
 
 export default function RestTimer({
   initialSeconds,
@@ -21,12 +105,20 @@ export default function RestTimer({
   const onDoneRef = useRef(onDone);
   onDoneRef.current = onDone;
 
+  // Touch the AudioContext when the component mounts with autoStart — this won't
+  // resume a suspended context (no gesture), but it creates it so the singleton
+  // is ready. The actual resume happens when the user interacts.
+  useEffect(() => {
+    getOrCreateCtx();
+  }, []);
+
   useEffect(() => {
     if (!running) return;
     if (seconds <= 0) {
       setRunning(false);
-      playBeep();
+      void playAlarm();
       vibrate();
+      notifyIfHidden();
       onDoneRef.current?.();
       return;
     }
@@ -38,14 +130,38 @@ export default function RestTimer({
   const ss = Math.max(0, seconds) % 60;
   const displayMm = String(mm).padStart(2, "0");
   const displaySs = String(ss).padStart(2, "0");
-  const pct = initialSeconds > 0 ? (Math.max(0, seconds) / initialSeconds) * 100 : 0;
+  const pct =
+    initialSeconds > 0 ? (Math.max(0, seconds) / initialSeconds) * 100 : 0;
+
+  const handleToggle = () => {
+    touchAudioCtx();
+    setRunning((r) => !r);
+  };
+
+  const handleAdjust = (delta: number) => {
+    touchAudioCtx();
+    setSeconds((s) => Math.max(0, s + delta));
+  };
+
+  const handleReset = () => {
+    touchAudioCtx();
+    setSeconds(initialSeconds);
+    setRunning(true);
+  };
 
   return (
     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-40 bg-brand-dark text-brand-paper rounded-2xl shadow-warm-lg px-6 py-4 flex items-center gap-4 min-w-[280px] max-w-[90vw]">
       {/* Progress ring */}
       <div className="relative w-14 h-14 shrink-0">
         <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-          <circle cx="28" cy="28" r="24" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="3" />
+          <circle
+            cx="28"
+            cy="28"
+            r="24"
+            fill="none"
+            stroke="rgba(255,255,255,0.15)"
+            strokeWidth="3"
+          />
           <circle
             cx="28"
             cy="28"
@@ -55,7 +171,7 @@ export default function RestTimer({
             strokeWidth="3"
             strokeLinecap="round"
             strokeDasharray={2 * Math.PI * 24}
-            strokeDashoffset={(2 * Math.PI * 24) * (1 - pct / 100)}
+            strokeDashoffset={2 * Math.PI * 24 * (1 - pct / 100)}
             style={{ transition: "stroke-dashoffset 0.5s linear" }}
           />
         </svg>
@@ -64,19 +180,21 @@ export default function RestTimer({
         </div>
       </div>
 
-      {/* Label + controls */}
+      {/* Label + time */}
       <div className="flex-1 min-w-0">
-        <p className="text-xs uppercase tracking-widest text-brand-light-tan">Descanso</p>
+        <p className="text-xs uppercase tracking-widest text-brand-light-tan">
+          Descanso
+        </p>
         <p className="font-mono text-2xl font-bold text-accent-light tabular-nums">
           {displayMm}:{displaySs}
         </p>
       </div>
 
-      {/* Adjust buttons */}
+      {/* +/- 15s */}
       <div className="flex flex-col gap-1">
         <button
           type="button"
-          onClick={() => setSeconds((s) => s + 15)}
+          onClick={() => handleAdjust(15)}
           className="p-1 rounded hover:bg-white/10"
           aria-label="Añadir 15s"
         >
@@ -84,7 +202,7 @@ export default function RestTimer({
         </button>
         <button
           type="button"
-          onClick={() => setSeconds((s) => Math.max(0, s - 15))}
+          onClick={() => handleAdjust(-15)}
           className="p-1 rounded hover:bg-white/10"
           aria-label="Quitar 15s"
         >
@@ -95,7 +213,7 @@ export default function RestTimer({
       {/* Play/Pause */}
       <button
         type="button"
-        onClick={() => setRunning((r) => !r)}
+        onClick={handleToggle}
         className="p-2.5 rounded-full bg-accent text-brand-dark hover:bg-accent-light"
         aria-label={running ? "Pausar" : "Reanudar"}
       >
@@ -105,14 +223,25 @@ export default function RestTimer({
       {/* Reset */}
       <button
         type="button"
-        onClick={() => {
-          setSeconds(initialSeconds);
-          setRunning(true);
-        }}
+        onClick={handleReset}
         className="p-2 rounded-full hover:bg-white/10"
         aria-label="Reiniciar"
       >
         <RotateCcw size={14} />
+      </button>
+
+      {/* Test sound */}
+      <button
+        type="button"
+        onClick={() => {
+          touchAudioCtx();
+          void playAlarm();
+        }}
+        className="p-2 rounded-full hover:bg-white/10 opacity-60 hover:opacity-100"
+        aria-label="Probar sonido"
+        title="Probar sonido"
+      >
+        <Volume2 size={14} />
       </button>
 
       {/* Close */}
@@ -126,28 +255,4 @@ export default function RestTimer({
       </button>
     </div>
   );
-}
-
-function playBeep() {
-  if (typeof window === "undefined") return;
-  try {
-    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = "sine";
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.6);
-  } catch {
-    // ignore
-  }
-}
-
-function vibrate() {
-  if (typeof navigator === "undefined") return;
-  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }

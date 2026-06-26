@@ -13,10 +13,16 @@ import {
   Zap,
   Shield,
   Download,
-  Trash2,
   Bell,
   Globe,
   Check,
+  User,
+  Palette,
+  LayoutGrid,
+  Database,
+  Timer,
+  Volume2,
+  BellRing,
 } from "lucide-react";
 import { toast } from "sonner";
 import { LEVELS, XP_REWARDS } from "@/lib/constants";
@@ -421,6 +427,9 @@ function PreferencesTab() {
   const [insurance, setInsurance] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [timerNotifPerm, setTimerNotifPerm] =
+    useState<NotificationPermission>("default");
+  const [timerNotifStatus, setTimerNotifStatus] = useState("");
 
   useEffect(() => {
     if (user?.profile) {
@@ -433,8 +442,45 @@ function PreferencesTab() {
     setReminderTime(time);
     if (typeof Notification !== "undefined") {
       setNotifPermission(Notification.permission);
+      setTimerNotifPerm(Notification.permission);
     }
   }, [user, streakInsuranceDays]);
+
+  const handleRequestTimerNotif = async () => {
+    if (typeof Notification === "undefined") {
+      setTimerNotifStatus("Tu navegador no soporta notificaciones.");
+      return;
+    }
+    if (Notification.permission === "granted") {
+      new Notification("⏱️ Timer de entrenamiento", {
+        body: "Las notificaciones ya están activas. Sonará cuando termines el descanso.",
+        icon: "/favicon.ico",
+        tag: "timer-test",
+      });
+      setTimerNotifStatus("¡Listo! Ya están activadas.");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      setTimerNotifStatus(
+        "Permiso bloqueado. Habilítalas en la configuración del navegador/sistema."
+      );
+      return;
+    }
+    const perm = await Notification.requestPermission();
+    setTimerNotifPerm(perm);
+    if (perm === "granted") {
+      new Notification("⏱️ Timer activado", {
+        body: "Te avisaré cuando termine cada descanso, aunque cierres la pantalla.",
+        icon: "/favicon.ico",
+        tag: "timer-test",
+      });
+      setTimerNotifStatus("Listo. Te avisaré al terminar cada descanso.");
+    } else {
+      setTimerNotifStatus(
+        "Permiso denegado. El sonido seguirá funcionando, pero no habrá aviso en pantalla bloqueada."
+      );
+    }
+  };
 
   const handleToggleNotifications = async () => {
     if (!notifications) {
@@ -601,10 +647,95 @@ function PreferencesTab() {
         </div>
       </div>
 
+      {/* Fitness Timer Notifications */}
+      <div className={CARD}>
+        <h3 className="font-serif text-brand-dark m-0 mb-1 flex items-center gap-2">
+          <Timer size={20} color={C.accent} /> Timer de entrenamiento
+        </h3>
+        <p className="text-[0.85rem] text-brand-warm m-0 mb-4">
+          Recibe un aviso cuando termine cada descanso entre sets, incluso si la
+          pantalla está bloqueada. El sonido siempre funciona; esta opción añade
+          la notificación visual.
+        </p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <button
+            onClick={() => void handleRequestTimerNotif()}
+            className={cn(
+              "px-5 py-2.5 rounded-lg border font-semibold text-[0.9rem] flex items-center gap-2 cursor-pointer transition-colors",
+              timerNotifPerm === "granted"
+                ? "bg-success/10 border-success text-success"
+                : timerNotifPerm === "denied"
+                  ? "bg-danger/10 border-danger text-danger"
+                  : "bg-accent text-brand-paper border-accent"
+            )}
+          >
+            {timerNotifPerm === "granted" ? (
+              <>
+                <BellRing size={16} /> Activado — probar
+              </>
+            ) : timerNotifPerm === "denied" ? (
+              <>
+                <Bell size={16} /> Bloqueado
+              </>
+            ) : (
+              <>
+                <Bell size={16} /> Permitir notificaciones
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => {
+              // Play test beep — needs user gesture; reuses the rest-timer singleton
+              if (typeof window !== "undefined") {
+                try {
+                  const Ctor =
+                    window.AudioContext ||
+                    (
+                      window as unknown as {
+                        webkitAudioContext: typeof AudioContext;
+                      }
+                    ).webkitAudioContext;
+                  const ctx = new Ctor();
+                  const beep = (t: number, freq: number, dur: number) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.type = "sine";
+                    osc.frequency.value = freq;
+                    gain.gain.setValueAtTime(0.4, t);
+                    gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+                    osc.start(t);
+                    osc.stop(t + dur);
+                  };
+                  const now = ctx.currentTime;
+                  beep(now, 880, 0.14);
+                  beep(now + 0.22, 880, 0.14);
+                  beep(now + 0.44, 1100, 0.35);
+                } catch {}
+              }
+            }}
+            className="px-5 py-2.5 rounded-lg border border-brand-tan bg-brand-light-cream text-brand-dark font-semibold text-[0.9rem] flex items-center gap-2 cursor-pointer"
+          >
+            <Volume2 size={16} /> Probar sonido
+          </button>
+        </div>
+        {timerNotifStatus && (
+          <p
+            className={cn(
+              "text-[0.8rem] mt-3 m-0 font-medium",
+              timerNotifPerm === "granted" ? "text-success" : "text-brand-warm"
+            )}
+          >
+            {timerNotifStatus}
+          </p>
+        )}
+      </div>
+
       {/* Save Button */}
       <div className="flex justify-end gap-3">
         <button
-          onClick={handleSave}
+          onClick={() => void handleSave()}
           disabled={isSaving}
           className={cn(
             "px-8 py-3 text-brand-paper border-none rounded-lg font-semibold text-[0.95rem] flex items-center gap-2 transition-[background-color] duration-300",
@@ -714,57 +845,172 @@ function DataTab() {
 }
 
 // ============== MAIN SETTINGS PAGE ==============
+
+type Tab = {
+  id: string;
+  label: string;
+  sublabel: string;
+  Icon: React.ElementType;
+};
+
+const TABS: Tab[] = [
+  {
+    id: "profile",
+    label: "Perfil",
+    sublabel: "Nombre, bio, zona horaria",
+    Icon: User,
+  },
+  {
+    id: "appearance",
+    label: "Apariencia",
+    sublabel: "Tema, unidades, notificaciones",
+    Icon: Palette,
+  },
+  {
+    id: "security",
+    label: "Seguridad",
+    sublabel: "Contraseña, 2FA, sesiones",
+    Icon: Shield,
+  },
+  {
+    id: "modules",
+    label: "Módulos",
+    sublabel: "Activa o desactiva secciones",
+    Icon: LayoutGrid,
+  },
+  {
+    id: "gamification",
+    label: "Gamificación",
+    sublabel: "XP, niveles, insignias",
+    Icon: Zap,
+  },
+  {
+    id: "data",
+    label: "Datos",
+    sublabel: "Exportar, integrar, resetear",
+    Icon: Database,
+  },
+];
+
+function TabContent({ id }: { id: string }) {
+  if (id === "profile") return <ProfileTab />;
+  if (id === "appearance")
+    return (
+      <div className="flex flex-col gap-6">
+        <AppearanceTab />
+        <PreferencesTab />
+      </div>
+    );
+  if (id === "security") return <SecurityTab />;
+  if (id === "modules") return <ModulesTab />;
+  if (id === "gamification") return <GamificationTab />;
+  if (id === "data")
+    return (
+      <div className="flex flex-col gap-6">
+        <DataTab />
+        <IntegrationsTab />
+        <ResetDataTab />
+      </div>
+    );
+  return null;
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("profile");
-
-  const tabs = [
-    { id: "profile", label: "Perfil" },
-    { id: "appearance", label: "Apariencia" },
-    { id: "security", label: "Seguridad" },
-    { id: "modules", label: "Módulos" },
-    { id: "gamification", label: "Gamificación" },
-    { id: "data", label: "Datos" },
-  ];
+  const active = TABS.find((t) => t.id === activeTab) ?? TABS[0];
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="mb-6">
+    <div className="p-4 md:p-8 max-w-[1100px] mx-auto">
+      {/* Header */}
+      <div className="mb-6 md:mb-8">
         <h1 className="font-serif text-2xl md:text-[2rem] text-brand-dark m-0 mb-1">
           Configuración
         </h1>
         <p className="text-sm text-brand-warm m-0">
-          Personaliza tu experiencia
+          Personaliza tu experiencia en Ultimate Tracker
         </p>
       </div>
 
-      {/* Tab Navigation */}
-      <Tabs
-        tabs={tabs}
-        activeTab={activeTab}
-        onChange={setActiveTab}
-        variant="segmented"
-        className="mb-6 overflow-x-auto"
-      />
+      {/* ── Mobile: horizontal scrolling tabs ── */}
+      <div className="md:hidden mb-5">
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap border transition-colors shrink-0",
+                activeTab === tab.id
+                  ? "bg-accent text-brand-paper border-accent"
+                  : "bg-brand-paper text-brand-warm border-brand-tan hover:border-accent hover:text-brand-dark"
+              )}
+            >
+              <tab.Icon size={14} />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Content */}
-      <div>
-        {activeTab === "profile" && <ProfileTab />}
-        {activeTab === "appearance" && (
-          <div className="flex flex-col gap-6">
-            <AppearanceTab />
-            <PreferencesTab />
+      {/* ── Desktop: sidebar + content ── */}
+      <div className="hidden md:flex gap-8 items-start">
+        {/* Sidebar */}
+        <nav className="w-[220px] shrink-0 sticky top-6">
+          <div className="flex flex-col gap-1">
+            {TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-3 px-4 py-3 rounded-xl text-left w-full transition-colors group",
+                  activeTab === tab.id
+                    ? "bg-accent text-brand-paper shadow-sm"
+                    : "text-brand-warm hover:bg-brand-light-cream hover:text-brand-dark"
+                )}
+              >
+                <div
+                  className={cn(
+                    "w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors",
+                    activeTab === tab.id
+                      ? "bg-white/20"
+                      : "bg-brand-light-cream group-hover:bg-brand-tan/40"
+                  )}
+                >
+                  <tab.Icon size={16} />
+                </div>
+                <div className="min-w-0">
+                  <div className="text-[0.875rem] font-semibold leading-tight">
+                    {tab.label}
+                  </div>
+                  <div
+                    className={cn(
+                      "text-[0.7rem] leading-tight mt-0.5 truncate",
+                      activeTab === tab.id ? "text-white/70" : "text-brand-tan"
+                    )}
+                  >
+                    {tab.sublabel}
+                  </div>
+                </div>
+              </button>
+            ))}
           </div>
-        )}
-        {activeTab === "security" && <SecurityTab />}
-        {activeTab === "modules" && <ModulesTab />}
-        {activeTab === "gamification" && <GamificationTab />}
-        {activeTab === "data" && (
-          <div className="flex flex-col gap-6">
-            <DataTab />
-            <IntegrationsTab />
-            <ResetDataTab />
+        </nav>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="mb-5 pb-4 border-b border-brand-tan">
+            <h2 className="font-serif text-[1.4rem] text-brand-dark m-0 mb-0.5">
+              {active.label}
+            </h2>
+            <p className="text-xs text-brand-warm m-0">{active.sublabel}</p>
           </div>
-        )}
+          <TabContent id={activeTab} />
+        </div>
+      </div>
+
+      {/* Mobile content */}
+      <div className="md:hidden">
+        <TabContent id={activeTab} />
       </div>
     </div>
   );
