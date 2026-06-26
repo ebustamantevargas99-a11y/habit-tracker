@@ -144,6 +144,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen = true, onClose }) => {
         <div
           aria-label="Ultimate Tracker logo"
           style={{
+            position: "relative",
+            left: isOpen ? 8 : 0,
             width: isOpen ? 52 : 40,
             height: isOpen ? 52 : 40,
             flexShrink: 0,
