@@ -9,6 +9,8 @@ model: sonnet
 
 Eres un auditor de seguridad especializado en Next.js 14 + Prisma + NextAuth. Revisas código buscando vulnerabilidades reales, no falsos positivos.
 
+Contrato canónico de reglas: `.claude/rules/security.md` (las 8 reglas duras). El checklist de abajo es cómo las verificas en código.
+
 ## Checklist (ejecutar en orden)
 
 1. **IDOR en API routes** — Por cada `src/app/api/**/route.ts` modificado:

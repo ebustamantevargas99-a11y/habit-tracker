@@ -51,14 +51,20 @@ src/
 
 ### Seguridad (no negociable)
 
-1. **Toda ruta protegida usa `withAuth()`** de `src/lib/api-helpers.ts`. Nunca llames a `prisma` sin pasar por `withAuth` o `auth()`.
-2. **Todo query Prisma que opera sobre recursos del usuario debe filtrar por `userId`** además del `id` del recurso. Patrón: `findFirst({ where: { id, userId } })` → `update/delete({ where: { id } })`. Nunca saltes el check de ownership.
-3. **Todo endpoint que recibe body usa Zod** con `parseJson(req, schema)`. Nunca `await req.json()` directo.
-4. **Passwords hasheadas con bcrypt, rondas ≥ 13.** Nunca MD5, SHA1, plain.
-5. **Nunca expongas el campo `password`/`passwordHash`** en `select` de Prisma hacia el cliente.
-6. **Nunca uses `$queryRawUnsafe`** ni concatenación en `$queryRaw`. Siempre parametrizado.
-7. **Nunca pongas secretos en `NEXT_PUBLIC_*`.** Esas vars van al bundle cliente.
-8. **Nunca commitees `.env*`** (ya está en `.gitignore`).
+Las 8 reglas duras (detalle completo, enforcement automático y patrón de
+ownership en el módulo `.claude/rules/security.md`, el mismo que usan
+`/security-scan` y el agente `security-reviewer`):
+
+1. `withAuth()` en toda ruta protegida — nunca `prisma` suelto.
+2. Filtrar por `userId` en recursos del usuario (ownership check).
+3. Zod + `parseJson(req, schema)` en todo body — nunca `req.json()` directo.
+4. bcrypt rondas ≥ 13 — nunca MD5/SHA1/plain.
+5. Nunca exponer `password`/`passwordHash` en `select`.
+6. Nunca `$queryRawUnsafe` ni concatenación en `$queryRaw`.
+7. Nunca secretos en `NEXT_PUBLIC_*`.
+8. Nunca commitear `.env*` (el hook `block-sensitive-writes` lo bloquea).
+
+@.claude/rules/security.md
 
 ### Código
 
@@ -93,12 +99,16 @@ export async function POST(req: NextRequest) {
 **Crear un endpoint `[id]` con ownership check:**
 
 ```ts
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   return withAuth(async (userId) => {
     const existing = await prisma.miModelo.findFirst({
       where: { id: params.id, userId },
     });
-    if (!existing) return NextResponse.json({ error: "No encontrado" }, { status: 404 });
+    if (!existing)
+      return NextResponse.json({ error: "No encontrado" }, { status: 404 });
 
     const parsed = await parseJson(req, miUpdateSchema);
     if (!parsed.ok) return parsed.response;
@@ -128,12 +138,14 @@ npm run lint           # next lint
 ## Deuda técnica conocida
 
 Ver [`docs/`](./docs/) para contexto:
+
 - `PROJECT-BIBLE.md` — visión y roadmap (histórico, requiere actualización)
 - `SECURITY.md` — modelo de amenazas (TODO)
 - `ARCHITECTURE.md` — decisiones arquitectónicas (TODO)
 - `RUNBOOK.md` — deploy, on-call, rollback (TODO)
 
 **Pendientes críticos para lanzamiento público:**
+
 - [ ] Upgrade Next 14.2 → 16 (CVEs high severity)
 - [ ] Rate limiting en `/api/auth/*` (Upstash)
 - [ ] IDOR audit completo de las 32 API routes
@@ -155,8 +167,15 @@ Ver [`docs/`](./docs/) para contexto:
 
 ## Flujo de trabajo con Claude Code
 
-- Comandos disponibles en `.claude/commands/` (ej: `/security-scan`, `/new-feature`, `/review-pr`).
-- Agentes especializados en `.claude/agents/` — el general-purpose los invoca automáticamente cuando hacen match.
-- Skills reutilizables en `.claude/skills/`.
+Estructura `.claude/` (todo versionado salvo `settings.local.json`):
+
+- **`commands/`** — slash commands: `/security-scan`, `/new-feature`, `/review-pr`.
+- **`agents/`** — subagentes con contexto aislado: `security-reviewer`, `db-migration-helper`.
+- **`skills/`** — skills auto-activadas por contexto: `add-api-route`.
+- **`rules/`** — módulos de reglas importados con `@`: `security.md` (contrato de seguridad).
+- **`hooks/`** — enforcement determinista vía shell. `block-sensitive-writes.cjs` (PreToolUse) bloquea escrituras a `.env*` y llaves privadas.
+- **`settings.json`** — permisos `allow`/`deny` + wiring de hooks. Overrides personales en `settings.local.json` (gitignored).
+
+`AGENTS.md` (raíz) es un pointer cross-tool para Cursor/Codex/Cline; la fuente de verdad sigue siendo este archivo.
 
 Si vas a hacer cambios grandes, ejecuta `/security-scan` antes de commitear.

@@ -7,6 +7,8 @@ argument-hint: [carpeta opcional, ej: src/app/api/finance]
 
 Ejecuta una auditoría de seguridad del proyecto. Usa el agente `security-reviewer` para análisis profundo.
 
+> Contrato canónico de reglas: [`.claude/rules/security.md`](../rules/security.md). El checklist de abajo lo operacionaliza.
+
 ## Pasos
 
 1. Si se pasó argumento `$1`, limita el scan a esa ruta. Si no, revisa `src/app/api/**`, `src/middleware.ts`, `src/auth.ts`, `next.config.js`.
