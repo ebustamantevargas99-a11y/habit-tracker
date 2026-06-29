@@ -119,7 +119,9 @@ export default function ModuleSpotlights({ modules, data }: Props) {
         subtitle="Cada módulo en su mejor ángulo del día."
         right={
           <div className="flex items-center gap-2">
-            <DotBtn onClick={() => setIdx((idx - 1 + slides.length) % slides.length)}>
+            <DotBtn
+              onClick={() => setIdx((idx - 1 + slides.length) % slides.length)}
+            >
               <ChevronLeft size={16} strokeWidth={1.75} />
             </DotBtn>
             <DotBtn onClick={() => setIdx((idx + 1) % slides.length)}>
@@ -131,26 +133,29 @@ export default function ModuleSpotlights({ modules, data }: Props) {
 
       <div
         className="ht-card mt-5"
-        style={{ padding: 0, overflow: "hidden", animation: "ht-fadeUp .55s 80ms both" }}
+        style={{
+          padding: 0,
+          overflow: "hidden",
+          animation: "ht-fadeUp .55s 80ms both",
+        }}
       >
         <div
-          className="grid items-stretch"
+          className="flex flex-col sm:flex-row items-stretch"
           style={{
-            gridTemplateColumns: "1fr auto",
-            minHeight: 280,
+            minHeight: 180,
             background:
               "linear-gradient(120deg, var(--color-warm-white) 0%, color-mix(in oklab, var(--color-cream) 50%, var(--color-warm-white)) 100%)",
           }}
         >
           <div
-            className="flex flex-col gap-4 justify-center"
-            style={{ padding: "36px 40px" }}
+            className="flex flex-col gap-4 justify-center flex-1"
+            style={{ padding: 24 }}
           >
             <div className="ht-eyebrow">{slide.eyebrow}</div>
             <h3
               className="ht-serif m-0"
               style={{
-                fontSize: "clamp(22px, 2.4vw, 30px)",
+                fontSize: "clamp(20px, 2.4vw, 30px)",
                 lineHeight: 1.1,
                 color: "var(--color-brown)",
                 fontWeight: 700,
@@ -159,10 +164,19 @@ export default function ModuleSpotlights({ modules, data }: Props) {
             >
               {slide.title}
             </h3>
-            <div className="ht-serif ht-num-big" style={{ fontSize: 56, fontWeight: 700, lineHeight: 1 }}>
+            <div
+              className="ht-serif ht-num-big"
+              style={{
+                fontSize: "clamp(28px, 7vw, 56px)",
+                fontWeight: 700,
+                lineHeight: 1,
+              }}
+            >
               {slide.kpi}
             </div>
-            <div style={{ color: "var(--color-warm)", fontSize: 14 }}>{slide.detail}</div>
+            <div style={{ color: "var(--color-warm)", fontSize: 14 }}>
+              {slide.detail}
+            </div>
             <div>
               <button
                 type="button"
@@ -181,8 +195,8 @@ export default function ModuleSpotlights({ modules, data }: Props) {
             </div>
           </div>
           <div
-            className="flex items-center justify-center"
-            style={{ padding: 32, minWidth: 280 }}
+            className="hidden sm:flex items-center justify-center flex-shrink-0"
+            style={{ padding: 32 }}
           >
             {slide.art}
           </div>
@@ -205,7 +219,8 @@ export default function ModuleSpotlights({ modules, data }: Props) {
                 width: i === idx ? 22 : 7,
                 height: 7,
                 borderRadius: 4,
-                background: i === idx ? "var(--color-accent)" : "var(--color-tan)",
+                background:
+                  i === idx ? "var(--color-accent)" : "var(--color-tan)",
                 border: 0,
                 cursor: "pointer",
                 padding: 0,
@@ -219,7 +234,13 @@ export default function ModuleSpotlights({ modules, data }: Props) {
   );
 }
 
-function DotBtn({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+function DotBtn({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       type="button"

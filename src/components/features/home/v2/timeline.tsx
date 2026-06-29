@@ -59,12 +59,24 @@ export default function Timeline({
         title="Las horas, en capas"
         subtitle="Cada carril es un tipo de tiempo. Se leen como partituras."
       />
-      <div className="ht-card mt-5" style={{ padding: 24, animation: "ht-fadeUp .55s 80ms both" }}>
+      <div
+        className="ht-card mt-5"
+        style={{
+          padding: 24,
+          overflow: "hidden",
+          animation: "ht-fadeUp .55s 80ms both",
+        }}
+      >
         <div style={{ position: "relative" }}>
           {/* Fila de horas arriba */}
           <div
             className="relative"
-            style={{ height: 20, marginLeft: LANE_LABEL_WIDTH, marginBottom: 8 }}
+            style={{
+              height: 20,
+              marginLeft: LANE_LABEL_WIDTH,
+              marginBottom: 8,
+              overflow: "hidden",
+            }}
           >
             {hours.map((h) => (
               <div
@@ -114,9 +126,11 @@ export default function Timeline({
                   bottom: 4,
                   left: pct(f.start),
                   width: pct(f.end - f.start),
-                  background: "color-mix(in oklab, var(--color-cream) 70%, var(--color-tan))",
+                  background:
+                    "color-mix(in oklab, var(--color-cream) 70%, var(--color-tan))",
                   borderRadius: 4,
-                  border: "1px solid color-mix(in oklab, var(--color-tan) 70%, transparent)",
+                  border:
+                    "1px solid color-mix(in oklab, var(--color-tan) 70%, transparent)",
                   padding: "4px 8px",
                   fontSize: 10.5,
                   color: "var(--color-brown)",
@@ -271,6 +285,7 @@ function Lane({
           background: "var(--color-paper)",
           borderRadius: 5,
           border: "1px solid var(--color-cream)",
+          overflow: "hidden",
         }}
       >
         {/* Ticks verticales cada 3h */}
