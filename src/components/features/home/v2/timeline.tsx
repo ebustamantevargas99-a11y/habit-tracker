@@ -12,7 +12,7 @@ interface Props {
 
 type LaneItem = { start: number; end: number; label: string };
 
-const LANE_LABEL_WIDTH = 92; // px — cabe "COMIDAS" y "AGENDA" sin truncar
+const LANE_LABEL_WIDTH = 72; // px — cabe "COMIDAS" holgadamente a font-size 10
 
 /**
  * Timeline del día por carriles (laned). Cada tipo de tiempo —sueño,
@@ -38,10 +38,16 @@ export default function Timeline({
   const total = 24 * 60;
   const pct = (m: number) => `${(m / total) * 100}%`;
 
-  const hours: Array<{ h: number; m: number; label: string }> = [];
-  for (let h = 0; h <= 24; h += 3) {
+  // Etiquetas cada 6h para no amontonar en pantallas estrechas
+  const labelHours: Array<{ m: number; label: string }> = [];
+  for (let h = 0; h <= 24; h += 6) {
     const label = ((6 + h) % 24).toString().padStart(2, "0") + ":00";
-    hours.push({ h, m: h * 60, label });
+    labelHours.push({ m: h * 60, label });
+  }
+  // Ticks cada 3h para las líneas guía dentro de cada carril
+  const tickHours: Array<{ m: number }> = [];
+  for (let h = 0; h <= 24; h += 3) {
+    tickHours.push({ m: h * 60 });
   }
 
   // Convertir meals (que solo tienen `at`) a items tipo banda angosta
@@ -78,14 +84,19 @@ export default function Timeline({
               overflow: "hidden",
             }}
           >
-            {hours.map((h) => (
+            {labelHours.map((h, i) => (
               <div
                 key={h.m}
                 className="ht-mono"
                 style={{
                   position: "absolute",
                   left: pct(h.m),
-                  transform: "translateX(-50%)",
+                  transform:
+                    i === 0
+                      ? "none"
+                      : i === labelHours.length - 1
+                        ? "translateX(-100%)"
+                        : "translateX(-50%)",
                   fontSize: 10,
                   color: "var(--color-warm)",
                 }}
@@ -96,7 +107,12 @@ export default function Timeline({
           </div>
 
           {/* Carril: Sueño */}
-          <Lane label="Sueño" hours={hours} nowMinutes={nowMinutes} pct={pct}>
+          <Lane
+            label="Sueño"
+            ticks={tickHours}
+            nowMinutes={nowMinutes}
+            pct={pct}
+          >
             {data.sleep.map((s, i) => (
               <div
                 key={`sl-${i}`}
@@ -116,7 +132,12 @@ export default function Timeline({
           </Lane>
 
           {/* Carril: Foco profundo */}
-          <Lane label="Foco" hours={hours} nowMinutes={nowMinutes} pct={pct}>
+          <Lane
+            label="Foco"
+            ticks={tickHours}
+            nowMinutes={nowMinutes}
+            pct={pct}
+          >
             {data.focus.map((f, i) => (
               <div
                 key={`f-${i}`}
@@ -147,7 +168,7 @@ export default function Timeline({
           </Lane>
 
           {/* Carril: Gym */}
-          <Lane label="Gym" hours={hours} nowMinutes={nowMinutes} pct={pct}>
+          <Lane label="Gym" ticks={tickHours} nowMinutes={nowMinutes} pct={pct}>
             {data.workouts.map((w, i) => (
               <div
                 key={`w-${i}`}
@@ -177,7 +198,12 @@ export default function Timeline({
           </Lane>
 
           {/* Carril: Comidas (diamantes) */}
-          <Lane label="Comidas" hours={hours} nowMinutes={nowMinutes} pct={pct}>
+          <Lane
+            label="Comidas"
+            ticks={tickHours}
+            nowMinutes={nowMinutes}
+            pct={pct}
+          >
             {mealsAsItems.map((m, i) => (
               <div
                 key={`m-${i}`}
@@ -197,7 +223,12 @@ export default function Timeline({
           </Lane>
 
           {/* Carril: Agenda / eventos */}
-          <Lane label="Agenda" hours={hours} nowMinutes={nowMinutes} pct={pct}>
+          <Lane
+            label="Agenda"
+            ticks={tickHours}
+            nowMinutes={nowMinutes}
+            pct={pct}
+          >
             {data.events.map((e, i) => (
               <div
                 key={`e-${i}`}
@@ -247,13 +278,13 @@ export default function Timeline({
 
 function Lane({
   label,
-  hours,
+  ticks,
   nowMinutes,
   pct,
   children,
 }: {
   label: string;
-  hours: Array<{ m: number }>;
+  ticks: Array<{ m: number }>;
   nowMinutes: number;
   pct: (m: number) => string;
   children: React.ReactNode;
@@ -289,7 +320,7 @@ function Lane({
         }}
       >
         {/* Ticks verticales cada 3h */}
-        {hours.map((h) => (
+        {ticks.map((h) => (
           <div
             key={h.m}
             style={{
