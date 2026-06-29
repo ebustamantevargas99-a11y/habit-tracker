@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Play, Pause, RotateCcw, X, Plus, Minus, Volume2 } from "lucide-react";
+import { Play, Pause, RotateCcw, X, Volume2 } from "lucide-react";
 
 type Props = {
   initialSeconds: number;
@@ -34,11 +34,17 @@ function getOrCreateCtx(): AudioContext | null {
 }
 
 // Called on every user interaction with the timer so the context stays "running".
-function touchAudioCtx() {
+// Exported so workout-logger can prime the context on the set-completion gesture,
+// before the timer mounts (autoStart) — the only reliable way to un-suspend on iOS.
+export function primeAudio() {
   const ctx = getOrCreateCtx();
   if (ctx && ctx.state === "suspended") {
     ctx.resume().catch(() => {});
   }
+}
+
+function touchAudioCtx() {
+  primeAudio();
 }
 
 async function playAlarm() {
@@ -188,26 +194,6 @@ export default function RestTimer({
         <p className="font-mono text-2xl font-bold text-accent-light tabular-nums">
           {displayMm}:{displaySs}
         </p>
-      </div>
-
-      {/* +/- 15s */}
-      <div className="flex flex-col gap-1">
-        <button
-          type="button"
-          onClick={() => handleAdjust(15)}
-          className="p-1 rounded hover:bg-white/10"
-          aria-label="Añadir 15s"
-        >
-          <Plus size={14} />
-        </button>
-        <button
-          type="button"
-          onClick={() => handleAdjust(-15)}
-          className="p-1 rounded hover:bg-white/10"
-          aria-label="Quitar 15s"
-        >
-          <Minus size={14} />
-        </button>
       </div>
 
       {/* Play/Pause */}

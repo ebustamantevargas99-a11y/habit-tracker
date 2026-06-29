@@ -1,10 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { X, Loader2, Sparkles, Trophy, Flame, BookOpen, Dumbbell, Heart, Moon, Utensils, Star } from "lucide-react";
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import {
+  X,
+  Loader2,
+  Sparkles,
+  Trophy,
+  Flame,
+  BookOpen,
+  Dumbbell,
+  Heart,
+  Moon,
+  Utensils,
+  Star,
+} from "lucide-react";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import { api } from "@/lib/api-client";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 import { fireConfettiCelebration } from "@/lib/celebrations/confetti";
 
 type RewindData = {
@@ -22,16 +40,38 @@ type RewindData = {
     totalMinutes: number;
     totalPRs: number;
   };
-  mood: { count: number; avg: number | null; best: number | null; worst: number | null };
+  mood: {
+    count: number;
+    avg: number | null;
+    best: number | null;
+    worst: number | null;
+  };
   sleep: { count: number; avgHours: number | null; avgQuality: number | null };
-  nutrition: { daysWithMeals: number; totalMeals: number; totalCalories: number };
+  nutrition: {
+    daysWithMeals: number;
+    totalMeals: number;
+    totalCalories: number;
+  };
   reading: { booksFinished: number; pagesRead: number; minutes: number };
-  lifeScore: { avg: number | null; snapshots: { date: string; overall: number }[] };
+  lifeScore: {
+    avg: number | null;
+    snapshots: { date: string; overall: number }[];
+  };
 };
 
 const MONTH_NAMES = [
-  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
 ];
 
 export default function RewindModal({
@@ -119,11 +159,7 @@ export default function RewindModal({
             </div>
           )}
 
-          {error && (
-            <div className="p-10 text-center text-danger">
-              {error}
-            </div>
-          )}
+          {error && <div className="p-10 text-center text-danger">{error}</div>}
 
           {data && !loading && (
             <div className="p-8 space-y-6">
@@ -143,9 +179,23 @@ export default function RewindModal({
                       <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={data.lifeScore.snapshots}>
                           <defs>
-                            <linearGradient id="rewindGrad" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor="#B8860B" stopOpacity={0.5} />
-                              <stop offset="100%" stopColor="#B8860B" stopOpacity={0.05} />
+                            <linearGradient
+                              id="rewindGrad"
+                              x1="0"
+                              y1="0"
+                              x2="0"
+                              y2="1"
+                            >
+                              <stop
+                                offset="0%"
+                                stopColor="#B8860B"
+                                stopOpacity={0.5}
+                              />
+                              <stop
+                                offset="100%"
+                                stopColor="#B8860B"
+                                stopOpacity={0.05}
+                              />
                             </linearGradient>
                           </defs>
                           <XAxis dataKey="date" hide />
@@ -157,7 +207,10 @@ export default function RewindModal({
                               borderRadius: 8,
                               fontSize: 11,
                             }}
-                            formatter={(v: number) => [`${v}/100`, "Puntuación de Vida"]}
+                            formatter={(v: number) => [
+                              `${v}/100`,
+                              "Puntuación de Vida",
+                            ]}
                           />
                           <Area
                             type="monotone"
@@ -190,14 +243,20 @@ export default function RewindModal({
                 <StatCard
                   icon={<Trophy size={20} />}
                   value={data.fitness.totalPRs}
-                  label={data.fitness.totalPRs === 1 ? "PR nuevo" : "PRs nuevos"}
+                  label={
+                    data.fitness.totalPRs === 1 ? "PR nuevo" : "PRs nuevos"
+                  }
                   sub={data.fitness.totalPRs > 0 ? "Progreso real" : "—"}
                 />
                 <StatCard
                   icon={<Heart size={20} />}
                   value={data.mood.avg ?? "—"}
                   label="ánimo promedio"
-                  sub={data.mood.count ? `${data.mood.count} registros` : "Sin registros"}
+                  sub={
+                    data.mood.count
+                      ? `${data.mood.count} registros`
+                      : "Sin registros"
+                  }
                 />
                 <StatCard
                   icon={<Moon size={20} />}
@@ -218,7 +277,11 @@ export default function RewindModal({
                 <StatCard
                   icon={<BookOpen size={20} />}
                   value={data.reading.booksFinished}
-                  label={data.reading.booksFinished === 1 ? "libro terminado" : "libros terminados"}
+                  label={
+                    data.reading.booksFinished === 1
+                      ? "libro terminado"
+                      : "libros terminados"
+                  }
                   sub={`${data.reading.pagesRead} páginas · ${Math.round(data.reading.minutes / 60)}h`}
                 />
                 <StatCard
@@ -246,7 +309,9 @@ export default function RewindModal({
                           <div className="flex items-center gap-3">
                             <span className="text-xl">{medals[idx]}</span>
                             <span className="text-base">{h.icon ?? "✨"}</span>
-                            <span className="font-medium text-brand-dark">{h.name}</span>
+                            <span className="font-medium text-brand-dark">
+                              {h.name}
+                            </span>
                           </div>
                           <span className="text-sm text-brand-warm font-semibold">
                             {h.count} veces
@@ -266,16 +331,10 @@ export default function RewindModal({
                     ¿Quieres análisis profundo?
                   </p>
                   <p className="text-xs text-brand-warm mt-0.5">
-                    Exporta este resumen como prompt para tu Claude/ChatGPT personal.
+                    Exporta este resumen como prompt para tu Claude/ChatGPT
+                    personal.
                   </p>
                 </div>
-                <AIExportButton
-                  scope="monthly"
-                  label="Analizar con IA"
-                  title="Resumen mensual"
-                  variant="primary"
-                  size="md"
-                />
               </div>
             </div>
           )}
@@ -301,7 +360,9 @@ function StatCard({
       <div className="flex items-center justify-between mb-2">
         <span className="text-accent">{icon}</span>
       </div>
-      <div className="text-3xl font-bold text-brand-dark leading-none">{value}</div>
+      <div className="text-3xl font-bold text-brand-dark leading-none">
+        {value}
+      </div>
       <div className="text-xs uppercase tracking-wider text-brand-warm mt-1.5">
         {label}
       </div>

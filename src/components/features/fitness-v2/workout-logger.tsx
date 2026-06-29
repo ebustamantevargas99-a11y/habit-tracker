@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Plus, Timer, Trash2, GripVertical, Zap } from "lucide-react";
 import ExerciseSelector, { type CatalogExercise } from "./exercise-selector";
-import RestTimer from "./rest-timer";
+import RestTimer, { primeAudio } from "./rest-timer";
 import SetRow, { type WorkoutSet, type SetType } from "./set-row";
 import { oneRMEstimate } from "@/lib/fitness/calculations";
 import { api } from "@/lib/api-client";
@@ -21,20 +21,27 @@ type PreviousBest = { weight: number; reps: number } | null;
 export type ExerciseKind = "weight" | "bodyweight" | "assisted" | "isometric";
 
 function normName(s: string): string {
-  return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
 }
 
 /** Detecta el tipo de carga por nombre/equipo (override manual disponible en UI). */
 function detectKind(name: string, equipment?: string): ExerciseKind {
   const n = normName(name);
-  if (/(asistid|assisted|asistenc|gravitron|con ayuda)/.test(n)) return "assisted";
+  if (/(asistid|assisted|asistenc|gravitron|con ayuda)/.test(n))
+    return "assisted";
   if (/(planch|plank|hollow|wall ?sit|isom|vacuum|sosten|puente isom)/.test(n))
     return "isometric";
   if (
-    /(dominad|pull[- ]?up|chin[- ]?up|fondo|dip|flexion|push[- ]?up|lagartija|muscle[- ]?up|pistol)/.test(n)
+    /(dominad|pull[- ]?up|chin[- ]?up|fondo|dip|flexion|push[- ]?up|lagartija|muscle[- ]?up|pistol)/.test(
+      n
+    )
   )
     return "bodyweight";
-  if (equipment && normName(equipment).includes("bodyweight")) return "bodyweight";
+  if (equipment && normName(equipment).includes("bodyweight"))
+    return "bodyweight";
   return "weight";
 }
 
@@ -50,8 +57,13 @@ function effectiveLoad(kind: ExerciseKind, field: number, bw: number): number {
 }
 
 // Inverso: dado un efectivo (del hist\u00f3rico), el valor a mostrar en el campo.
-function fieldFromEffective(kind: ExerciseKind, effective: number, bw: number): number {
-  if (kind === "assisted") return Math.max(0, Math.round((bw - effective) * 2) / 2);
+function fieldFromEffective(
+  kind: ExerciseKind,
+  effective: number,
+  bw: number
+): number {
+  if (kind === "assisted")
+    return Math.max(0, Math.round((bw - effective) * 2) / 2);
   if (kind === "bodyweight" || kind === "isometric")
     return Math.max(0, Math.round((effective - bw) * 2) / 2);
   return effective;
@@ -129,7 +141,7 @@ type ExerciseHistoryRow = {
 // Dada la respuesta /fitness/workouts, encuentra el mejor set del ejercicio dado.
 function findPreviousBest(
   workouts: ExerciseHistoryRow[],
-  exerciseName: string,
+  exerciseName: string
 ): PreviousBest {
   let best: { weight: number; reps: number } | null = null;
   for (const w of workouts) {
@@ -188,13 +200,15 @@ export default function WorkoutLogger() {
     (initialDraft.current?.exercises ?? []).map((e) => ({
       ...e,
       kind: e.kind ?? detectKind(e.exerciseName),
-    })),
+    }))
   );
   const [selectorOpen, setSelectorOpen] = useState(false);
   const [activeTimer, setActiveTimer] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [startTime] = useState(() =>
-    initialDraft.current?.startedAt ? new Date(initialDraft.current.startedAt) : new Date(),
+    initialDraft.current?.startedAt
+      ? new Date(initialDraft.current.startedAt)
+      : new Date()
   );
 
   // ── Semilla desde la rutina ("Empezar sesión" en Resumen) ──────────────────
@@ -219,7 +233,9 @@ export default function WorkoutLogger() {
     return 0;
   });
   useEffect(() => {
-    setBodyweightState((cur) => (cur === 0 && latestLoggedBw > 0 ? latestLoggedBw : cur));
+    setBodyweightState((cur) =>
+      cur === 0 && latestLoggedBw > 0 ? latestLoggedBw : cur
+    );
   }, [latestLoggedBw]);
   const setBodyweight = (v: number) => {
     setBodyweightState(v);
@@ -242,7 +258,9 @@ export default function WorkoutLogger() {
       const built: LoggedExercise[] = sessionSeed.exercises.map((se) => {
         const prevBest = findPreviousBest(history, se.name);
         const slug = resolveExerciseMuscles(se.name)?.primary ?? "";
-        const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(slug);
+        const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(
+          slug
+        );
         const restKey = isLower ? "compound_lower" : "compound_upper";
         const count = Math.max(1, Math.min(20, Math.round(se.sets) || 1));
         const kind = detectKind(se.name);
@@ -299,7 +317,7 @@ export default function WorkoutLogger() {
           name: workoutName,
           exercises,
           startedAt: startTime.toISOString(),
-        } satisfies Draft),
+        } satisfies Draft)
       );
     } catch {
       /* sin localStorage o quota llena: el draft no persiste, no es crítico */
@@ -318,7 +336,9 @@ export default function WorkoutLogger() {
   }, [exercises.length]);
 
   async function addExercise(ex: CatalogExercise) {
-    const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(ex.muscleGroup);
+    const isLower = ["quads", "hamstrings", "glutes", "calves"].includes(
+      ex.muscleGroup
+    );
     const restKey =
       ex.category === "isolation"
         ? "isolation"
@@ -334,13 +354,14 @@ export default function WorkoutLogger() {
         .catch(() => null),
       api
         .get<ProgressionResponse>(
-          `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.id)}&repMin=5&repMax=8&targetRpe=8`,
+          `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.id)}&repMin=5&repMax=8&targetRpe=8`
         )
         .catch(() => null),
     ]);
 
     const kind = detectKind(ex.name, ex.equipment);
-    const effPrev = suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
+    const effPrev =
+      suggestion?.suggestion.suggestedWeight ?? prevBest?.weight ?? 0;
     // El campo guarda el "extra" (lastre / ayuda / peso). Convertimos desde el
     // histórico (efectivo) o partimos de 0 (puro) / ~40% PC de ayuda (asistido).
     const initialWeight =
@@ -349,7 +370,8 @@ export default function WorkoutLogger() {
         : kind === "assisted"
           ? Math.round(bodyweight * 0.4)
           : 0;
-    let initialReps = suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
+    let initialReps =
+      suggestion?.suggestion.suggestedReps ?? prevBest?.reps ?? 0;
     if (kind === "isometric" && !initialReps) initialReps = 30; // segundos default
 
     setExercises((prev) => [
@@ -397,7 +419,7 @@ export default function WorkoutLogger() {
         const def = kind === "assisted" ? Math.round(bodyweight * 0.4) : 0;
         const sets = e.sets.map((s) => ({ ...s, weight: def }));
         return { ...e, kind, sets };
-      }),
+      })
     );
   }
 
@@ -420,7 +442,7 @@ export default function WorkoutLogger() {
           setType: "straight",
         };
         return { ...e, sets: [...e.sets, next] };
-      }),
+      })
     );
   }
 
@@ -432,7 +454,7 @@ export default function WorkoutLogger() {
           ...e,
           sets: e.sets.map((s) => (s.id === setId ? { ...s, ...patch } : s)),
         };
-      }),
+      })
     );
   }
 
@@ -441,7 +463,7 @@ export default function WorkoutLogger() {
       prev.map((e) => {
         if (e.uid !== exUid) return e;
         return { ...e, sets: e.sets.filter((s) => s.id !== setId) };
-      }),
+      })
     );
   }
 
@@ -456,6 +478,7 @@ export default function WorkoutLogger() {
     // Solo timer para sets que cuentan (no warmups)
     const isCountingSet = !set.isWarmup && set.setType !== "warmup";
     if (nowCompleted && isCountingSet && set.weight > 0 && set.reps > 0) {
+      primeAudio(); // resume AudioContext inside user gesture before timer mounts
       setActiveTimer(ex.restSeconds);
     }
   }
@@ -465,7 +488,7 @@ export default function WorkoutLogger() {
     if (!ex) return;
     try {
       const r = await api.get<ProgressionResponse>(
-        `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.exerciseId)}&repMin=5&repMax=8&targetRpe=8`,
+        `/fitness/progression/suggest?exerciseId=${encodeURIComponent(ex.exerciseId)}&repMin=5&repMax=8&targetRpe=8`
       );
       const sug = r.suggestion;
       setExercises((prev) =>
@@ -484,20 +507,27 @@ export default function WorkoutLogger() {
                 },
                 sets: e.sets.map((s, i) =>
                   i === 0 && !s.completed
-                    ? { ...s, weight: sug.suggestedWeight, reps: sug.suggestedReps }
-                    : s,
+                    ? {
+                        ...s,
+                        weight: sug.suggestedWeight,
+                        reps: sug.suggestedReps,
+                      }
+                    : s
                 ),
-              },
-        ),
+              }
+        )
       );
       if (sug.needsDeload) {
         toast.warning(`Deload sugerido para ${ex.exerciseName}`, {
           description: sug.reason,
         });
       } else {
-        toast.success(`${ex.exerciseName}: ${sug.suggestedWeight} kg × ${sug.suggestedReps}`, {
-          description: sug.reason,
-        });
+        toast.success(
+          `${ex.exerciseName}: ${sug.suggestedWeight} kg × ${sug.suggestedReps}`,
+          {
+            description: sug.reason,
+          }
+        );
       }
     } catch {
       toast.error("No se pudo calcular sugerencia");
@@ -538,7 +568,7 @@ export default function WorkoutLogger() {
     // reps > 0 basta (el peso puede ser 0 en peso corporal puro; en
     // isométricos "reps" son segundos).
     const hasCompletedSet = exercises.some((e) =>
-      e.sets.some((s) => s.completed && s.reps > 0),
+      e.sets.some((s) => s.completed && s.reps > 0)
     );
     if (!hasCompletedSet) {
       toast.error("Completa al menos una serie válida");
@@ -548,7 +578,7 @@ export default function WorkoutLogger() {
     setSubmitting(true);
     const durationMinutes = Math.max(
       1,
-      Math.round((Date.now() - startTime.getTime()) / 60000),
+      Math.round((Date.now() - startTime.getTime()) / 60000)
     );
     const payload = {
       date: todayLocal(),
@@ -577,7 +607,7 @@ export default function WorkoutLogger() {
                     ? "bodyweight"
                     : ex.kind === "assisted"
                       ? "assisted"
-                      : s.setType ?? "straight",
+                      : (s.setType ?? "straight"),
             groupId: s.groupId ?? null,
             isWarmup: s.isWarmup ?? s.setType === "warmup",
           })),
@@ -585,7 +615,10 @@ export default function WorkoutLogger() {
     };
 
     try {
-      const res = await api.post<WorkoutCreateResponse>("/fitness/workouts", payload);
+      const res = await api.post<WorkoutCreateResponse>(
+        "/fitness/workouts",
+        payload
+      );
       const prs = res.detectedPRs ?? [];
       if (prs.length > 0) {
         // Celebración con confetti (cargado lazy) — uno por cada PR
@@ -593,12 +626,10 @@ export default function WorkoutLogger() {
         for (const pr of prs) {
           fireConfettiPR();
           const deltaStr =
-            pr.oldOneRM != null
-              ? ` (+${pr.delta.toFixed(1)} kg)`
-              : "";
+            pr.oldOneRM != null ? ` (+${pr.delta.toFixed(1)} kg)` : "";
           toast.success(
             `🏆 Nuevo PR: ${pr.exerciseName} ${pr.newOneRM.toFixed(1)} kg (e1RM)${deltaStr}`,
-            { duration: 7000 },
+            { duration: 7000 }
           );
         }
       } else {
@@ -667,7 +698,8 @@ export default function WorkoutLogger() {
           className="w-20 px-2 py-1 rounded border border-brand-cream text-center text-brand-dark bg-brand-paper focus:outline-none focus:border-accent"
         />
         <span className="text-brand-warm/80">
-          kg — se usa para calcular la carga de peso corporal, asistidas y planchas.
+          kg — se usa para calcular la carga de peso corporal, asistidas y
+          planchas.
         </span>
       </div>
 
@@ -687,7 +719,10 @@ export default function WorkoutLogger() {
         >
           <header className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2 flex-1 min-w-0">
-              <GripVertical size={16} className="text-brand-light-tan shrink-0" />
+              <GripVertical
+                size={16}
+                className="text-brand-light-tan shrink-0"
+              />
               <div className="min-w-0">
                 <p className="font-semibold text-brand-dark truncate">
                   {ex.exerciseName}
@@ -744,7 +779,10 @@ export default function WorkoutLogger() {
               </button>
               <button
                 type="button"
-                onClick={() => setActiveTimer(ex.restSeconds)}
+                onClick={() => {
+                  primeAudio();
+                  setActiveTimer(ex.restSeconds);
+                }}
                 className="p-2 rounded hover:bg-brand-cream text-brand-warm"
                 aria-label="Iniciar timer descanso"
               >
@@ -791,7 +829,9 @@ export default function WorkoutLogger() {
                   ? "Ayuda"
                   : "Peso"}
             </div>
-            <div className="text-center">{ex.kind === "isometric" ? "Seg" : "Reps"}</div>
+            <div className="text-center">
+              {ex.kind === "isometric" ? "Seg" : "Reps"}
+            </div>
             <div className="text-center">RPE</div>
             <div></div>
             <div></div>

@@ -2,10 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Play, Square, Trash2, Clock, Flame, TrendingUp, Loader2 } from "lucide-react";
+import {
+  Play,
+  Square,
+  Trash2,
+  Clock,
+  Flame,
+  TrendingUp,
+  Loader2,
+} from "lucide-react";
 import { api } from "@/lib/api-client";
 import { fireConfettiCelebration } from "@/lib/celebrations/confetti";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 import { cn } from "@/components/ui";
 
 type FastingSession = {
@@ -18,8 +25,16 @@ type FastingSession = {
 };
 
 const PROTOCOLS = [
-  { hours: 16, label: "16:8", description: "Ayuno más popular, 8h de ventana de comida" },
-  { hours: 18, label: "18:6", description: "Intermedio, 6h ventana. Mayor quema" },
+  {
+    hours: 16,
+    label: "16:8",
+    description: "Ayuno más popular, 8h de ventana de comida",
+  },
+  {
+    hours: 18,
+    label: "18:6",
+    description: "Intermedio, 6h ventana. Mayor quema",
+  },
   { hours: 20, label: "20:4", description: "Warrior Diet, 4h ventana" },
   { hours: 24, label: "24h", description: "OMAD (One Meal A Day) extendido" },
   { hours: 36, label: "36h", description: "Extended fast. Solo ocasional" },
@@ -84,9 +99,14 @@ export default function FastingPage() {
   async function endFast() {
     if (!active) return;
     try {
-      const updated = await api.patch<FastingSession>(`/fasting/sessions/${active.id}`, {});
+      const updated = await api.patch<FastingSession>(
+        `/fasting/sessions/${active.id}`,
+        {}
+      );
       setActive(null);
-      setSessions((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+      setSessions((prev) =>
+        prev.map((s) => (s.id === updated.id ? updated : s))
+      );
       if (reachedTarget) {
         fireConfettiCelebration();
         toast.success("🎉 ¡Ayuno completado! Gran trabajo.");
@@ -113,12 +133,14 @@ export default function FastingPage() {
   const stats = useMemo(() => {
     const completed = sessions.filter((s) => s.endedAt);
     const totalHours = completed.reduce((sum, s) => {
-      const ms = new Date(s.endedAt!).getTime() - new Date(s.startedAt).getTime();
+      const ms =
+        new Date(s.endedAt!).getTime() - new Date(s.startedAt).getTime();
       return sum + ms / 3600000;
     }, 0);
     const avgHours = completed.length ? totalHours / completed.length : 0;
     const completedTarget = completed.filter((s) => {
-      const ms = new Date(s.endedAt!).getTime() - new Date(s.startedAt).getTime();
+      const ms =
+        new Date(s.endedAt!).getTime() - new Date(s.startedAt).getTime();
       return ms / 3600000 >= s.targetHours;
     }).length;
     return {
@@ -149,16 +171,10 @@ export default function FastingPage() {
             Ayuno intermitente
           </h1>
           <p className="text-sm text-brand-warm mt-1">
-            {stats.total} ayunos · {stats.successRate}% de éxito · {stats.avgHours}h promedio
+            {stats.total} ayunos · {stats.successRate}% de éxito ·{" "}
+            {stats.avgHours}h promedio
           </p>
         </div>
-        <AIExportButton
-          scope="holistic"
-          label="Analizar con IA"
-          title="Análisis de ayuno"
-          variant="outline"
-          size="md"
-        />
       </div>
 
       {/* Timer en vivo */}
@@ -170,7 +186,11 @@ export default function FastingPage() {
                 Ayuno activo · objetivo {active.targetHours}h
               </p>
               <p className="text-[11px] text-brand-light-cream">
-                Inició {new Date(active.startedAt).toLocaleString("es-MX", { dateStyle: "short", timeStyle: "short" })}
+                Inició{" "}
+                {new Date(active.startedAt).toLocaleString("es-MX", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
               </p>
             </div>
             <button
@@ -213,7 +233,8 @@ export default function FastingPage() {
             Elige un protocolo e inicia
           </h2>
           <p className="text-xs text-brand-warm mb-4">
-            El timer corre en vivo. Puedes cerrar la ventana sin perder el progreso.
+            El timer corre en vivo. Puedes cerrar la ventana sin perder el
+            progreso.
           </p>
           <div className="grid grid-cols-5 gap-3">
             {PROTOCOLS.map((p) => (
@@ -224,9 +245,13 @@ export default function FastingPage() {
               >
                 <div className="flex items-center gap-2 mb-2">
                   <Play size={14} className="text-accent" />
-                  <span className="text-lg font-bold text-brand-dark">{p.label}</span>
+                  <span className="text-lg font-bold text-brand-dark">
+                    {p.label}
+                  </span>
                 </div>
-                <p className="text-[11px] text-brand-warm leading-tight">{p.description}</p>
+                <p className="text-[11px] text-brand-warm leading-tight">
+                  {p.description}
+                </p>
               </button>
             ))}
           </div>
@@ -271,7 +296,9 @@ export default function FastingPage() {
             {sessions.map((s) => {
               const start = new Date(s.startedAt);
               const end = s.endedAt ? new Date(s.endedAt) : null;
-              const durationMs = end ? end.getTime() - start.getTime() : now - start.getTime();
+              const durationMs = end
+                ? end.getTime() - start.getTime()
+                : now - start.getTime();
               const durationH = durationMs / 3600000;
               const success = durationH >= s.targetHours;
               return (
@@ -282,7 +309,11 @@ export default function FastingPage() {
                   <div
                     className={cn(
                       "w-2 h-2 rounded-full",
-                      !end ? "bg-accent animate-pulse" : success ? "bg-success" : "bg-warning"
+                      !end
+                        ? "bg-accent animate-pulse"
+                        : success
+                          ? "bg-success"
+                          : "bg-warning"
                     )}
                   />
                   <div className="flex-1 min-w-0">
@@ -333,8 +364,12 @@ function StatCard({
       <div className="flex items-center justify-between mb-2">
         <span className="text-accent">{icon}</span>
       </div>
-      <div className="text-2xl font-bold text-brand-dark leading-none">{value}</div>
-      <div className="text-[11px] uppercase tracking-widest text-brand-warm mt-1.5">{label}</div>
+      <div className="text-2xl font-bold text-brand-dark leading-none">
+        {value}
+      </div>
+      <div className="text-[11px] uppercase tracking-widest text-brand-warm mt-1.5">
+        {label}
+      </div>
     </div>
   );
 }

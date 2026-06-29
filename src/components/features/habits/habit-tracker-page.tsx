@@ -7,7 +7,6 @@ import { useHabitStore } from "@/stores/habit-store";
 import { useUserStore } from "@/stores/user-store";
 import { cn, ErrorBanner } from "@/components/ui";
 import { fireConfettiCelebration } from "@/lib/celebrations/confetti";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 import type { Habit } from "@/types";
 import HabitCard from "./habit-card";
 import HabitsHero from "./habits-hero";
@@ -21,9 +20,9 @@ import { phaseFromStreak } from "./phase-utils";
 type ViewMode = "list" | "heatmap-global" | "heatmap-per";
 
 const VIEWS: { id: ViewMode; label: string; icon: React.ElementType }[] = [
-  { id: "list",           label: "Lista",        icon: LayoutGrid },
+  { id: "list", label: "Lista", icon: LayoutGrid },
   { id: "heatmap-global", label: "Mapa del año", icon: MapIcon },
-  { id: "heatmap-per",    label: "Por hábito",   icon: List },
+  { id: "heatmap-per", label: "Por hábito", icon: List },
 ];
 
 export default function HabitTrackerPage() {
@@ -45,7 +44,10 @@ export default function HabitTrackerPage() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Habit | null>(null);
   const [dismissedRisks, setDismissedRisks] = useState<Set<string>>(new Set());
-  const [celebration, setCelebration] = useState<{ habit: Habit; milestone: number } | null>(null);
+  const [celebration, setCelebration] = useState<{
+    habit: Habit;
+    milestone: number;
+  } | null>(null);
 
   useEffect(() => {
     initialize();
@@ -60,7 +62,9 @@ export default function HabitTrackerPage() {
   const completedTodayIds = useMemo(
     () =>
       new Set(
-        logs.filter((l) => l.date === todayStr && l.completed).map((l) => l.habitId)
+        logs
+          .filter((l) => l.date === todayStr && l.completed)
+          .map((l) => l.habitId)
       ),
     [logs, todayStr]
   );
@@ -85,7 +89,9 @@ export default function HabitTrackerPage() {
         h.frequency === "daily" || h.targetDays?.includes(todayDow);
       if (!yesterdayScheduled || !todayScheduled) return false;
 
-      const yesterdayLog = logs.find((l) => l.habitId === h.id && l.date === yStr);
+      const yesterdayLog = logs.find(
+        (l) => l.habitId === h.id && l.date === yStr
+      );
       const yesterdayMissed = !yesterdayLog || !yesterdayLog.completed;
       if (!yesterdayMissed) return false;
 
@@ -98,7 +104,9 @@ export default function HabitTrackerPage() {
     const prevStreak = habit.streakCurrent;
     await toggleHabitToday(habit.id);
     await refresh();
-    const updated = useHabitStore.getState().habits.find((h) => h.id === habit.id);
+    const updated = useHabitStore
+      .getState()
+      .habits.find((h) => h.id === habit.id);
     if (updated && updated.streakCurrent > prevStreak) {
       const MILESTONES = [7, 21, 66, 92, 100, 365, 500, 1000];
       for (const m of MILESTONES) {
@@ -191,7 +199,6 @@ export default function HabitTrackerPage() {
           })}
         </div>
         <div className="flex gap-2">
-          <AIExportButton scope="habits" label="Analizar con IA" variant="outline" size="sm" />
           <button
             onClick={() => {
               setEditing(null);

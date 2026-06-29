@@ -1,105 +1,205 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, ArrowRight } from "lucide-react";
+import {
+  Sparkles,
+  ArrowRight,
+  Flame,
+  Dumbbell,
+  Salad,
+  DollarSign,
+  CalendarDays,
+  BarChart3,
+  Brain,
+} from "lucide-react";
 import SectionHeader from "./primitives/section-header";
 import AIExportModal from "@/components/features/ai-export/ai-export-modal";
 import type { ExportScope } from "@/lib/ai-export/types";
+import { cn } from "@/components/ui";
 
-interface Item {
-  key: "daily" | "weekly" | "holistic";
+interface AnalysisCard {
+  key: ExportScope;
   label: string;
   desc: string;
+  icon: React.ElementType;
+  accent: string;
+  bg: string;
+  featured?: boolean;
 }
 
-const ITEMS: Item[] = [
+const CARDS: AnalysisCard[] = [
   {
     key: "daily",
-    label: "Analizar mi día",
-    desc: "Hábitos, comidas, foco y más de hoy. Se arma el contexto y lo pegas en tu IA favorita.",
+    label: "Cierre del día",
+    desc: "Hábitos, nutrición y foco de hoy en un solo contexto listo para tu IA.",
+    icon: CalendarDays,
+    accent: "#B8860B",
+    bg: "rgba(184,134,11,0.08)",
+    featured: true,
   },
   {
     key: "weekly",
-    label: "Analizar mi semana",
-    desc: "Tendencias, baches y victorias de los últimos 7 días agregados en un único prompt.",
+    label: "Revisión semanal",
+    desc: "Tendencias y victorias de los últimos 7 días agregados en un prompt.",
+    icon: BarChart3,
+    accent: "#2563eb",
+    bg: "rgba(37,99,235,0.07)",
+    featured: true,
+  },
+  {
+    key: "habits",
+    label: "Mis hábitos",
+    desc: "Rachas, consistencia y patrones de tus hábitos para que la IA los analice.",
+    icon: Flame,
+    accent: "#dc2626",
+    bg: "rgba(220,38,38,0.07)",
+  },
+  {
+    key: "fitness",
+    label: "Entrenamiento",
+    desc: "Volumen, progresión y PRs de tus últimas sesiones de fitness.",
+    icon: Dumbbell,
+    accent: "#7c3aed",
+    bg: "rgba(124,58,237,0.07)",
+  },
+  {
+    key: "nutrition",
+    label: "Nutrición",
+    desc: "Macros, calorías y patrones de alimentación de esta semana.",
+    icon: Salad,
+    accent: "#16a34a",
+    bg: "rgba(22,163,74,0.07)",
+  },
+  {
+    key: "finance",
+    label: "Finanzas",
+    desc: "Gastos, ingresos y categorías del mes para análisis financiero.",
+    icon: DollarSign,
+    accent: "#0891b2",
+    bg: "rgba(8,145,178,0.07)",
   },
   {
     key: "holistic",
-    label: "Perfil completo → IA",
-    desc: "Snapshot entero del sistema: todo tu historial relevante en un solo mensaje.",
+    label: "Perfil completo",
+    desc: "Todo tu historial en un solo snapshot. El análisis más profundo.",
+    icon: Brain,
+    accent: "#B8860B",
+    bg: "rgba(184,134,11,0.06)",
+    featured: true,
   },
 ];
 
-/**
- * AI Hub — 3 cards grandes, cada una abre el AIExportModal con el
- * scope pre-seleccionado. Reutiliza el modal existente que ya maneja
- * provider (Claude / ChatGPT / Gemini) + estilo (coach / analyst /
- * retrospective / projection) + rango de fechas.
- */
 export default function AIHub() {
   const [openScope, setOpenScope] = useState<ExportScope | null>(null);
+
+  const featured = CARDS.filter((c) => c.featured);
+  const secondary = CARDS.filter((c) => !c.featured);
 
   return (
     <section>
       <SectionHeader
-        eyebrow="Asistente"
-        title="Llévate esto a tu IA favorita"
-        subtitle="Un click abre el modal con el contexto listo para enviar a Claude, ChatGPT o Gemini."
+        eyebrow="Análisis con IA"
+        title="Llévate tu data a tu IA favorita"
+        subtitle="Genera el contexto ideal para Claude, ChatGPT o Gemini. Un clic, pegas el prompt, y obtienes el análisis."
       />
-      <div className="grid gap-4 mt-5" style={{ gridTemplateColumns: "repeat(3, 1fr)" }}>
-        {ITEMS.map((it, i) => (
-          <button
-            key={it.key}
-            type="button"
-            onClick={() => setOpenScope(it.key)}
-            className="ht-card ht-card-interactive text-left flex flex-col gap-3.5"
-            style={{
-              padding: 24,
-              cursor: "pointer",
-              animation: `ht-fadeUp .55s ${80 + i * 80}ms both`,
-              minHeight: 160,
-              fontFamily: "inherit",
-              color: "inherit",
-            }}
-          >
-            <div
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: 10,
-                background:
-                  "color-mix(in oklab, var(--color-accent) 18%, var(--color-warm-white))",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: "var(--color-accent)",
-              }}
+
+      {/* Featured row — 3 cards grandes */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
+        {featured.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => setOpenScope(card.key)}
+              className="group text-left rounded-2xl border border-brand-tan bg-brand-paper p-6 flex flex-col gap-4 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              style={{ animation: `ht-fadeUp .5s ${i * 70}ms both` }}
             >
-              <Sparkles size={18} strokeWidth={1.75} />
-            </div>
-            <h3
-              className="ht-serif m-0"
-              style={{
-                fontSize: 22,
-                lineHeight: 1.15,
-                color: "var(--color-brown)",
-                fontWeight: 700,
-                letterSpacing: "-0.015em",
-              }}
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                style={{ background: card.bg, color: card.accent }}
+              >
+                <Icon size={20} strokeWidth={1.75} />
+              </div>
+              <div className="flex-1">
+                <h3
+                  className="font-serif m-0 mb-1 text-[1.1rem] font-bold leading-tight"
+                  style={{ color: "var(--color-brown)" }}
+                >
+                  {card.label}
+                </h3>
+                <p
+                  className="text-[0.8rem] leading-relaxed m-0"
+                  style={{ color: "var(--color-warm)" }}
+                >
+                  {card.desc}
+                </p>
+              </div>
+              <div
+                className="flex items-center gap-1 text-[0.75rem] font-semibold group-hover:gap-2 transition-all"
+                style={{ color: card.accent }}
+              >
+                <Sparkles size={12} strokeWidth={1.75} />
+                Generar prompt
+                <ArrowRight
+                  size={12}
+                  strokeWidth={2}
+                  className="group-hover:translate-x-0.5 transition-transform"
+                />
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Secondary row — 4 cards compactas */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+        {secondary.map((card, i) => {
+          const Icon = card.icon;
+          return (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => setOpenScope(card.key)}
+              className="group text-left rounded-xl border border-brand-tan bg-brand-paper p-4 flex flex-col gap-3 hover:shadow-[0_2px_12px_rgba(0,0,0,0.07)] hover:-translate-y-0.5 transition-all duration-200 cursor-pointer"
+              style={{ animation: `ht-fadeUp .5s ${(i + 3) * 70}ms both` }}
             >
-              {it.label}
-            </h3>
-            <p style={{ color: "var(--color-warm)", fontSize: 13, lineHeight: 1.5, flex: 1 }}>
-              {it.desc}
-            </p>
-            <div
-              className="flex items-center gap-1"
-              style={{ color: "var(--color-accent)", fontSize: 12.5, fontWeight: 500 }}
-            >
-              Abrir diálogo <ArrowRight size={13} strokeWidth={1.75} />
-            </div>
-          </button>
-        ))}
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: card.bg, color: card.accent }}
+              >
+                <Icon size={16} strokeWidth={1.75} />
+              </div>
+              <div>
+                <h4
+                  className="font-serif m-0 mb-0.5 text-[0.9rem] font-bold leading-tight"
+                  style={{ color: "var(--color-brown)" }}
+                >
+                  {card.label}
+                </h4>
+                <p
+                  className="text-[0.72rem] leading-snug m-0 line-clamp-2"
+                  style={{ color: "var(--color-warm)" }}
+                >
+                  {card.desc}
+                </p>
+              </div>
+              <div
+                className={cn(
+                  "flex items-center gap-1 text-[0.7rem] font-semibold mt-auto"
+                )}
+                style={{ color: card.accent }}
+              >
+                <ArrowRight
+                  size={11}
+                  strokeWidth={2}
+                  className="group-hover:translate-x-0.5 transition-transform"
+                />
+                Analizar
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       <AIExportModal
@@ -107,11 +207,7 @@ export default function AIHub() {
         onClose={() => setOpenScope(null)}
         initialScope={openScope ?? "daily"}
         title={
-          openScope === "weekly"
-            ? "Resumen semanal"
-            : openScope === "holistic"
-              ? "Perfil completo → IA"
-              : "Cierre del día"
+          CARDS.find((c) => c.key === openScope)?.label ?? "Análisis con IA"
         }
       />
     </section>

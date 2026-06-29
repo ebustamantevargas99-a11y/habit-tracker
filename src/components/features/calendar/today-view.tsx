@@ -16,7 +16,6 @@ import { toast } from "sonner";
 import { api } from "@/lib/api-client";
 import { cn } from "@/components/ui";
 import QuickAddBar from "./quick-add-bar";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 import type { DayAgenda, CalendarEvent } from "./types";
 import { TYPE_META } from "./types";
 import { useUserStore } from "@/stores/user-store";
@@ -25,10 +24,30 @@ import { todayLocal, toLocalDateStr } from "@/lib/date/local";
 // Construimos un timeline virtual combinando todos los recursos del día
 type TimelineItem =
   | { kind: "event"; data: CalendarEvent; hourStart: number; hourEnd: number }
-  | { kind: "workout"; data: DayAgenda["agenda"]["workouts"][number]; hourStart: number; hourEnd: number }
-  | { kind: "meal"; data: DayAgenda["agenda"]["meals"][number]; hourStart: number; hourEnd: number }
-  | { kind: "focus"; data: DayAgenda["agenda"]["focus"][number]; hourStart: number; hourEnd: number }
-  | { kind: "timeblock"; data: DayAgenda["dailyPlan"]["timeBlocks"][number]; hourStart: number; hourEnd: number };
+  | {
+      kind: "workout";
+      data: DayAgenda["agenda"]["workouts"][number];
+      hourStart: number;
+      hourEnd: number;
+    }
+  | {
+      kind: "meal";
+      data: DayAgenda["agenda"]["meals"][number];
+      hourStart: number;
+      hourEnd: number;
+    }
+  | {
+      kind: "focus";
+      data: DayAgenda["agenda"]["focus"][number];
+      hourStart: number;
+      hourEnd: number;
+    }
+  | {
+      kind: "timeblock";
+      data: DayAgenda["dailyPlan"]["timeBlocks"][number];
+      hourStart: number;
+      hourEnd: number;
+    };
 
 // Meal default hours si no hay hora explícita
 const MEAL_DEFAULT_HOUR: Record<string, number> = {
@@ -125,7 +144,9 @@ export default function TodayView({
     try {
       await api.delete(`/calendar/events/${id}`);
       setData((prev) =>
-        prev ? { ...prev, events: prev.events.filter((e) => e.id !== id) } : prev
+        prev
+          ? { ...prev, events: prev.events.filter((e) => e.id !== id) }
+          : prev
       );
       toast.success("Evento borrado");
     } catch {
@@ -168,15 +189,30 @@ export default function TodayView({
     }
     for (const m of data.agenda.meals) {
       const hourStart = MEAL_DEFAULT_HOUR[m.mealType] ?? 12;
-      items.push({ kind: "meal", data: m, hourStart, hourEnd: hourStart + 0.5 });
+      items.push({
+        kind: "meal",
+        data: m,
+        hourStart,
+        hourEnd: hourStart + 0.5,
+      });
     }
     for (const f of data.agenda.focus) {
       const hourStart = hourOfDate(f.startedAt);
       const dur = (f.actualMinutes ?? f.plannedMinutes) / 60;
-      items.push({ kind: "focus", data: f, hourStart, hourEnd: hourStart + dur });
+      items.push({
+        kind: "focus",
+        data: f,
+        hourStart,
+        hourEnd: hourStart + dur,
+      });
     }
     for (const tb of data.dailyPlan.timeBlocks) {
-      items.push({ kind: "timeblock", data: tb, hourStart: tb.startTime, hourEnd: tb.endTime });
+      items.push({
+        kind: "timeblock",
+        data: tb,
+        hourStart: tb.startTime,
+        hourEnd: tb.endTime,
+      });
     }
     return items.sort((a, b) => a.hourStart - b.hourStart);
   }, [data]);
@@ -214,10 +250,12 @@ export default function TodayView({
                 })}
           </h2>
           <p className="text-xs text-brand-warm mt-0.5">
-            {timeline.length} elemento{timeline.length !== 1 ? "s" : ""} en tu agenda ·{" "}
-            {data?.agenda.habits.filter((h) => h.completed).length}/
+            {timeline.length} elemento{timeline.length !== 1 ? "s" : ""} en tu
+            agenda · {data?.agenda.habits.filter((h) => h.completed).length}/
             {data?.agenda.habits.length ?? 0} hábitos
-            {savingPlan && <span className="ml-3 text-brand-tan">· guardando…</span>}
+            {savingPlan && (
+              <span className="ml-3 text-brand-tan">· guardando…</span>
+            )}
           </p>
         </div>
         <div className="flex gap-2 items-center">
@@ -239,13 +277,6 @@ export default function TodayView({
           >
             Mañana →
           </button>
-          <AIExportButton
-            scope="daily"
-            label="Analizar con IA"
-            title="Cierre del día"
-            variant="outline"
-            size="sm"
-          />
         </div>
       </div>
 
@@ -257,7 +288,9 @@ export default function TodayView({
               ? {
                   ...prev,
                   events: [...prev.events, ev].sort(
-                    (a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()
+                    (a, b) =>
+                      new Date(a.startAt).getTime() -
+                      new Date(b.startAt).getTime()
                   ),
                 }
               : prev
@@ -279,7 +312,9 @@ export default function TodayView({
         <div className="space-y-2">
           {[0, 1, 2].map((i) => (
             <div key={i} className="flex items-center gap-3">
-              <span className="text-xs font-bold text-accent w-5">{i + 1}.</span>
+              <span className="text-xs font-bold text-accent w-5">
+                {i + 1}.
+              </span>
               <input
                 type="text"
                 value={priorities[i] ?? ""}
@@ -311,10 +346,15 @@ export default function TodayView({
               <TimelineRow
                 key={`${item.kind}-${idx}`}
                 item={item}
-                onDelete={item.kind === "event" ? () => deleteEvent(item.data.id) : undefined}
+                onDelete={
+                  item.kind === "event"
+                    ? () => deleteEvent(item.data.id)
+                    : undefined
+                }
                 onToggleComplete={
                   item.kind === "event"
-                    ? () => toggleEventComplete(item.data.id, item.data.completed)
+                    ? () =>
+                        toggleEventComplete(item.data.id, item.data.completed)
                     : undefined
                 }
               />
@@ -343,7 +383,9 @@ export default function TodayView({
                 <span>{h.icon}</span>
                 <span className="font-medium">{h.name}</span>
                 {h.streak > 0 && (
-                  <span className="text-[10px] opacity-80">· 🔥 {h.streak}</span>
+                  <span className="text-[10px] opacity-80">
+                    · 🔥 {h.streak}
+                  </span>
                 )}
               </div>
             ))}
@@ -463,7 +505,9 @@ function TimelineRow({
       icon = <Dumbbell size={16} className="text-danger" />;
       title = item.data.title;
       subtitle = `${item.data.durationMinutes}min${
-        item.data.prsHit > 0 ? ` · 🏆 ${item.data.prsHit} PR${item.data.prsHit > 1 ? "s" : ""}` : ""
+        item.data.prsHit > 0
+          ? ` · 🏆 ${item.data.prsHit} PR${item.data.prsHit > 1 ? "s" : ""}`
+          : ""
       }`;
       colorClass = "bg-danger/5 border-danger/30";
       completed = item.data.completed;
@@ -481,7 +525,9 @@ function TimelineRow({
       subtitle = `${item.data.actualMinutes ?? item.data.plannedMinutes}min${
         item.data.active ? " · en curso" : ""
       }`;
-      colorClass = item.data.active ? "bg-info/10 border-info" : "bg-info/5 border-info/30";
+      colorClass = item.data.active
+        ? "bg-info/10 border-info"
+        : "bg-info/5 border-info/30";
       completed = !item.data.active;
       break;
     case "timeblock":
@@ -526,7 +572,11 @@ function TimelineRow({
           className="shrink-0 p-1 text-brand-warm hover:text-success"
           title={completed ? "Marcar pendiente" : "Marcar completado"}
         >
-          {completed ? <CheckCircle2 size={14} className="text-success" /> : <Circle size={14} />}
+          {completed ? (
+            <CheckCircle2 size={14} className="text-success" />
+          ) : (
+            <Circle size={14} />
+          )}
         </button>
       )}
       {onDelete && (

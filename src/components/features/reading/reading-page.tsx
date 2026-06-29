@@ -22,7 +22,6 @@ import {
   type BookStatus,
 } from "@/stores/reading-store";
 import { cn, ErrorBanner } from "@/components/ui";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
 const STATUS_META: Record<
   BookStatus,
@@ -118,13 +117,6 @@ export default function ReadingPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <AIExportButton
-            scope="holistic"
-            label="Analizar con IA"
-            title="Análisis de lectura"
-            variant="outline"
-            size="md"
-          />
           <button
             onClick={() => setShowAddBook(true)}
             className="px-4 py-2 rounded-button bg-accent text-white text-sm font-semibold hover:bg-brand-brown flex items-center gap-2"

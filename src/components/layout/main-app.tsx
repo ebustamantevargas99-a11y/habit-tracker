@@ -16,7 +16,6 @@ import RewindModal from "@/components/features/rewind/rewind-modal";
 import WeeklySummaryModal from "@/components/features/home/weekly-summary-modal";
 import OnboardingModal from "@/components/features/onboarding/onboarding-modal";
 import SettingsPage from "@/components/features/settings/settings-page";
-import FloatingAIButton from "@/components/features/ai-export/floating-ai-button";
 import PWAInstallPrompt from "@/components/pwa/install-prompt";
 import MobileBottomNav from "@/components/layout/mobile-bottom-nav";
 import ReminderScheduler from "@/components/features/calendar/reminder-scheduler";
@@ -239,7 +238,6 @@ export default function MainApp() {
 
       <MobileBottomNav onMenuOpen={() => setSidebarOpen(true)} />
 
-      <FloatingAIButton />
       <PWAInstallPrompt />
 
       {showMonthlySummary && (

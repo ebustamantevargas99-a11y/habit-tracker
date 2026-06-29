@@ -2,11 +2,24 @@
 
 import { useCallback, useEffect, useState } from "react";
 import {
-  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
 } from "recharts";
 import {
-  TrendingUp, TrendingDown, Shield, Calendar, AlertTriangle,
-  CheckCircle2, Info, Sparkles, Plus, Wallet,
+  TrendingUp,
+  TrendingDown,
+  Shield,
+  Calendar,
+  AlertTriangle,
+  CheckCircle2,
+  Info,
+  Sparkles,
+  Plus,
+  Wallet,
 } from "lucide-react";
 import { cn } from "@/components/ui";
 import { api } from "@/lib/api-client";
@@ -14,7 +27,6 @@ import { formatMoney, formatCompact } from "@/lib/finance/format";
 import QuickAddBar from "./quick-add-bar";
 import RecentTransactions from "./recent-transactions";
 import CreditCardsDue from "./credit-cards-due";
-import AIExportButton from "@/components/features/ai-export/ai-export-button";
 
 type DashboardData = {
   currency: string;
@@ -31,17 +43,58 @@ type DashboardData = {
     incomeDeltaPercent: number | null;
     expensesDeltaPercent: number | null;
   };
-  runway: { months: number; savingsBalance: number; avgMonthlyExpense: number; target: number };
-  topCategories: Array<{ category: string; amount: number; prevAmount: number; deltaPercent: number | null }>;
-  upcoming: Array<{ id: string; name: string; amount: number; currency?: string; amountInPrimary?: number; nextDate: string; type: string; category: string }>;
-  accounts: Array<{ id: string; name: string; type: string; currency: string; balance: number; balanceInPrimary?: number; icon: string | null; color: string | null }>;
-  goals: Array<{ id: string; name: string; emoji: string | null; target: number; current: number; targetDate: string | null; priority: string | null }>;
+  runway: {
+    months: number;
+    savingsBalance: number;
+    avgMonthlyExpense: number;
+    target: number;
+  };
+  topCategories: Array<{
+    category: string;
+    amount: number;
+    prevAmount: number;
+    deltaPercent: number | null;
+  }>;
+  upcoming: Array<{
+    id: string;
+    name: string;
+    amount: number;
+    currency?: string;
+    amountInPrimary?: number;
+    nextDate: string;
+    type: string;
+    category: string;
+  }>;
+  accounts: Array<{
+    id: string;
+    name: string;
+    type: string;
+    currency: string;
+    balance: number;
+    balanceInPrimary?: number;
+    icon: string | null;
+    color: string | null;
+  }>;
+  goals: Array<{
+    id: string;
+    name: string;
+    emoji: string | null;
+    target: number;
+    current: number;
+    targetDate: string | null;
+    priority: string | null;
+  }>;
   heatmap: Record<string, number>;
 };
 
 type NetWorthData = {
   current: { assets: number; liabilities: number; netWorth: number };
-  timeline: Array<{ date: string; assets: number; liabilities: number; netWorth: number }>;
+  timeline: Array<{
+    date: string;
+    assets: number;
+    liabilities: number;
+    netWorth: number;
+  }>;
 };
 
 type Insight = {
@@ -68,7 +121,9 @@ export default function PanelView({
     const [dash, nw, ins] = await Promise.all([
       api.get<DashboardData>("/finance/dashboard"),
       api.get<NetWorthData>("/finance/net-worth?months=12"),
-      api.get<{ insights: Insight[] }>("/finance/insights").catch(() => ({ insights: [] })),
+      api
+        .get<{ insights: Insight[] }>("/finance/insights")
+        .catch(() => ({ insights: [] })),
     ]);
     setData(dash);
     setNetWorth(nw);
@@ -81,7 +136,11 @@ export default function PanelView({
   }, [refresh]);
 
   if (!data) {
-    return <div className="text-center py-16 text-brand-warm animate-pulse">Cargando…</div>;
+    return (
+      <div className="text-center py-16 text-brand-warm animate-pulse">
+        Cargando…
+      </div>
+    );
   }
 
   if (data.accounts.length === 0) {
@@ -105,12 +164,21 @@ export default function PanelView({
   }
 
   const {
-    currency, isMultiCurrency, netWorth: nw, cashflow, runway, topCategories, upcoming, accounts, goals, heatmap,
+    currency,
+    isMultiCurrency,
+    netWorth: nw,
+    cashflow,
+    runway,
+    topCategories,
+    upcoming,
+    accounts,
+    goals,
+    heatmap,
   } = data;
 
   // Conjunto único de monedas presentes — para el disclaimer.
   const distinctCurrencies = Array.from(
-    new Set(accounts.map((a) => a.currency).filter(Boolean)),
+    new Set(accounts.map((a) => a.currency).filter(Boolean))
   );
 
   return (
@@ -120,15 +188,29 @@ export default function PanelView({
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
             <p className="text-xs uppercase tracking-widest text-brand-light-tan mb-1">
-              Patrimonio neto · {new Date().toLocaleDateString("es-MX", { month: "long", year: "numeric" })}
+              Patrimonio neto ·{" "}
+              {new Date().toLocaleDateString("es-MX", {
+                month: "long",
+                year: "numeric",
+              })}
             </p>
             <div className="text-5xl font-display font-bold text-accent-glow leading-none">
               {formatMoney(nw.current, currency)}
             </div>
             <div className="mt-3 flex items-center gap-3 text-sm text-brand-light-cream">
-              <span>Activos: <b className="text-accent-glow">{formatMoney(nw.assets, currency)}</b></span>
+              <span>
+                Activos:{" "}
+                <b className="text-accent-glow">
+                  {formatMoney(nw.assets, currency)}
+                </b>
+              </span>
               <span className="text-brand-light-tan">·</span>
-              <span>Pasivos: <b className="text-danger">{formatMoney(nw.liabilities, currency)}</b></span>
+              <span>
+                Pasivos:{" "}
+                <b className="text-danger">
+                  {formatMoney(nw.liabilities, currency)}
+                </b>
+              </span>
             </div>
             {isMultiCurrency && (
               <p
@@ -153,7 +235,11 @@ export default function PanelView({
                   <defs>
                     <linearGradient id="nwGradient" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#F0D78C" stopOpacity={0.5} />
-                      <stop offset="100%" stopColor="#F0D78C" stopOpacity={0.05} />
+                      <stop
+                        offset="100%"
+                        stopColor="#F0D78C"
+                        stopOpacity={0.05}
+                      />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="date" hide />
@@ -166,7 +252,10 @@ export default function PanelView({
                       fontSize: 11,
                     }}
                     labelFormatter={(v: string) => v}
-                    formatter={(v: number) => [formatMoney(v, currency), "Patrimonio neto"]}
+                    formatter={(v: number) => [
+                      formatMoney(v, currency),
+                      "Patrimonio neto",
+                    ]}
                   />
                   <Area
                     type="monotone"
@@ -204,14 +293,26 @@ export default function PanelView({
           label="Tasa de ahorro"
           value={`${cashflow.savingsRate.toFixed(0)}%`}
           sub={`${formatMoney(cashflow.savings, currency)} ahorrados`}
-          color={cashflow.savingsRate >= 20 ? "text-success" : cashflow.savingsRate >= 10 ? "text-warning" : "text-danger"}
+          color={
+            cashflow.savingsRate >= 20
+              ? "text-success"
+              : cashflow.savingsRate >= 10
+                ? "text-warning"
+                : "text-danger"
+          }
         />
         <KpiCard
           icon={<Shield size={16} />}
           label="Fondo de emergencia"
           value={`${runway.months.toFixed(1)}m`}
           sub={`${formatMoney(runway.savingsBalance, currency)} / meta ${runway.target}m`}
-          color={runway.months >= runway.target ? "text-success" : runway.months >= 1 ? "text-warning" : "text-danger"}
+          color={
+            runway.months >= runway.target
+              ? "text-success"
+              : runway.months >= 1
+                ? "text-warning"
+                : "text-danger"
+          }
         />
       </div>
 
@@ -244,7 +345,9 @@ export default function PanelView({
         {/* Cuentas */}
         <div className="bg-brand-paper border border-brand-cream rounded-xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="font-serif text-base font-semibold text-brand-dark">Tus cuentas</h3>
+            <h3 className="font-serif text-base font-semibold text-brand-dark">
+              Tus cuentas
+            </h3>
             <button
               onClick={onManageAccounts}
               className="text-xs text-accent hover:text-brand-brown"
@@ -259,13 +362,21 @@ export default function PanelView({
                 <div key={a.id} className="flex items-center gap-2.5 py-1.5">
                   <span className="text-lg">{a.icon ?? "💳"}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-brand-dark truncate font-medium">{a.name}</p>
-                    <p className="text-[10px] uppercase tracking-wider text-brand-warm">{a.type}</p>
+                    <p className="text-sm text-brand-dark truncate font-medium">
+                      {a.name}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wider text-brand-warm">
+                      {a.type}
+                    </p>
                   </div>
                   <span
                     className={cn(
                       "text-sm font-bold font-mono",
-                      isLiab ? "text-danger" : a.balance >= 0 ? "text-brand-dark" : "text-warning"
+                      isLiab
+                        ? "text-danger"
+                        : a.balance >= 0
+                          ? "text-brand-dark"
+                          : "text-warning"
                     )}
                   >
                     {formatMoney(a.balance, a.currency)}
@@ -296,13 +407,15 @@ export default function PanelView({
                 return (
                   <div key={u.id} className="flex items-center gap-2 py-1.5">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-brand-dark truncate">{u.name}</p>
+                      <p className="text-sm font-medium text-brand-dark truncate">
+                        {u.name}
+                      </p>
                       <p className="text-[11px] text-brand-warm">
                         {daysUntil <= 0
                           ? "Hoy"
                           : daysUntil === 1
-                          ? "Mañana"
-                          : `En ${daysUntil} días`}
+                            ? "Mañana"
+                            : `En ${daysUntil} días`}
                       </p>
                     </div>
                     <span
@@ -335,7 +448,9 @@ export default function PanelView({
               {topCategories.slice(0, 5).map((c) => (
                 <div key={c.category}>
                   <div className="flex items-center justify-between text-xs mb-0.5">
-                    <span className="font-medium text-brand-dark">{c.category}</span>
+                    <span className="font-medium text-brand-dark">
+                      {c.category}
+                    </span>
                     <span className="font-mono">
                       {formatMoney(c.amount, currency)}
                       {c.deltaPercent !== null && c.deltaPercent !== 0 && (
@@ -345,8 +460,8 @@ export default function PanelView({
                             c.deltaPercent > 20
                               ? "text-danger"
                               : c.deltaPercent < -10
-                              ? "text-success"
-                              : "text-brand-warm"
+                                ? "text-success"
+                                : "text-brand-warm"
                           )}
                         >
                           {c.deltaPercent > 0 ? "+" : ""}
@@ -378,12 +493,18 @@ export default function PanelView({
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             {goals.map((g) => {
-              const pct = g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0;
+              const pct =
+                g.target > 0 ? Math.min(100, (g.current / g.target) * 100) : 0;
               return (
-                <div key={g.id} className="border border-brand-cream rounded-lg p-3">
+                <div
+                  key={g.id}
+                  className="border border-brand-cream rounded-lg p-3"
+                >
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-lg">{g.emoji ?? "🎯"}</span>
-                    <span className="text-sm font-semibold text-brand-dark truncate">{g.name}</span>
+                    <span className="text-sm font-semibold text-brand-dark truncate">
+                      {g.name}
+                    </span>
                   </div>
                   <div className="text-xs text-brand-warm mb-1">
                     {formatCompact(g.current)} / {formatCompact(g.target)}
@@ -411,11 +532,6 @@ export default function PanelView({
         </h3>
         <HeatMap heatmap={heatmap} currency={currency} />
       </div>
-
-      {/* AI export */}
-      <div className="flex justify-end">
-        <AIExportButton scope="finance" label="Analizar con IA" variant="outline" size="sm" />
-      </div>
     </div>
   );
 }
@@ -442,18 +558,30 @@ function KpiCard({
   let deltaColor = "text-brand-warm";
   if (delta !== null && delta !== undefined) {
     const good = deltaInverted ? delta < 0 : delta > 0;
-    deltaColor = good ? "text-success" : delta === 0 ? "text-brand-warm" : "text-danger";
+    deltaColor = good
+      ? "text-success"
+      : delta === 0
+        ? "text-brand-warm"
+        : "text-danger";
   }
   return (
     <div className="bg-brand-paper border border-brand-cream rounded-xl p-3">
-      <div className={cn("flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold", color)}>
+      <div
+        className={cn(
+          "flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold",
+          color
+        )}
+      >
         {icon}
         <span>{label}</span>
       </div>
-      <div className={cn("text-xl font-bold leading-none mt-1.5", color)}>{value}</div>
+      <div className={cn("text-xl font-bold leading-none mt-1.5", color)}>
+        {value}
+      </div>
       {delta !== null && delta !== undefined && (
         <div className={cn("text-[11px] mt-1 font-semibold", deltaColor)}>
-          {delta > 0 ? "↑" : delta < 0 ? "↓" : "·"} {Math.abs(delta).toFixed(1)}% vs mes anterior
+          {delta > 0 ? "↑" : delta < 0 ? "↓" : "·"} {Math.abs(delta).toFixed(1)}
+          % vs mes anterior
         </div>
       )}
       {sub && <div className="text-[11px] text-brand-warm mt-0.5">{sub}</div>}
@@ -469,9 +597,9 @@ function InsightRow({ insight }: { insight: Insight }) {
     critical: AlertTriangle,
   };
   const COLOR_BY_SEVERITY = {
-    info:     "bg-info/10 border-info/30 text-info",
-    warning:  "bg-warning/10 border-warning/30 text-warning",
-    success:  "bg-success/10 border-success/30 text-success",
+    info: "bg-info/10 border-info/30 text-info",
+    warning: "bg-warning/10 border-warning/30 text-warning",
+    success: "bg-success/10 border-success/30 text-success",
     critical: "bg-danger/10 border-danger/40 text-danger",
   };
   const Icon = ICON_BY_SEVERITY[insight.severity];
@@ -482,7 +610,9 @@ function InsightRow({ insight }: { insight: Insight }) {
         COLOR_BY_SEVERITY[insight.severity]
       )}
     >
-      <span className="text-base shrink-0 leading-none mt-0.5">{insight.icon}</span>
+      <span className="text-base shrink-0 leading-none mt-0.5">
+        {insight.icon}
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold">{insight.title}</p>
         <p className="text-xs opacity-90 mt-0.5">{insight.description}</p>
@@ -492,7 +622,13 @@ function InsightRow({ insight }: { insight: Insight }) {
   );
 }
 
-function HeatMap({ heatmap, currency }: { heatmap: Record<string, number>; currency: string }) {
+function HeatMap({
+  heatmap,
+  currency,
+}: {
+  heatmap: Record<string, number>;
+  currency: string;
+}) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const cells: Array<{ date: string; amount: number }> = [];
@@ -524,7 +660,10 @@ function HeatMap({ heatmap, currency }: { heatmap: Record<string, number>; curre
         {cells.map((c) => (
           <div
             key={c.date}
-            className={cn("w-3 h-3 rounded-[2px] hover:ring-1 hover:ring-accent cursor-default", bg(c.amount))}
+            className={cn(
+              "w-3 h-3 rounded-[2px] hover:ring-1 hover:ring-accent cursor-default",
+              bg(c.amount)
+            )}
             title={`${c.date}: ${formatMoney(c.amount, currency)}`}
           />
         ))}
